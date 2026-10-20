@@ -11,13 +11,17 @@ export interface FlagsState {
 }
 
 // Precomputed parity table for low 8 bits (1 if even number of 1s, 0 if odd)
-const PARITY_TABLE = new Uint8Array(256);
+export const PARITY_TABLE = new Uint8Array(256);
 for (let i = 0; i < 256; i++) {
   let count = 0;
   for (let bit = 0; bit < 8; bit++) {
     if ((i >> bit) & 1) count++;
   }
   PARITY_TABLE[i] = (count % 2 === 0) ? 1 : 0;
+}
+
+export function computeParity(val: number): boolean {
+  return PARITY_TABLE[val & 0xFF] === 1;
 }
 
 export class Flags {

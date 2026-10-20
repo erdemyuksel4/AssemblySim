@@ -49,13 +49,17 @@ export class Assembler {
           }
         }
 
-        // Register label at current address
+        // Register label or EQU value
         if (parsed.label) {
           const lblName = parsed.label.toUpperCase();
-          if (symbols.has(lblName)) {
-            errors.push({ line: lineNum, message: `Mükerrer etiket: '${parsed.label}'` });
+          if (parsed.directive && parsed.directive.type === 'EQU') {
+            symbols.set(lblName, parsed.directive.equValue ?? 0);
           } else {
-            symbols.set(lblName, currentAddr);
+            if (symbols.has(lblName)) {
+              errors.push({ line: lineNum, message: `Mükerrer etiket: '${parsed.label}'` });
+            } else {
+              symbols.set(lblName, currentAddr);
+            }
           }
         }
 
@@ -106,8 +110,10 @@ export class Assembler {
             if (parsed.directive.orgValue !== undefined) {
               currentAddr = parsed.directive.orgValue;
             }
+          } else if (parsed.directive.type === 'EQU') {
+            // EQU emits no machine code bytes
           } else {
-            const dataBytes = this.generateDirectiveBytes(parsed.directive);
+            const dataBytes = this.generateDirectiveBytes(parsed.directive, symbols, lineNum);
             lineBytes.push(...dataBytes);
             emittedBytes.push(...dataBytes);
             currentAddr += dataBytes.length;
@@ -147,7 +153,7 @@ export class Assembler {
 
   // Calculate size in bytes for DB and DW directives
   private static getDirectiveSize(directive: ParsedDirective): number {
-    if (directive.type === 'ORG') return 0;
+    if (directive.type === 'ORG' || directive.type === 'EQU') return 0;
     const mult = directive.type === 'DW' ? 2 : 1;
     let size = 0;
 
@@ -157,19 +163,27 @@ export class Assembler {
       } else if (typeof item === 'string') {
         // String in DB emits each character as 1 byte
         size += item.length * mult;
-      } else if (typeof item === 'object' && item.count !== undefined) {
-        let singleLen = 0;
-        for (const v of item.values) {
-          singleLen += typeof v === 'string' ? v.length * mult : mult;
+      } else if (typeof item === 'object') {
+        if ('count' in item && item.count !== undefined) {
+          let singleLen = 0;
+          for (const v of item.values) {
+            singleLen += typeof v === 'string' ? v.length * mult : mult;
+          }
+          size += item.count * singleLen;
+        } else if ('label' in item) {
+          size += mult;
         }
-        size += item.count * singleLen;
       }
     }
     return size;
   }
 
   // Generate actual bytes for DB and DW directives
-  private static generateDirectiveBytes(directive: ParsedDirective): number[] {
+  private static generateDirectiveBytes(
+    directive: ParsedDirective,
+    symbols: Map<string, number>,
+    lineNum: number
+  ): number[] {
     const bytes: number[] = [];
     const isDW = directive.type === 'DW';
 
@@ -192,11 +206,20 @@ export class Assembler {
         emitVal(item);
       } else if (typeof item === 'string') {
         emitStr(item);
-      } else if (typeof item === 'object' && item.count !== undefined) {
-        for (let c = 0; c < item.count; c++) {
-          for (const v of item.values) {
-            if (typeof v === 'string') emitStr(v);
-            else emitVal(v);
+      } else if (typeof item === 'object') {
+        if ('count' in item && item.count !== undefined) {
+          for (let c = 0; c < item.count; c++) {
+            for (const v of item.values) {
+              if (typeof v === 'string') emitStr(v);
+              else emitVal(v);
+            }
+          }
+        } else if ('label' in item) {
+          const lblUpper = item.label.toUpperCase();
+          if (symbols.has(lblUpper)) {
+            emitVal(symbols.get(lblUpper)!);
+          } else {
+            throw new Error(`Tanımsız etiket '${item.label}' satır: ${lineNum}`);
           }
         }
       }

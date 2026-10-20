@@ -4,6 +4,7 @@ import { Editor } from './editor.js';
 import { RegisterPanel } from './registerPanel.js';
 import { MemoryView } from './memoryView.js';
 import { TooltipManager } from './tooltip.js';
+import { InstructionDoc } from './instructionDoc.js';
 
 export type ExecutionSpeed = '0.5' | '1' | '2';
 
@@ -85,6 +86,9 @@ export class App {
           <div id="memory-container"></div>
         </section>
       </main>
+
+      <!-- Bottom Collapsible Instruction Manual -->
+      <div id="instruction-docs-container" class="instruction-docs-wrapper"></div>
     `;
   }
 
@@ -92,9 +96,11 @@ export class App {
     const editorContainer = document.getElementById('editor-container')!;
     const registersContainer = document.getElementById('registers-container')!;
     const memoryContainer = document.getElementById('memory-container')!;
+    const docsContainer = document.getElementById('instruction-docs-container')!;
 
     this.registerPanel = new RegisterPanel(registersContainer);
     this.memoryView = new MemoryView(memoryContainer);
+    new InstructionDoc(docsContainer);
 
     this.editor = new Editor({
       container: editorContainer,

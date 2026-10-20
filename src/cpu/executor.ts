@@ -1,5 +1,5 @@
 import { Registers, Reg16, Reg8 } from './registers.js';
-import { Flags, FlagsState } from './flags.js';
+import { Flags, FlagsState, computeParity } from './flags.js';
 import { Memory } from './memory.js';
 import { Decoder, DecodedModRM } from './decoder.js';
 
@@ -1028,7 +1028,7 @@ export class Executor {
           const s2 = (a & 0x8000) ? (a - 65536) : a;
           const prod = s1 * s2;
           this.regs.ax = prod & 0xFFFF;
-          this.regs.dx = Math.trunc(prod / 65536) & 0xFFFF;
+          this.regs.dx = Math.floor(prod / 65536) & 0xFFFF;
           const carry = (prod < -32768 || prod > 32767);
           this.flags.cf = carry;
           this.flags.of = carry;
@@ -1122,9 +1122,10 @@ export class Executor {
               }
               case 5: { // SHR
                 const low = val & 1;
+                const origMsb = (val & signBit) !== 0;
                 val = val >> 1;
                 this.flags.cf = low === 1;
-                if (count === 1) this.flags.of = (val & signBit) !== 0;
+                if (count === 1) this.flags.of = origMsb;
                 break;
               }
               case 7: { // SAR
@@ -1143,7 +1144,7 @@ export class Executor {
           if (m.reg === 4 || m.reg === 5 || m.reg === 7) {
             this.flags.zf = val === 0;
             this.flags.sf = (val & signBit) !== 0;
-            this.flags.pf = (val & 0xFF) % 2 === 0; // Parity of low 8 bits
+            this.flags.pf = computeParity(val);
           }
 
           if (is16) this.writeRM16(m, val); else this.writeRM8(m, val);
@@ -1293,7 +1294,7 @@ export class Executor {
         this.regs.al = al;
         this.flags.zf = al === 0;
         this.flags.sf = (al & 0x80) !== 0;
-        this.flags.pf = (al & 0xFF) % 2 === 0;
+        this.flags.pf = computeParity(al);
         break;
       }
       case 0x2F: { // DAS (Decimal Adjust after Subtraction)
@@ -1315,7 +1316,7 @@ export class Executor {
         this.regs.al = al;
         this.flags.zf = al === 0;
         this.flags.sf = (al & 0x80) !== 0;
-        this.flags.pf = (al & 0xFF) % 2 === 0;
+        this.flags.pf = computeParity(al);
         break;
       }
       case 0x37: { // AAA (ASCII Adjust after Addition)
@@ -1353,7 +1354,7 @@ export class Executor {
         this.regs.al = (this.regs.al % base) & 0xFF;
         this.flags.zf = this.regs.al === 0;
         this.flags.sf = (this.regs.al & 0x80) !== 0;
-        this.flags.pf = (this.regs.al & 0xFF) % 2 === 0;
+        this.flags.pf = computeParity(this.regs.al);
         break;
       }
       case 0xD5: { // AAD (ASCII Adjust before Division)
@@ -1362,7 +1363,7 @@ export class Executor {
         this.regs.ah = 0;
         this.flags.zf = this.regs.al === 0;
         this.flags.sf = (this.regs.al & 0x80) !== 0;
-        this.flags.pf = (this.regs.al & 0xFF) % 2 === 0;
+        this.flags.pf = computeParity(this.regs.al);
         break;
       }
 
@@ -1445,6 +1446,61 @@ export class Executor {
           }
         } else {
           doScasb();
+        }
+        break;
+      }
+      case 0xA7: { // CMPSW
+        const doCmpsw = () => {
+          const s = segOverride || 'DS';
+          const srcVal = this.mem.readWord(this.regs.getByName(s), this.regs.si, true);
+          const destVal = this.mem.readWord(this.regs.es, this.regs.di, true);
+          const res = (srcVal - destVal) & 0xFFFF;
+          this.flags.updateSub(srcVal, destVal, res, true);
+          const delta = this.flags.df ? -2 : 2;
+          this.regs.si = (this.regs.si + delta) & 0xFFFF;
+          this.regs.di = (this.regs.di + delta) & 0xFFFF;
+        };
+
+        if (repPrefix === 'REP') {
+          while (this.regs.cx > 0) {
+            doCmpsw();
+            this.regs.cx = (this.regs.cx - 1) & 0xFFFF;
+            if (!this.flags.zf) break;
+          }
+        } else if (repPrefix === 'REPNZ') {
+          while (this.regs.cx > 0) {
+            doCmpsw();
+            this.regs.cx = (this.regs.cx - 1) & 0xFFFF;
+            if (this.flags.zf) break;
+          }
+        } else {
+          doCmpsw();
+        }
+        break;
+      }
+      case 0xAF: { // SCASW
+        const doScasw = () => {
+          const destVal = this.mem.readWord(this.regs.es, this.regs.di, true);
+          const res = (this.regs.ax - destVal) & 0xFFFF;
+          this.flags.updateSub(this.regs.ax, destVal, res, true);
+          const delta = this.flags.df ? -2 : 2;
+          this.regs.di = (this.regs.di + delta) & 0xFFFF;
+        };
+
+        if (repPrefix === 'REP') {
+          while (this.regs.cx > 0) {
+            doScasw();
+            this.regs.cx = (this.regs.cx - 1) & 0xFFFF;
+            if (!this.flags.zf) break;
+          }
+        } else if (repPrefix === 'REPNZ') {
+          while (this.regs.cx > 0) {
+            doScasw();
+            this.regs.cx = (this.regs.cx - 1) & 0xFFFF;
+            if (this.flags.zf) break;
+          }
+        } else {
+          doScasw();
         }
         break;
       }
@@ -1531,16 +1587,72 @@ export class Executor {
         this.regs.si = (this.regs.si + delta) & 0xFFFF;
         break;
       }
+      // MOVSW (A5)
+      case 0xA5: {
+        const doMoveW = () => {
+          const s = segOverride || 'DS';
+          const wordVal = this.mem.readWord(this.regs.getByName(s), this.regs.si, true);
+          this.mem.writeWord(this.regs.es, this.regs.di, wordVal, true);
+          const delta = this.flags.df ? -2 : 2;
+          this.regs.si = (this.regs.si + delta) & 0xFFFF;
+          this.regs.di = (this.regs.di + delta) & 0xFFFF;
+        };
+
+        if (repPrefix === 'REP') {
+          while (this.regs.cx > 0) {
+            doMoveW();
+            this.regs.cx = (this.regs.cx - 1) & 0xFFFF;
+          }
+        } else {
+          doMoveW();
+        }
+        break;
+      }
+      // STOSW (AB)
+      case 0xAB: {
+        const doStoreW = () => {
+          this.mem.writeWord(this.regs.es, this.regs.di, this.regs.ax, true);
+          const delta = this.flags.df ? -2 : 2;
+          this.regs.di = (this.regs.di + delta) & 0xFFFF;
+        };
+
+        if (repPrefix === 'REP') {
+          while (this.regs.cx > 0) {
+            doStoreW();
+            this.regs.cx = (this.regs.cx - 1) & 0xFFFF;
+          }
+        } else {
+          doStoreW();
+        }
+        break;
+      }
+      // LODSW (AD)
+      case 0xAD: {
+        const s = segOverride || 'DS';
+        this.regs.ax = this.mem.readWord(this.regs.getByName(s), this.regs.si, true);
+        const delta = this.flags.df ? -2 : 2;
+        this.regs.si = (this.regs.si + delta) & 0xFFFF;
+        break;
+      }
 
       // INT 20h / INT 21h / INT 3
       case 0xCD: {
         const intNum = fetchByte();
-        if (intNum === 0x20) { // DOS terminate
+        if (intNum === 0x10) { // BIOS video service
+          const ah = this.regs.ah;
+          if (ah === 0x0E) { // Teletype output (AL = character)
+            consoleText = String.fromCharCode(this.regs.al);
+          } else {
+            consoleText = `[INT 10h AH=${ah.toString(16).padStart(2, '0')}h]`;
+          }
+        } else if (intNum === 0x20) { // DOS terminate
           halted = true;
           consoleText = "[Program terminated via INT 20h]";
         } else if (intNum === 0x21) { // DOS service
           const ah = this.regs.ah;
-          if (ah === 0x02) { // Print char in DL
+          if (ah === 0x01 || ah === 0x08) { // Console input (dummy 0 for non-interactive)
+            this.regs.al = 0;
+          } else if (ah === 0x02) { // Print char in DL
             const charStr = String.fromCharCode(this.regs.dl);
             consoleText = charStr;
           } else if (ah === 0x09) { // Print $-terminated string at DS:DX

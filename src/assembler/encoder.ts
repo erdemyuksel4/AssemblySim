@@ -18,6 +18,45 @@ export class Encoder {
     ctx: EncodeContext,
     lineNum: number
   ): EncodedInstruction {
+    const raw = this.encodeInstruction(inst, ctx, lineNum);
+    const prefixes: number[] = [];
+
+    // Instruction prefixes (e.g. REP / REPE / REPNE)
+    if (inst.prefixBytes && inst.prefixBytes.length > 0) {
+      prefixes.push(...inst.prefixBytes);
+    }
+
+    // Segment override prefix from memory operands
+    for (const op of inst.operands) {
+      if (op.kind === 'MEMORY' && op.segmentOverride) {
+        const segCodes: Record<string, number> = {
+          ES: 0x26,
+          CS: 0x2E,
+          SS: 0x36,
+          DS: 0x3E
+        };
+        const code = segCodes[op.segmentOverride];
+        if (code !== undefined) {
+          prefixes.push(code);
+        }
+        break;
+      }
+    }
+
+    if (prefixes.length > 0) {
+      return {
+        bytes: [...prefixes, ...raw.bytes],
+        length: prefixes.length + raw.length
+      };
+    }
+    return raw;
+  }
+
+  private static encodeInstruction(
+    inst: ParsedInstruction,
+    ctx: EncodeContext,
+    lineNum: number
+  ): EncodedInstruction {
     const mnemonic = inst.mnemonic.toUpperCase();
     const ops = inst.operands;
 
@@ -204,11 +243,17 @@ export class Encoder {
       }
       const val = this.resolveImm(src, ctx, lineNum);
       if (dest.size === 'BYTE') {
+        if (ctx.isPass2 && (val < -128 || val > 255)) {
+          throw new Error(`Değer 8-bit sınırını aşıyor (${val}), satır: ${lineNum}`);
+        }
         return {
           bytes: [0xB0 + dest.regIndex, val & 0xFF],
           length: 2
         };
       } else {
+        if (ctx.isPass2 && (val < -32768 || val > 65535)) {
+          throw new Error(`Değer 16-bit sınırını aşıyor (${val}), satır: ${lineNum}`);
+        }
         return {
           bytes: [0xB8 + dest.regIndex, val & 0xFF, (val >> 8) & 0xFF],
           length: 3
@@ -440,6 +485,20 @@ export class Encoder {
       return { bytes: [opcode, modrm], length: 2 };
     }
 
+    if (dest.kind === 'REGISTER' && !dest.isSegment && src.kind === 'MEMORY') {
+      const is16 = dest.size === 'WORD';
+      const opcode = is16 ? 0x85 : 0x84;
+      const { modrmBytes, length } = this.buildModRM(dest.regIndex, src, ctx, lineNum);
+      return { bytes: [opcode, ...modrmBytes], length: 1 + length };
+    }
+
+    if (dest.kind === 'MEMORY' && src.kind === 'REGISTER' && !src.isSegment) {
+      const is16 = src.size === 'WORD';
+      const opcode = is16 ? 0x85 : 0x84;
+      const { modrmBytes, length } = this.buildModRM(src.regIndex, dest, ctx, lineNum);
+      return { bytes: [opcode, ...modrmBytes], length: 1 + length };
+    }
+
     if (dest.kind === 'REGISTER' && !dest.isSegment && src.kind === 'IMMEDIATE') {
       const val = this.resolveImm(src, ctx, lineNum);
       if (dest.name === 'AL') return { bytes: [0xA8, val & 0xFF], length: 2 };
@@ -450,6 +509,16 @@ export class Encoder {
       const modrm = 0xC0 | (0 << 3) | dest.regIndex;
       const immBytes = is16 ? [val & 0xFF, (val >> 8) & 0xFF] : [val & 0xFF];
       return { bytes: [opcode, modrm, ...immBytes], length: 2 + immBytes.length };
+    }
+
+    if (dest.kind === 'MEMORY' && src.kind === 'IMMEDIATE') {
+      if (!dest.size) throw new Error(`Operand size belirtilmedi (BYTE PTR veya WORD PTR kullanın), satır: ${lineNum}`);
+      const is16 = dest.size === 'WORD';
+      const val = this.resolveImm(src, ctx, lineNum);
+      const opcode = is16 ? 0xF7 : 0xF6;
+      const { modrmBytes, length } = this.buildModRM(0, dest, ctx, lineNum);
+      const immBytes = is16 ? [val & 0xFF, (val >> 8) & 0xFF] : [val & 0xFF];
+      return { bytes: [opcode, ...modrmBytes, ...immBytes], length: 1 + length + immBytes.length };
     }
 
     throw new Error(`Desteklenmeyen TEST operasyonu, satır: ${lineNum}`);
@@ -471,6 +540,20 @@ export class Encoder {
       const opcode = dest.size === 'WORD' ? 0x87 : 0x86;
       const modrm = 0xC0 | (src.regIndex << 3) | dest.regIndex;
       return { bytes: [opcode, modrm], length: 2 };
+    }
+
+    if (dest.kind === 'REGISTER' && !dest.isSegment && src.kind === 'MEMORY') {
+      const is16 = dest.size === 'WORD';
+      const opcode = is16 ? 0x87 : 0x86;
+      const { modrmBytes, length } = this.buildModRM(dest.regIndex, src, ctx, lineNum);
+      return { bytes: [opcode, ...modrmBytes], length: 1 + length };
+    }
+
+    if (dest.kind === 'MEMORY' && src.kind === 'REGISTER' && !src.isSegment) {
+      const is16 = src.size === 'WORD';
+      const opcode = is16 ? 0x87 : 0x86;
+      const { modrmBytes, length } = this.buildModRM(src.regIndex, dest, ctx, lineNum);
+      return { bytes: [opcode, ...modrmBytes], length: 1 + length };
     }
 
     throw new Error(`Desteklenmeyen XCHG operasyonu, satır: ${lineNum}`);
@@ -586,6 +669,18 @@ export class Encoder {
       };
     }
 
+    // Indirect CALL r16 (FF /2)
+    if (op.kind === 'REGISTER' && !op.isSegment && op.size === 'WORD') {
+      const modrm = 0xC0 | (2 << 3) | op.regIndex;
+      return { bytes: [0xFF, modrm], length: 2 };
+    }
+
+    // Indirect CALL m16 (FF /2)
+    if (op.kind === 'MEMORY') {
+      const { modrmBytes, length } = this.buildModRM(2, op, ctx, lineNum);
+      return { bytes: [0xFF, ...modrmBytes], length: 1 + length };
+    }
+
     throw new Error(`Geçersiz CALL hedefi, satır: ${lineNum}`);
   }
 
@@ -682,6 +777,18 @@ export class Encoder {
         bytes: [0xE9, rel16 & 0xFF, (rel16 >> 8) & 0xFF],
         length: 3
       };
+    }
+
+    // Indirect JMP r16 (FF /4)
+    if (op.kind === 'REGISTER' && !op.isSegment && op.size === 'WORD') {
+      const modrm = 0xC0 | (4 << 3) | op.regIndex;
+      return { bytes: [0xFF, modrm], length: 2 };
+    }
+
+    // Indirect JMP m16 (FF /4)
+    if (op.kind === 'MEMORY') {
+      const { modrmBytes, length } = this.buildModRM(4, op, ctx, lineNum);
+      return { bytes: [0xFF, ...modrmBytes], length: 1 + length };
     }
 
     throw new Error(`Geçersiz JMP operandı, satır: ${lineNum}`);

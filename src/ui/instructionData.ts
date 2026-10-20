@@ -1,0 +1,1166 @@
+export interface InstructionVariation {
+  syntax: string;
+  description: string;
+  example: string;
+  note?: string;
+}
+
+export interface InstructionDetail {
+  opcode: string;
+  name: string;
+  category: 'data' | 'arithmetic' | 'bcd' | 'logical' | 'control' | 'string' | 'flags' | 'directives';
+  summary: string;
+  flags: string;
+  rules?: string;
+  variations: InstructionVariation[];
+}
+
+export const CATEGORIES = [
+  { id: 'all', label: 'Tümü' },
+  { id: 'data', label: 'Veri Transferi' },
+  { id: 'arithmetic', label: 'Aritmetik' },
+  { id: 'bcd', label: 'BCD Aritmetiği' },
+  { id: 'logical', label: 'Mantık & Kaydırma' },
+  { id: 'control', label: 'Atlama & Döngü' },
+  { id: 'string', label: 'Dizi (String)' },
+  { id: 'flags', label: 'Bayrak & Kontrol' },
+  { id: 'directives', label: 'Yönergeler' }
+] as const;
+
+export const INSTRUCTIONS: InstructionDetail[] = [
+  // --- VERİ TRANSFERİ ---
+  {
+    opcode: 'MOV',
+    name: 'Move (Veri Transferi)',
+    category: 'data',
+    summary: 'Kaynaktaki veriyi hedefe kopyalar. Kaynak değişmez, hedef yeni değeri alır.',
+    flags: 'Hiçbir bayrağı etkilemez.',
+    rules: '8086 kuralları: Bellekten belleğe doğrudan MOV yapılamaz. Segmente doğrudan sabit (immediate) sayı yüklenemez. CS segmentine hedef olarak MOV yapılamaz.',
+    variations: [
+      {
+        syntax: 'MOV reg, reg',
+        description: 'Bir yazmaçtaki değeri diğerine kopyalar (8-bit veya 16-bit).',
+        example: 'MOV AX, 1234H\nMOV BX, AX       ; BX = 1234H olur',
+        note: 'Her iki yazmaç aynı boyutta olmalıdır (AX ve BX 16-bit, AL ve BL 8-bit).'
+      },
+      {
+        syntax: 'MOV reg, imm',
+        description: 'Bir yazmaca doğrudan sabit sayısal değer yükler.',
+        example: 'MOV AX, 0FFFFH   ; AX = FFFFh\nMOV CL, 10       ; CL = 10 (0Ah)',
+        note: 'Sabit sayı hedef yazmacın boyutuna uygun olmalıdır.'
+      },
+      {
+        syntax: 'MOV reg, [mem]',
+        description: 'Belirtilen bellek adresindeki veriyi yazmaca okur.',
+        example: 'MOV SI, 200H\nMOV AX, [SI]     ; DS:0200h adresindeki 16-bit kelimeyi AX\'e okur',
+        note: 'Adresleme [BX], [BP], [SI], [DI] veya bunların toplamı ile yapılabilir.'
+      },
+      {
+        syntax: 'MOV [mem], reg',
+        description: 'Yazmaçtaki değeri belirtilen bellek adresine yazar.',
+        example: 'MOV AL, 55H\nMOV [DI], AL     ; DS:DI adresine 55h yazar',
+        note: 'Yazmacın boyutu bellek yazma genişliğini (8 veya 16 bit) otomatik belirler.'
+      },
+      {
+        syntax: 'MOV [mem], imm',
+        description: 'Doğrudan sabit bir değeri bellek hücresine yazar.',
+        example: 'MOV BYTE PTR [BX], 0AAH  ; 1 bayt yazar\nMOV WORD PTR [BX], 1234H ; 2 bayt yazar',
+        note: 'Boyut belirsizliğini önlemek için BYTE PTR veya WORD PTR zorunludur!'
+      },
+      {
+        syntax: 'MOV seg, reg16',
+        description: 'Bir segment yazmacına 16-bit genel yazmaçtan değer atar.',
+        example: 'MOV AX, 0700H\nMOV DS, AX       ; DS = 0700h olarak ayarlanır',
+        note: 'Segment yazmaçlarına doğrudan sabit yüklenemez (MOV DS, 1000h geçersizdir!).'
+      },
+      {
+        syntax: 'MOV reg16, seg',
+        description: 'Segment yazmacının mevcut değerini genel yazmaca kopyalar.',
+        example: 'MOV AX, CS       ; AX = Kod segmenti adresi',
+        note: 'CS, DS, SS, ES okunabilir.'
+      }
+    ]
+  },
+  {
+    opcode: 'LEA',
+    name: 'Load Effective Address (Efektif Adres Yükleme)',
+    category: 'data',
+    summary: 'Kaynak bellek operandının ofset adresini hesaplayarak 16-bit yazmaca yükler.',
+    flags: 'Bayrakları etkilemez.',
+    rules: 'Kaynak operand mutlaka bir bellek adresi veya etiket olmalıdır. Doğrudan sabit sayı kabul edilmez.',
+    variations: [
+      {
+        syntax: 'LEA reg16, label',
+        description: 'Bir veri etiketinin 16-bit ofset adresini göstericiye yükler.',
+        example: 'LEA SI, DIZI     ; DIZI etiketinin ofsetini SI\'ya yükler\n...\nDIZI DB 1, 2, 3',
+        note: 'Dizilerin ve stringlerin başlangıç adresini almak için en yaygın yoldur.'
+      },
+      {
+        syntax: 'LEA reg16, [mem]',
+        description: 'Karmaşık adresleme modunun hesaplanan ofset adresini yazmaca yükler.',
+        example: 'MOV BX, 100H\nMOV SI, 20H\nLEA DX, [BX+SI+4] ; DX = 124h olur (Bellek okunmaz, sadece adres hesaplanır!)',
+        note: 'Adres hesaplama aritmetiği için de sıkça kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'XCHG',
+    name: 'Exchange (Değer Takası)',
+    category: 'data',
+    summary: 'İki operandın içeriğini karşılıklı olarak yer değiştirir.',
+    flags: 'Bayrakları etkilemez.',
+    rules: 'İki bellek adresi arasında doğrudan takas yapılamaz. Segment yazmaçları kullanılamaz.',
+    variations: [
+      {
+        syntax: 'XCHG reg, reg',
+        description: 'İki yazmacın içeriğini takas eder.',
+        example: 'MOV AX, 1111H\nMOV BX, 2222H\nXCHG AX, BX     ; AX = 2222H, BX = 1111H olur',
+        note: 'Geçici üçüncü bir yazmaca ihtiyaç duymadan takas sağlar.'
+      },
+      {
+        syntax: 'XCHG reg, [mem]',
+        description: 'Yazmaç ile bellek adresindeki veriyi takas eder.',
+        example: 'MOV AX, 50H\nXCHG AX, [DI]   ; AX bellekteki eski değeri alır, [DI]\'ye 50h yazılır',
+        note: 'Atomik veri değişimi sağlar.'
+      }
+    ]
+  },
+  {
+    opcode: 'PUSH',
+    name: 'Push onto Stack (Yığına Ekle)',
+    category: 'data',
+    summary: '16-bitlik operandı yığına (Stack) koyar. SP işaretçisi 2 azalır (SP = SP - 2).',
+    flags: 'Bayrakları etkilemez.',
+    rules: '8086 mimarisinde yalnızca 16-bit değerler yığına atılabilir (PUSH AL veya sabit sayı geçersizdir!).',
+    variations: [
+      {
+        syntax: 'PUSH reg16',
+        description: '16-bit genel veya indeks yazmacını yığına atar.',
+        example: 'MOV AX, 1234H\nPUSH AX         ; Yığına 1234H kaydedilir, SP 2 azalır',
+        note: 'Altprogram çağrılarında yazmaç değerlerini korumak için kullanılır.'
+      },
+      {
+        syntax: 'PUSH seg',
+        description: 'Segment yazmacını yığına kaydeder.',
+        example: 'PUSH DS\nPUSH ES',
+        note: 'Segmentleri geçici değiştirip geri yüklemek için standarttır.'
+      },
+      {
+        syntax: 'PUSH [mem16]',
+        description: 'Bellekteki 16-bit kelimeyi yığına atar.',
+        example: 'PUSH WORD PTR [BX] ; [BX] adresindeki 2 bayt yığına atılır',
+        note: 'Boyut belirtici WORD PTR kullanılmalıdır.'
+      }
+    ]
+  },
+  {
+    opcode: 'POP',
+    name: 'Pop from Stack (Yığından Çek)',
+    category: 'data',
+    summary: 'Yığının tepesindeki 16-bit kelimeyi hedefe çeker. SP işaretçisi 2 artar (SP = SP + 2).',
+    flags: 'Bayrakları etkilemez.',
+    rules: 'POP CS komutu geçersizdir (CS doğrudan POP ile değiştirilemez).',
+    variations: [
+      {
+        syntax: 'POP reg16',
+        description: 'Yığından çekilen değeri 16-bit yazmaca atar.',
+        example: 'POP BX          ; En son atılan 16-bit değer BX\'e yazılır',
+        note: 'PUSH sırasının tam tersi sırada POP yapılmalıdır (LIFO).'
+      },
+      {
+        syntax: 'POP seg',
+        description: 'Yığından segment yazmacına çeker.',
+        example: 'POP ES\nPOP DS',
+        note: 'POP CS desteklenmez.'
+      }
+    ]
+  },
+  {
+    opcode: 'PUSHF',
+    name: 'Push Flags (Bayrakları Yığına At)',
+    category: 'data',
+    summary: 'Tüm FLAGS (bayraklar) yazmacını 16-bit kelime olarak yığına atar.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'PUSHF',
+        description: 'Mevcut bayrak durumunu yığına kaydeder.',
+        example: 'PUSHF           ; Bayraklar saklanır\nCMP AX, BX\nPOPF            ; Orijinal bayraklar geri yüklenir',
+        note: 'Bayrakları altprogram boyunca korumak için kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'POPF',
+    name: 'Pop Flags (Bayrakları Yığından Geri Yükle)',
+    category: 'data',
+    summary: 'Yığından 16-bit kelime çekerek FLAGS yazmacına yükler.',
+    flags: 'Tüm bayraklar (CF, PF, AF, ZF, SF, TF, IF, DF, OF) yığındaki değere göre güncellenir.',
+    variations: [
+      {
+        syntax: 'POPF',
+        description: 'Yığından bayrakları çeker.',
+        example: 'POPF            ; SP 2 artar, bayraklar güncellenir',
+        note: 'PUSHF ile eşleşmelidir.'
+      }
+    ]
+  },
+  {
+    opcode: 'XLAT',
+    name: 'Table Lookup Translation (Tablo Çevirisi)',
+    category: 'data',
+    summary: 'DS:BX başlangıçlı tablodan AL ofsetindeki baytı okuyup tekrar AL\'ye yazar: AL = [DS:BX + AL].',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'XLAT / XLATB',
+        description: '256 elemanlı bayt tablosundan indeksli çeviri yapar.',
+        example: 'LEA BX, TABLO\nMOV AL, 3\nXLAT            ; AL = TABLO[3] olur\n...\nTABLO DB 10, 20, 30, 40',
+        note: 'Karakter kodlama dönüşümlerinde (ASCII-7 segment vb.) çok hızlıdır.'
+      }
+    ]
+  },
+  {
+    opcode: 'LDS',
+    name: 'Load Pointer using DS',
+    category: 'data',
+    summary: 'Bellekten 4 bayt okur: İlk 2 baytı hedef yazmaca (ofset), sonraki 2 baytı DS\'ye yükler.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'LDS reg16, [mem]',
+        description: '32-bit uzak göstericiyi (Offset + Segment) yükler.',
+        example: 'LDS SI, [BX]    ; SI = [BX], DS = [BX+2]',
+        note: 'Veri segmentini ve göstericiyi tek komutla kurar.'
+      }
+    ]
+  },
+  {
+    opcode: 'LES',
+    name: 'Load Pointer using ES',
+    category: 'data',
+    summary: 'Bellekten 4 bayt okur: İlk 2 baytı hedef yazmaca, sonraki 2 baytı ES\'ye yükler.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'LES reg16, [mem]',
+        description: '32-bit uzak göstericiyi ES ve hedef yazmaca yükler.',
+        example: 'LES DI, [BX]    ; DI = [BX], ES = [BX+2]',
+        note: 'Dizi işlemlerinde ES:DI hedef göstericisini kurmak için kullanılır.'
+      }
+    ]
+  },
+
+  // --- ARİTMETİK ---
+  {
+    opcode: 'ADD',
+    name: 'Addition (Eldesiz Toplama)',
+    category: 'arithmetic',
+    summary: 'Hedef ile kaynak operandı toplar, sonucu hedefe yazar: Dest = Dest + Src.',
+    flags: 'CF, ZF, SF, OF, AF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'ADD reg, reg / imm / [mem]',
+        description: 'Yazmaca başka bir yazmaç, sabit sayı veya bellek değeri ekler.',
+        example: 'MOV AX, 5\nADD AX, 10      ; AX = 15 (0Fh)\nADD AX, BX      ; AX = AX + BX',
+        note: 'Sonuç 0 olursa ZF=1, elde taşarsa CF=1 olur.'
+      },
+      {
+        syntax: 'ADD [mem], reg / imm',
+        description: 'Bellek hücresine değer ekler.',
+        example: 'ADD BYTE PTR [DI], 1\nADD WORD PTR [BX], 500',
+        note: 'Bellek operasyonlarında boyut belirteci verilmelidir.'
+      }
+    ]
+  },
+  {
+    opcode: 'ADC',
+    name: 'Add with Carry (Eldeli Toplama)',
+    category: 'arithmetic',
+    summary: 'Hedef, kaynak ve Carry Bayrağını toplar: Dest = Dest + Src + CF.',
+    flags: 'CF, ZF, SF, OF, AF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'ADC reg, reg / imm / [mem]',
+        description: '32-bit veya daha geniş çok kelimeli toplamalarda taşan eldeyi sonraki basamağa ekler.',
+        example: '; 32-bit Toplama: (DX:AX) + (CX:BX)\nADD AX, BX      ; Düşük 16-bit toplanır (elde CF\'ye gider)\nADC DX, CX      ; Yüksek 16-bit + CF toplanır',
+        note: 'Büyük sayıların ardışık toplanmasında temeldir.'
+      }
+    ]
+  },
+  {
+    opcode: 'SUB',
+    name: 'Subtract (Eldesiz Çıkarma)',
+    category: 'arithmetic',
+    summary: 'Hedeften kaynağı çıkarır, sonucu hedefe yazar: Dest = Dest - Src.',
+    flags: 'CF, ZF, SF, OF, AF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'SUB reg, reg / imm / [mem]',
+        description: 'Yazmaçtan değer çıkarır.',
+        example: 'MOV AX, 20\nSUB AX, 5       ; AX = 15',
+        note: 'Kaynak hedeften büyükse borç oluşur ve CF=1 olur.'
+      }
+    ]
+  },
+  {
+    opcode: 'SBB',
+    name: 'Subtract with Borrow (Borçlu Çıkarma)',
+    category: 'arithmetic',
+    summary: 'Hedeften kaynağı ve Carry Bayrağını çıkarır: Dest = Dest - Src - CF.',
+    flags: 'CF, ZF, SF, OF, AF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'SBB reg, reg / imm / [mem]',
+        description: '32-bit çok basamaklı çıkarma işleminde düşük basamaktan gelen borcu düşer.',
+        example: '; 32-bit Çıkarma: (DX:AX) - (CX:BX)\nSUB AX, BX      ; Düşük basamak çıkarılır\nSBB DX, CX      ; Yüksek basamaktan CX ve varsa CF borcu düşülür',
+        note: 'Çok kelimeli hassas çıkarma için kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'INC',
+    name: 'Increment (1 Artır)',
+    category: 'arithmetic',
+    summary: 'Operanda 1 ekler: Dest = Dest + 1.',
+    flags: 'ZF, SF, OF, AF, PF güncellenir. DİKKAT: Carry Bayrağı (CF) ETKİLENMEZ!',
+    variations: [
+      {
+        syntax: 'INC reg / [mem]',
+        description: 'Yazmaç veya bellek içeriğini 1 artırır.',
+        example: 'INC SI          ; SI = SI + 1\nINC BYTE PTR [BX]',
+        note: 'Döngü sayaçlarında CF\'yi bozmadığı için özellikle tercih edilir.'
+      }
+    ]
+  },
+  {
+    opcode: 'DEC',
+    name: 'Decrement (1 Azalt)',
+    category: 'arithmetic',
+    summary: 'Operanttan 1 çıkarır: Dest = Dest - 1.',
+    flags: 'ZF, SF, OF, AF, PF güncellenir. Carry Bayrağı (CF) ETKİLENMEZ!',
+    variations: [
+      {
+        syntax: 'DEC reg / [mem]',
+        description: 'Yazmaç veya bellek içeriğini 1 azaltır.',
+        example: 'DEC CX          ; CX 1 azalır\nJNZ TEKRAR      ; Sıfır değilse döngüye devam',
+        note: 'Sayaç sıfıra ulaştığında ZF=1 olur.'
+      }
+    ]
+  },
+  {
+    opcode: 'CMP',
+    name: 'Compare (Karşılaştır)',
+    category: 'arithmetic',
+    summary: 'Hedeften kaynağı sanal olarak çıkarır (Dest - Src). Sonucu kaydetmez, yalnızca bayrakları günceller.',
+    flags: 'CF, ZF, SF, OF, AF, PF tam güncellenir.',
+    variations: [
+      {
+        syntax: 'CMP reg, reg / imm / [mem]',
+        description: 'İki değeri karşılaştırarak koşullu atlama komutlarını (JE, JL, JAE vb.) hazırlar.',
+        example: 'CMP AX, 10\nJE ESIT         ; AX == 10 ise atlar (ZF=1)\nJL KUCUK        ; AX < 10 ise atlar (SF!=OF)',
+        note: 'Operandların değerleri kesinlikle değişmez.'
+      }
+    ]
+  },
+  {
+    opcode: 'NEG',
+    name: 'Two\'s Complement Negation (İşaret Tersleme)',
+    category: 'arithmetic',
+    summary: 'Operandın ikiye tümleyenini alır (0 - Dest), işaretini tersine çevirir (+ ise -, - ise +).',
+    flags: 'CF (sonuç 0 değilse 1 olur), ZF, SF, OF, AF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'NEG reg / [mem]',
+        description: 'Pozitif sayıyı negatife, negatifi pozitife çevirir.',
+        example: 'MOV AL, 5\nNEG AL          ; AL = -5 (FBh)',
+        note: 'İşaretli sayılarla işlem yaparken kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'MUL',
+    name: 'Unsigned Multiplication (İşaretsiz Çarpma)',
+    category: 'arithmetic',
+    summary: 'İşaretsiz çarpma yapar. 8-bit ise AL * Src -> AX. 16-bit ise AX * Src -> DX:AX.',
+    flags: 'CF ve OF: Sonucun yüksek yarısı sıfırdan farklıysa 1, aksi halde 0 olur.',
+    variations: [
+      {
+        syntax: 'MUL reg8 / [mem8]',
+        description: 'AL ile operandı çarpar, 16-bit sonucu AX\'e yazar.',
+        example: 'MOV AL, 20\nMOV BL, 10\nMUL BL          ; AX = 200 (00C8h)',
+        note: 'Birinci çarpan her zaman örtük olarak AL\'dir.'
+      },
+      {
+        syntax: 'MUL reg16 / [mem16]',
+        description: 'AX ile operandı çarpar, 32-bit sonucu DX (yüksek) ve AX (düşük) içine yazar.',
+        example: 'MOV AX, 1000H\nMOV BX, 20H\nMUL BX          ; DX:AX = 0002:0000h',
+        note: 'Birinci çarpan örtük olarak AX\'tir.'
+      }
+    ]
+  },
+  {
+    opcode: 'IMUL',
+    name: 'Signed Multiplication (İşaretli Çarpma)',
+    category: 'arithmetic',
+    summary: 'İşaretli tam sayı çarpımı yapar. 8-bit: AL * Src -> AX. 16-bit: AX * Src -> DX:AX.',
+    flags: 'CF ve OF: Yüksek basamaklarda anlamlı işaret biti varsa 1 olur.',
+    variations: [
+      {
+        syntax: 'IMUL reg / [mem]',
+        description: 'Negatif sayıları göz önünde bulundurarak çarpar.',
+        example: 'MOV AL, -5\nMOV BL, 4\nIMUL BL         ; AX = -20 (FFECH)',
+        note: 'İşaret bitleri otomatik olarak doğru genişletilir.'
+      }
+    ]
+  },
+  {
+    opcode: 'DIV',
+    name: 'Unsigned Division (İşaretsiz Bölme)',
+    category: 'arithmetic',
+    summary: 'İşaretsiz bölme. 8-bit bölende: AX / Src -> AL:Bölüm, AH:Kalan. 16-bit bölende: DX:AX / Src -> AX:Bölüm, DX:Kalan.',
+    flags: 'Bayraklar tanımsız kalır.',
+    rules: 'Bölen sıfır ise veya bölüm hedefin kapasitesine sığmazsa Division by Zero hatası (INT 0) oluşur!',
+    variations: [
+      {
+        syntax: 'DIV reg8 / [mem8]',
+        description: 'AX içindeki sayıyı 8-bitlik bölene böler.',
+        example: 'MOV AX, 25\nMOV BL, 4\nDIV BL          ; AL = 6 (bölüm), AH = 1 (kalan)',
+        note: 'Sonuç 8-bit sınırını (255) aşmamalıdır.'
+      },
+      {
+        syntax: 'DIV reg16 / [mem16]',
+        description: 'DX:AX içindeki 32-bit sayıyı 16-bitlik bölene böler.',
+        example: 'MOV DX, 0\nMOV AX, 1000\nMOV BX, 3\nDIV BX          ; AX = 333 (bölüm), DX = 1 (kalan)',
+        note: 'Bölme öncesi DX genellikle 0 ile temizlenmelidir.'
+      }
+    ]
+  },
+  {
+    opcode: 'IDIV',
+    name: 'Signed Division (İşaretli Bölme)',
+    category: 'arithmetic',
+    summary: 'İşaretli tam sayı bölmesi yapar. 8-bit: AX / Src -> AL:Bölüm, AH:Kalan. 16-bit: DX:AX / Src -> AX:Bölüm, DX:Kalan.',
+    flags: 'Bayraklar tanımsızdır.',
+    variations: [
+      {
+        syntax: 'IDIV reg / [mem]',
+        description: 'İşaretli sayıları böler. Kalanın işareti bölünenin işaretiyle aynı olur.',
+        example: 'MOV AX, -25\nCBW             ; veya işaret genişletme\nMOV BL, 4\nIDIV BL         ; AL = -6, AH = -1',
+        note: 'İşlem öncesi CBW veya CWD ile işaret genişletmesi yapılmalıdır.'
+      }
+    ]
+  },
+  {
+    opcode: 'CBW',
+    name: 'Convert Byte to Word (Bayttan Kelimeye İşaret Genişlet)',
+    category: 'arithmetic',
+    summary: 'AL içindeki işaretli sayının işaret bitini AH içine kopyalar (AL pozitifse AH=00h, negatifse AH=FFh).',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'CBW',
+        description: '8-bit AL değerini 16-bit AX formatına işaretli genişletir.',
+        example: 'MOV AL, -5      ; AL = FBh\nCBW             ; AX = FFFBh (-5)',
+        note: '8-bit IDIV öncesi zorunludur.'
+      }
+    ]
+  },
+  {
+    opcode: 'CWD',
+    name: 'Convert Word to Doubleword (Kelimeden Çift Kelimeye)',
+    category: 'arithmetic',
+    summary: 'AX içindeki işaretli sayının işaretini DX içine kopyalar (AX pozitifse DX=0000h, negatifse DX=FFFFh).',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'CWD',
+        description: '16-bit AX değerini 32-bit DX:AX formatına işaretli genişletir.',
+        example: 'MOV AX, -100\nCWD             ; DX:AX = FFFF:FF9Ch\nMOV BX, 5\nIDIV BX         ; Güvenli işaretli bölme',
+        note: '16-bit IDIV öncesi zorunludur.'
+      }
+    ]
+  },
+
+  // --- BCD ARİTMETİĞİ ---
+  {
+    opcode: 'DAA',
+    name: 'Decimal Adjust for Addition (Toplama Sonrası BCD Düzelt)',
+    category: 'bcd',
+    summary: 'Paketli BCD (her nibble bir rakam, örn 25h = 25) toplama işleminden sonra AL yazmacını geçerli BCD formatına düzeltir.',
+    flags: 'CF (onluk taşma), ZF, SF, AF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'DAA',
+        description: 'ADD veya ADC komutunun hemen ardından AL\'yi BCD yapar.',
+        example: 'MOV AL, 35H     ; BCD 35\nADD AL, 48H     ; AL = 7Dh (geçersiz BCD)\nDAA             ; AL = 83H (35 + 48 = 83)',
+        note: 'Finans ve sayaç uygulamalarında ondalık aritmetik için kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'DAS',
+    name: 'Decimal Adjust for Subtraction (Çıkarma Sonrası BCD Düzelt)',
+    category: 'bcd',
+    summary: 'Paketli BCD çıkarma işleminden sonra AL\'yi onluk BCD formatına düzeltir.',
+    flags: 'CF (onluk borç), ZF, SF, AF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'DAS',
+        description: 'SUB veya SBB ardından AL\'yi düzeltir.',
+        example: 'MOV AL, 83H     ; BCD 83\nSUB AL, 48H     ; AL = 3Bh\nDAS             ; AL = 35H (83 - 48 = 35)',
+        note: 'Paketli BCD çıkarma için zorunludur.'
+      }
+    ]
+  },
+  {
+    opcode: 'AAA',
+    name: 'ASCII Adjust for Addition (Paketsiz BCD Toplama Düzelt)',
+    category: 'bcd',
+    summary: 'Paketsiz BCD (her baytta 1 rakam, örn: 09h) toplama sonrası AL ve AH\'yi onluk tabana göre ayarlar.',
+    flags: 'AF ve CF güncellenir.',
+    variations: [
+      {
+        syntax: 'AAA',
+        description: 'ADD ardından AL ve AH\'yi düzenler.',
+        example: 'MOV AX, 0\nMOV AL, 7\nADD AL, 8       ; AL = 0Fh\nAAA             ; AH = 1, AL = 5 (15)',
+        note: 'Rakam karakterlerini (ASCII) doğrudan toplarken kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'AAS',
+    name: 'ASCII Adjust for Subtraction',
+    category: 'bcd',
+    summary: 'Paketsiz BCD çıkarma sonrası AL ve AH\'yi düzenler.',
+    flags: 'AF ve CF güncellenir.',
+    variations: [
+      {
+        syntax: 'AAS',
+        description: 'SUB ardından paketsiz BCD borcunu AH\'ye yansıtır.',
+        example: 'MOV AX, 0103H   ; 13\nSUB AL, 8       ; AL = FBh\nAAS             ; AH = 0, AL = 5',
+        note: 'ASCII/Unpacked çıkarma düzelticisidir.'
+      }
+    ]
+  },
+  {
+    opcode: 'AAM',
+    name: 'ASCII Adjust for Multiplication',
+    category: 'bcd',
+    summary: 'Paketsiz iki rakamın çarpımından sonra AL değerini onluk basamaklara ayırır: AH = AL / 10, AL = AL % 10.',
+    flags: 'ZF, SF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'AAM',
+        description: 'MUL sonrasında AL\'yi iki haneli BCD (AH: onlar, AL: birler) yapar.',
+        example: 'MOV AL, 7\nMOV BL, 9\nMUL BL          ; AL = 63 (3Fh)\nAAM             ; AH = 6, AL = 3',
+        note: 'Herhangi bir baytı onlar ve birler basamağına ayırmak için de mükemmeldir.'
+      }
+    ]
+  },
+  {
+    opcode: 'AAD',
+    name: 'ASCII Adjust before Division',
+    category: 'bcd',
+    summary: 'Bölme öncesinde AH ve AL içindeki iki BCD basamağını tek ikilik sayıya birleştirir: AL = (AH * 10) + AL, AH = 0.',
+    flags: 'ZF, SF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'AAD',
+        description: 'DIV öncesinde iki basamaklı sayıyı bölmeye hazırlar.',
+        example: 'MOV AX, 0605H   ; 65\nAAD             ; AL = 65 (41h), AH = 0\nMOV BL, 5\nDIV BL          ; AL = 13',
+        note: 'AAM\'nin tam tersi işlemdir.'
+      }
+    ]
+  },
+
+  // --- MANTIK VE BİT KAYDIRMA ---
+  {
+    opcode: 'AND',
+    name: 'Logical AND (Mantıksal VE)',
+    category: 'logical',
+    summary: 'İki operandın bitlerini karşılıklı VE işlemine tabi tutar. Belirli bitleri maskelemek (sıfırlamak) için kullanılır.',
+    flags: 'CF=0, OF=0 yapılır. ZF, SF, PF sonuca göre güncellenir.',
+    variations: [
+      {
+        syntax: 'AND reg, reg / imm / [mem]',
+        description: 'Hedefin bitlerini kaynakla VE işlemine sokar.',
+        example: 'MOV AL, 11010110B\nAND AL, 00001111B ; AL = 00000110B (üst 4-bit sıfırlandı)',
+        note: 'Maskeleme işlemlerinde en temel komuttur.'
+      }
+    ]
+  },
+  {
+    opcode: 'OR',
+    name: 'Logical OR (Mantıksal VEYA)',
+    category: 'logical',
+    summary: 'İki operandın bitlerini VEYA işlemine sokar. Belirli bitleri 1 yapmak için kullanılır.',
+    flags: 'CF=0, OF=0 yapılır. ZF, SF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'OR reg, reg / imm / [mem]',
+        description: 'Bitleri 1 olarak set eder.',
+        example: 'MOV AL, 00100000B\nOR AL, 00000001B  ; AL = 00100001B (0. bit 1 yapıldı)',
+        note: 'Donanım portlarında bayrakları açmak için kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'XOR',
+    name: 'Logical Exclusive OR (Mantıksal ÖZEL VEYA)',
+    category: 'logical',
+    summary: 'Bitler farklıysa 1, aynıysa 0 üretir. Bir yazmacı kendi kendisiyle XOR\'lamak onu 0 yapar.',
+    flags: 'CF=0, OF=0 yapılır. ZF, SF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'XOR reg, reg',
+        description: 'Yazmacı en hızlı ve az yer kaplayan şekilde sıfırlar (MOV reg, 0 yerine tercih edilir).',
+        example: 'XOR AX, AX      ; AX = 0000h olur, ZF = 1 olur (2 bayt!)',
+        note: 'Şifreleme ve bit tersleme için de kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'NOT',
+    name: 'Logical NOT (Bire Tümleyen / Bitleri Tersle)',
+    category: 'logical',
+    summary: 'Operandın tüm bitlerini tersine çevirir (0 -> 1, 1 -> 0).',
+    flags: 'HİÇBİR bayrağı etkilemez.',
+    variations: [
+      {
+        syntax: 'NOT reg / [mem]',
+        description: 'Tüm bitleri tersler.',
+        example: 'MOV AL, 11110000B\nNOT AL          ; AL = 00001111B',
+        note: 'Bayrakları değiştirmediğine dikkat ediniz.'
+      }
+    ]
+  },
+  {
+    opcode: 'TEST',
+    name: 'Logical Compare (Bit Testi)',
+    category: 'logical',
+    summary: 'İki operandı mantıksal VE (AND) ile test eder. Sonucu kaydetmez, sadece bayrakları günceller.',
+    flags: 'CF=0, OF=0. ZF, SF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'TEST reg, reg / imm',
+        description: 'Belirli bir bitin 0 mı 1 mi olduğunu kontrol eder.',
+        example: 'TEST AL, 00000001B ; AL tek mi çift mi?\nJNZ TEK_SAYI    ; 0. bit 1 ise ZF=0 olur',
+        note: 'Yazmacın değerini bozmadan bayrak test eder.'
+      }
+    ]
+  },
+  {
+    opcode: 'SHL',
+    name: 'Shift Logical Left (Sola Kaydır)',
+    category: 'logical',
+    summary: 'Bitleri sola kaydırır. En sağdan 0 girer, en soldan çıkan bit Carry Flag (CF)\'ye gider. Sayıyı 2 ile çarpar.',
+    flags: 'CF (çıkan bit), ZF, SF, PF güncellenir. 1 bit kaydırmada OF güncellenir.',
+    rules: 'Kaydırma miktarı ya doğrudan 1 sabiti ya da CL yazmacı olmalıdır (8086 kuralı).',
+    variations: [
+      {
+        syntax: 'SHL reg, 1',
+        description: '1 bit sola kaydırır (2 ile çarpar).',
+        example: 'MOV AL, 5\nSHL AL, 1       ; AL = 10',
+        note: 'SAL (Shift Arithmetic Left) ile tamamen aynıdır.'
+      },
+      {
+        syntax: 'SHL reg, CL',
+        description: 'CL yazmacındaki değer kadar sola kaydırır.',
+        example: 'MOV AL, 3\nMOV CL, 2\nSHL AL, CL      ; AL = 12 (3 * 4)',
+        note: 'Birden fazla kaydırma için CL yazmacı zorunludur.'
+      }
+    ]
+  },
+  {
+    opcode: 'SHR',
+    name: 'Shift Logical Right (Mantıksal Sağa Kaydır)',
+    category: 'logical',
+    summary: 'İşaretsiz sayılar için sağa kaydırır. En soldan 0 girer, en sağdan çıkan bit CF\'ye gider. Sayıyı 2\'ye böler.',
+    flags: 'CF, ZF, SF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'SHR reg, 1 / CL',
+        description: 'Sağa kaydırır.',
+        example: 'MOV AL, 20\nSHR AL, 1       ; AL = 10',
+        note: 'İşaretsiz sayıların 2\'ye bölünmesinde kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'SAR',
+    name: 'Shift Arithmetic Right (Aritmetik Sağa Kaydır)',
+    category: 'logical',
+    summary: 'İşaretli sayılar için sağa kaydırır. En soldaki işaret biti (0 veya 1) KORUNUR! Negatif sayıların işaretini bozmadan 2\'ye böler.',
+    flags: 'CF, ZF, SF, PF güncellenir.',
+    variations: [
+      {
+        syntax: 'SAR reg, 1 / CL',
+        description: 'İşareti koruyarak sağa kaydırır.',
+        example: 'MOV AL, -8      ; AL = F8h\nSAR AL, 1       ; AL = -4 (FCh)',
+        note: 'İşaretli bölme için SHR yerine SAR kullanılmalıdır.'
+      }
+    ]
+  },
+  {
+    opcode: 'ROL',
+    name: 'Rotate Left (Sola Döndür)',
+    category: 'logical',
+    summary: 'Bitleri dairesel olarak sola döndürür. En soldan çıkan bit hem en sağa döner hem CF\'ye yazılır.',
+    flags: 'CF güncellenir.',
+    variations: [
+      {
+        syntax: 'ROL reg, 1 / CL',
+        description: 'Dairesel sola döndürme.',
+        example: 'MOV AL, 10000000B\nROL AL, 1       ; AL = 00000001B, CF = 1',
+        note: 'Hiçbir bit kaybolmaz.'
+      }
+    ]
+  },
+  {
+    opcode: 'ROR',
+    name: 'Rotate Right (Sağa Döndür)',
+    category: 'logical',
+    summary: 'Bitleri dairesel olarak sağa döndürür. En sağdan çıkan bit hem en başa döner hem CF\'ye yazılır.',
+    flags: 'CF güncellenir.',
+    variations: [
+      {
+        syntax: 'ROR reg, 1 / CL',
+        description: 'Dairesel sağa döndürme.',
+        example: 'MOV AL, 00000001B\nROR AL, 1       ; AL = 10000000B, CF = 1',
+        note: 'Bit rotasyonlarında kullanılır.'
+      }
+    ]
+  },
+
+  // --- ATLAMA VE DÖNGÜLER ---
+  {
+    opcode: 'JMP',
+    name: 'Jump (Koşulsuz Atlama)',
+    category: 'control',
+    summary: 'Program yürütmesini koşulsuz olarak belirtilen etikete/adrese yönlendirir.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'JMP label',
+        description: 'Etikete doğrudan atlar.',
+        example: 'JMP BASLA\n...\nBASLA:\n  MOV AX, 1',
+        note: 'Kısa (-128..+127) veya yakın (±32KB) atlama yapar.'
+      }
+    ]
+  },
+  {
+    opcode: 'JE / JZ',
+    name: 'Jump if Equal / Jump if Zero',
+    category: 'control',
+    summary: 'Son işlem sonucu sıfır ise veya karşılaştırılan iki değer eşitse atlar (ZF = 1).',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'JE label / JZ label',
+        description: 'ZF=1 durumunda atlar.',
+        example: 'CMP AX, BX\nJE ESITLER      ; AX == BX ise atlar',
+        note: 'JE ile JZ aynı makine koduna (74h) sahiptir.'
+      }
+    ]
+  },
+  {
+    opcode: 'JNE / JNZ',
+    name: 'Jump if Not Equal / Jump if Not Zero',
+    category: 'control',
+    summary: 'Son işlem sonucu sıfır değilse veya değerler eşit değilse atlar (ZF = 0).',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'JNE label / JNZ label',
+        description: 'ZF=0 durumunda atlar.',
+        example: 'DEC CX\nJNZ TEKRAR      ; CX sıfır olana kadar döner',
+        note: 'Döngü kurarken en sık kullanılan komuttur.'
+      }
+    ]
+  },
+  {
+    opcode: 'JA / JB / JAE / JBE',
+    name: 'Unsigned Conditional Jumps (İşaretsiz Koşullu Atlamalar)',
+    category: 'control',
+    summary: 'İşaretsiz sayılar için karşılaştırma atlamaları: JA (Büyükse), JB (Küçükse), JAE (Büyük-Eşit), JBE (Küçük-Eşit).',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'JA label  ; Büyükseniz (CF=0 ve ZF=0)\nJB label  ; Küçükse (CF=1)\nJAE label ; Büyük veya eşitse (CF=0)\nJBE label ; Küçük veya eşitse (CF=1 veya ZF=1)',
+        description: 'İşaretsiz karşılaştırmalarda kullanılır.',
+        example: 'CMP AL, 50\nJA ELLI_USTU    ; AL > 50 ise atlar',
+        note: 'Pozitif tam sayılarda daima JA/JB ailesi kullanılmalıdır.'
+      }
+    ]
+  },
+  {
+    opcode: 'JG / JL / JGE / JLE',
+    name: 'Signed Conditional Jumps (İşaretli Koşullu Atlamalar)',
+    category: 'control',
+    summary: 'İşaretli (+ / -) sayılar için atlamalar: JG (Büyükse), JL (Küçükse), JGE (Büyük-Eşit), JLE (Küçük-Eşit).',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'JG label  ; Büyükse (ZF=0 ve SF=OF)\nJL label  ; Küçükse (SF!=OF)\nJGE label ; Büyük veya eşitse (SF=OF)\nJLE label ; Küçük veya eşitse (ZF=1 veya SF!=OF)',
+        description: 'İşaretli sayılarda negatif/pozitif durumları doğru hesaplar.',
+        example: 'CMP AX, -10\nJL DAHA_KUCUK   ; AX < -10 ise atlar',
+        note: 'Negatif sayılarda JA/JB yerine mutlaka JG/JL ailesi kullanılmalıdır.'
+      }
+    ]
+  },
+  {
+    opcode: 'JCXZ',
+    name: 'Jump if CX is Zero',
+    category: 'control',
+    summary: 'CX yazmacı sıfır ise etikete atlar. CX bayrakları etkilemeden test edilmiş olur.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'JCXZ label',
+        description: 'Döngü öncesi sayaç sıfır mı kontrolü.',
+        example: 'JCXZ ATLA       ; CX=0 ise döngüye hiç girme\nDONGU:\n  LOOP DONGU\nATLA:',
+        note: 'LOOP komutunun 0 iken 65535 kez dönmesini engellemek için döngü başında kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'LOOP',
+    name: 'Loop (Döngü Adımı)',
+    category: 'control',
+    summary: 'CX yazmacını 1 azaltır. CX sıfır değilse (CX != 0) belirtilen etikete geri atlar. CX=0 olduğunda döngü sonlanır.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'LOOP label',
+        description: 'Otomatik CX sayaçlı döngü.',
+        example: 'MOV CX, 5\nDONGU:\n  ; Buradaki kod 5 kez çalışır\n  LOOP DONGU',
+        note: 'LOOP komutu en fazla -128..+127 bayt aralığına kısa atlama yapabilir.'
+      }
+    ]
+  },
+  {
+    opcode: 'LOOPE / LOOPNE',
+    name: 'Loop while Equal / Not Equal',
+    category: 'control',
+    summary: 'LOOPE/LOOPZ: CX 1 azalır; CX!=0 VE ZF==1 ise döner. LOOPNE/LOOPNZ: CX 1 azalır; CX!=0 VE ZF==0 ise döner.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'LOOPE label / LOOPNE label',
+        description: 'Hem sayaç hem bayrak koşullu döngü.',
+        example: 'MOV CX, 10\nARA:\n  CMP [SI], AL\n  LOOPE ARA     ; Eşit olduğu sürece devam et',
+        note: 'Dizilerde arama yaparken erken çıkış sağlar.'
+      }
+    ]
+  },
+  {
+    opcode: 'CALL',
+    name: 'Call Procedure (Altprogram Çağır)',
+    category: 'control',
+    summary: 'Dönüş adresini (bir sonraki komutun ofsetini) yığına PUSH eder ve altprogram etiketine atlar.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'CALL label',
+        description: 'Altprogram çağrısı.',
+        example: 'CALL TOPLA\n...\nTOPLA:\n  ADD AX, BX\n  RET',
+        note: 'Altprogram mutlaka RET ile sonlanmalıdır.'
+      }
+    ]
+  },
+  {
+    opcode: 'RET / RETN',
+    name: 'Return from Procedure (Altprogramdan Dön)',
+    category: 'control',
+    summary: 'Yığından dönüş adresini POP ederek IP\'ye yükler ve çağrıldığı satırın hemen sonrasından devam eder.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'RET',
+        description: 'Standart altprogram dönüşü.',
+        example: 'TOPLA:\n  ADD AX, BX\n  RET',
+        note: 'CALL ile yığına atılan IP adresini çeker.'
+      },
+      {
+        syntax: 'RET imm16',
+        description: 'Döndükten sonra yığından belirtilen bayt kadar parametre temizler (SP = SP + imm16).',
+        example: 'RET 4           ; Dönüşten sonra yığındaki 4 baytı (2 kelime) düşer',
+        note: 'Pascal/C çağrı standartlarında yığındaki parametreleri temizler.'
+      }
+    ]
+  },
+
+  // --- DİZİ (STRING) İŞLEMLERİ ---
+  {
+    opcode: 'MOVSB / MOVSW',
+    name: 'Move String Byte/Word (Dizi Elemanı Taşı)',
+    category: 'string',
+    summary: 'DS:SI adresindeki bayt/kelimeyi ES:DI adresine kopyalar. DF=0 ise SI ve DI artar, DF=1 ise azalır.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'MOVSB / MOVSW',
+        description: 'Bellekten belleğe blok veri kopyalama.',
+        example: 'LEA SI, KAYNAK\nLEA DI, HEDEF\nMOV CX, 10\nCLD             ; İleri yön\nREP MOVSB       ; 10 baytı peş peşe kopyalar',
+        note: 'REP öneki ile birlikte tam bellek kopyalama fonksiyonu görür.'
+      }
+    ]
+  },
+  {
+    opcode: 'LODSB / LODSW',
+    name: 'Load String Byte/Word',
+    category: 'string',
+    summary: 'DS:SI adresindeki baytı AL\'ye (veya kelimeyi AX\'e) okur, SI\'yi DF\'ye göre 1 veya 2 artırır/azaltır.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'LODSB / LODSW',
+        description: 'Diziden sıradaki elemanı çeker.',
+        example: 'LEA SI, METIN\nCLD\nLODSB           ; AL = sıradaki karakter, SI artar',
+        note: 'Dizi okuma döngülerinde çok pratiktir.'
+      }
+    ]
+  },
+  {
+    opcode: 'STOSB / STOSW',
+    name: 'Store String Byte/Word',
+    category: 'string',
+    summary: 'AL (veya AX) içindeki değeri ES:DI adresine yazar, DI\'yi DF\'ye göre artırır/azaltır.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'STOSB / STOSW',
+        description: 'Bellek bölgesini belirli bir değerle doldurur (memset).',
+        example: 'LEA DI, ALAN\nMOV AL, 0\nMOV CX, 100\nCLD\nREP STOSB       ; 100 baytı 0 ile sıfırlar',
+        note: 'Bellek temizleme işlemlerinde yüksek hız sağlar.'
+      }
+    ]
+  },
+  {
+    opcode: 'CMPSB / CMPSW',
+    name: 'Compare String Byte/Word',
+    category: 'string',
+    summary: 'DS:SI ile ES:DI adreslerindeki verileri karşılaştırır, bayrakları günceller ve SI/DI\'yi ilerletir.',
+    flags: 'Tüm bayraklar güncellenir.',
+    variations: [
+      {
+        syntax: 'REPE CMPSB',
+        description: 'İki metin veya bellek bloğunu eşit olduğu sürece karşılaştırır.',
+        example: 'REPE CMPSB      ; Karakterler eşit olduğu sürece ilerle',
+        note: 'strcmp fonksiyonunun donanımsal karşılığıdır.'
+      }
+    ]
+  },
+  {
+    opcode: 'SCASB / SCASW',
+    name: 'Scan String Byte/Word',
+    category: 'string',
+    summary: 'AL veya AX içindeki değeri ES:DI adresindeki değerle karşılaştırır, bayrakları günceller ve DI\'yi ilerletir.',
+    flags: 'Tüm bayraklar güncellenir.',
+    variations: [
+      {
+        syntax: 'REPNE SCASB',
+        description: 'Dizi içinde belirli bir karakteri arar (strchr).',
+        example: 'MOV AL, \'$\'\nREPNE SCASB     ; $ karakterini bulana kadar tara',
+        note: 'Metin sonu veya özel ayırıcı aramada kullanılır.'
+      }
+    ]
+  },
+
+  // --- BAYRAK VE SİSTEM KONTROL ---
+  {
+    opcode: 'CLC / STC / CMC',
+    name: 'Carry Flag Controls (Elde Bayrağı Kontrolleri)',
+    category: 'flags',
+    summary: 'CLC: CF = 0 yapar. STC: CF = 1 yapar. CMC: CF bayrağını tersler (CF = !CF).',
+    flags: 'Yalnızca CF güncellenir.',
+    variations: [
+      {
+        syntax: 'CLC ; Clear Carry\nSTC ; Set Carry\nCMC ; Complement Carry',
+        description: 'Elde bayrağını doğrudan yönetir.',
+        example: 'CLC             ; Toplama öncesi eldeyi sıfırla\nADC AX, BX',
+        note: 'Çok basamaklı aritmetik ve dönüş kodlarında kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'CLD / STD',
+    name: 'Direction Flag Controls (Yön Bayrağı Kontrolleri)',
+    category: 'flags',
+    summary: 'CLD: DF = 0 (Dizi komutları ileri/artan adreslere gider). STD: DF = 1 (Dizi komutları geri/azalan adreslere gider).',
+    flags: 'Yalnızca DF güncellenir.',
+    variations: [
+      {
+        syntax: 'CLD ; İleri yön (SI/DI artar)\nSTD ; Geri yön (SI/DI azalır)',
+        description: 'Dizi operasyonlarının yönünü tayin eder.',
+        example: 'CLD             ; Güvenlik için dizi komutundan önce verilir\nREP MOVSB',
+        note: 'MOVSB, STOSB vb. komutlardan önce mutlaka yön belirlenmelidir.'
+      }
+    ]
+  },
+  {
+    opcode: 'CLI / STI',
+    name: 'Interrupt Flag Controls (Kesme İzinleri)',
+    category: 'flags',
+    summary: 'CLI: Dış donanım kesmelerini devre dışı bırakır (IF=0). STI: Dış kesmeleri açar (IF=1).',
+    flags: 'Yalnızca IF güncellenir.',
+    variations: [
+      {
+        syntax: 'CLI ; Kesmeleri kapat\nSTI ; Kesmeleri aç',
+        description: 'Kritik kod bölümlerinde işlemcinin bölünmesini önler.',
+        example: 'CLI             ; Kritik bölüm başladı\n...\nSTI             ; Kritik bölüm bitti',
+        note: 'Gerçek mod sistem programlamasında kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'LAHF / SAHF',
+    name: 'Load/Store AH from/to Flags',
+    category: 'flags',
+    summary: 'LAHF: Düşük bayrakları (SF, ZF, AF, PF, CF) AH yazmacına kopyalar. SAHF: AH\'deki değerleri bayraklara yükler.',
+    flags: 'LAHF bayrakları etkilemez; SAHF SF, ZF, AF, PF, CF bayraklarını günceller.',
+    variations: [
+      {
+        syntax: 'LAHF / SAHF',
+        description: 'Bayrak durumunu kaydetmek ve geri yüklemek için hızlı yol.',
+        example: 'LAHF            ; Bayrakları AH\'ye al\n...\nSAHF            ; Bayrakları geri yükle',
+        note: '8080 işlemcisi ile uyumluluk için tasarlanmıştır.'
+      }
+    ]
+  },
+  {
+    opcode: 'NOP',
+    name: 'No Operation (Boş Komut)',
+    category: 'flags',
+    summary: 'İşlemciye hiçbir işlem yaptırmaz (XCHG AX, AX olarak kodlanır). 1 makine döngüsü harcar.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'NOP',
+        description: '1 baytlık yer tutar veya küçük gecikme sağlar.',
+        example: 'NOP             ; 1 bayt 90h opkodu',
+        note: 'Hizalama veya kod yamalarında kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'HLT',
+    name: 'Halt Processor (İşlemciyi Durdur)',
+    category: 'flags',
+    summary: 'İşlemciyi harici bir kesme (interrupt) veya reset gelene kadar duraklatır.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'HLT',
+        description: 'Program yürütmesini sonlandırır.',
+        example: 'MOV AX, 1\nHLT             ; Simülatör burada durur',
+        note: 'Simülatörde programın bittiğini bildiren standart komuttur.'
+      }
+    ]
+  },
+  {
+    opcode: 'INT',
+    name: 'Software Interrupt (Yazılımsal Kesme)',
+    category: 'flags',
+    summary: 'Belirtilen kesme vektörünü (0-255) çağırır. DOS ve BIOS servislerine erişim sağlar.',
+    flags: 'IF ve TF sıfırlanır, bayraklar ve CS:IP yığına atılır.',
+    variations: [
+      {
+        syntax: 'INT 21H',
+        description: 'DOS Sistem Çağrısı (AH fonksiyon koduna göre çalışır).',
+        example: 'MOV AH, 09H     ; String yazdırma servisi\nMOV DX, OFFSET MESAJ\nINT 21H\n\nMOV AH, 4CH     ; Programdan çıkış servisi\nINT 21H',
+        note: 'Simülatörümüzde AH=09h (ekrana metin yazma) ve AH=4Ch (çıkış) desteklenir.'
+      },
+      {
+        syntax: 'INT 3',
+        description: 'Hata ayıklayıcı kesme noktası (Breakpoint).',
+        example: 'INT 3',
+        note: '1 baytlık özel CC opkoduna sahiptir.'
+      }
+    ]
+  },
+
+  // --- YÖNERGELER (DIRECTIVES) ---
+  {
+    opcode: 'ORG',
+    name: 'Origin Directive (Başlangıç Adresi)',
+    category: 'directives',
+    summary: 'Programın bellekteki yerleşim ofsetini belirler. DOS COM dosyaları için zorunlu başlangıç 100h\'dir.',
+    flags: 'Bayrakları etkilemez (Assembler yönergesidir).',
+    variations: [
+      {
+        syntax: 'ORG 100H',
+        description: 'Programı CS:0100h ofsetine yerleştirir.',
+        example: 'ORG 100H\nSTART:\n  MOV AX, 5',
+        note: 'İlk 256 bayt (00h-FFh) DOS PSP (Program Segment Prefix) için ayrılmıştır.'
+      }
+    ]
+  },
+  {
+    opcode: 'DB / DW',
+    name: 'Define Byte / Define Word (Veri Tanımlama)',
+    category: 'directives',
+    summary: 'DB: 8-bitlik bayt verileri veya stringleri tanımlar. DW: 16-bitlik kelime verilerini tanımlar.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'label DB val1, val2, ... / \'string\'',
+        description: 'Bayt dizisi veya metin tanımlar.',
+        example: 'SAYILAR DB 5, 12, 8, 25\nMESAJ DB \'Merhaba Dünya$\'',
+        note: 'Stringler tek veya çift tırnak ile tanımlanır.'
+      },
+      {
+        syntax: 'label DW val1, val2, ...',
+        description: '16-bitlik kelime dizisi tanımlar.',
+        example: 'TABLO DW 1000H, 2000H, 3000H',
+        note: 'Intel 8086 Little-Endian formatında (düşük bayt önce) saklanır.'
+      }
+    ]
+  },
+  {
+    opcode: 'DUP',
+    name: 'Duplicate Directive (Tekrarlı Veri)',
+    category: 'directives',
+    summary: 'DB veya DW ile birlikte belirli sayıda ardışık alanı başlatmak veya boş bırakmak için kullanılır.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'count DUP(val)',
+        description: 'Belirtilen sayıda aynı değerden üretir.',
+        example: 'DIZI DB 10 DUP(0)    ; 10 baytlık sıfır dizisi\nYIGIN DW 32 DUP(?)   ; 32 kelimelik yığın alanı',
+        note: 'Dizi tamponları ve yığın alanları tanımlarken kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'OFFSET',
+    name: 'Offset Operator (Ofset Operatörü)',
+    category: 'directives',
+    summary: 'Bir etiketin veri segmenti içindeki 16-bit ofset adresini döner.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'OFFSET label',
+        description: 'Etiketin sayısal ofset adresini döndürür.',
+        example: 'MOV DX, OFFSET METIN ; LEA DX, METIN ile eşdeğerdir',
+        note: 'INT 21H çağrılarında string adresini DX\'e yüklemek için çok sık kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'BYTE / WORD PTR',
+    name: 'Type Override Operators (Boyut Belirleyiciler)',
+    category: 'directives',
+    summary: 'Bellek operasyonlarında hedefin boyutunun belirsiz olduğu durumlarda bayt mı (8-bit) kelime mi (16-bit) olduğunu açıkça belirtir.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'BYTE PTR [mem] / WORD PTR [mem]',
+        description: 'Bellek boyutunu belirler.',
+        example: 'MOV BYTE PTR [BX], 0FFH   ; 1 bayt yazar\nMOV WORD PTR [BX], 0FFH   ; 2 bayt yazar (00FFh)',
+        note: 'Derleyicinin operand boyutu hatası (ambiguous operand size) vermesini engeller.'
+      }
+    ]
+  }
+];

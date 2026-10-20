@@ -1,24 +1,30 @@
 import { Token, Lexer } from './lexer.js';
 import { Operand, OperandParser } from './operands.js';
 
-export type DirectiveType = 'ORG' | 'DB' | 'DW';
+export type DirectiveType = 'ORG' | 'DB' | 'DW' | 'EQU';
 
 export interface DupItem {
   count: number;
   values: (number | string)[];
 }
 
-export type DataItem = number | string | DupItem;
+export interface LabelItem {
+  label: string;
+}
+
+export type DataItem = number | string | DupItem | LabelItem;
 
 export interface ParsedInstruction {
   mnemonic: string;
   operands: Operand[];
+  prefixBytes?: number[];
 }
 
 export interface ParsedDirective {
   type: DirectiveType;
   items: DataItem[];
   orgValue?: number;
+  equValue?: number;
 }
 
 export interface ParsedLine {
@@ -81,6 +87,30 @@ export class Parser {
       };
     }
 
+    // Check for EQU directive
+    if (keyword === 'EQU') {
+      if (!label) {
+        throw new Error(`EQU direktifi bir etiket adı gerektirir, satır: ${lineNumber}`);
+      }
+      const remaining = tokens.slice(tokenIdx);
+      if (remaining.length === 0) {
+        throw new Error(`EQU değeri eksik, satır: ${lineNumber}`);
+      }
+      const numTok = remaining[0];
+      if (numTok.type !== 'NUMBER' || numTok.value === undefined) {
+        throw new Error(`EQU sabit bir sayı değeri bekler, satır: ${lineNumber}`);
+      }
+      return {
+        lineNumber,
+        label,
+        directive: {
+          type: 'EQU',
+          items: [numTok.value],
+          equValue: numTok.value
+        }
+      };
+    }
+
     // Check for DB or DW directives
     if (keyword === 'DB' || keyword === 'DW') {
       const items = this.parseDataItems(tokens.slice(tokenIdx), lineNumber);
@@ -94,8 +124,19 @@ export class Parser {
       };
     }
 
-    // Otherwise, treat as Instruction
-    const mnemonic = keyword;
+    // Check for instruction prefix (REP, REPE, REPZ, REPNE, REPNZ)
+    let prefixBytes: number[] | undefined;
+    let mnemonic = keyword;
+
+    if (['REP', 'REPE', 'REPZ', 'REPNE', 'REPNZ'].includes(keyword)) {
+      prefixBytes = (keyword === 'REPNE' || keyword === 'REPNZ') ? [0xF2] : [0xF3];
+      if (tokenIdx >= tokens.length) {
+        throw new Error(`Prefix '${keyword}' sonrasında komut bekleniyor, satır: ${lineNumber}`);
+      }
+      mnemonic = tokens[tokenIdx].text.toUpperCase();
+      tokenIdx++;
+    }
+
     const operandTokensList: Token[][] = [];
     let currentOpTokens: Token[] = [];
 
@@ -126,7 +167,8 @@ export class Parser {
       label,
       instruction: {
         mnemonic,
-        operands
+        operands,
+        prefixBytes
       }
     };
   }
@@ -179,6 +221,9 @@ export class Parser {
           items.push(tok.value);
           i++;
         }
+      } else if (tok.type === 'IDENTIFIER') {
+        items.push({ label: tok.text });
+        i++;
       } else if (tok.text === '?') {
         items.push(0);
         i++;
