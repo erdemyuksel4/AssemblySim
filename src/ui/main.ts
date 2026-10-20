@@ -5,7 +5,7 @@ import { RegisterPanel } from './registerPanel.js';
 import { MemoryView } from './memoryView.js';
 import { TooltipManager } from './tooltip.js';
 
-export type ExecutionSpeed = 'slow' | 'med' | 'fast';
+export type ExecutionSpeed = '0.5' | '1' | '2';
 
 const DEFAULT_CODE = `ORG 100H
 
@@ -26,7 +26,7 @@ export class App {
   private ipToLineMap: Map<number, number> = new Map();
   private isRunning: boolean = false;
   private runTimer: number | null = null;
-  private currentSpeed: ExecutionSpeed = 'med';
+  private currentSpeed: ExecutionSpeed = '1';
 
   constructor() {
     this.cpu = new CPU();
@@ -59,12 +59,12 @@ export class App {
                 <span class="info-btn" data-info-title="Sayı Formatı Seçici" data-info-desc="Yazmaç değerlerini Onaltılık (HEX), Onluk (DEC) veya İkilik (BIN) tabanda görüntüler." tabindex="-1">i</span>
               </div>
 
-              <!-- Speed Switch (1x / 5x / MAX) -->
+              <!-- Speed Switch (0.5x / 1x / 2x) -->
               <div class="speed-switch-group">
-                <button class="btn-speed" data-speed="slow" title="Yavaş (500ms)">1x</button>
-                <button class="btn-speed active" data-speed="med" title="Orta Hız (120ms)">5x</button>
-                <button class="btn-speed" data-speed="fast" title="Hızlı (25ms)">MAX</button>
-                <span class="info-btn" data-info-title="Çalışma Hızı" data-info-desc="RUN ile çalıştırma hızını ayarlar. 1x: Adımları ve yazmaç değişimlerini gözlemlemek için yavaş (500ms), 5x: Normal hız (120ms), MAX: Kesintisiz hızlı (25ms)." tabindex="-1">i</span>
+                <button class="btn-speed" data-speed="0.5" title="0.5x Yavaş (600ms)">0.5x</button>
+                <button class="btn-speed active" data-speed="1" title="1x Normal Hız (300ms)">1x</button>
+                <button class="btn-speed" data-speed="2" title="2x Hızlı (100ms)">2x</button>
+                <span class="info-btn" data-info-title="Çalışma Hızı" data-info-desc="RUN ile çalıştırma hızını ayarlar. 0.5x: Yavaş adım (600ms), 1x: Normal hız (300ms), 2x: Hızlı adım (100ms)." tabindex="-1">i</span>
               </div>
 
               <button id="btn-compile" class="btn-compile">COMPILE</button>
@@ -137,12 +137,12 @@ export class App {
       });
     });
 
-    // Speed Switch buttons (1x, 5x, MAX)
+    // Speed Switch buttons (0.5x, 1x, 2x)
     document.querySelectorAll('.btn-speed').forEach((btn) => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.btn-speed').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
-        this.currentSpeed = (btn.getAttribute('data-speed') as ExecutionSpeed) || 'med';
+        this.currentSpeed = (btn.getAttribute('data-speed') as ExecutionSpeed) || '1';
       });
     });
 
@@ -253,9 +253,9 @@ export class App {
     if (btnNext) btnNext.disabled = true;
 
     const getDelay = (): number => {
-      if (this.currentSpeed === 'slow') return 500;
-      if (this.currentSpeed === 'med') return 120;
-      return 25;
+      if (this.currentSpeed === '0.5') return 600;
+      if (this.currentSpeed === '2') return 100;
+      return 300; // '1' (default 1x)
     };
 
     const loop = () => {
