@@ -36,10 +36,6 @@ export class Editor {
           <pre class="editor-highlight" id="editor-highlight" aria-hidden="true"></pre>
           <textarea class="editor-textarea" id="editor-textarea" spellcheck="false" autocomplete="off"></textarea>
         </div>
-        <div class="editor-side-tools">
-          <button class="tool-icon-btn" id="btn-copy-code" title="Kodu Kopyala">📋</button>
-          <button class="tool-icon-btn" id="btn-clear-code" title="Temizle">🗑️</button>
-        </div>
       </div>
       <div class="errors-box" id="editor-errors-box">
         <div class="errors-header">Errors:</div>
@@ -90,14 +86,6 @@ export class Editor {
         const line = parseInt(target.getAttribute('data-line') || '0', 10);
         if (line > 0) this.toggleBreakpoint(line);
       }
-    });
-
-    this.container.querySelector('#btn-copy-code')?.addEventListener('click', () => {
-      navigator.clipboard.writeText(this.textarea.value);
-    });
-
-    this.container.querySelector('#btn-clear-code')?.addEventListener('click', () => {
-      this.setCode('');
     });
   }
 

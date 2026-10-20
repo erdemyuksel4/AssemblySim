@@ -20,7 +20,7 @@ export class App {
     this.cpu = new CPU();
     this.initLayout();
     this.initModules();
-    this.loadSample(SAMPLES[0]); // Load acceptance test by default
+    this.loadSample(SAMPLES[0]); // Acceptance test default
   }
 
   private initLayout(): void {
@@ -28,32 +28,20 @@ export class App {
     if (!appEl) throw new Error('#app root missing');
 
     appEl.innerHTML = `
-      <!-- Top Navbar -->
-      <nav class="app-navbar">
-        <div class="brand-title">8086 Compiler</div>
-        <div class="nav-actions">
-          <button class="nav-icon-btn" id="btn-nav-help" title="Yardım">❔</button>
-          <button class="nav-icon-btn" id="btn-nav-console" title="Konsol / Çıktı">💻</button>
-          <button class="nav-icon-btn" id="btn-nav-info" title="Hakkında">ℹ️</button>
-          <button class="nav-icon-btn" id="btn-nav-theme" title="Açık / Koyu Tema">☀️</button>
-        </div>
-      </nav>
-
-      <!-- Main Layout -->
       <main class="main-layout">
         <!-- Left Section: Code Editor -->
         <section class="editor-section">
           <div class="editor-header-bar">
             <h2 class="editor-title">Code Editor</h2>
             <div class="editor-toolbar-right">
-              <select id="sample-select" class="sample-select" title="Hazır Örnek Kodlar">
+              <select id="sample-select" class="sample-select" title="Örnek Programlar">
                 ${SAMPLES.map((s, idx) => `<option value="${idx}">${s.name}</option>`).join('')}
               </select>
               <button id="btn-compile" class="btn-compile">COMPILE</button>
               <button id="btn-run" class="btn-ctrl">RUN</button>
               <button id="btn-next" class="btn-ctrl">NEXT</button>
               <button id="btn-stop" class="btn-ctrl" disabled>STOP</button>
-              <button id="btn-step-back" class="btn-ctrl btn-step-back" title="Bir adım geri al" disabled>↶</button>
+              <button id="btn-step-back" class="btn-ctrl btn-step-back" title="Geri Adım Al (Step Back)" disabled>↶</button>
             </div>
           </div>
 
@@ -66,38 +54,7 @@ export class App {
           <div id="memory-container"></div>
         </section>
       </main>
-
-      <!-- Floating Greeting Bubble -->
-      <div class="floating-greeting" id="greeting-bubble">
-        <div>
-          <strong>Hello pal... Greetings!</strong><br />
-          8086 Assembly Simülatörüne hoş geldiniz. Kodunuzu yazıp <strong>COMPILE</strong> ve <strong>NEXT</strong> ile adım adım çalıştırabilirsiniz.
-        </div>
-        <button class="btn-close-bubble" id="btn-close-bubble" title="Kapat">✕</button>
-      </div>
     `;
-
-    // Greeting bubble close
-    appEl.querySelector('#btn-close-bubble')?.addEventListener('click', () => {
-      const bubble = document.getElementById('greeting-bubble');
-      if (bubble) bubble.style.display = 'none';
-    });
-
-    // Theme toggle
-    appEl.querySelector('#btn-nav-theme')?.addEventListener('click', () => {
-      const current = document.body.getAttribute('data-theme');
-      document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
-    });
-
-    // Info modal alert
-    appEl.querySelector('#btn-nav-info')?.addEventListener('click', () => {
-      alert("8086 Web Assembly IDE & Simulator\nReal Mode 16-bit Intel 8086 Emulator\n%100 saf istemci taraflı gerçek makine kodu üretimi.");
-    });
-
-    // Help modal alert
-    appEl.querySelector('#btn-nav-help')?.addEventListener('click', () => {
-      alert("Kullanım İpuçları:\n- COMPILE: Kodu derler ve CS:0100h'a yükler.\n- NEXT: Tek bir komut işletir (F10).\n- RUN / STOP: Sürekli çalıştırır veya durdurur.\n- Bellekte satıra tıklayarak adrese gidebilirsiniz.");
-    });
   }
 
   private initModules(): void {
@@ -244,7 +201,7 @@ export class App {
       this.syncActiveLine();
       this.updateViews();
 
-      this.runTimer = window.setTimeout(loop, 40); // ~25 Hz
+      this.runTimer = window.setTimeout(loop, 40);
     };
 
     loop();
