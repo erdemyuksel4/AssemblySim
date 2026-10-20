@@ -9,7 +9,8 @@ export class Editor {
   private container: HTMLElement;
   private textarea!: HTMLTextAreaElement;
   private highlightLayer!: HTMLElement;
-  private lineNumbersLayer!: HTMLElement;
+  private gutterLayer!: HTMLElement;
+  private errorsBox!: HTMLElement;
 
   private activeLine: number | null = null;
   private breakpoints: Set<number> = new Set();
@@ -29,18 +30,27 @@ export class Editor {
 
   private render(): void {
     this.container.innerHTML = `
-      <div class="editor-wrapper">
-        <div class="editor-line-numbers" id="editor-gutter"></div>
-        <div class="editor-code-container">
+      <div class="editor-card">
+        <div class="editor-gutter" id="editor-gutter"></div>
+        <div class="editor-body">
           <pre class="editor-highlight" id="editor-highlight" aria-hidden="true"></pre>
-          <textarea class="editor-textarea" id="editor-textarea" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+          <textarea class="editor-textarea" id="editor-textarea" spellcheck="false" autocomplete="off"></textarea>
         </div>
+        <div class="editor-side-tools">
+          <button class="tool-icon-btn" id="btn-copy-code" title="Kodu Kopyala">📋</button>
+          <button class="tool-icon-btn" id="btn-clear-code" title="Temizle">🗑️</button>
+        </div>
+      </div>
+      <div class="errors-box" id="editor-errors-box">
+        <div class="errors-header">Errors:</div>
+        <div class="errors-content" id="errors-content">No errors.</div>
       </div>
     `;
 
-    this.lineNumbersLayer = this.container.querySelector('#editor-gutter') as HTMLElement;
+    this.gutterLayer = this.container.querySelector('#editor-gutter') as HTMLElement;
     this.highlightLayer = this.container.querySelector('#editor-highlight') as HTMLElement;
     this.textarea = this.container.querySelector('#editor-textarea') as HTMLTextAreaElement;
+    this.errorsBox = this.container.querySelector('#editor-errors-box') as HTMLElement;
 
     this.attachEvents();
   }
@@ -49,18 +59,17 @@ export class Editor {
     const syncScroll = () => {
       this.highlightLayer.scrollTop = this.textarea.scrollTop;
       this.highlightLayer.scrollLeft = this.textarea.scrollLeft;
-      this.lineNumbersLayer.scrollTop = this.textarea.scrollTop;
+      this.gutterLayer.scrollTop = this.textarea.scrollTop;
     };
 
     this.textarea.addEventListener('scroll', syncScroll);
 
     this.textarea.addEventListener('input', () => {
       this.updateHighlighting();
-      this.updateLineNumbers();
+      this.updateGutter();
       this.onCodeChange?.(this.textarea.value);
     });
 
-    // Support Tab key in textarea
     this.textarea.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Tab') {
         e.preventDefault();
@@ -70,20 +79,25 @@ export class Editor {
         this.textarea.value = val.substring(0, start) + '  ' + val.substring(end);
         this.textarea.selectionStart = this.textarea.selectionEnd = start + 2;
         this.updateHighlighting();
-        this.updateLineNumbers();
+        this.updateGutter();
         this.onCodeChange?.(this.textarea.value);
       }
     });
 
-    // Breakpoint toggling on line numbers
-    this.lineNumbersLayer.addEventListener('click', (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).closest('.line-number-cell');
+    this.gutterLayer.addEventListener('click', (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('.gutter-row');
       if (target) {
         const line = parseInt(target.getAttribute('data-line') || '0', 10);
-        if (line > 0) {
-          this.toggleBreakpoint(line);
-        }
+        if (line > 0) this.toggleBreakpoint(line);
       }
+    });
+
+    this.container.querySelector('#btn-copy-code')?.addEventListener('click', () => {
+      navigator.clipboard.writeText(this.textarea.value);
+    });
+
+    this.container.querySelector('#btn-clear-code')?.addEventListener('click', () => {
+      this.setCode('');
     });
   }
 
@@ -94,21 +108,16 @@ export class Editor {
   setCode(code: string): void {
     this.textarea.value = code;
     this.updateHighlighting();
-    this.updateLineNumbers();
+    this.updateGutter();
   }
 
   setActiveLine(line: number | null): void {
     this.activeLine = line;
-    this.updateLineNumbers();
+    this.updateGutter();
     this.updateHighlighting();
     if (line !== null) {
       this.scrollToLine(line);
     }
-  }
-
-  setBreakpoints(lines: number[]): void {
-    this.breakpoints = new Set(lines);
-    this.updateLineNumbers();
   }
 
   toggleBreakpoint(line: number): void {
@@ -119,7 +128,7 @@ export class Editor {
       this.breakpoints.add(line);
       active = true;
     }
-    this.updateLineNumbers();
+    this.updateGutter();
     this.onBreakpointToggle?.(line, active);
   }
 
@@ -127,27 +136,42 @@ export class Editor {
     return this.breakpoints.has(line);
   }
 
-  getBreakpoints(): number[] {
-    return Array.from(this.breakpoints);
-  }
-
   setErrors(errors: { line: number; message: string }[]): void {
     this.errors.clear();
+    const content = this.container.querySelector('#errors-content') as HTMLElement;
+    if (errors.length === 0) {
+      this.clearErrors();
+      return;
+    }
+
+    let text = '';
     for (const err of errors) {
       this.errors.set(err.line, err.message);
+      text += `Syntax Error at line ${err.line} : ${err.message}\n`;
     }
-    this.updateLineNumbers();
+
+    if (content) {
+      content.className = 'errors-content';
+      content.textContent = text;
+    }
+
+    this.updateGutter();
     this.updateHighlighting();
   }
 
   clearErrors(): void {
     this.errors.clear();
-    this.updateLineNumbers();
+    const content = this.container.querySelector('#errors-content') as HTMLElement;
+    if (content) {
+      content.className = 'errors-content status-ok';
+      content.textContent = 'Compiled successfully with zero errors.';
+    }
+    this.updateGutter();
     this.updateHighlighting();
   }
 
   private scrollToLine(line: number): void {
-    const lineHeight = 21; // approximate line height in px
+    const lineHeight = 22;
     const targetScroll = (line - 1) * lineHeight - 60;
     this.textarea.scrollTo({
       top: Math.max(0, targetScroll),
@@ -155,7 +179,7 @@ export class Editor {
     });
   }
 
-  private updateLineNumbers(): void {
+  private updateGutter(): void {
     const lines = this.textarea.value.split('\n');
     let html = '';
 
@@ -164,24 +188,22 @@ export class Editor {
       const isActive = this.activeLine === i;
       const errorMsg = this.errors.get(i);
 
-      let classes = 'line-number-cell';
-      if (isActive) classes += ' active-line';
-      if (isBP) classes += ' has-breakpoint';
+      let classes = 'gutter-row';
+      if (isActive) classes += ' active-ip-row';
+      if (isBP) classes += ' has-bp';
       if (errorMsg) classes += ' has-error';
 
-      const tooltip = errorMsg ? `title="${this.escapeHtml(errorMsg)}"` : '';
-
       html += `
-        <div class="${classes}" data-line="${i}" ${tooltip}>
-          <span class="bp-dot"></span>
-          <span class="active-arrow">▶</span>
-          <span class="num-text">${i}</span>
-          ${errorMsg ? '<span class="error-badge">!</span>' : ''}
+        <div class="${classes}" data-line="${i}" title="${errorMsg || ''}">
+          <span class="gutter-bp-dot"></span>
+          <span class="gutter-arrow">▶</span>
+          ${errorMsg ? '<span class="gutter-err-icon">⊗</span>' : ''}
+          <span class="gutter-num">${i}</span>
         </div>
       `;
     }
 
-    this.lineNumbersLayer.innerHTML = html;
+    this.gutterLayer.innerHTML = html;
   }
 
   private updateHighlighting(): void {
@@ -194,15 +216,14 @@ export class Editor {
       const isActive = this.activeLine === lineNum;
       const hasError = this.errors.has(lineNum);
 
-      let rowClass = 'code-line';
-      if (isActive) rowClass += ' active-code-row';
-      if (hasError) rowClass += ' error-code-row';
+      let rowClass = 'editor-line-row';
+      if (isActive) rowClass += ' active-code-line';
+      if (hasError) rowClass += ' error-code-line';
 
       const colored = this.highlightSyntax(lineText);
       highlightedHtml += `<div class="${rowClass}">${colored || ' '}</div>`;
     }
 
-    // append trailing newline dummy if empty
     this.highlightLayer.innerHTML = highlightedHtml + '\n';
   }
 
@@ -218,11 +239,12 @@ export class Editor {
       'NOP', 'HLT', 'AND', 'OR', 'XOR', 'NOT', 'NEG', 'TEST', 'SHL', 'SHR', 'SAL',
       'SAR', 'ROL', 'ROR', 'RCL', 'RCR', 'XCHG', 'PUSH', 'POP', 'PUSHF', 'POPF',
       'CALL', 'RET', 'RETN', 'MUL', 'DIV', 'IMUL', 'IDIV', 'INT', 'MOVSB', 'MOVSW',
-      'STOSB', 'STOSW', 'LODSB', 'LODSW', 'REP', 'REPNZ', 'REPZ'
+      'STOSB', 'STOSW', 'LODSB', 'LODSW', 'REP', 'REPNZ', 'REPZ', 'CLC', 'STC',
+      'CMC', 'CLD', 'STD', 'CLI', 'STI', 'CBW', 'CWD', 'LAHF', 'SAHF', 'XLAT', 'XLATB',
+      'DAA', 'DAS', 'AAA', 'AAS', 'AAM', 'AAD', 'LDS', 'LES', 'IN', 'OUT'
     ]);
 
     const directives = new Set(['ORG', 'DB', 'DW', 'DUP', 'OFFSET', 'BYTE', 'WORD', 'PTR']);
-
     const registers = new Set([
       'AX', 'BX', 'CX', 'DX', 'SI', 'DI', 'BP', 'SP', 'IP',
       'CS', 'DS', 'ES', 'SS',
@@ -232,14 +254,11 @@ export class Editor {
     while (i < len) {
       const ch = line[i];
 
-      // Comment: from ';' to end of line
       if (ch === ';') {
-        const comment = line.substring(i);
-        result += `<span class="syntax-comment">${this.escapeHtml(comment)}</span>`;
+        result += `<span class="hl-comment">${this.escapeHtml(line.substring(i))}</span>`;
         break;
       }
 
-      // String literal: '...' or "..."
       if (ch === "'" || ch === '"') {
         const quote = ch;
         let str = quote;
@@ -252,11 +271,10 @@ export class Editor {
           str += line[i];
           i++;
         }
-        result += `<span class="syntax-string">${this.escapeHtml(str)}</span>`;
+        result += `<span class="hl-string">${this.escapeHtml(str)}</span>`;
         continue;
       }
 
-      // Identifier / Keyword / Number
       if (/[a-zA-Z0-9_$.?]/.test(ch)) {
         let word = '';
         while (i < len && /[a-zA-Z0-9_$.?]/.test(line[i])) {
@@ -266,25 +284,23 @@ export class Editor {
 
         const upper = word.toUpperCase();
 
-        // Check if label declaration (followed by ':')
         if (i < len && line[i] === ':') {
-          result += `<span class="syntax-label">${this.escapeHtml(word)}:</span>`;
-          i++; // consume ':'
+          result += `<span class="hl-label">${this.escapeHtml(word)}:</span>`;
+          i++;
         } else if (opcodes.has(upper)) {
-          result += `<span class="syntax-opcode">${this.escapeHtml(word)}</span>`;
+          result += `<span class="hl-opcode">${this.escapeHtml(word)}</span>`;
         } else if (directives.has(upper)) {
-          result += `<span class="syntax-directive">${this.escapeHtml(word)}</span>`;
+          result += `<span class="hl-directive">${this.escapeHtml(word)}</span>`;
         } else if (registers.has(upper)) {
-          result += `<span class="syntax-register">${this.escapeHtml(word)}</span>`;
+          result += `<span class="hl-reg">${this.escapeHtml(word)}</span>`;
         } else if (/^[0-9][0-9A-Fa-f]*[Hh]?$/.test(word) || /^[+-]?[0-9]+$/.test(word) || /^[01]+[Bb]$/.test(word)) {
-          result += `<span class="syntax-number">${this.escapeHtml(word)}</span>`;
+          result += `<span class="hl-number">${this.escapeHtml(word)}</span>`;
         } else {
-          result += `<span class="syntax-identifier">${this.escapeHtml(word)}</span>`;
+          result += this.escapeHtml(word);
         }
         continue;
       }
 
-      // Other symbols
       result += this.escapeHtml(ch);
       i++;
     }
@@ -296,7 +312,6 @@ export class Editor {
     return str
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/>/g, '&gt;');
   }
 }

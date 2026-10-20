@@ -1,245 +1,206 @@
-import { CPU, CpuStepInfo } from '../cpu/cpu.js';
-import { Assembler, AsmResult, ListingItem } from '../assembler/assembler.js';
+import { CPU } from '../cpu/cpu.js';
+import { Assembler, AsmResult } from '../assembler/assembler.js';
 import { Editor } from './editor.js';
 import { RegisterPanel } from './registerPanel.js';
 import { MemoryView } from './memoryView.js';
-import { ListingView } from './listingView.js';
-import { StackView } from './stackView.js';
-import { ConsoleView } from './console.js';
-import { Toolbar } from './toolbar.js';
-import { SAMPLES, CodeSample } from './samples.js';
+import { SAMPLES } from './samples.js';
 
 export class App {
   private cpu: CPU;
   private editor!: Editor;
   private registerPanel!: RegisterPanel;
   private memoryView!: MemoryView;
-  private listingView!: ListingView;
-  private stackView!: StackView;
-  private consoleView!: ConsoleView;
-  private toolbar!: Toolbar;
 
   private currentAsmResult: AsmResult | null = null;
   private ipToLineMap: Map<number, number> = new Map();
   private isRunning: boolean = false;
   private runTimer: number | null = null;
-  private speedHz: number = 30;
-
-  private activeTab: 'memory' | 'listing' | 'stack' = 'memory';
 
   constructor() {
     this.cpu = new CPU();
     this.initLayout();
     this.initModules();
-    this.attachShortcuts();
     this.loadSample(SAMPLES[0]); // Load acceptance test by default
   }
 
   private initLayout(): void {
     const appEl = document.getElementById('app');
-    if (!appEl) throw new Error('#app root container missing');
+    if (!appEl) throw new Error('#app root missing');
 
     appEl.innerHTML = `
-      <div class="ide-root">
-        <!-- Top Toolbar -->
-        <header id="toolbar-container" class="ide-toolbar-pane"></header>
+      <!-- Top Navbar -->
+      <nav class="app-navbar">
+        <div class="brand-title">8086 Compiler</div>
+        <div class="nav-actions">
+          <button class="nav-icon-btn" id="btn-nav-help" title="Yardım">❔</button>
+          <button class="nav-icon-btn" id="btn-nav-console" title="Konsol / Çıktı">💻</button>
+          <button class="nav-icon-btn" id="btn-nav-info" title="Hakkında">ℹ️</button>
+          <button class="nav-icon-btn" id="btn-nav-theme" title="Açık / Koyu Tema">☀️</button>
+        </div>
+      </nav>
 
-        <!-- Main Workspace (2 columns) -->
-        <main class="ide-workspace">
-          <!-- Left Column: Code Editor & Console -->
-          <section class="ide-left-pane">
-            <div class="pane-header">
-              <span class="pane-title">KOD EDİTÖRÜ (16-BIT REAL MODE COM)</span>
-              <span class="pane-meta">EMU8086 / MASM Sentaksı</span>
+      <!-- Main Layout -->
+      <main class="main-layout">
+        <!-- Left Section: Code Editor -->
+        <section class="editor-section">
+          <div class="editor-header-bar">
+            <h2 class="editor-title">Code Editor</h2>
+            <div class="editor-toolbar-right">
+              <select id="sample-select" class="sample-select" title="Hazır Örnek Kodlar">
+                ${SAMPLES.map((s, idx) => `<option value="${idx}">${s.name}</option>`).join('')}
+              </select>
+              <button id="btn-compile" class="btn-compile">COMPILE</button>
+              <button id="btn-run" class="btn-ctrl">RUN</button>
+              <button id="btn-next" class="btn-ctrl">NEXT</button>
+              <button id="btn-stop" class="btn-ctrl" disabled>STOP</button>
+              <button id="btn-step-back" class="btn-ctrl btn-step-back" title="Bir adım geri al" disabled>↶</button>
             </div>
-            <div id="editor-container" class="editor-pane-inner"></div>
+          </div>
 
-            <div id="console-container" class="console-pane-inner"></div>
-          </section>
+          <div id="editor-container"></div>
+        </section>
 
-          <!-- Right Column: Registers, Flags & Tabs (Memory, Listing, Stack) -->
-          <section class="ide-right-pane">
-            <!-- Top Right: Registers & Flags -->
-            <div class="registers-card-pane">
-              <div class="pane-header flex-between">
-                <span class="pane-title">CPU DURUMU & YAZMAÇLAR</span>
-                <div class="reg-format-selector">
-                  <button class="btn-fmt active" data-fmt="hex">HEX</button>
-                  <button class="btn-fmt" data-fmt="dec">DEC</button>
-                  <button class="btn-fmt" data-fmt="bin">BIN</button>
-                </div>
-              </div>
-              <div id="registers-container" class="registers-pane-inner"></div>
-            </div>
+        <!-- Right Section: Registers, Segments, Pointers, Flags, Memory -->
+        <section class="cpu-section">
+          <div id="registers-container"></div>
+          <div id="memory-container"></div>
+        </section>
+      </main>
 
-            <!-- Bottom Right: Tabbed Panel (Memory, Listing, Stack) -->
-            <div class="tabs-card-pane">
-              <div class="tabs-header">
-                <button class="tab-btn active" data-tab="memory">Bellek Grid'i (1MB RAM)</button>
-                <button class="tab-btn" data-tab="listing">Disassembly / Listing</button>
-                <button class="tab-btn" data-tab="stack">Yığın (Stack SS:SP)</button>
-              </div>
-              <div class="tabs-content">
-                <div id="tab-memory" class="tab-pane active"></div>
-                <div id="tab-listing" class="tab-pane"></div>
-                <div id="tab-stack" class="tab-pane"></div>
-              </div>
-            </div>
-          </section>
-        </main>
+      <!-- Floating Greeting Bubble -->
+      <div class="floating-greeting" id="greeting-bubble">
+        <div>
+          <strong>Hello pal... Greetings!</strong><br />
+          8086 Assembly Simülatörüne hoş geldiniz. Kodunuzu yazıp <strong>COMPILE</strong> ve <strong>NEXT</strong> ile adım adım çalıştırabilirsiniz.
+        </div>
+        <button class="btn-close-bubble" id="btn-close-bubble" title="Kapat">✕</button>
       </div>
     `;
 
-    // Tab buttons handling
-    appEl.querySelectorAll('.tab-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const targetTab = btn.getAttribute('data-tab') as 'memory' | 'listing' | 'stack';
-        this.switchTab(targetTab);
-      });
+    // Greeting bubble close
+    appEl.querySelector('#btn-close-bubble')?.addEventListener('click', () => {
+      const bubble = document.getElementById('greeting-bubble');
+      if (bubble) bubble.style.display = 'none';
     });
 
-    // Register format selector (HEX, DEC, BIN)
-    appEl.querySelectorAll('.btn-fmt').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        appEl.querySelectorAll('.btn-fmt').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        const fmt = btn.getAttribute('data-fmt') as 'hex' | 'dec' | 'bin';
-        this.registerPanel.setFormat(fmt);
-        this.updateViews();
-      });
+    // Theme toggle
+    appEl.querySelector('#btn-nav-theme')?.addEventListener('click', () => {
+      const current = document.body.getAttribute('data-theme');
+      document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    });
+
+    // Info modal alert
+    appEl.querySelector('#btn-nav-info')?.addEventListener('click', () => {
+      alert("8086 Web Assembly IDE & Simulator\nReal Mode 16-bit Intel 8086 Emulator\n%100 saf istemci taraflı gerçek makine kodu üretimi.");
+    });
+
+    // Help modal alert
+    appEl.querySelector('#btn-nav-help')?.addEventListener('click', () => {
+      alert("Kullanım İpuçları:\n- COMPILE: Kodu derler ve CS:0100h'a yükler.\n- NEXT: Tek bir komut işletir (F10).\n- RUN / STOP: Sürekli çalıştırır veya durdurur.\n- Bellekte satıra tıklayarak adrese gidebilirsiniz.");
     });
   }
 
   private initModules(): void {
-    const toolbarContainer = document.getElementById('toolbar-container')!;
     const editorContainer = document.getElementById('editor-container')!;
-    const consoleContainer = document.getElementById('console-container')!;
     const registersContainer = document.getElementById('registers-container')!;
-    const tabMemory = document.getElementById('tab-memory')!;
-    const tabListing = document.getElementById('tab-listing')!;
-    const tabStack = document.getElementById('tab-stack')!;
+    const memoryContainer = document.getElementById('memory-container')!;
 
-    this.consoleView = new ConsoleView(consoleContainer);
     this.registerPanel = new RegisterPanel(registersContainer);
-    this.memoryView = new MemoryView(tabMemory);
-    this.stackView = new StackView(tabStack);
-
-    this.listingView = new ListingView(tabListing, (addr) => {
-      this.switchTab('memory');
-      this.memoryView.jumpTo(this.cpu.regs.cs, addr);
-      this.memoryView.render(this.cpu.mem, this.cpu.regs);
-    });
+    this.memoryView = new MemoryView(memoryContainer);
 
     this.editor = new Editor({
       container: editorContainer,
       initialCode: '',
       onCodeChange: () => {
-        // Clear active errors on edit
         this.editor.clearErrors();
       }
     });
 
-    this.toolbar = new Toolbar(toolbarContainer, {
-      onAssemble: () => this.assemble(),
-      onStep: () => this.step(),
-      onRun: () => this.run(),
-      onPause: () => this.pause(),
-      onReset: () => this.reset(),
-      onStepBack: () => this.stepBack(),
-      onSpeedChange: (hz) => { this.speedHz = hz; },
-      onSampleSelect: (sample) => this.loadSample(sample)
-    });
-
+    this.attachButtonEvents();
     this.updateViews();
   }
 
-  private switchTab(tab: 'memory' | 'listing' | 'stack'): void {
-    this.activeTab = tab;
-    document.querySelectorAll('.tab-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
+  private attachButtonEvents(): void {
+    const btnCompile = document.getElementById('btn-compile')!;
+    const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
+    const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
+    const btnStop = document.getElementById('btn-stop') as HTMLButtonElement;
+    const btnStepBack = document.getElementById('btn-step-back') as HTMLButtonElement;
+    const sampleSelect = document.getElementById('sample-select') as HTMLSelectElement;
+
+    btnCompile.addEventListener('click', () => this.compile());
+    btnNext.addEventListener('click', () => this.step());
+    btnRun.addEventListener('click', () => this.run());
+    btnStop.addEventListener('click', () => this.stop());
+    btnStepBack.addEventListener('click', () => this.stepBack());
+
+    sampleSelect.addEventListener('change', () => {
+      const idx = parseInt(sampleSelect.value, 10);
+      if (SAMPLES[idx]) this.loadSample(SAMPLES[idx]);
     });
-    document.querySelectorAll('.tab-pane').forEach((pane) => {
-      pane.classList.toggle('active', pane.id === `tab-${tab}`);
+
+    // Keyboard shortcuts: F10 = NEXT, F5 = RUN/STOP
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'F10') {
+        e.preventDefault();
+        this.step();
+      } else if (e.key === 'F5') {
+        e.preventDefault();
+        if (this.isRunning) this.stop();
+        else this.run();
+      }
     });
-    this.updateViews();
   }
 
-  private loadSample(sample: CodeSample): void {
-    this.pause();
+  private loadSample(sample: { code: string }): void {
+    this.stop();
     this.editor.setCode(sample.code);
-    this.consoleView.log(`Örnek yüklendi: "${sample.name}" - ${sample.description}`, 'info');
-    this.assemble();
+    this.compile();
   }
 
-  private assemble(): boolean {
-    this.pause();
+  private compile(): boolean {
+    this.stop();
     const code = this.editor.getCode();
     const result = Assembler.assemble(code);
     this.currentAsmResult = result;
 
     if (result.errors.length > 0) {
       this.editor.setErrors(result.errors);
-      for (const err of result.errors) {
-        this.consoleView.log(`Hata (Satır ${err.line}): ${err.message}`, 'error');
-      }
-      this.toolbar.setStatus('error', `Derleme Hatası (${result.errors.length})`);
       return false;
     }
 
-    // Success
     this.editor.clearErrors();
-    this.consoleView.log(
-      `Derleme başarılı! Üretilen makine kodu: ${result.bytes.length} bayt, ${result.symbols.size} etiket.`,
-      'success'
-    );
 
-    // Load into CPU
+    // Load COM at CS:0100h
     this.cpu.loadCOM(result.bytes, result.origin);
 
-    // Map IP to source line
+    // Map IP to line
     this.ipToLineMap.clear();
     for (const item of result.listing) {
       this.ipToLineMap.set(item.addr, item.line);
     }
 
-    // Tag data section bytes in memory
-    // For symbols that are defined at or after code
-    for (const [name, addr] of result.symbols.entries()) {
-      const phys = this.cpu.mem.toPhys(this.cpu.regs.cs, addr);
-      if (this.cpu.mem.getCellType(phys) !== 'code') {
-        this.cpu.mem.setCellType(phys, 'data');
-      }
-    }
+    // Set memory view to CS:0100h
+    this.memoryView.jumpTo(this.cpu.regs.cs, 0x0100);
 
-    this.toolbar.setStatus('ready', 'Hazır');
     this.syncActiveLine();
     this.updateViews();
     return true;
   }
 
   private step(): void {
-    if (this.cpu.halted) {
-      this.consoleView.log("İşlemci HLT durumunda. Yeniden çalıştırmak için 'Reset' veya 'Assemble' yapın.", 'warn');
-      return;
-    }
+    if (this.cpu.halted) return;
 
     const info = this.cpu.step();
 
-    if (info.consoleText) {
-      this.consoleView.log(info.consoleText, 'stdout');
-    }
-
     if (info.error) {
-      this.pause();
-      this.consoleView.log(`Çalışma Zamanı Hatası: ${info.error}`, 'error');
-      this.toolbar.setStatus('error', 'Hata');
+      this.stop();
+      this.editor.setErrors([{ line: this.ipToLineMap.get(this.cpu.regs.ip) || 1, message: info.error }]);
       return;
     }
 
     if (info.halted) {
-      this.pause();
-      this.consoleView.log('Program sonlandı (HLT komutuna ulaşıldı).', 'info');
-      this.toolbar.setStatus('halted');
+      this.stop();
     }
 
     this.syncActiveLine();
@@ -247,101 +208,69 @@ export class App {
   }
 
   private run(): void {
-    if (this.cpu.halted) {
-      this.consoleView.log("İşlemci durduruldu (HLT). Tekrar çalıştırmak için 'Reset' yapın.", 'warn');
-      return;
-    }
-    if (this.isRunning) return;
+    if (this.cpu.halted || this.isRunning) return;
 
     this.isRunning = true;
-    this.toolbar.setStatus('running');
+    const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
+    const btnStop = document.getElementById('btn-stop') as HTMLButtonElement;
+    const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
 
-    const cycle = () => {
+    if (btnRun) btnRun.disabled = true;
+    if (btnStop) btnStop.disabled = false;
+    if (btnNext) btnNext.disabled = true;
+
+    const loop = () => {
       if (!this.isRunning) return;
 
-      // Execute a small batch of instructions based on speed
-      const batchSize = this.speedHz >= 1000 ? 50 : Math.max(1, Math.floor(this.speedHz / 20));
+      const currentLine = this.ipToLineMap.get(this.cpu.regs.ip);
+      if (currentLine !== undefined && this.editor.isBreakpoint(currentLine)) {
+        this.stop();
+        this.syncActiveLine();
+        this.updateViews();
+        return;
+      }
 
-      for (let i = 0; i < batchSize; i++) {
-        // Breakpoint check
-        const currentLine = this.ipToLineMap.get(this.cpu.regs.ip);
-        if (currentLine !== undefined && this.editor.isBreakpoint(currentLine)) {
-          this.pause();
-          this.consoleView.log(`Breakpoint tetiklendi (Satır ${currentLine}, IP=${this.cpu.regs.ip.toString(16).toUpperCase()}h)`, 'warn');
-          this.syncActiveLine();
-          this.updateViews();
-          return;
-        }
-
-        const info = this.cpu.step();
-
-        if (info.consoleText) {
-          this.consoleView.log(info.consoleText, 'stdout');
-        }
-
+      const info = this.cpu.step();
+      if (info.halted || info.error) {
+        this.stop();
         if (info.error) {
-          this.pause();
-          this.consoleView.log(`Hata: ${info.error}`, 'error');
-          this.toolbar.setStatus('error');
-          this.syncActiveLine();
-          this.updateViews();
-          return;
+          this.editor.setErrors([{ line: currentLine || 1, message: info.error }]);
         }
-
-        if (info.halted) {
-          this.pause();
-          this.consoleView.log('Program sonlandı (HLT).', 'info');
-          this.toolbar.setStatus('halted');
-          this.syncActiveLine();
-          this.updateViews();
-          return;
-        }
+        this.syncActiveLine();
+        this.updateViews();
+        return;
       }
 
       this.syncActiveLine();
       this.updateViews();
 
-      // Schedule next cycle
-      const delay = this.speedHz >= 1000 ? 0 : Math.max(10, Math.floor(1000 / this.speedHz));
-      this.runTimer = window.setTimeout(cycle, delay);
+      this.runTimer = window.setTimeout(loop, 40); // ~25 Hz
     };
 
-    cycle();
+    loop();
   }
 
-  private pause(): void {
+  private stop(): void {
     this.isRunning = false;
     if (this.runTimer !== null) {
       clearTimeout(this.runTimer);
       this.runTimer = null;
     }
-    if (!this.cpu.halted) {
-      this.toolbar.setStatus('paused');
-    }
-  }
 
-  private reset(): void {
-    this.pause();
-    if (this.currentAsmResult && this.currentAsmResult.bytes.length > 0) {
-      this.cpu.loadCOM(this.currentAsmResult.bytes, this.currentAsmResult.origin);
-    } else {
-      this.cpu.reset();
-    }
-    this.toolbar.setStatus('ready');
-    this.consoleView.log('CPU ve bellek sıfırlandı.', 'info');
-    this.syncActiveLine();
-    this.updateViews();
+    const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
+    const btnStop = document.getElementById('btn-stop') as HTMLButtonElement;
+    const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
+
+    if (btnRun) btnRun.disabled = this.cpu.halted;
+    if (btnStop) btnStop.disabled = true;
+    if (btnNext) btnNext.disabled = this.cpu.halted;
   }
 
   private stepBack(): void {
-    this.pause();
+    this.stop();
     if (this.cpu.stepBack()) {
-      this.consoleView.log('Bir adım geri alındı.', 'info');
-      this.toolbar.setStatus('paused');
       this.syncActiveLine();
       this.updateViews();
-    } else {
-      this.consoleView.log('Geri alınacak geçmiş adım bulunamadı.', 'warn');
     }
   }
 
@@ -352,40 +281,15 @@ export class App {
 
   private updateViews(changedRegs: string[] = [], changedFlags: string[] = []): void {
     this.registerPanel.update(this.cpu.regs, this.cpu.flags, changedRegs, changedFlags);
-    this.toolbar.setStepBackEnabled(this.cpu.canStepBack());
+    this.memoryView.render(this.cpu.mem, this.cpu.regs);
 
-    if (this.activeTab === 'memory') {
-      this.memoryView.render(this.cpu.mem, this.cpu.regs);
-    } else if (this.activeTab === 'listing') {
-      this.listingView.render(this.currentAsmResult?.listing || [], this.cpu.regs.ip);
-    } else if (this.activeTab === 'stack') {
-      this.stackView.render(this.cpu.mem, this.cpu.regs);
+    const btnStepBack = document.getElementById('btn-step-back') as HTMLButtonElement;
+    if (btnStepBack) {
+      btnStepBack.disabled = !this.cpu.canStepBack();
     }
-  }
-
-  private attachShortcuts(): void {
-    window.addEventListener('keydown', (e: KeyboardEvent) => {
-      // F10 -> Step
-      if (e.key === 'F10') {
-        e.preventDefault();
-        this.step();
-      }
-      // F5 -> Run / Pause toggle
-      else if (e.key === 'F5') {
-        e.preventDefault();
-        if (this.isRunning) this.pause();
-        else this.run();
-      }
-      // Ctrl+Enter -> Assemble
-      else if (e.ctrlKey && e.key === 'Enter') {
-        e.preventDefault();
-        this.assemble();
-      }
-    });
   }
 }
 
-// Bootstrap application on DOM load
 window.addEventListener('DOMContentLoaded', () => {
   new App();
 });
