@@ -54,10 +54,16 @@ export class MemoryView {
     this.container.innerHTML = `
       <div class="memory-card">
         <div class="memory-header-row">
-          <div class="memory-title">Memory</div>
+          <div class="memory-title">
+            <span>Memory</span>
+            <span class="info-btn" data-info-title="1 MB Gerçek Mod Belleği" data-info-desc="00000h - FFFFFh arası 20-bitlik fiziksel bellek alanını görüntüler. Yeşil: Kod bölgesi, Mavi: Veri bölgesi, Turuncu: CS:IP, Kırmızı: Son yazılan adres." tabindex="-1">i</span>
+          </div>
           <div class="memory-address-control">
             <div class="start-addr-col">
-              <span class="start-addr-label">Start Address</span>
+              <span class="start-addr-label">
+                Start Address
+                <span class="info-btn" data-info-title="Bellek Başlangıç Adresi" data-info-desc="Görüntülenecek 20-bitlik fiziksel başlangıç adresini (00000h - FFFFFh) belirler. Değeri yazıp SET butonuna basarak atlayabilirsiniz." tabindex="-1">i</span>
+              </span>
               <input type="text" id="mem-start-addr-input" class="start-addr-input" value="${addrHex}" />
             </div>
             <button id="btn-mem-set" class="btn-set">SET</button>

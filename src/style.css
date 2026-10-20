@@ -686,3 +686,128 @@ body {
   color: #b45309;
   font-weight: bold;
 }
+
+/* Info Tooltips & Badge Styles */
+.flex-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-with-info {
+  display: inline-flex;
+  align-items: center;
+}
+
+.reg-label-cell {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 700;
+  text-align: left;
+}
+
+/* Info Button (i icon) */
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  color: #334155;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 1;
+  cursor: help;
+  user-select: none;
+  vertical-align: middle;
+  margin-left: 4px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.black-card-header .info-btn {
+  background: #475569;
+  color: #f1f5f9;
+}
+
+.info-btn:hover {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  transform: scale(1.15);
+}
+
+.flag-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flag-col-header .info-btn {
+  width: 10px;
+  height: 10px;
+  font-size: 7.5px;
+  margin-left: 2px;
+}
+
+/* Global Floating Tooltip Balloon */
+.global-info-tooltip {
+  position: fixed;
+  z-index: 999999;
+  background-color: #0f172a;
+  color: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 6px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.25);
+  border: 1px solid #334155;
+  pointer-events: none; /* Clicking does nothing */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  max-width: 270px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.global-info-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.global-info-tooltip .tooltip-title {
+  font-weight: 700;
+  color: #38bdf8;
+  font-size: 11.5px;
+  margin-bottom: 4px;
+  letter-spacing: 0.2px;
+}
+
+.global-info-tooltip .tooltip-desc {
+  color: #cbd5e1;
+  font-weight: 400;
+}
+
+/* Tooltip Arrow */
+.global-info-tooltip .tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #0f172a;
+  bottom: -5px;
+  transform: translateX(-50%);
+}
+
+.global-info-tooltip.arrow-top .tooltip-arrow {
+  bottom: auto;
+  top: -5px;
+  border-top: none;
+  border-bottom: 5px solid #0f172a;
+}

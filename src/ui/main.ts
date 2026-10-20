@@ -4,6 +4,7 @@ import { Editor } from './editor.js';
 import { RegisterPanel } from './registerPanel.js';
 import { MemoryView } from './memoryView.js';
 import { SAMPLES } from './samples.js';
+import { TooltipManager } from './tooltip.js';
 
 export class App {
   private cpu: CPU;
@@ -18,6 +19,7 @@ export class App {
 
   constructor() {
     this.cpu = new CPU();
+    TooltipManager.init();
     this.initLayout();
     this.initModules();
     this.loadSample(SAMPLES[0]); // Acceptance test default
@@ -32,13 +34,17 @@ export class App {
         <!-- Left Section: Code Editor -->
         <section class="editor-section">
           <div class="editor-header-bar">
-            <h2 class="editor-title">Code Editor</h2>
+            <h2 class="editor-title">
+              Code Editor
+              <span class="info-btn" data-info-title="8086 Assembly Editörü" data-info-desc="DOS COM / EMU8086 sözdizimine uygun assembly kodu yazın. Satır numaralarına tıklayarak kesme noktaları (Breakpoint) koyabilirsiniz." tabindex="-1">i</span>
+            </h2>
             <div class="editor-toolbar-right">
               <!-- Format Switch (HEX / DEC / BIN) -->
               <div class="format-switch-group">
                 <button class="btn-fmt active" data-fmt="hex">HEX</button>
                 <button class="btn-fmt" data-fmt="dec">DEC</button>
                 <button class="btn-fmt" data-fmt="bin">BIN</button>
+                <span class="info-btn" data-info-title="Sayı Formatı Seçici" data-info-desc="Yazmaç değerlerini Onaltılık (HEX), Onluk (DEC) veya İkilik (BIN) tabanda görüntüler." tabindex="-1">i</span>
               </div>
 
               <select id="sample-select" class="sample-select" title="Örnek Programlar">
