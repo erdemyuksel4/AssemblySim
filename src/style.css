@@ -81,6 +81,42 @@ body {
   gap: 8px;
 }
 
+/* Format Switch (HEX / DEC / BIN) */
+.format-switch-group {
+  display: inline-flex;
+  background-color: #e5e7eb;
+  padding: 2px;
+  border-radius: 5px;
+  border: 1px solid var(--border-dark);
+}
+
+.btn-fmt {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.btn-fmt.active {
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+}
+
+.btn-fmt:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+.bin-font {
+  font-size: 10px !important;
+  letter-spacing: -0.5px;
+}
+
 /* Compile and Control Buttons */
 .btn-compile {
   background-color: var(--accent-yellow);

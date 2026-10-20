@@ -1,16 +1,36 @@
 import { Registers } from '../cpu/registers.js';
 import { Flags } from '../cpu/flags.js';
 
+export type NumberFormat = 'hex' | 'dec' | 'bin';
+
 export class RegisterPanel {
   private container: HTMLElement;
+  private currentFormat: NumberFormat = 'hex';
 
   constructor(container: HTMLElement) {
     this.container = container;
   }
 
+  setFormat(fmt: NumberFormat): void {
+    this.currentFormat = fmt;
+  }
+
+  getFormat(): NumberFormat {
+    return this.currentFormat;
+  }
+
   update(regs: Registers, flags: Flags, changedRegs: string[] = [], _changedFlags: string[] = []): void {
-    const hex2 = (v: number) => v.toString(16).toUpperCase().padStart(2, '0');
-    const hex4 = (v: number) => v.toString(16).toUpperCase().padStart(4, '0');
+    const format8 = (v: number): string => {
+      if (this.currentFormat === 'dec') return v.toString(10);
+      if (this.currentFormat === 'bin') return v.toString(2).padStart(8, '0');
+      return v.toString(16).toUpperCase().padStart(2, '0');
+    };
+
+    const format16 = (v: number): string => {
+      if (this.currentFormat === 'dec') return v.toString(10);
+      if (this.currentFormat === 'bin') return v.toString(2).padStart(16, '0');
+      return v.toString(16).toUpperCase().padStart(4, '0');
+    };
 
     const isChanged = (name: string) => changedRegs.includes(name.toUpperCase());
 
@@ -18,10 +38,10 @@ export class RegisterPanel {
       const flashH = isChanged(hName) ? 'cell-flash' : '';
       const flashL = isChanged(lName) ? 'cell-flash' : '';
       return `
-        <div class="table-row-split">
+        <div class="table-row-split ${this.currentFormat === 'bin' ? 'bin-font' : ''}">
           <span>${label}</span>
-          <span class="${flashH}">${hex2(hVal)}</span>
-          <span class="${flashL}">${hex2(lVal)}</span>
+          <span class="${flashH}">${format8(hVal)}</span>
+          <span class="${flashL}">${format8(lVal)}</span>
         </div>
       `;
     };
@@ -29,9 +49,9 @@ export class RegisterPanel {
     const singleRow = (label: string, val: number, name: string) => {
       const flash = isChanged(name) ? 'cell-flash' : '';
       return `
-        <div class="table-row-item">
+        <div class="table-row-item ${this.currentFormat === 'bin' ? 'bin-font' : ''}">
           <span>${label}</span>
-          <span class="${flash}">${hex4(val)}</span>
+          <span class="${flash}">${format16(val)}</span>
         </div>
       `;
     };

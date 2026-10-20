@@ -34,6 +34,13 @@ export class App {
           <div class="editor-header-bar">
             <h2 class="editor-title">Code Editor</h2>
             <div class="editor-toolbar-right">
+              <!-- Format Switch (HEX / DEC / BIN) -->
+              <div class="format-switch-group">
+                <button class="btn-fmt active" data-fmt="hex">HEX</button>
+                <button class="btn-fmt" data-fmt="dec">DEC</button>
+                <button class="btn-fmt" data-fmt="bin">BIN</button>
+              </div>
+
               <select id="sample-select" class="sample-select" title="Örnek Programlar">
                 ${SAMPLES.map((s, idx) => `<option value="${idx}">${s.name}</option>`).join('')}
               </select>
@@ -90,6 +97,17 @@ export class App {
     btnRun.addEventListener('click', () => this.run());
     btnStop.addEventListener('click', () => this.stop());
     btnStepBack.addEventListener('click', () => this.stepBack());
+
+    // Format Switch buttons (HEX, DEC, BIN)
+    document.querySelectorAll('.btn-fmt').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-fmt').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const fmt = btn.getAttribute('data-fmt') as 'hex' | 'dec' | 'bin';
+        this.registerPanel.setFormat(fmt);
+        this.updateViews();
+      });
+    });
 
     sampleSelect.addEventListener('change', () => {
       const idx = parseInt(sampleSelect.value, 10);
