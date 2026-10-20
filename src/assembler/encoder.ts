@@ -32,6 +32,42 @@ export class Encoder {
       case 'STOSW': return { bytes: [0xAB], length: 1 };
       case 'LODSB': return { bytes: [0xAC], length: 1 };
       case 'LODSW': return { bytes: [0xAD], length: 1 };
+      case 'CMPSB': return { bytes: [0xA6], length: 1 };
+      case 'SCASB': return { bytes: [0xAE], length: 1 };
+
+      case 'CLC': return { bytes: [0xF8], length: 1 };
+      case 'STC': return { bytes: [0xF9], length: 1 };
+      case 'CMC': return { bytes: [0xF5], length: 1 };
+      case 'CLD': return { bytes: [0xFC], length: 1 };
+      case 'STD': return { bytes: [0xFD], length: 1 };
+      case 'CLI': return { bytes: [0xFA], length: 1 };
+      case 'STI': return { bytes: [0xFB], length: 1 };
+
+      case 'CBW': return { bytes: [0x98], length: 1 };
+      case 'CWD': return { bytes: [0x99], length: 1 };
+      case 'LAHF': return { bytes: [0x9F], length: 1 };
+      case 'SAHF': return { bytes: [0x9E], length: 1 };
+      case 'XLAT': case 'XLATB': return { bytes: [0xD7], length: 1 };
+      case 'WAIT': return { bytes: [0x9B], length: 1 };
+
+      case 'DAA': return { bytes: [0x27], length: 1 };
+      case 'DAS': return { bytes: [0x2F], length: 1 };
+      case 'AAA': return { bytes: [0x37], length: 1 };
+      case 'AAS': return { bytes: [0x3F], length: 1 };
+      case 'AAM': {
+        const base = ops.length === 1 && ops[0].kind === 'IMMEDIATE' ? (ops[0].value ?? 10) : 10;
+        return { bytes: [0xD4, base & 0xFF], length: 2 };
+      }
+      case 'AAD': {
+        const base = ops.length === 1 && ops[0].kind === 'IMMEDIATE' ? (ops[0].value ?? 10) : 10;
+        return { bytes: [0xD5, base & 0xFF], length: 2 };
+      }
+
+      case 'LDS': return this.encodePointerLoad(0xC5, ops, ctx, lineNum);
+      case 'LES': return this.encodePointerLoad(0xC4, ops, ctx, lineNum);
+
+      case 'IN': return this.encodeIN(ops, ctx, lineNum);
+      case 'OUT': return this.encodeOUT(ops, ctx, lineNum);
 
       case 'MOV': return this.encodeMOV(ops, ctx, lineNum);
       case 'LEA': return this.encodeLEA(ops, ctx, lineNum);
@@ -126,11 +162,13 @@ export class Encoder {
       throw new Error(`LEA hedefi 16-bit genel yazmaç olmalıdır, satır: ${lineNum}`);
     }
 
-    // In 8086, LEA SI, DIZI or LEA SI, [DIZI]
-    // ModRM encoding: 8D /r
-    // If src is an immediate (label without brackets like 'LEA SI, DIZI')
+    // In 8086 ISA, LEA requires a memory operand (m16) or a labeled memory address.
+    // Bare immediate numbers (e.g. LEA AX, 1234H) are invalid!
     let memOp: MemoryOperand;
     if (src.kind === 'IMMEDIATE') {
+      if (!src.label) {
+        throw new Error(`LEA komutunda sayı sabiti kullanılamaz, bellek referansı veya etiket beklenir (örn: LEA AX, [1234H]), satır: ${lineNum}`);
+      }
       memOp = {
         kind: 'MEMORY',
         disp: src.disp,
@@ -540,6 +578,75 @@ export class Encoder {
       return { bytes: [0xC2, imm & 0xFF, (imm >> 8) & 0xFF], length: 3 };
     }
     throw new Error(`Geçersiz RET operandı, satır: ${lineNum}`);
+  }
+
+  // --- LDS / LES reg16, mem ---
+  private static encodePointerLoad(
+    opcode: number,
+    ops: Operand[],
+    ctx: EncodeContext,
+    lineNum: number
+  ): EncodedInstruction {
+    if (ops.length !== 2) throw new Error(`LDS/LES 2 operand bekler, satır: ${lineNum}`);
+    const dest = ops[0];
+    const src = ops[1];
+
+    if (dest.kind !== 'REGISTER' || dest.size !== 'WORD' || dest.isSegment) {
+      throw new Error(`LDS/LES hedefi 16-bit genel yazmaç olmalıdır, satır: ${lineNum}`);
+    }
+    if (src.kind !== 'MEMORY') {
+      throw new Error(`LDS/LES kaynağı bellek göstericisi olmalıdır, satır: ${lineNum}`);
+    }
+
+    const { modrmBytes, length } = this.buildModRM(dest.regIndex, src, ctx, lineNum);
+    return { bytes: [opcode, ...modrmBytes], length: 1 + length };
+  }
+
+  // --- IN / OUT ---
+  private static encodeIN(ops: Operand[], ctx: EncodeContext, lineNum: number): EncodedInstruction {
+    if (ops.length !== 2) throw new Error(`IN 2 operand bekler (örn: IN AL, 20h veya IN AX, DX), satır: ${lineNum}`);
+    const dest = ops[0];
+    const src = ops[1];
+
+    if (dest.kind !== 'REGISTER' || (dest.name !== 'AL' && dest.name !== 'AX')) {
+      throw new Error(`IN komutunda hedef sadece AL veya AX olabilir, satır: ${lineNum}`);
+    }
+
+    const is16 = dest.name === 'AX';
+
+    if (src.kind === 'REGISTER' && src.name === 'DX') {
+      return { bytes: [is16 ? 0xED : 0xEC], length: 1 };
+    }
+
+    if (src.kind === 'IMMEDIATE') {
+      const port = this.resolveImm(src, ctx, lineNum);
+      return { bytes: [is16 ? 0xE5 : 0xE4, port & 0xFF], length: 2 };
+    }
+
+    throw new Error(`Geçersiz IN port operandı, satır: ${lineNum}`);
+  }
+
+  private static encodeOUT(ops: Operand[], ctx: EncodeContext, lineNum: number): EncodedInstruction {
+    if (ops.length !== 2) throw new Error(`OUT 2 operand bekler (örn: OUT 20h, AL veya OUT DX, AX), satır: ${lineNum}`);
+    const dest = ops[0];
+    const src = ops[1];
+
+    if (src.kind !== 'REGISTER' || (src.name !== 'AL' && src.name !== 'AX')) {
+      throw new Error(`OUT komutunda kaynak sadece AL veya AX olabilir, satır: ${lineNum}`);
+    }
+
+    const is16 = src.name === 'AX';
+
+    if (dest.kind === 'REGISTER' && dest.name === 'DX') {
+      return { bytes: [is16 ? 0xEF : 0xEE], length: 1 };
+    }
+
+    if (dest.kind === 'IMMEDIATE') {
+      const port = this.resolveImm(dest, ctx, lineNum);
+      return { bytes: [is16 ? 0xE7 : 0xE6, port & 0xFF], length: 2 };
+    }
+
+    throw new Error(`Geçersiz OUT port operandı, satır: ${lineNum}`);
   }
 
   // --- JMP ---

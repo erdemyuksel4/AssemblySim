@@ -1103,6 +1103,252 @@ export class Executor {
         break;
       }
 
+      // --- Flag Operations ---
+      case 0xF8: this.flags.cf = false; break; // CLC
+      case 0xF9: this.flags.cf = true; break;  // STC
+      case 0xF5: this.flags.cf = !this.flags.cf; break; // CMC
+      case 0xFC: this.flags.df = false; break; // CLD
+      case 0xFD: this.flags.df = true; break;  // STD
+      case 0xFA: this.flags.if = false; break; // CLI
+      case 0xFB: this.flags.if = true; break;  // STI
+
+      // --- Data Conversions & Specials ---
+      case 0x98: { // CBW (Convert Byte to Word: sign extend AL into AX)
+        this.regs.ah = (this.regs.al & 0x80) ? 0xFF : 0x00;
+        break;
+      }
+      case 0x99: { // CWD (Convert Word to Doubleword: sign extend AX into DX:AX)
+        this.regs.dx = (this.regs.ax & 0x8000) ? 0xFFFF : 0x0000;
+        break;
+      }
+      case 0x9F: { // LAHF (Load AH from Flags)
+        this.regs.ah = this.flags.toLowByte();
+        break;
+      }
+      case 0x9E: { // SAHF (Store AH into Flags)
+        this.flags.fromLowByte(this.regs.ah);
+        break;
+      }
+      case 0xD7: { // XLAT / XLATB: AL = [DS:BX + AL]
+        const s = segOverride || 'DS';
+        const targetOff = (this.regs.bx + this.regs.al) & 0xFFFF;
+        this.regs.al = this.mem.readByte(this.regs.getByName(s), targetOff, true);
+        break;
+      }
+      case 0x9B: { // WAIT / FWAIT
+        break; // Synchronize with coprocessor (NOP in 8086 without 8087)
+      }
+
+      // --- BCD Adjust Instructions ---
+      case 0x27: { // DAA (Decimal Adjust after Addition)
+        let al = this.regs.al;
+        const oldAl = al;
+        const oldCf = this.flags.cf;
+        if ((al & 0x0F) > 9 || this.flags.af) {
+          al = (al + 6) & 0xFF;
+          this.flags.af = true;
+        } else {
+          this.flags.af = false;
+        }
+        if (oldAl > 0x99 || oldCf) {
+          al = (al + 0x60) & 0xFF;
+          this.flags.cf = true;
+        } else {
+          this.flags.cf = false;
+        }
+        this.regs.al = al;
+        this.flags.zf = al === 0;
+        this.flags.sf = (al & 0x80) !== 0;
+        this.flags.pf = (al & 0xFF) % 2 === 0;
+        break;
+      }
+      case 0x2F: { // DAS (Decimal Adjust after Subtraction)
+        let al = this.regs.al;
+        const oldAl = al;
+        const oldCf = this.flags.cf;
+        if ((al & 0x0F) > 9 || this.flags.af) {
+          al = (al - 6) & 0xFF;
+          this.flags.af = true;
+        } else {
+          this.flags.af = false;
+        }
+        if (oldAl > 0x99 || oldCf) {
+          al = (al - 0x60) & 0xFF;
+          this.flags.cf = true;
+        } else {
+          this.flags.cf = false;
+        }
+        this.regs.al = al;
+        this.flags.zf = al === 0;
+        this.flags.sf = (al & 0x80) !== 0;
+        this.flags.pf = (al & 0xFF) % 2 === 0;
+        break;
+      }
+      case 0x37: { // AAA (ASCII Adjust after Addition)
+        if ((this.regs.al & 0x0F) > 9 || this.flags.af) {
+          this.regs.al = (this.regs.al + 6) & 0x0F;
+          this.regs.ah = (this.regs.ah + 1) & 0xFF;
+          this.flags.af = true;
+          this.flags.cf = true;
+        } else {
+          this.regs.al = this.regs.al & 0x0F;
+          this.flags.af = false;
+          this.flags.cf = false;
+        }
+        break;
+      }
+      case 0x3F: { // AAS (ASCII Adjust after Subtraction)
+        if ((this.regs.al & 0x0F) > 9 || this.flags.af) {
+          this.regs.al = (this.regs.al - 6) & 0x0F;
+          this.regs.ah = (this.regs.ah - 1) & 0xFF;
+          this.flags.af = true;
+          this.flags.cf = true;
+        } else {
+          this.regs.al = this.regs.al & 0x0F;
+          this.flags.af = false;
+          this.flags.cf = false;
+        }
+        break;
+      }
+      case 0xD4: { // AAM (ASCII Adjust after Multiply)
+        const base = fetchByte();
+        if (base === 0) {
+          return { halted: true, error: `Divide by zero in AAM @ ${cs.toString(16).padStart(4,'0')}:${initialIp.toString(16).padStart(4,'0')}`, ipBefore: initialIp, ipAfter: initialIp };
+        }
+        this.regs.ah = Math.floor(this.regs.al / base) & 0xFF;
+        this.regs.al = (this.regs.al % base) & 0xFF;
+        this.flags.zf = this.regs.al === 0;
+        this.flags.sf = (this.regs.al & 0x80) !== 0;
+        this.flags.pf = (this.regs.al & 0xFF) % 2 === 0;
+        break;
+      }
+      case 0xD5: { // AAD (ASCII Adjust before Division)
+        const base = fetchByte();
+        this.regs.al = ((this.regs.ah * base) + this.regs.al) & 0xFF;
+        this.regs.ah = 0;
+        this.flags.zf = this.regs.al === 0;
+        this.flags.sf = (this.regs.al & 0x80) !== 0;
+        this.flags.pf = (this.regs.al & 0xFF) % 2 === 0;
+        break;
+      }
+
+      // --- Pointer Loading (LDS, LES) ---
+      case 0xC5: { // LDS r16, m16
+        const m = getModRM();
+        if (m.isReg) {
+          return { halted: true, error: `Invalid LDS operand @ ${cs.toString(16).padStart(4,'0')}:${initialIp.toString(16).padStart(4,'0')}`, ipBefore: initialIp, ipAfter: initialIp };
+        }
+        const segVal = this.regs.getByName(m.baseSegment);
+        const off = this.mem.readWord(segVal, m.offset, true);
+        const seg = this.mem.readWord(segVal, (m.offset + 2) & 0xFFFF, true);
+        this.regs.setReg16ByIndex(m.reg, off);
+        this.regs.ds = seg;
+        break;
+      }
+      case 0xC4: { // LES r16, m16
+        const m = getModRM();
+        if (m.isReg) {
+          return { halted: true, error: `Invalid LES operand @ ${cs.toString(16).padStart(4,'0')}:${initialIp.toString(16).padStart(4,'0')}`, ipBefore: initialIp, ipAfter: initialIp };
+        }
+        const segVal = this.regs.getByName(m.baseSegment);
+        const off = this.mem.readWord(segVal, m.offset, true);
+        const seg = this.mem.readWord(segVal, (m.offset + 2) & 0xFFFF, true);
+        this.regs.setReg16ByIndex(m.reg, off);
+        this.regs.es = seg;
+        break;
+      }
+
+      // --- String CMPSB / CMPSW / SCASB / SCASW ---
+      case 0xA6: { // CMPSB
+        const doCmpsb = () => {
+          const s = segOverride || 'DS';
+          const srcVal = this.mem.readByte(this.regs.getByName(s), this.regs.si, true);
+          const destVal = this.mem.readByte(this.regs.es, this.regs.di, true);
+          const res = (srcVal - destVal) & 0xFF;
+          this.flags.updateSub(srcVal, destVal, res, false);
+          const delta = this.flags.df ? -1 : 1;
+          this.regs.si = (this.regs.si + delta) & 0xFFFF;
+          this.regs.di = (this.regs.di + delta) & 0xFFFF;
+        };
+
+        if (repPrefix === 'REP') { // REPE / REPZ
+          while (this.regs.cx > 0) {
+            doCmpsb();
+            this.regs.cx = (this.regs.cx - 1) & 0xFFFF;
+            if (!this.flags.zf) break;
+          }
+        } else if (repPrefix === 'REPNZ') {
+          while (this.regs.cx > 0) {
+            doCmpsb();
+            this.regs.cx = (this.regs.cx - 1) & 0xFFFF;
+            if (this.flags.zf) break;
+          }
+        } else {
+          doCmpsb();
+        }
+        break;
+      }
+      case 0xAE: { // SCASB (Compare AL with [ES:DI])
+        const doScasb = () => {
+          const destVal = this.mem.readByte(this.regs.es, this.regs.di, true);
+          const res = (this.regs.al - destVal) & 0xFF;
+          this.flags.updateSub(this.regs.al, destVal, res, false);
+          const delta = this.flags.df ? -1 : 1;
+          this.regs.di = (this.regs.di + delta) & 0xFFFF;
+        };
+
+        if (repPrefix === 'REP') {
+          while (this.regs.cx > 0) {
+            doScasb();
+            this.regs.cx = (this.regs.cx - 1) & 0xFFFF;
+            if (!this.flags.zf) break;
+          }
+        } else if (repPrefix === 'REPNZ') {
+          while (this.regs.cx > 0) {
+            doScasb();
+            this.regs.cx = (this.regs.cx - 1) & 0xFFFF;
+            if (this.flags.zf) break;
+          }
+        } else {
+          doScasb();
+        }
+        break;
+      }
+
+      // --- Port I/O (IN / OUT) ---
+      case 0xE4: { // IN AL, imm8
+        fetchByte(); // port number
+        this.regs.al = 0xFF; // Open-bus default
+        break;
+      }
+      case 0xE5: { // IN AX, imm8
+        fetchByte();
+        this.regs.ax = 0xFFFF;
+        break;
+      }
+      case 0xE6: { // OUT imm8, AL
+        fetchByte();
+        break;
+      }
+      case 0xE7: { // OUT imm8, AX
+        fetchByte();
+        break;
+      }
+      case 0xEC: { // IN AL, DX
+        this.regs.al = 0xFF;
+        break;
+      }
+      case 0xED: { // IN AX, DX
+        this.regs.ax = 0xFFFF;
+        break;
+      }
+      case 0xEE: { // OUT DX, AL
+        break;
+      }
+      case 0xEF: { // OUT DX, AX
+        break;
+      }
+
       // --- Phase 4: String operations & Interrupts ---
       // MOVSB (A4)
       case 0xA4: {

@@ -69,6 +69,26 @@ export class Flags {
     this.of = state.of;
   }
 
+  // Packs lower 8 bits of flags for LAHF: SF:ZF:0:AF:0:PF:1:CF
+  toLowByte(): number {
+    let b = 0x02; // Bit 1 is always 1
+    if (this.cf) b |= (1 << 0);
+    if (this.pf) b |= (1 << 2);
+    if (this.af) b |= (1 << 4);
+    if (this.zf) b |= (1 << 6);
+    if (this.sf) b |= (1 << 7);
+    return b;
+  }
+
+  // Unpacks lower 8 bits of flags from AH for SAHF
+  fromLowByte(b: number): void {
+    this.cf = (b & (1 << 0)) !== 0;
+    this.pf = (b & (1 << 2)) !== 0;
+    this.af = (b & (1 << 4)) !== 0;
+    this.zf = (b & (1 << 6)) !== 0;
+    this.sf = (b & (1 << 7)) !== 0;
+  }
+
   // Packs flags into a 16-bit word (for PUSHF / IRET)
   toWord(): number {
     let w = 0xF002; // 8086 reserved bits: bits 1, 12, 13, 14, 15 are typically 1
