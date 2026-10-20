@@ -27,7 +27,7 @@ export class Assembler {
     const errors: AsmError[] = [];
     const listing: ListingItem[] = [];
 
-    let origin = 0x0100;
+    let origin = 0x0000;
     const parsedLines: (ParsedLine | null)[] = [];
 
     // --- PASS 1: Parse, collect labels, calculate addresses ---

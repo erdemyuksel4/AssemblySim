@@ -53,8 +53,8 @@ export class CPU {
     this.history = [];
   }
 
-  // Load a DOS COM binary at CS:0100h (or specified origin)
-  loadCOM(bytes: Uint8Array | number[], origin: number = 0x0100): void {
+  // Load binary at CS:origin (default origin 0x0000)
+  loadCOM(bytes: Uint8Array | number[], origin: number = 0x0000): void {
     this.reset();
     this.mem.loadBytes(this.regs.cs, origin, bytes, 'code');
     this.regs.ip = origin;

@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { CPU } from '../src/cpu/cpu.js';
 
 describe('CPU Core Tests', () => {
-  it('initializes in DOS COM mode correctly', () => {
+  it('initializes in 16-bit real mode with 0000h registers correctly', () => {
     const cpu = new CPU();
-    expect(cpu.regs.cs).toBe(0x0700);
-    expect(cpu.regs.ds).toBe(0x0700);
-    expect(cpu.regs.es).toBe(0x0700);
-    expect(cpu.regs.ss).toBe(0x0700);
-    expect(cpu.regs.ip).toBe(0x0100);
-    expect(cpu.regs.sp).toBe(0xFFFE);
+    expect(cpu.regs.cs).toBe(0x0000);
+    expect(cpu.regs.ds).toBe(0x0000);
+    expect(cpu.regs.es).toBe(0x0000);
+    expect(cpu.regs.ss).toBe(0x0000);
+    expect(cpu.regs.ip).toBe(0x0000);
+    expect(cpu.regs.sp).toBe(0x0000);
   });
 
   it('executes MOV AL, 5 and ADD AL, 12', () => {
@@ -21,11 +21,11 @@ describe('CPU Core Tests', () => {
 
     cpu.step(); // MOV AL, 5
     expect(cpu.regs.al).toBe(5);
-    expect(cpu.regs.ip).toBe(0x0102);
+    expect(cpu.regs.ip).toBe(0x0002);
 
     cpu.step(); // ADD AL, 12
     expect(cpu.regs.al).toBe(17);
-    expect(cpu.regs.ip).toBe(0x0104);
+    expect(cpu.regs.ip).toBe(0x0004);
 
     cpu.step(); // HLT
     expect(cpu.halted).toBe(true);
@@ -46,14 +46,11 @@ describe('CPU Core Tests', () => {
 
   it('verifies INC does not touch CF', () => {
     const cpu = new CPU();
-    // STC (or set CF via ADD FFh, 1)
-    // B0 FF, 04 01 -> AL=0, CF=1
-    // FE C0 (INC AL) -> AL=1, CF should remain 1!
     cpu.loadCOM([0xB0, 0xFF, 0x04, 0x01, 0xFE, 0xC0, 0xF4]);
     cpu.step(); // MOV AL, 0xFF
     cpu.step(); // ADD AL, 1 -> CF=1
     expect(cpu.flags.cf).toBe(true);
-    cpu.step(); // INC AL (FE C0 is INC AL in modrm)
+    cpu.step(); // INC AL
     expect(cpu.regs.al).toBe(1);
     expect(cpu.flags.cf).toBe(true); // CF preserved!
   });
@@ -69,6 +66,6 @@ describe('CPU Core Tests', () => {
     const backSuccess = cpu.stepBack();
     expect(backSuccess).toBe(true);
     expect(cpu.regs.al).toBe(0x42);
-    expect(cpu.regs.ip).toBe(0x0102);
+    expect(cpu.regs.ip).toBe(0x0002);
   });
 });

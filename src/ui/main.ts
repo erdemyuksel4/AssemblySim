@@ -155,8 +155,9 @@ export class App {
       this.ipToLineMap.set(item.addr, item.line);
     }
 
-    // Set memory view to CS:0100h
-    this.memoryView.jumpTo(this.cpu.regs.cs, 0x0100);
+    // Set memory view to 00000h (or origin)
+    const viewAddr = result.origin === 0x0100 ? 0x0000 : result.origin;
+    this.memoryView.jumpToPhys(viewAddr);
 
     this.syncActiveLine();
     this.updateViews();

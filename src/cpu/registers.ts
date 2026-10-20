@@ -19,7 +19,7 @@ export type Reg8 = 'AL' | 'AH' | 'BL' | 'BH' | 'CL' | 'CH' | 'DL' | 'DH';
 export type SegmentReg = 'CS' | 'DS' | 'ES' | 'SS';
 
 export class Registers {
-  // 16-bit registers
+  // 16-bit registers (all initialized to 0000h)
   ax: number = 0;
   bx: number = 0;
   cx: number = 0;
@@ -27,12 +27,12 @@ export class Registers {
   si: number = 0;
   di: number = 0;
   bp: number = 0;
-  sp: number = 0xFFFE;
-  ip: number = 0x0100;
-  cs: number = 0x0700;
-  ds: number = 0x0700;
-  es: number = 0x0700;
-  ss: number = 0x0700;
+  sp: number = 0x0000;
+  ip: number = 0x0000;
+  cs: number = 0x0000;
+  ds: number = 0x0000;
+  es: number = 0x0000;
+  ss: number = 0x0000;
 
   // 8-bit getters & setters
   get al(): number { return this.ax & 0xFF; }
@@ -67,12 +67,12 @@ export class Registers {
     this.si = 0;
     this.di = 0;
     this.bp = 0;
-    this.sp = 0xFFFE;
-    this.ip = 0x0100;
-    this.cs = 0x0700;
-    this.ds = 0x0700;
-    this.es = 0x0700;
-    this.ss = 0x0700;
+    this.sp = 0x0000;
+    this.ip = 0x0000;
+    this.cs = 0x0000;
+    this.ds = 0x0000;
+    this.es = 0x0000;
+    this.ss = 0x0000;
   }
 
   // 8086 standard reg index (0..7) for w=1 (16-bit)
