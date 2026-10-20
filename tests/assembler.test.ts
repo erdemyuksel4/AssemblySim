@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Assembler } from '../src/assembler/assembler.js';
+import { CPU } from '../src/cpu/cpu.js';
 
 describe('Assembler Tests', () => {
   it('assembles DB directives and DUP correctly', () => {
@@ -68,5 +69,32 @@ describe('Assembler Tests', () => {
     // INC AX: 40 (1 byte, addr 100H)
     // LOOP START: E2 (currAddr 101H, len 2). target = 100H, rel = 100H - (101H+2) = -3 = 0xFD
     expect(Array.from(res.bytes)).toEqual([0x40, 0xE2, 0xFD]);
+  });
+
+  it('resolves labels case-insensitively in forward and backward jumps', () => {
+    const code = `
+      START:
+        MOV AL, 5
+        CMP AL, 20
+        JB below
+        JMP notbelow
+      below:
+        MOV DL, 1
+      notbelow:
+        MOV DL, 2
+      HLT
+    `;
+    const res = Assembler.assemble(code);
+    expect(res.errors).toHaveLength(0);
+
+    const cpu = new CPU();
+    cpu.loadCOM(res.bytes, res.origin);
+    while (!cpu.halted) {
+      const stepInfo = cpu.step();
+      expect(stepInfo.error).toBeUndefined();
+    }
+    // AL = 5, CMP 5, 20 -> 5 < 20 (unsigned), so CF=1, JB taken!
+    // Jumps to below -> MOV DL, 1, then falls through to notbelow: MOV DL, 2, then HLT
+    expect(cpu.regs.dl).toBe(2);
   });
 });

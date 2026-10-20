@@ -145,8 +145,9 @@ export class Encoder {
       val += op.value;
     }
     if (op.label) {
-      if (ctx.symbols.has(op.label)) {
-        val += ctx.symbols.get(op.label)!;
+      const lblUpper = op.label.toUpperCase();
+      if (ctx.symbols.has(lblUpper)) {
+        val += ctx.symbols.get(lblUpper)!;
       } else if (ctx.isPass2) {
         throw new Error(`Tanımsız etiket '${op.label}' satır: ${lineNum}`);
       }
@@ -734,8 +735,9 @@ export class Encoder {
   ): { modrmBytes: number[]; length: number } {
     let disp = mem.disp;
     if (mem.label) {
-      if (ctx.symbols.has(mem.label)) {
-        disp += ctx.symbols.get(mem.label)!;
+      const lblUpper = mem.label.toUpperCase();
+      if (ctx.symbols.has(lblUpper)) {
+        disp += ctx.symbols.get(lblUpper)!;
       } else if (ctx.isPass2) {
         throw new Error(`Tanımsız etiket '${mem.label}' satır: ${lineNum}`);
       }

@@ -3,8 +3,16 @@ import { Assembler, AsmResult } from '../assembler/assembler.js';
 import { Editor } from './editor.js';
 import { RegisterPanel } from './registerPanel.js';
 import { MemoryView } from './memoryView.js';
-import { SAMPLES } from './samples.js';
 import { TooltipManager } from './tooltip.js';
+
+const DEFAULT_CODE = `ORG 100H
+
+START:
+  MOV AX, 5
+  MOV BX, 10
+  ADD AX, BX
+  HLT
+`;
 
 export class App {
   private cpu: CPU;
@@ -22,7 +30,8 @@ export class App {
     TooltipManager.init();
     this.initLayout();
     this.initModules();
-    this.loadSample(SAMPLES[0]); // Acceptance test default
+    this.editor.setCode(DEFAULT_CODE);
+    this.compile();
   }
 
   private initLayout(): void {
@@ -47,13 +56,11 @@ export class App {
                 <span class="info-btn" data-info-title="Sayı Formatı Seçici" data-info-desc="Yazmaç değerlerini Onaltılık (HEX), Onluk (DEC) veya İkilik (BIN) tabanda görüntüler." tabindex="-1">i</span>
               </div>
 
-              <select id="sample-select" class="sample-select" title="Örnek Programlar">
-                ${SAMPLES.map((s, idx) => `<option value="${idx}">${s.name}</option>`).join('')}
-              </select>
               <button id="btn-compile" class="btn-compile">COMPILE</button>
               <button id="btn-run" class="btn-ctrl">RUN</button>
               <button id="btn-next" class="btn-ctrl">NEXT</button>
               <button id="btn-stop" class="btn-ctrl" disabled>STOP</button>
+              <button id="btn-reset" class="btn-ctrl">RESET</button>
               <button id="btn-step-back" class="btn-ctrl btn-step-back" title="Geri Adım Al (Step Back)" disabled>↶</button>
             </div>
           </div>
@@ -83,6 +90,9 @@ export class App {
       initialCode: '',
       onCodeChange: () => {
         this.editor.clearErrors();
+        // Enable COMPILE button when code changes
+        const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
+        if (btnCompile) btnCompile.disabled = false;
       }
     });
 
@@ -91,17 +101,18 @@ export class App {
   }
 
   private attachButtonEvents(): void {
-    const btnCompile = document.getElementById('btn-compile')!;
+    const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
     const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
     const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
     const btnStop = document.getElementById('btn-stop') as HTMLButtonElement;
+    const btnReset = document.getElementById('btn-reset') as HTMLButtonElement;
     const btnStepBack = document.getElementById('btn-step-back') as HTMLButtonElement;
-    const sampleSelect = document.getElementById('sample-select') as HTMLSelectElement;
 
     btnCompile.addEventListener('click', () => this.compile());
     btnNext.addEventListener('click', () => this.step());
     btnRun.addEventListener('click', () => this.run());
     btnStop.addEventListener('click', () => this.stop());
+    btnReset.addEventListener('click', () => this.reset());
     btnStepBack.addEventListener('click', () => this.stepBack());
 
     // Format Switch buttons (HEX, DEC, BIN)
@@ -113,11 +124,6 @@ export class App {
         this.registerPanel.setFormat(fmt);
         this.updateViews();
       });
-    });
-
-    sampleSelect.addEventListener('change', () => {
-      const idx = parseInt(sampleSelect.value, 10);
-      if (SAMPLES[idx]) this.loadSample(SAMPLES[idx]);
     });
 
     // Keyboard shortcuts: F10 = NEXT, F5 = RUN/STOP
@@ -133,26 +139,26 @@ export class App {
     });
   }
 
-  private loadSample(sample: { code: string }): void {
-    this.stop();
-    this.editor.setCode(sample.code);
-    this.compile();
-  }
-
   private compile(): boolean {
     this.stop();
     const code = this.editor.getCode();
     const result = Assembler.assemble(code);
     this.currentAsmResult = result;
 
+    const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
+
     if (result.errors.length > 0) {
       this.editor.setErrors(result.errors);
+      if (btnCompile) btnCompile.disabled = false;
       return false;
     }
 
     this.editor.clearErrors();
 
-    // Load COM at CS:0100h
+    // Disable COMPILE button until user edits code
+    if (btnCompile) btnCompile.disabled = true;
+
+    // Load COM at CS:origin
     this.cpu.loadCOM(result.bytes, result.origin);
 
     // Map IP to line
@@ -167,7 +173,32 @@ export class App {
 
     this.syncActiveLine();
     this.updateViews();
+
+    const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
+    const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
+    if (btnRun) btnRun.disabled = false;
+    if (btnNext) btnNext.disabled = false;
+
     return true;
+  }
+
+  private reset(): void {
+    this.stop();
+    if (this.currentAsmResult && this.currentAsmResult.errors.length === 0) {
+      // Reload compiled binary at origin and restore initial program state
+      this.cpu.loadCOM(this.currentAsmResult.bytes, this.currentAsmResult.origin);
+      this.syncActiveLine();
+    } else {
+      this.cpu.reset();
+      this.editor.setActiveLine(null);
+    }
+
+    const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
+    const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
+    if (btnRun) btnRun.disabled = false;
+    if (btnNext) btnNext.disabled = false;
+
+    this.updateViews();
   }
 
   private step(): void {
