@@ -314,6 +314,66 @@ export class Executor {
         break;
       }
 
+      // --- ADC Instructions ---
+      case 0x10: { // ADC r/m8, r8
+        const m = getModRM();
+        const a = this.readRM8(m);
+        const b = this.regs.getReg8ByIndex(m.reg);
+        const cIn = this.flags.cf ? 1 : 0;
+        const res = (a + b + cIn) & 0xFF;
+        this.flags.updateAdd(a, b, res, false, cIn);
+        this.writeRM8(m, res);
+        break;
+      }
+      case 0x11: { // ADC r/m16, r16
+        const m = getModRM();
+        const a = this.readRM16(m);
+        const b = this.regs.getReg16ByIndex(m.reg);
+        const cIn = this.flags.cf ? 1 : 0;
+        const res = (a + b + cIn) & 0xFFFF;
+        this.flags.updateAdd(a, b, res, true, cIn);
+        this.writeRM16(m, res);
+        break;
+      }
+      case 0x12: { // ADC r8, r/m8
+        const m = getModRM();
+        const a = this.regs.getReg8ByIndex(m.reg);
+        const b = this.readRM8(m);
+        const cIn = this.flags.cf ? 1 : 0;
+        const res = (a + b + cIn) & 0xFF;
+        this.flags.updateAdd(a, b, res, false, cIn);
+        this.regs.setReg8ByIndex(m.reg, res);
+        break;
+      }
+      case 0x13: { // ADC r16, r/m16
+        const m = getModRM();
+        const a = this.regs.getReg16ByIndex(m.reg);
+        const b = this.readRM16(m);
+        const cIn = this.flags.cf ? 1 : 0;
+        const res = (a + b + cIn) & 0xFFFF;
+        this.flags.updateAdd(a, b, res, true, cIn);
+        this.regs.setReg16ByIndex(m.reg, res);
+        break;
+      }
+      case 0x14: { // ADC AL, imm8
+        const a = this.regs.al;
+        const b = fetchByte();
+        const cIn = this.flags.cf ? 1 : 0;
+        const res = (a + b + cIn) & 0xFF;
+        this.flags.updateAdd(a, b, res, false, cIn);
+        this.regs.al = res;
+        break;
+      }
+      case 0x15: { // ADC AX, imm16
+        const a = this.regs.ax;
+        const b = fetchWord();
+        const cIn = this.flags.cf ? 1 : 0;
+        const res = (a + b + cIn) & 0xFFFF;
+        this.flags.updateAdd(a, b, res, true, cIn);
+        this.regs.ax = res;
+        break;
+      }
+
       // --- SUB Instructions ---
       case 0x28: { // SUB r/m8, r8
         const m = getModRM();
@@ -364,6 +424,66 @@ export class Executor {
         const b = fetchWord();
         const res = (a - b) & 0xFFFF;
         this.flags.updateSub(a, b, res, true);
+        this.regs.ax = res;
+        break;
+      }
+
+      // --- SBB Instructions ---
+      case 0x18: { // SBB r/m8, r8
+        const m = getModRM();
+        const a = this.readRM8(m);
+        const b = this.regs.getReg8ByIndex(m.reg);
+        const bIn = this.flags.cf ? 1 : 0;
+        const res = (a - b - bIn) & 0xFF;
+        this.flags.updateSub(a, b, res, false, bIn);
+        this.writeRM8(m, res);
+        break;
+      }
+      case 0x19: { // SBB r/m16, r16
+        const m = getModRM();
+        const a = this.readRM16(m);
+        const b = this.regs.getReg16ByIndex(m.reg);
+        const bIn = this.flags.cf ? 1 : 0;
+        const res = (a - b - bIn) & 0xFFFF;
+        this.flags.updateSub(a, b, res, true, bIn);
+        this.writeRM16(m, res);
+        break;
+      }
+      case 0x1A: { // SBB r8, r/m8
+        const m = getModRM();
+        const a = this.regs.getReg8ByIndex(m.reg);
+        const b = this.readRM8(m);
+        const bIn = this.flags.cf ? 1 : 0;
+        const res = (a - b - bIn) & 0xFF;
+        this.flags.updateSub(a, b, res, false, bIn);
+        this.regs.setReg8ByIndex(m.reg, res);
+        break;
+      }
+      case 0x1B: { // SBB r16, r/m16
+        const m = getModRM();
+        const a = this.regs.getReg16ByIndex(m.reg);
+        const b = this.readRM16(m);
+        const bIn = this.flags.cf ? 1 : 0;
+        const res = (a - b - bIn) & 0xFFFF;
+        this.flags.updateSub(a, b, res, true, bIn);
+        this.regs.setReg16ByIndex(m.reg, res);
+        break;
+      }
+      case 0x1C: { // SBB AL, imm8
+        const a = this.regs.al;
+        const b = fetchByte();
+        const bIn = this.flags.cf ? 1 : 0;
+        const res = (a - b - bIn) & 0xFF;
+        this.flags.updateSub(a, b, res, false, bIn);
+        this.regs.al = res;
+        break;
+      }
+      case 0x1D: { // SBB AX, imm16
+        const a = this.regs.ax;
+        const b = fetchWord();
+        const bIn = this.flags.cf ? 1 : 0;
+        const res = (a - b - bIn) & 0xFFFF;
+        this.flags.updateSub(a, b, res, true, bIn);
         this.regs.ax = res;
         break;
       }
@@ -447,6 +567,20 @@ export class Executor {
             this.flags.updateLogic(res, is16);
             if (is16) this.writeRM16(m, res); else this.writeRM8(m, res);
             break;
+          case 2: { // ADC
+            const cIn = this.flags.cf ? 1 : 0;
+            res = is16 ? ((a + imm + cIn) & 0xFFFF) : ((a + imm + cIn) & 0xFF);
+            this.flags.updateAdd(a, imm, res, is16, cIn);
+            if (is16) this.writeRM16(m, res); else this.writeRM8(m, res);
+            break;
+          }
+          case 3: { // SBB
+            const bIn = this.flags.cf ? 1 : 0;
+            res = is16 ? ((a - imm - bIn) & 0xFFFF) : ((a - imm - bIn) & 0xFF);
+            this.flags.updateSub(a, imm, res, is16, bIn);
+            if (is16) this.writeRM16(m, res); else this.writeRM8(m, res);
+            break;
+          }
           case 4: // AND
             res = a & imm;
             this.flags.updateLogic(res, is16);

@@ -141,11 +141,12 @@ export class Flags {
     const mask = is16bit ? 0xFFFF : 0xFF;
     const signBit = is16bit ? 0x8000 : 0x80;
 
-    this.cf = a < (b + bIn);
+    const fullDiff = a - b - bIn;
+    this.cf = fullDiff < 0;
     this.zf = (res & mask) === 0;
     this.sf = (res & signBit) !== 0;
     this.pf = PARITY_TABLE[res & 0xFF] === 1;
-    this.af = (a & 0x0F) < ((b & 0x0F) + bIn);
+    this.af = ((a & 0x0F) - (b & 0x0F) - bIn) < 0;
 
     // Overflow for subtraction: sign(a) != sign(b) && sign(res) != sign(a)
     const signA = (a & signBit) !== 0;

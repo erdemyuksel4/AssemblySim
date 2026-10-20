@@ -73,6 +73,8 @@ export class Encoder {
       case 'LEA': return this.encodeLEA(ops, ctx, lineNum);
       case 'ADD': return this.encodeALU(0, 0x00, ops, ctx, lineNum);
       case 'OR':  return this.encodeALU(1, 0x08, ops, ctx, lineNum);
+      case 'ADC': return this.encodeALU(2, 0x10, ops, ctx, lineNum);
+      case 'SBB': return this.encodeALU(3, 0x18, ops, ctx, lineNum);
       case 'AND': return this.encodeALU(4, 0x20, ops, ctx, lineNum);
       case 'SUB': return this.encodeALU(5, 0x28, ops, ctx, lineNum);
       case 'XOR': return this.encodeALU(6, 0x30, ops, ctx, lineNum);
@@ -195,7 +197,10 @@ export class Encoder {
     const src = ops[1];
 
     // MOV reg, imm
-    if (dest.kind === 'REGISTER' && !dest.isSegment && src.kind === 'IMMEDIATE') {
+    if (dest.kind === 'REGISTER' && src.kind === 'IMMEDIATE') {
+      if (dest.isSegment) {
+        throw new Error(`8086 mimarisinde segment yazmaçlarına doğrudan sayı (immediate) yüklenemez! Önce genel amaçlı bir yazmaca (örn: MOV AX, ${src.value ?? 'değer'}) yükleyip ardından MOV ${dest.name}, AX yapmalısınız, satır: ${lineNum}`);
+      }
       const val = this.resolveImm(src, ctx, lineNum);
       if (dest.size === 'BYTE') {
         return {
@@ -215,6 +220,7 @@ export class Encoder {
       if (dest.isSegment || src.isSegment) {
         if (dest.isSegment && src.isSegment) throw new Error(`Segmentten segmente MOV desteklenmez, satır: ${lineNum}`);
         if (dest.isSegment) {
+          if (dest.name === 'CS') throw new Error(`8086 mimarisinde CS (Code Segment) yazmacına doğrudan MOV ile değer atanamaz, satır: ${lineNum}`);
           // MOV Sreg, r16 (8E /r)
           const modrm = 0xC0 | (dest.regIndex << 3) | src.regIndex;
           return { bytes: [0x8E, modrm], length: 2 };
@@ -235,6 +241,7 @@ export class Encoder {
     // MOV reg, mem
     if (dest.kind === 'REGISTER' && src.kind === 'MEMORY') {
       if (dest.isSegment) {
+        if (dest.name === 'CS') throw new Error(`8086 mimarisinde CS (Code Segment) yazmacına doğrudan MOV ile değer atanamaz, satır: ${lineNum}`);
         // MOV Sreg, m16 (8E /r)
         const { modrmBytes, length } = this.buildModRM(dest.regIndex, src, ctx, lineNum);
         return { bytes: [0x8E, ...modrmBytes], length: 1 + length };
@@ -517,10 +524,16 @@ export class Encoder {
         const segCodes = [0x06, 0x0E, 0x16, 0x1E];
         return { bytes: [segCodes[op.regIndex]], length: 1 };
       }
+      if (op.size !== 'WORD') {
+        throw new Error(`8086 mimarisinde 8-bit yazmaçlar (${op.name}) yığına PUSH edilemez! Yalnızca 16-bit yazmaçlar ve segment yazmaçları kullanılabilir, satır: ${lineNum}`);
+      }
       return { bytes: [0x50 + op.regIndex], length: 1 };
     }
 
     if (op.kind === 'MEMORY') {
+      if (op.size === 'BYTE') {
+        throw new Error(`8086 mimarisinde byte boyutu yığına PUSH edilemez! Yalnızca 16-bit WORD kullanılabilir, satır: ${lineNum}`);
+      }
       // FF /6
       const { modrmBytes, length } = this.buildModRM(6, op, ctx, lineNum);
       return { bytes: [0xFF, ...modrmBytes], length: 1 + length };
@@ -535,15 +548,21 @@ export class Encoder {
 
     if (op.kind === 'REGISTER') {
       if (op.isSegment) {
-        if (op.name === 'CS') throw new Error(`POP CS geçersizdir, satır: ${lineNum}`);
+        if (op.name === 'CS') throw new Error(`8086 mimarisinde POP CS geçersizdir! CS yığından doğrudan POP edilemez, satır: ${lineNum}`);
         // ES=07, SS=17, DS=1F
         const segCodes = [0x07, 0, 0x17, 0x1F];
         return { bytes: [segCodes[op.regIndex]], length: 1 };
+      }
+      if (op.size !== 'WORD') {
+        throw new Error(`8086 mimarisinde 8-bit yazmaçlar (${op.name}) yığından POP edilemez! Yalnızca 16-bit yazmaçlar kullanılabilir, satır: ${lineNum}`);
       }
       return { bytes: [0x58 + op.regIndex], length: 1 };
     }
 
     if (op.kind === 'MEMORY') {
+      if (op.size === 'BYTE') {
+        throw new Error(`8086 mimarisinde byte boyutu yığından POP edilemez! Yalnızca 16-bit WORD kullanılabilir, satır: ${lineNum}`);
+      }
       // 8F /0
       const { modrmBytes, length } = this.buildModRM(0, op, ctx, lineNum);
       return { bytes: [0x8F, ...modrmBytes], length: 1 + length };

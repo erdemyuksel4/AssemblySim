@@ -179,6 +179,8 @@ export class OperandParser {
         } else if (u === 'SI' || u === 'DI') {
           if (indexReg) throw new Error(`Multiple index registers in memory operand: ${indexReg} and ${u}`);
           indexReg = u as 'SI' | 'DI';
+        } else if (['AX', 'CX', 'DX', 'SP', 'IP', 'AL', 'AH', 'BL', 'BH', 'CL', 'CH', 'DL', 'DH', 'CS', 'DS', 'ES', 'SS'].includes(u)) {
+          throw new Error(`8086 mimarisinde [${u}] ile bellek adresleme yapılamaz! Yalnızca [BX], [BP], [SI], [DI] ve bunların kombinasyonları geçerlidir.`);
         } else {
           // Label inside memory brackets, e.g. [DIZI] or [DIZI+2]
           if (label) throw new Error(`Multiple labels in memory operand: ${label} and ${u}`);
