@@ -309,30 +309,63 @@ body {
   flex: 1;
   position: relative;
   background-color: #ffffff;
+  overflow: hidden;
 }
 
-.editor-textarea {
+.editor-textarea, .editor-highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   margin: 0;
   padding: 10px 14px;
+  box-sizing: border-box !important;
   font-family: var(--font-mono);
   font-size: 13px;
   line-height: 22px;
+  tab-size: 2;
   white-space: pre;
-  tab-size: 4;
+  word-wrap: normal;
+  overflow-wrap: normal;
+  letter-spacing: 0px;
+  word-spacing: 0px;
   border: none;
   outline: none;
-  background-color: #ffffff;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.editor-highlight {
+  z-index: 1;
+  pointer-events: none;
   color: #111827;
+  overflow: hidden;
+  background: transparent;
+}
+
+.editor-textarea {
+  z-index: 2;
+  background: transparent;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
   caret-color: #000000;
   resize: none;
   overflow: auto;
 }
 
+/* Crucial: Prevent double-text ghosting during selection */
 .editor-textarea::selection {
-  background-color: #bfdbfe;
-  color: #1e3a8a;
+  background: rgba(59, 130, 246, 0.3) !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.editor-textarea::-moz-selection {
+  background: rgba(59, 130, 246, 0.3) !important;
+  color: transparent !important;
 }
 
 /* Syntax Highlighting */
@@ -346,16 +379,19 @@ body {
 
 .editor-line-row {
   height: 22px;
+  line-height: 22px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-sizing: border-box;
 }
 
 .editor-line-row.active-code-line {
-  background-color: rgba(245, 176, 20, 0.18);
-  border-left: 3px solid var(--accent-yellow);
-  padding-left: 2px;
+  background-color: rgba(245, 176, 20, 0.22);
 }
 
 .editor-line-row.error-code-line {
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: rgba(239, 68, 68, 0.12);
   text-decoration: underline wavy var(--accent-red);
 }
 

@@ -7,7 +7,8 @@ export interface EditorOptions {
 
 export class Editor {
   private container: HTMLElement;
-  private editorEl!: HTMLElement;
+  private textarea!: HTMLTextAreaElement;
+  private highlightLayer!: HTMLElement;
   private gutterLayer!: HTMLElement;
   private errorsBox!: HTMLElement;
 
@@ -17,8 +18,6 @@ export class Editor {
 
   private onCodeChange?: (code: string) => void;
   private onBreakpointToggle?: (line: number, active: boolean) => void;
-
-  private isComposing: boolean = false;
 
   constructor(options: EditorOptions) {
     this.container = options.container;
@@ -34,7 +33,8 @@ export class Editor {
       <div class="editor-card">
         <div class="editor-gutter" id="editor-gutter"></div>
         <div class="editor-body">
-          <pre class="code-editor-editable" id="code-editor-editable" contenteditable="plaintext-only" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></pre>
+          <pre class="editor-highlight" id="editor-highlight" aria-hidden="true"></pre>
+          <textarea class="editor-textarea" id="editor-textarea" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         </div>
       </div>
       <div class="errors-box" id="editor-errors-box">
@@ -44,37 +44,39 @@ export class Editor {
     `;
 
     this.gutterLayer = this.container.querySelector('#editor-gutter') as HTMLElement;
-    this.editorEl = this.container.querySelector('#code-editor-editable') as HTMLElement;
+    this.highlightLayer = this.container.querySelector('#editor-highlight') as HTMLElement;
+    this.textarea = this.container.querySelector('#editor-textarea') as HTMLTextAreaElement;
     this.errorsBox = this.container.querySelector('#editor-errors-box') as HTMLElement;
-
-    // Fallback for browsers that don't support plaintext-only
-    if (this.editorEl.contentEditable !== 'plaintext-only') {
-      this.editorEl.contentEditable = 'true';
-    }
 
     this.attachEvents();
   }
 
   private attachEvents(): void {
     const syncScroll = () => {
-      this.gutterLayer.scrollTop = this.editorEl.scrollTop;
+      this.highlightLayer.scrollTop = this.textarea.scrollTop;
+      this.highlightLayer.scrollLeft = this.textarea.scrollLeft;
+      this.gutterLayer.scrollTop = this.textarea.scrollTop;
     };
 
-    this.editorEl.addEventListener('scroll', syncScroll);
+    this.textarea.addEventListener('scroll', syncScroll);
 
-    this.editorEl.addEventListener('input', () => {
-      if (this.isComposing) return;
-      this.applyHighlightingPreservingCaret();
+    this.textarea.addEventListener('input', () => {
+      this.updateHighlighting();
       this.updateGutter();
-      this.onCodeChange?.(this.getCode());
+      this.onCodeChange?.(this.textarea.value);
     });
 
-    this.editorEl.addEventListener('keydown', (e: KeyboardEvent) => {
+    this.textarea.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Tab') {
         e.preventDefault();
-        document.execCommand('insertText', false, '  ');
-      } else if (e.key === 'Enter') {
-        // Native plaintext-only enter inserts newline cleanly
+        const start = this.textarea.selectionStart;
+        const end = this.textarea.selectionEnd;
+        const val = this.textarea.value;
+        this.textarea.value = val.substring(0, start) + '  ' + val.substring(end);
+        this.textarea.selectionStart = this.textarea.selectionEnd = start + 2;
+        this.updateHighlighting();
+        this.updateGutter();
+        this.onCodeChange?.(this.textarea.value);
       }
     });
 
@@ -88,18 +90,19 @@ export class Editor {
   }
 
   getCode(): string {
-    return this.editorEl.innerText.replace(/\r\n/g, '\n');
+    return this.textarea.value.replace(/\r\n/g, '\n');
   }
 
   setCode(code: string): void {
-    this.editorEl.innerText = code;
-    this.highlightCode();
+    this.textarea.value = code;
+    this.updateHighlighting();
     this.updateGutter();
   }
 
   setActiveLine(line: number | null): void {
     this.activeLine = line;
     this.updateGutter();
+    this.updateHighlighting();
     if (line !== null) {
       this.scrollToLine(line);
     }
@@ -141,6 +144,7 @@ export class Editor {
     }
 
     this.updateGutter();
+    this.updateHighlighting();
   }
 
   clearErrors(): void {
@@ -151,12 +155,13 @@ export class Editor {
       content.textContent = 'Compiled successfully with zero errors.';
     }
     this.updateGutter();
+    this.updateHighlighting();
   }
 
   private scrollToLine(line: number): void {
     const lineHeight = 22;
     const targetScroll = (line - 1) * lineHeight - 60;
-    this.editorEl.scrollTo({
+    this.textarea.scrollTo({
       top: Math.max(0, targetScroll),
       behavior: 'smooth'
     });
@@ -189,64 +194,34 @@ export class Editor {
     this.gutterLayer.innerHTML = html;
   }
 
-  private applyHighlightingPreservingCaret(): void {
-    const caretOffset = this.getCaretOffset(this.editorEl);
-    this.highlightCode();
-    this.setCaretOffset(this.editorEl, caretOffset);
-  }
+  private updateHighlighting(): void {
+    const lines = this.textarea.value.split('\n');
+    let highlightedHtml = '';
 
-  private highlightCode(): void {
-    const raw = this.getCode();
-    const highlighted = this.syntaxHighlight(raw);
-    this.editorEl.innerHTML = highlighted + (raw.endsWith('\n') ? '<br>' : '');
-  }
+    for (let i = 0; i < lines.length; i++) {
+      const lineNum = i + 1;
+      const lineText = lines[i];
+      const isActive = this.activeLine === lineNum;
+      const hasError = this.errors.has(lineNum);
 
-  private getCaretOffset(element: HTMLElement): number {
-    let caretOffset = 0;
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0) {
-      const range = sel.getRangeAt(0);
-      const preCaretRange = range.cloneRange();
-      preCaretRange.selectNodeContents(element);
-      preCaretRange.setEnd(range.endContainer, range.endOffset);
-      caretOffset = preCaretRange.toString().length;
+      let rowClass = 'editor-line-row';
+      if (isActive) rowClass += ' active-code-line';
+      if (hasError) rowClass += ' error-code-line';
+
+      const colored = this.highlightSyntax(lineText);
+      highlightedHtml += `<div class="${rowClass}">${colored || '&nbsp;'}</div>`;
     }
-    return caretOffset;
+
+    this.highlightLayer.innerHTML = highlightedHtml;
   }
 
-  private setCaretOffset(element: HTMLElement, offset: number): void {
-    const sel = window.getSelection();
-    if (!sel) return;
+  private highlightSyntax(line: string): string {
+    let result = '';
+    let i = 0;
+    const len = line.length;
 
-    let charCount = 0;
-    const nodeStack: Node[] = [element];
-    let node: Node | undefined;
-    let found = false;
-
-    while (!found && (node = nodeStack.pop())) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const nextCharCount = charCount + (node.textContent?.length || 0);
-        if (offset <= nextCharCount) {
-          const range = document.createRange();
-          range.setStart(node, Math.max(0, offset - charCount));
-          range.collapse(true);
-          sel.removeAllRanges();
-          sel.addRange(range);
-          found = true;
-        }
-        charCount = nextCharCount;
-      } else {
-        let i = node.childNodes.length;
-        while (i--) {
-          nodeStack.push(node.childNodes[i]);
-        }
-      }
-    }
-  }
-
-  private syntaxHighlight(code: string): string {
     const opcodes = new Set([
-      'MOV', 'LEA', 'ADD', 'SUB', 'INC', 'DEC', 'CMP', 'JMP', 'JE', 'JNE', 'JZ', 'JNZ',
+      'MOV', 'LEA', 'ADD', 'ADC', 'SUB', 'SBB', 'INC', 'DEC', 'CMP', 'JMP', 'JE', 'JNE', 'JZ', 'JNZ',
       'JC', 'JNC', 'JA', 'JB', 'JAE', 'JBE', 'JG', 'JL', 'JGE', 'JLE', 'JS', 'JNS',
       'JO', 'JNO', 'JP', 'JNP', 'JCXZ', 'LOOP', 'LOOPE', 'LOOPNE', 'LOOPZ', 'LOOPNZ',
       'NOP', 'HLT', 'AND', 'OR', 'XOR', 'NOT', 'NEG', 'TEST', 'SHL', 'SHR', 'SAL',
@@ -264,73 +239,64 @@ export class Editor {
       'AL', 'AH', 'BL', 'BH', 'CL', 'CH', 'DL', 'DH'
     ]);
 
-    const lines = code.split('\n');
-    const highlightedLines = lines.map(line => {
-      let result = '';
-      let i = 0;
-      const len = line.length;
+    while (i < len) {
+      const ch = line[i];
 
-      while (i < len) {
-        const ch = line[i];
-
-        // Comment: from ';' to end of line
-        if (ch === ';') {
-          result += `<span class="hl-comment">${this.escapeHtml(line.substring(i))}</span>`;
-          break;
-        }
-
-        // Strings
-        if (ch === "'" || ch === '"') {
-          const quote = ch;
-          let str = quote;
-          i++;
-          while (i < len && line[i] !== quote) {
-            str += line[i];
-            i++;
-          }
-          if (i < len) {
-            str += line[i];
-            i++;
-          }
-          result += `<span class="hl-string">${this.escapeHtml(str)}</span>`;
-          continue;
-        }
-
-        // Words / Numbers
-        if (/[a-zA-Z0-9_$.?]/.test(ch)) {
-          let word = '';
-          while (i < len && /[a-zA-Z0-9_$.?]/.test(line[i])) {
-            word += line[i];
-            i++;
-          }
-
-          const upper = word.toUpperCase();
-
-          if (i < len && line[i] === ':') {
-            result += `<span class="hl-label">${this.escapeHtml(word)}:</span>`;
-            i++;
-          } else if (opcodes.has(upper)) {
-            result += `<span class="hl-opcode">${this.escapeHtml(word)}</span>`;
-          } else if (directives.has(upper)) {
-            result += `<span class="hl-directive">${this.escapeHtml(word)}</span>`;
-          } else if (registers.has(upper)) {
-            result += `<span class="hl-reg">${this.escapeHtml(word)}</span>`;
-          } else if (/^[0-9][0-9A-Fa-f]*[Hh]?$/.test(word) || /^[+-]?[0-9]+$/.test(word) || /^[01]+[Bb]$/.test(word)) {
-            result += `<span class="hl-number">${this.escapeHtml(word)}</span>`;
-          } else {
-            result += this.escapeHtml(word);
-          }
-          continue;
-        }
-
-        result += this.escapeHtml(ch);
-        i++;
+      // Comment: semicolon to end of line
+      if (ch === ';') {
+        result += `<span class="hl-comment">${this.escapeHtml(line.substring(i))}</span>`;
+        break;
       }
 
-      return result;
-    });
+      // Strings: single or double quotes
+      if (ch === "'" || ch === '"') {
+        const quote = ch;
+        let str = quote;
+        i++;
+        while (i < len && line[i] !== quote) {
+          str += line[i];
+          i++;
+        }
+        if (i < len) {
+          str += line[i];
+          i++;
+        }
+        result += `<span class="hl-string">${this.escapeHtml(str)}</span>`;
+        continue;
+      }
 
-    return highlightedLines.join('\n');
+      // Words / Identifiers / Numbers
+      if (/[a-zA-Z0-9_$.?]/.test(ch)) {
+        let word = '';
+        while (i < len && /[a-zA-Z0-9_$.?]/.test(line[i])) {
+          word += line[i];
+          i++;
+        }
+
+        const upper = word.toUpperCase();
+
+        if (i < len && line[i] === ':') {
+          result += `<span class="hl-label">${this.escapeHtml(word)}:</span>`;
+          i++;
+        } else if (opcodes.has(upper)) {
+          result += `<span class="hl-opcode">${this.escapeHtml(word)}</span>`;
+        } else if (directives.has(upper)) {
+          result += `<span class="hl-directive">${this.escapeHtml(word)}</span>`;
+        } else if (registers.has(upper)) {
+          result += `<span class="hl-reg">${this.escapeHtml(word)}</span>`;
+        } else if (/^[0-9][0-9A-Fa-f]*[Hh]?$/.test(word) || /^[+-]?[0-9]+$/.test(word) || /^[01]+[Bb]$/.test(word)) {
+          result += `<span class="hl-number">${this.escapeHtml(word)}</span>`;
+        } else {
+          result += this.escapeHtml(word);
+        }
+        continue;
+      }
+
+      result += this.escapeHtml(ch);
+      i++;
+    }
+
+    return result;
   }
 
   private escapeHtml(str: string): string {
