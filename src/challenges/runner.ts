@@ -5,7 +5,8 @@ import {
   GradingResult, 
   AssertionDiff, 
   RegisterExpectations, 
-  FlagExpectations 
+  FlagExpectations,
+  ChallengeTestSetup
 } from './types.js';
 
 export class ChallengeRunner {
@@ -43,28 +44,7 @@ export class ChallengeRunner {
 
     // Load assembled machine code at origin first (loadCOM resets CPU state)
     sandboxCpu.loadCOM(asmResult.bytes, asmResult.origin);
-
-    // Load initial memory bytes if specified
-    if (setup.initialMemory && setup.initialMemory.length > 0) {
-      for (const m of setup.initialMemory) {
-        sandboxCpu.mem.loadBytes(m.segment, m.offset, m.bytes, 'data');
-      }
-    }
-
-    // Set initial registers (after loadCOM so they aren't reset)
-    if (setup.initialRegisters) {
-      this.applyRegisterExpectations(sandboxCpu, setup.initialRegisters);
-    }
-
-    // Set initial flags (after loadCOM)
-    if (setup.initialFlags) {
-      this.applyFlagExpectations(sandboxCpu, setup.initialFlags);
-    }
-
-    // Feed simulated input queue (after loadCOM)
-    if (setup.inputQueue) {
-      sandboxCpu.feedInput(setup.inputQueue);
-    }
+    this.applySetup(sandboxCpu, setup);
 
     // 3. Guarded Step Loop
     const maxSteps = challenge.assertions.maxSteps || 5000;
@@ -183,6 +163,30 @@ export class ChallengeRunner {
       diffs,
       executionTimeMs
     };
+  }
+
+  static applySetup(cpu: CPU, setup: ChallengeTestSetup): void {
+    // Load initial memory bytes if specified
+    if (setup.initialMemory && setup.initialMemory.length > 0) {
+      for (const m of setup.initialMemory) {
+        cpu.mem.loadBytes(m.segment, m.offset, m.bytes, 'data');
+      }
+    }
+
+    // Set initial registers (after loadCOM so they aren't reset)
+    if (setup.initialRegisters) {
+      this.applyRegisterExpectations(cpu, setup.initialRegisters);
+    }
+
+    // Set initial flags (after loadCOM)
+    if (setup.initialFlags) {
+      this.applyFlagExpectations(cpu, setup.initialFlags);
+    }
+
+    // Feed simulated input queue (after loadCOM)
+    if (setup.inputQueue) {
+      cpu.feedInput(setup.inputQueue);
+    }
   }
 
   private static applyRegisterExpectations(cpu: CPU, regs: RegisterExpectations): void {

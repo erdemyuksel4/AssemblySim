@@ -11,6 +11,8 @@ import { WorkspaceManager } from '../workspace/workspaceManager.js';
 import { WorkspaceDocument } from '../workspace/types.js';
 import { WorkspaceSidebar } from './sidebar.js';
 import { CpuModal } from './cpuModal.js';
+import { CHALLENGES } from '../challenges/challengesData.js';
+import { ChallengeRunner } from '../challenges/runner.js';
 
 export type ExecutionSpeed = '0.5' | '1' | '2';
 
@@ -306,6 +308,9 @@ export class App {
     // Load COM at CS:origin
     this.cpu.loadCOM(result.bytes, result.origin);
 
+    // If active document is a challenge with predefined memory/registers, inject them
+    this.applyChallengeEnvironmentIfAny();
+
     // Map IP to line
     this.ipToLineMap.clear();
     for (const item of result.listing) {
@@ -327,16 +332,38 @@ export class App {
     return true;
   }
 
+  private applyChallengeEnvironmentIfAny(): void {
+    const activeDoc = this.workspace.getActiveDocument();
+    if (activeDoc && activeDoc.type === 'challenge' && activeDoc.challengeId) {
+      const challenge = CHALLENGES[activeDoc.challengeId];
+      if (challenge && challenge.testSetup) {
+        ChallengeRunner.applySetup(this.cpu, challenge.testSetup);
+        const memCount = challenge.testSetup.initialMemory?.length || 0;
+        const hasRegs = challenge.testSetup.initialRegisters !== undefined;
+        if (memCount > 0 || hasRegs) {
+          this.consoleView.log(`💡 Görev Ortamı Hazırlandı: ${hasRegs ? 'Yazmaçlar ' : ''}${memCount > 0 ? 've Ön Tanımlı Bellek Blokları' : ''} izole CPU ortamına yüklendi.`, 'info');
+        }
+        if (challenge.testSetup.initialMemory && challenge.testSetup.initialMemory.length > 0) {
+          const first = challenge.testSetup.initialMemory[0];
+          const phys = (first.segment << 4) + first.offset;
+          this.memoryView.jumpToPhys(phys);
+        }
+      }
+    }
+  }
+
   private reset(): void {
     this.stop();
     this.consoleView.setWaitingForInput(false);
     if (this.currentAsmResult && this.currentAsmResult.errors.length === 0) {
       // Reload compiled binary at origin and restore initial program state
       this.cpu.loadCOM(this.currentAsmResult.bytes, this.currentAsmResult.origin);
+      this.applyChallengeEnvironmentIfAny();
       this.syncActiveLine();
       this.consoleView.log('Program başlangıç durumuna sıfırlandı.', 'info');
     } else {
       this.cpu.reset();
+      this.applyChallengeEnvironmentIfAny();
       this.editor.setActiveLine(null);
       this.consoleView.log('Simülatör sıfırlandı.', 'info');
     }
