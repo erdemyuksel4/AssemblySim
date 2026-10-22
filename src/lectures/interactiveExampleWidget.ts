@@ -15,6 +15,7 @@ export type WidgetSpeed = '0.5' | '1' | '2';
 export class InteractiveExampleWidget {
   private container: HTMLElement;
   private example: LectureExample;
+  private allExamples: LectureExample[];
   private callbacks: ExampleWidgetCallbacks;
   private cpu: CPU;
 
@@ -31,10 +32,16 @@ export class InteractiveExampleWidget {
   private wasRunningBeforeInput: boolean = false;
   private showSolution: boolean = false;
 
-  constructor(container: HTMLElement, example: LectureExample, callbacks: ExampleWidgetCallbacks = {}) {
+  constructor(
+    container: HTMLElement,
+    example: LectureExample,
+    callbacks: ExampleWidgetCallbacks = {},
+    allExamples: LectureExample[] = []
+  ) {
     this.container = container;
     this.example = example;
     this.callbacks = callbacks;
+    this.allExamples = allExamples && allExamples.length > 0 ? allExamples : [example];
     this.cpu = new CPU();
 
     this.render();
@@ -48,7 +55,19 @@ export class InteractiveExampleWidget {
         <!-- Top Toolbar Header Bar -->
         <div class="embedded-ide-header">
           <div class="embedded-header-left">
-            <span class="embedded-status-badge">⚡ Canlı 8086 IDE & Editör</span>
+            <div class="embedded-header-top-line">
+              <span class="embedded-status-badge">⚡ Canlı 8086 IDE & Editör</span>
+              ${this.allExamples.length > 1 ? `
+                <div class="embedded-difficulty-pills">
+                  ${this.allExamples.map(ex => {
+                    const diff = ex.difficulty || 'kolay';
+                    const isActive = ex.id === this.example.id;
+                    const label = diff === 'kolay' ? '🟢 Kolay: Birebir' : diff === 'orta' ? '🟡 Orta: Senaryo' : '🔴 Zor: Gerçek Hayat';
+                    return `<button class="btn-diff-pill ${isActive ? 'active' : ''} diff-${diff}" data-ex-id="${ex.id}">${label}</button>`;
+                  }).join('')}
+                </div>
+              ` : ''}
+            </div>
             <h3 class="embedded-title">${this.escapeHtml(this.example.title)}</h3>
           </div>
           <div class="embedded-header-actions">
@@ -61,17 +80,13 @@ export class InteractiveExampleWidget {
           </div>
         </div>
 
-        ${this.example.scenario ? `
-          <div class="embedded-scenario-bar">
-            <strong>📋 Senaryo:</strong> ${this.escapeHtml(this.example.scenario)}
-          </div>
-        ` : ''}
+        <div class="embedded-scenario-bar">
+          <strong>📋 Senaryo:</strong> ${this.escapeHtml(this.example.scenario || '')}
+        </div>
 
-        ${this.example.task ? `
-          <div class="embedded-desc-bar">
-            <strong>🎯 Görev:</strong> ${this.escapeHtml(this.example.task)}
-          </div>
-        ` : ''}
+        <div class="embedded-desc-bar">
+          <strong>🎯 Görev:</strong> ${this.escapeHtml(this.example.task || '')}
+        </div>
 
         <!-- Solution Drawer (collapsible) -->
         <div class="embedded-solution-drawer" style="display: ${this.showSolution ? 'block' : 'none'};">
@@ -90,14 +105,12 @@ export class InteractiveExampleWidget {
             <pre class="solution-code-block"><code>${this.escapeHtml(this.example.solutionCode || this.example.code)}</code></pre>
           </div>
 
-          ${this.example.solutionBreakdown && this.example.solutionBreakdown.length > 0 ? `
-            <div class="solution-breakdown-box">
-              <div class="sol-sub-title">Satır Satır Çözüm Mantığı:</div>
-              <ul class="solution-breakdown-list">
-                ${this.example.solutionBreakdown.map(b => `<li>${this.escapeHtml(b)}</li>`).join('')}
-              </ul>
-            </div>
-          ` : ''}
+          <div class="solution-breakdown-box">
+            <div class="sol-sub-title">Satır Satır Çözüm Mantığı:</div>
+            <ul class="solution-breakdown-list">
+              ${(this.example.solutionBreakdown || []).map(b => `<li>${this.escapeHtml(b)}</li>`).join('')}
+            </ul>
+          </div>
 
           ${this.example.examTips ? `
             <div class="solution-exam-tip-box">
@@ -206,6 +219,17 @@ export class InteractiveExampleWidget {
     btnReset?.addEventListener('click', () => this.reset());
     btnStepBack?.addEventListener('click', () => this.stepBack());
 
+    // Difficulty pills
+    this.container.querySelectorAll('.btn-diff-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-ex-id');
+        const found = this.allExamples.find(e => e.id === id);
+        if (found && found.id !== this.example.id) {
+          this.switchExample(found);
+        }
+      });
+    });
+
     // Format switches
     this.container.querySelectorAll('.btn-fmt').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -252,6 +276,55 @@ export class InteractiveExampleWidget {
     btnExport?.addEventListener('click', () => {
       this.callbacks.onOpenInMainEditor?.(this.example.title, this.editor.getCode());
     });
+  }
+
+  private switchExample(newEx: LectureExample): void {
+    this.stop();
+    this.example = newEx;
+
+    // Update Header Title
+    const titleEl = this.container.querySelector('.embedded-title') as HTMLElement;
+    if (titleEl) titleEl.textContent = newEx.title;
+
+    // Update Difficulty Pills Active state
+    this.container.querySelectorAll('.btn-diff-pill').forEach(btn => {
+      if (btn.getAttribute('data-ex-id') === newEx.id) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    // Update Scenario & Task
+    const scenarioBar = this.container.querySelector('.embedded-scenario-bar') as HTMLElement;
+    if (scenarioBar) {
+      scenarioBar.innerHTML = `<strong>📋 Senaryo:</strong> ${this.escapeHtml(newEx.scenario || '')}`;
+    }
+    const descBar = this.container.querySelector('.embedded-desc-bar') as HTMLElement;
+    if (descBar) {
+      descBar.innerHTML = `<strong>🎯 Görev:</strong> ${this.escapeHtml(newEx.task || '')}`;
+    }
+
+    // Update Solution Drawer
+    const solCode = this.container.querySelector('.solution-code-block code') as HTMLElement;
+    if (solCode) {
+      solCode.textContent = newEx.solutionCode || newEx.code;
+    }
+    const breakdownList = this.container.querySelector('.solution-breakdown-list') as HTMLElement;
+    if (breakdownList) {
+      breakdownList.innerHTML = (newEx.solutionBreakdown || []).map(b => `<li>${this.escapeHtml(b)}</li>`).join('');
+    }
+    const examTip = this.container.querySelector('.exam-tip-text') as HTMLElement;
+    if (examTip) {
+      examTip.textContent = newEx.examTips || '';
+    }
+
+    // Set code in editor and compile
+    this.editor.setCode(newEx.code);
+    this.cpu = new CPU();
+    this.compile();
+    this.consoleView.clear();
+    this.consoleView.log(`Alıştırma seviyesi değiştirildi: ${newEx.difficultyLabel || newEx.title}`, 'info');
   }
 
   private compile(): boolean {

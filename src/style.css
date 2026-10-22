@@ -4770,7 +4770,14 @@ body {
 .embedded-header-left {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+}
+
+.embedded-header-top-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .embedded-status-badge {
@@ -4780,9 +4787,54 @@ body {
   letter-spacing: 0.6px;
   background: #6366f1;
   color: #ffffff;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 4px;
-  align-self: flex-start;
+}
+
+.embedded-difficulty-pills {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 5px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.btn-diff-pill {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: 9999px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-diff-pill:hover:not(.active) {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-diff-pill.active.diff-kolay {
+  background: #16a34a;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.45);
+}
+
+.btn-diff-pill.active.diff-orta {
+  background: #d97706;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.45);
+}
+
+.btn-diff-pill.active.diff-zor {
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.45);
 }
 
 .embedded-title {

@@ -71,9 +71,7 @@ export class LectureDocumentView {
 
               ${sec.examples && sec.examples.length > 0 ? `
                 <div class="lecture-examples-wrapper">
-                  ${sec.examples.map((ex, exIdx) => `
-                    <div id="example-mount-${secIdx}-${exIdx}" class="example-widget-mount"></div>
-                  `).join('')}
+                  <div id="example-mount-${secIdx}" class="example-widget-mount"></div>
                 </div>
               ` : ''}
             </div>
@@ -103,20 +101,23 @@ export class LectureDocumentView {
       </div>
     `;
 
-    // Mount Interactive Example Widgets
+    // Mount Interactive Example Workstations with 3 difficulty options
     lecture.sections.forEach((sec, secIdx) => {
-      if (sec.examples) {
-        sec.examples.forEach((ex, exIdx) => {
-          const mountEl = this.container.querySelector(`#example-mount-${secIdx}-${exIdx}`) as HTMLElement;
-          if (mountEl) {
-            const widget = new InteractiveExampleWidget(mountEl, ex, {
+      if (sec.examples && sec.examples.length > 0) {
+        const mountEl = this.container.querySelector(`#example-mount-${secIdx}`) as HTMLElement;
+        if (mountEl) {
+          const widget = new InteractiveExampleWidget(
+            mountEl,
+            sec.examples[0],
+            {
               onOpenInMainEditor: (title, code) => {
                 this.callbacks.onOpenInMainEditor(title, code);
               }
-            });
-            this.exampleWidgets.push(widget);
-          }
-        });
+            },
+            sec.examples
+          );
+          this.exampleWidgets.push(widget);
+        }
       }
     });
 
