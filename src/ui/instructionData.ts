@@ -2,6 +2,7 @@ export interface InstructionVariation {
   syntax: string;
   description: string;
   example: string;
+  addressingMode?: string;
   note?: string;
 }
 
@@ -13,6 +14,38 @@ export interface InstructionDetail {
   flags: string;
   rules?: string;
   variations: InstructionVariation[];
+}
+
+
+export interface ProgramAddressingMode {
+  name: string;
+  reach: string;
+  description: string;
+  example: string;
+  formula?: string;
+  notes: string;
+}
+
+export interface StackAddressingGuide {
+  title: string;
+  discipline: string;
+  formula: string;
+  pushStep: string;
+  popStep: string;
+  swapExample: {
+    code: string;
+    explanation: string;
+  };
+  rule: string;
+}
+
+export interface CommonPitfallsGuide {
+  title: string;
+  rules: string[];
+  selectionTable: Array<{
+    need: string;
+    reachFor: string;
+  }>;
 }
 
 export interface AddressingModeInfo {
@@ -48,6 +81,14 @@ export interface ArchitectureGuide {
     segment: string;
     offset: string;
   }>;
+  entryPointGuide: {
+    title: string;
+    meaning: string;
+    defaultOrigin: string;
+    org100h: string;
+    resetVector: string;
+  };
+
   nestedRegisters: {
     title: string;
     diagram: string;
@@ -1315,6 +1356,13 @@ export const ARCHITECTURE_GUIDE: ArchitectureGuide = {
     { purpose: 'Genel Veri Erişimi (Data Access)', segment: 'DS (Data Segment)', offset: 'BX, SI, DI veya Doğrudan Adres' },
     { purpose: 'Hedef Dizi İşlemleri (String Dest)', segment: 'ES (Extra Segment)', offset: 'DI (Destination Index)' }
   ],
+  entryPointGuide: {
+    title: 'Giriş Noktası (Entry Point: CS:IP) & Reset Vektörü',
+    meaning: 'Giriş noktası, derlenen program belleğe yüklendiğinde işlemcinin çalıştırmaya başlayacağı İLK komutun adresidir. 8086 mimarisinde her komut adresi Kod Segmenti (CS) ve Komut Göstericisi (IP) çiftiyle (CS:IP) belirlenir.',
+    defaultOrigin: 'Simülatörde varsayılan başlangıç ofseti 0000h\'dir (Giriş noktası: CS:0000h). Programın ilk baytı bellek segmentinin 0000h ofsetine yazılır ve IP = 0000h yapılır.',
+    org100h: 'DOS .COM Programlarında ORG 100H Kuralı: DOS işletim sistemi programın önüne 256 baytlık (100h) PSP (Program Segment Prefix) koyduğu için slaytlardaki kodlar genellikle ORG 100H yönergesiyle başlar ve giriş noktası CS:0100h olur.',
+    resetVector: 'Donanımsal Reset Vektörü (FFFF:0000h): 8086 mikroişlemcisine elektrik ilk verildiğinde veya RESET pinine sinyal geldiğinde, donanımsal olarak CS=FFFFh ve IP=0000h kurulur. Bu adres (FFFF0h) ROM-BIOS başlangıç komutudur (Week 2, Slayt 36).'
+  },
   nestedRegisters: {
     title: 'Yazmaç Evrimi ve İçiçe Geçmiş Genişlikler (Nested Widths - Week 2)',
     diagram: `+---------------------------------------------------------------+
@@ -1349,5 +1397,64 @@ export const FLAGS_GUIDE: FlagsGuide = {
     'INC ve DEC komutları Carry Flag (CF) bayrağını ASLA etkilemez! (Döngü sayaçlarında elde zincirini korur).',
     'CMP ve TEST komutları veriyi DEĞİŞTİRMEZ, sadece bayrakları günceller.',
     'Bölme (DIV / IDIV) işleminden sonra hiçbir bayrak güvenilir değildir (hepsi tanımsızdır).'
+  ]
+};
+
+export const PROGRAM_ADDRESSING_MODES: ProgramAddressingMode[] = [
+  {
+    name: '1. Direct Program Memory Addressing (Doğrudan Program Bellek Adresleme)',
+    reach: 'Intersegment (Far Jump / Call)',
+    description: 'Hedef adres komut opkodunun hemen ardında tam 32-bit (CS:IP) olarak saklanır. Tüm 1 MB bellek alanında herhangi bir segmentteki herhangi bir adrese atlayabilir.',
+    example: 'JMP 1000:0000   ; CS = 1000H ve IP = 0000H yükler (Slayt 19)',
+    notes: 'Erken mikroişlemcilerin ve yüksek seviyeli dillerdeki GOTO ifadesinin temel çalışma modelidir.'
+  },
+  {
+    name: '2. Relative Program Memory Addressing (Bağıl Program Bellek Adresleme)',
+    reach: 'Intrasegment (Near veya Short Jump)',
+    description: 'Hedef adres doğrudan saklanmaz; mevcut Komut Göstericisine (IP) eklenecek bir yer değiştirme (displacement / ofset) olarak saklanır.',
+    formula: 'Hedef Adres = IP + Displacement',
+    example: 'JMP SHORT DONGU ; IP\'ye 1 baytlık (-128..+127) ofset ekler (Slayt 21-24)',
+    notes: 'Short jump 1 bayt, Near jump 2 bayt displacement kullanır. Kodun bellekte herhangi bir yere taşınabilir (relocatable) olmasını sağlar.'
+  },
+  {
+    name: '3. Indirect Program Memory Addressing (Dolaylı Program Bellek Adresleme)',
+    reach: 'Intrasegment veya Intersegment',
+    description: 'Atlanacak hedef adres doğrudan komut içinde değil; bir yazmaçta veya bellek işaretçisinde tutulur. Çalışma anında (run-time) okunur.',
+    example: 'JMP AX          ; AX içindeki ofset adresine atlar\nJMP [BX]        ; DS:BX adresinde yazılı olan ofsete atlar (Slayt 24-25)',
+    notes: 'Dinamik atlamalar, fonksiyon göstericileri (function pointers) ve Jump Table yapıları bu mod ile gerçekleştirilir.'
+  }
+];
+
+export const STACK_ADDRESSING_GUIDE: StackAddressingGuide = {
+  title: 'Yığın Bellek Adresleme Modları (Stack Memory Addressing - Week 3, Section 4)',
+  discipline: 'LIFO (Last-In, First-Out - Son Giren İlk Çıkar)',
+  formula: 'Fiziksel Yığın Adresi = SS × 10H + SP',
+  pushStep: 'PUSH Komutu (SP ← SP - 2): Önce SP 2 azaltılır. Yüksek bayt SP-1\'e, düşük bayt SP-2\'ye yazılır.',
+  popStep: 'POP Komutu (SP ← SP + 2): Düşük bayt SP\'den, yüksek bayt SP+1\'den çekilir, ardından SP 2 artırılır.',
+  swapExample: {
+    code: 'MOV AX, 1000H\nMOV BX, 2000H\nPUSH AX         ; Yığına 1000H atılır\nPUSH BX         ; Yığına 2000H atılır\nPOP AX          ; Yığının tepesindeki 2000H AX\'e döner\nPOP BX          ; Yığında kalan 1000H BX\'e döner',
+    explanation: 'Üçüncü bir geçici yazmaç kullanmadan AX ve BX değerleri yığın yardımıyla takas edilir (Slayt 34-35).'
+  },
+  rule: 'POP CS YASAKTIR! CS yazmacı tek başına POP edilemez; IP ile koordineli değişmesi gerektiği için ancak RET (Far Return) ile geri yüklenebilir.'
+};
+
+export const COMMON_PITFALLS_GUIDE: CommonPitfallsGuide = {
+  title: 'Hocanın Altın Kuralları ve Sık Yapılan Hatalar (Common Pitfalls - Slayt 38-39)',
+  rules: [
+    'Veri akışı sağdan sola (Kaynak → Hedef) okunur. MOV AX, BX ifadesinde BX kaynak, AX hedeftir.',
+    'MOV Asla Taşımak Değildir, KOPYALAMAKTIR! Kaynak operandın içeriği ASLA değişmez, işlemden sonra da aynen kalır.',
+    'Bellekten belleğe doğrudan transfer YASAKTIR! MOV [DI], [SI] geçersizdir (Tek istisna MOVS dizi komutudur).',
+    'Segment yazmaçlarına doğrudan sabit (immediate) sayı yüklenemez (MOV DS, 1000H geçersizdir; önce genel yazmaca yüklenir).',
+    'PUSH ve POP sayıları birebir eşleşmelidir! Eşleşmeyen her PUSH yığın işaretçisini (SP) kaydırır ve sonraki RET komutunun saçma bir adrese dönmesine yol açar.',
+    'CS yazmacı asla POP veya MOV hedefi yapılamaz.'
+  ],
+  selectionTable: [
+    { need: 'İki yazmaç arasında en hızlı kopyalama', reachFor: 'Register Addressing (Mode 1)' },
+    { need: 'Sabit sayısal değer veya sabit katsayı yükleme', reachFor: 'Immediate Addressing (Mode 2)' },
+    { need: 'Tek bir sabit program değişkenini okuma/yazma', reachFor: 'Direct Addressing (Mode 3)' },
+    { need: 'Bir işaretçi (pointer) ile dizi elemanlarını gezme', reachFor: 'Register Indirect (Mode 4) veya Register Relative (Mode 6)' },
+    { need: '2 boyutlu matris veya struct/tablo kayıtlarına erişim', reachFor: 'Base-Plus-Index (Mode 5) veya Base Relative-Plus-Index (Mode 7)' },
+    { need: 'Aynı kod segmenti içinde döngü ve koşullu dallanma', reachFor: 'Relative Program Memory Addressing (JMP Short/Near)' },
+    { need: 'Fonksiyon göstericisi (function pointer) veya switch/case tablosu', reachFor: 'Indirect Program Memory Addressing (JMP [BX] / JMP AX)' }
   ]
 };

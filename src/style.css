@@ -1335,6 +1335,14 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 6px;
+  gap: 8px;
+}
+
+.docs-var-syntax-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .docs-var-syntax {
@@ -1348,10 +1356,23 @@ body {
   border: 1px solid #ede9fe;
 }
 
+.docs-addressing-mode-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #0369a1;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
 .docs-var-badge {
   font-size: 10px;
   color: var(--text-muted);
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .docs-var-desc {

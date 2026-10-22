@@ -3,6 +3,9 @@ import {
   CATEGORIES, 
   InstructionDetail,
   ADDRESSING_MODES,
+  PROGRAM_ADDRESSING_MODES,
+  STACK_ADDRESSING_GUIDE,
+  COMMON_PITFALLS_GUIDE,
   ARCHITECTURE_GUIDE,
   FLAGS_GUIDE
 } from './instructionData.js';
@@ -198,7 +201,8 @@ export class InstructionDoc {
         const inVariations = inst.variations.some(v => 
           v.syntax.toLowerCase().includes(this.searchQuery) ||
           v.description.toLowerCase().includes(this.searchQuery) ||
-          v.example.toLowerCase().includes(this.searchQuery)
+          v.example.toLowerCase().includes(this.searchQuery) ||
+          (v.addressingMode && v.addressingMode.toLowerCase().includes(this.searchQuery))
         );
         return inOpcode || inName || inSummary || inVariations;
       }
@@ -299,7 +303,10 @@ export class InstructionDoc {
             ${inst.variations.map((v, idx) => `
               <div class="docs-var-card">
                 <div class="docs-var-header">
-                  <span class="docs-var-syntax">${this.escapeHtml(v.syntax)}</span>
+                  <div class="docs-var-syntax-wrap">
+                    <span class="docs-var-syntax">${this.escapeHtml(v.syntax)}</span>
+                    ${v.addressingMode ? `<span class="docs-addressing-mode-badge" title="Ders Slaytındaki Adresleme Modu">🎯 ${this.escapeHtml(v.addressingMode)}</span>` : ''}
+                  </div>
                   <span class="docs-var-badge">Varyasyon #${idx + 1}</span>
                 </div>
                 <p class="docs-var-desc">${v.description}</p>
@@ -329,11 +336,12 @@ export class InstructionDoc {
     if (!container) return;
 
     container.innerHTML = `
+      <!-- Section 1: The 7 Data-Addressing Modes -->
       <div class="theory-header">
-        <h3 class="theory-title">8086 Veri Adresleme Modları (The 7 Data-Addressing Modes - Week 3)</h3>
+        <h3 class="theory-title">1. Veri Adresleme Modları (The 7 Data-Addressing Modes - Week 3, Section 2)</h3>
         <p class="theory-subtitle">
-          Barry B. Brey 8. Baskı ve BMI3121 ders slaytlarına göre Intel 8086 mikroişlemcisinin 7 temel veri adresleme modu.
-          Her komutta sağdaki <strong>Kaynak (Source)</strong> operand soldaki <strong>Hedef (Destination)</strong> operanda kopyalanır.
+          BMI3121 ders slaytlarına göre MOV komutunun kaynak ve hedef veriye ulaşma yöntemleri.
+          <strong>Altın Kural:</strong> Veri akışı daima sağdan sola (Hedef ← Kaynak) gerçekleşir. MOV veriyi taşımaz, KOPYALAR!
         </p>
       </div>
 
@@ -376,6 +384,108 @@ export class InstructionDoc {
             </div>
           </div>
         `).join('')}
+      </div>
+
+      <!-- Section 2: Program Memory Addressing Modes (JMP & CALL) -->
+      <div class="theory-header" style="margin-top: 24px;">
+        <h3 class="theory-title">2. Program Bellek Adresleme Modları (Program Memory Addressing Modes - Section 3)</h3>
+        <p class="theory-subtitle">
+          JMP (atlama) ve CALL (altprogram çağırma) komutlarının sonraki komut adresini bulma biçimleri: Direct, Relative ve Indirect.
+        </p>
+      </div>
+
+      <div class="theory-cards-grid">
+        ${PROGRAM_ADDRESSING_MODES.map(pm => `
+          <div class="theory-card">
+            <div class="theory-card-header">
+              <span class="theory-card-badge control">${pm.reach}</span>
+              <h4 class="theory-card-title">${pm.name}</h4>
+            </div>
+            <p class="theory-card-desc">${pm.description}</p>
+            ${pm.formula ? `
+              <div class="theory-formula-box">
+                <span class="formula-label">Adres Hesabı:</span>
+                <code>${pm.formula}</code>
+              </div>
+            ` : ''}
+            <div class="docs-example-box" style="margin-top: 10px;">
+              <div class="docs-example-header">
+                <span>Slayt Örneği:</span>
+                <button class="btn-copy-code" data-code="${this.escapeHtml(pm.example)}" title="Kodu Kopyala">Kopyala</button>
+              </div>
+              <pre class="docs-code-pre"><code>${this.escapeHtml(pm.example)}</code></pre>
+            </div>
+            <div class="docs-var-note" style="margin-top: 8px;">
+              💡 <strong>Not:</strong> ${pm.notes}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Section 3: Stack Memory Addressing Modes -->
+      <div class="theory-header" style="margin-top: 24px;">
+        <h3 class="theory-title">${STACK_ADDRESSING_GUIDE.title}</h3>
+        <p class="theory-subtitle">
+          Geçici verilerin ve altprogram dönüş adreslerinin saklandığı <strong>${STACK_ADDRESSING_GUIDE.discipline}</strong> bellek yapısı.
+        </p>
+      </div>
+
+      <div class="theory-grid-2col">
+        <div class="theory-card">
+          <h4 class="theory-card-title">Yığın Donanım Mekanizması (SP İşaretçisi)</h4>
+          <div class="theory-formula-box highlighted">
+            <span class="formula-label">Fiziksel Yığın Adresi:</span>
+            <code class="formula-code">${STACK_ADDRESSING_GUIDE.formula}</code>
+          </div>
+          <ul class="theory-list" style="margin-top: 10px;">
+            <li><strong>${STACK_ADDRESSING_GUIDE.pushStep}</strong></li>
+            <li><strong>${STACK_ADDRESSING_GUIDE.popStep}</strong></li>
+            <li>Yığın işlemleri 8086'da daima <strong>16-bit Kelime (Word)</strong> bazında yapılır.</li>
+          </ul>
+          <div class="docs-var-note" style="margin-top: 10px;">
+            🛑 <strong>Kritik Kural:</strong> ${STACK_ADDRESSING_GUIDE.rule}
+          </div>
+        </div>
+
+        <div class="theory-card">
+          <h4 class="theory-card-title">Slayt Örneği: Yığın ile İki Yazmacın Takası (Swap)</h4>
+          <p class="theory-card-desc">${STACK_ADDRESSING_GUIDE.swapExample.explanation}</p>
+          <div class="docs-example-box" style="margin-top: 8px;">
+            <div class="docs-example-header">
+              <span>Slayt 34–35 Kodu:</span>
+              <button class="btn-copy-code" data-code="${this.escapeHtml(STACK_ADDRESSING_GUIDE.swapExample.code)}" title="Kodu Kopyala">Kopyala</button>
+            </div>
+            <pre class="docs-code-pre"><code>${this.escapeHtml(STACK_ADDRESSING_GUIDE.swapExample.code)}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Common Pitfalls & Selection Table -->
+      <div class="theory-card" style="margin-top: 24px;">
+        <h4 class="theory-card-title">${COMMON_PITFALLS_GUIDE.title}</h4>
+        <ul class="theory-list golden">
+          ${COMMON_PITFALLS_GUIDE.rules.map(r => `<li>${r}</li>`).join('')}
+        </ul>
+        <hr class="theory-divider" />
+        <h5 class="theory-subheading">Hangi Durumda Hangi Mod Seçilir? (Slayt 37 Rehberi)</h5>
+        <div class="table-responsive">
+          <table class="theory-table">
+            <thead>
+              <tr>
+                <th>İhtiyaç / Amaç</th>
+                <th>Kullanılacak Adresleme Modu</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${COMMON_PITFALLS_GUIDE.selectionTable.map(row => `
+                <tr>
+                  <td><strong>${row.need}</strong></td>
+                  <td><code>${row.reachFor}</code></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
 
@@ -434,6 +544,28 @@ export class InstructionDoc {
           <div class="example-calculation-box">
             <pre class="calculation-pre"><code>${arch.realModeFormula.example}</code></pre>
           </div>
+        </div>
+      </div>
+
+
+      <!-- Entry Point (Giriş Noktası) & Reset Vector Card -->
+      <div class="theory-card" style="margin-top: 14px; border-left: 4px solid #0284c7;">
+        <h4 class="theory-card-title">🚀 ${arch.entryPointGuide.title}</h4>
+        <p class="theory-card-desc">
+          ${arch.entryPointGuide.meaning}
+        </p>
+        <div class="theory-grid-2col" style="margin-top: 10px;">
+          <div class="memory-region-item">
+            <span class="region-badge tpa">Giriş Noktası: CS:0000h</span>
+            <span class="region-desc">${arch.entryPointGuide.defaultOrigin}</span>
+          </div>
+          <div class="memory-region-item">
+            <span class="region-badge" style="background:#0284c7;color:#fff;">ORG 100H & DOS .COM</span>
+            <span class="region-desc">${arch.entryPointGuide.org100h}</span>
+          </div>
+        </div>
+        <div class="docs-var-note" style="margin-top: 10px;">
+          ⚡ <strong>Donanımsal Reset Vektörü:</strong> ${arch.entryPointGuide.resetVector}
         </div>
       </div>
 
