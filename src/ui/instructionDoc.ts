@@ -10,22 +10,26 @@ import {
   FLAGS_GUIDE,
   LECTURE_TERMINOLOGY
 } from './instructionData.js';
-import { RoadmapView, RoadmapCallbacks } from '../challenges/roadmapView.js';
+import { LeetCodeView, LeetCodeCallbacks } from '../challenges/leetcodeView.js';
+import { RoadmapCurriculumView } from '../challenges/roadmapCurriculumView.js';
 import { Challenge } from '../challenges/types.js';
 
-export type ManualTab = 'instructions' | 'addressing' | 'architecture' | 'flags' | 'glossary' | 'roadmap';
+export type ManualTab = 'manual' | 'lectures' | 'leetcode' | 'roadmap';
+export type LectureSubTab = 'addressing' | 'architecture' | 'flags' | 'glossary';
 
 export class InstructionDoc {
   private container: HTMLElement;
   private isOpen: boolean = false;
-  private activeTab: ManualTab = 'instructions';
+  private activeTab: ManualTab = 'manual';
+  private activeLectureSubTab: LectureSubTab = 'addressing';
   private activeCategory: string = 'all';
   private searchQuery: string = '';
   private selectedOpcode: string = 'MOV';
-  private roadmapView?: RoadmapView;
-  private callbacks?: RoadmapCallbacks;
+  private leetcodeView?: LeetCodeView;
+  private roadmapCurriculumView?: RoadmapCurriculumView;
+  private callbacks?: LeetCodeCallbacks;
 
-  constructor(container: HTMLElement, callbacks?: RoadmapCallbacks) {
+  constructor(container: HTMLElement, callbacks?: LeetCodeCallbacks) {
     this.container = container;
     this.callbacks = callbacks;
     this.render();
@@ -35,12 +39,12 @@ export class InstructionDoc {
     this.container.innerHTML = `
       <section class="docs-section">
         <!-- Collapsible Toggle Header (Default: Closed) -->
-        <div class="docs-toggle-bar" id="docs-toggle-bar" title="8086 Komut Rehberini Aç / Kapat">
+        <div class="docs-toggle-bar" id="docs-toggle-bar" title="8086 Referans, Ders ve Görev Merkezini Aç / Kapat">
           <div class="docs-toggle-left">
             <span class="docs-book-icon">📖</span>
             <div class="docs-title-wrap">
-              <span class="docs-main-title">8086 Komut Seti ve Referans Rehberi (Instruction Set Manual)</span>
-              <span class="docs-subtitle">Slaytlarla tam uyumlu komutlar, 7 adresleme modu, segment:ofset hesabı ve bayraklar</span>
+              <span class="docs-main-title">8086 Öğrenme ve Referans Merkezi</span>
+              <span class="docs-subtitle">1. Manuel | 2. Dersler & Teori | 3. LeetCode Görevleri | 4. Yol Haritası</span>
             </div>
             <span class="docs-count-badge">${INSTRUCTIONS.length} Komut</span>
           </div>
@@ -52,30 +56,24 @@ export class InstructionDoc {
 
         <!-- Collapsible Body Drawer -->
         <div class="docs-body-drawer" id="docs-body-drawer">
-          <!-- Main Subject Tabs (BMI3121 Course Modules) -->
+          <!-- 4 Main Navigation Tabs -->
           <div class="docs-main-tabs" id="docs-main-tabs">
-            <button class="docs-main-tab active" data-tab="instructions">
-              📖 Komut Seti Referansı
+            <button class="docs-main-tab active" data-tab="manual">
+              📖 1. Manuel (Komut Seti)
             </button>
-            <button class="docs-main-tab" data-tab="addressing">
-              🎯 7 Veri Adresleme Modu (Week 3)
+            <button class="docs-main-tab" data-tab="lectures">
+              🎓 2. Dersler & Teori
             </button>
-            <button class="docs-main-tab" data-tab="architecture">
-              📐 Mimari & Segment:Offset Hesabı (Week 1–2)
-            </button>
-            <button class="docs-main-tab" data-tab="flags">
-              🏳️ FLAGS Kaydı & Atlama Matrisi (Week 2 & 5)
-            </button>
-            <button class="docs-main-tab" data-tab="glossary">
-              📚 Ders Terminolojisi & Kavramlar (Weeks 1–5)
+            <button class="docs-main-tab" data-tab="leetcode">
+              ⚡ 3. 8086 LeetCode
             </button>
             <button class="docs-main-tab" data-tab="roadmap">
-              🗺️ Yol Haritası & LeetCode (Roadmap)
+              🗺️ 4. Yol Haritası
             </button>
           </div>
 
-          <!-- TAB 1: Instructions Master-Detail View -->
-          <div class="docs-tab-pane active" id="pane-instructions">
+          <!-- TAB 1: 📖 1. Manuel (Komut Seti Referansı) -->
+          <div class="docs-tab-pane active" id="pane-manual">
             <!-- Filter & Search Toolbar -->
             <div class="docs-toolbar">
               <div class="docs-search-wrap">
@@ -102,27 +100,43 @@ export class InstructionDoc {
             </div>
           </div>
 
-          <!-- TAB 2: Addressing Modes View -->
-          <div class="docs-tab-pane" id="pane-addressing">
-            <div class="docs-theory-container" id="docs-addressing-container"></div>
+          <!-- TAB 2: 🎓 2. Dersler & Teori (Lectures & Course Modules) -->
+          <div class="docs-tab-pane" id="pane-lectures">
+            <div class="lecture-sub-tabs" id="lecture-sub-tabs">
+              <button class="lecture-sub-tab active" data-subtab="addressing">
+                🎯 7 Veri Adresleme Modu (Week 3)
+              </button>
+              <button class="lecture-sub-tab" data-subtab="architecture">
+                📐 Mimari & Segment:Offset Hesabı (Week 1–2)
+              </button>
+              <button class="lecture-sub-tab" data-subtab="flags">
+                🏳️ FLAGS Kaydı & Atlama Matrisi (Week 2 & 5)
+              </button>
+              <button class="lecture-sub-tab" data-subtab="glossary">
+                📚 Ders Terminolojisi & Kavramlar (Weeks 1–5)
+              </button>
+            </div>
+
+            <div class="lecture-sub-pane active" id="subpane-addressing">
+              <div class="docs-theory-container" id="docs-addressing-container"></div>
+            </div>
+            <div class="lecture-sub-pane" id="subpane-architecture">
+              <div class="docs-theory-container" id="docs-architecture-container"></div>
+            </div>
+            <div class="lecture-sub-pane" id="subpane-flags">
+              <div class="docs-theory-container" id="docs-flags-container"></div>
+            </div>
+            <div class="lecture-sub-pane" id="subpane-glossary">
+              <div class="docs-theory-container" id="docs-glossary-container"></div>
+            </div>
           </div>
 
-          <!-- TAB 3: Architecture & Physical Address Calculation View -->
-          <div class="docs-tab-pane" id="pane-architecture">
-            <div class="docs-theory-container" id="docs-architecture-container"></div>
+          <!-- TAB 3: ⚡ 3. 8086 LeetCode (Görevler & Sınavlar) -->
+          <div class="docs-tab-pane" id="pane-leetcode">
+            <div id="docs-leetcode-container"></div>
           </div>
 
-          <!-- TAB 4: FLAGS Register & Jump Decision Matrix View -->
-          <div class="docs-tab-pane" id="pane-flags">
-            <div class="docs-theory-container" id="docs-flags-container"></div>
-          </div>
-
-          <!-- TAB 5: Lecture Terminology & Concepts -->
-          <div class="docs-tab-pane" id="pane-glossary">
-            <div class="docs-theory-container" id="docs-glossary-container"></div>
-          </div>
-
-          <!-- TAB 6: 8086 Roadmap & LeetCode Challenges -->
+          <!-- TAB 4: 🗺️ 4. Yol Haritası (Müfredat & Gelişim Ağacı) -->
           <div class="docs-tab-pane" id="pane-roadmap">
             <div id="docs-roadmap-container"></div>
           </div>
@@ -137,13 +151,28 @@ export class InstructionDoc {
     this.renderArchitecture();
     this.renderFlags();
     this.renderGlossary();
+    this.renderLeetCode();
     this.renderRoadmap();
   }
 
+  private renderLeetCode(): void {
+    const container = this.container.querySelector('#docs-leetcode-container') as HTMLElement;
+    if (container && this.callbacks) {
+      this.leetcodeView = new LeetCodeView(container, this.callbacks);
+    }
+  }
+
   private renderRoadmap(): void {
-    const roadmapContainer = this.container.querySelector('#docs-roadmap-container') as HTMLElement;
-    if (roadmapContainer && this.callbacks) {
-      this.roadmapView = new RoadmapView(roadmapContainer, this.callbacks);
+    const container = this.container.querySelector('#docs-roadmap-container') as HTMLElement;
+    if (container) {
+      this.roadmapCurriculumView = new RoadmapCurriculumView(container, {
+        onNavigateToLeetCode: (milestoneId) => {
+          this.openTab('leetcode');
+          if (milestoneId && this.leetcodeView) {
+            this.leetcodeView.filterByMilestone(milestoneId);
+          }
+        }
+      });
     }
   }
 
@@ -164,6 +193,7 @@ export class InstructionDoc {
     const clearBtn = this.container.querySelector('#docs-search-clear') as HTMLButtonElement;
     const catWrap = this.container.querySelector('#docs-categories-wrap') as HTMLElement;
     const tabsWrap = this.container.querySelector('#docs-main-tabs') as HTMLElement;
+    const subtabsWrap = this.container.querySelector('#lecture-sub-tabs') as HTMLElement;
 
     // Toggle expand/collapse
     toggleBar.addEventListener('click', () => {
@@ -171,7 +201,7 @@ export class InstructionDoc {
       this.updateOpenState();
     });
 
-    // Main Tabs Switcher
+    // Main 4 Tabs Switcher
     tabsWrap.addEventListener('click', (e: MouseEvent) => {
       const btn = (e.target as HTMLElement).closest('.docs-main-tab') as HTMLButtonElement;
       if (!btn) return;
@@ -184,6 +214,21 @@ export class InstructionDoc {
       this.activeTab = tab;
       this.container.querySelectorAll('.docs-tab-pane').forEach(p => p.classList.remove('active'));
       this.container.querySelector(`#pane-${tab}`)?.classList.add('active');
+    });
+
+    // Lecture Sub-tabs Switcher
+    subtabsWrap?.addEventListener('click', (e: MouseEvent) => {
+      const btn = (e.target as HTMLElement).closest('.lecture-sub-tab') as HTMLButtonElement;
+      if (!btn) return;
+      const subtab = btn.getAttribute('data-subtab') as LectureSubTab;
+      if (!subtab || subtab === this.activeLectureSubTab) return;
+
+      subtabsWrap.querySelectorAll('.lecture-sub-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      this.activeLectureSubTab = subtab;
+      this.container.querySelectorAll('.lecture-sub-pane').forEach(p => p.classList.remove('active'));
+      this.container.querySelector(`#subpane-${subtab}`)?.classList.add('active');
     });
 
     // Category button selection
