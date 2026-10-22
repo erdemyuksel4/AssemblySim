@@ -1763,3 +1763,425 @@ export const LECTURE_TERMINOLOGY: LectureTerminology = {
     }
   ]
 };
+
+// ============================================================================
+// WEEK 7: GİRİŞ / ÇIKIŞ (I/O) SİSTEMLERİ VE DOĞRUDAN BELLEK ERİŞİMİ (DMA)
+// ============================================================================
+
+export interface DmaAndIoGuide {
+  title: string;
+  subtitle: string;
+  syllabusRef: string;
+  ioTechniques: Array<{
+    name: string;
+    badge: string;
+    mechanism: string;
+    cpuOverhead: string;
+    hardwareCost: string;
+    useCase: string;
+    pros: string[];
+    cons: string[];
+  }>;
+  dmaArchitecture: {
+    definition: string;
+    controllerName: string;
+    channels: Array<{
+      channel: string;
+      typicalUse: string;
+      description: string;
+    }>;
+    handshakeSignals: Array<{
+      signal: string;
+      direction: string;
+      role: string;
+      step: number;
+    }>;
+    transferModes: Array<{
+      mode: string;
+      title: string;
+      description: string;
+      busBehavior: string;
+      advantage: string;
+    }>;
+  };
+  ioAddressingTypes: Array<{
+    type: string;
+    title: string;
+    instructions: string;
+    addressSpace: string;
+    controlSignal: string;
+    prosAndCons: string;
+  }>;
+}
+
+export const DMA_AND_IO_GUIDE: DmaAndIoGuide = {
+  title: 'Giriş / Çıkış (I/O) Sistemleri & Doğrudan Bellek Erişimi (DMA)',
+  subtitle: 'Programmed I/O, Kesme Tabanlı I/O ve 8237 DMA Denetleyicisi ile Yüksek Hızlı Blok Veri Transferi',
+  syllabusRef: 'Week 7 / BMI3121 Müfredatı',
+  ioTechniques: [
+    {
+      name: '1. Programmed I/O (Döngüsel Sorgulama / Polling)',
+      badge: 'En Basit / Verimsiz',
+      mechanism: 'CPU bir I/O portundan durum bayrağını (Status Bit) sürekli okur (IN AL, Port) ve cihaz hazır olana kadar bir döngüde meşgul bekler (Busy-Wait).',
+      cpuOverhead: 'Çok Yüksek (%100 CPU Meşguliyeti): Cihaz veri getirene kadar işlemci başka hiçbir iş yapamaz.',
+      hardwareCost: 'En Düşük (Ek donanım gerektirmez).',
+      useCase: 'Çok basit mikrodenetleyiciler, klavye tuş taraması, donanım gecikme döngüleri.',
+      pros: ['Sıfır ek donanım maliyeti', 'Uygulaması son derece kolaydır'],
+      cons: ['CPU zamanının büyük kısmı boş döngülerde harcanır', 'Aynı anda birden fazla aygıtı verimli yönetemez']
+    },
+    {
+      name: '2. Interrupt-Driven I/O (Kesme Tabanlı G/Ç)',
+      badge: 'Dengeli / Olay Güdümlü',
+      mechanism: 'CPU bir transfer başlatır ve kendi işine devam eder. Çevre birimi (örneğin klavye veya seri port) veri alışverişine hazır olduğunda bir kesme (INTR) sinyali gönderir. CPU mevcut komutu bitirip ISR çalıştırır.',
+      cpuOverhead: 'Orta: Sadece veri transferi anında CPU devreye girer. Bağlam değiştirme (Context Switching) süresi vardır.',
+      hardwareCost: 'Orta (8259 PIC gibi bir Kesme Denetleyicisi gerekir).',
+      useCase: 'Klavye, fare, ağ paketleri gelişi, seri haberleşme portları (UART).',
+      pros: ['CPU boş beklemez, arka planda hesaplama yapabilir', 'Tepki süresi (Latency) düşüktür'],
+      cons: ['Her bayt için PUSH/POP ve bağlam değişimi gerektiğinden megabaytlarca veri için yavaştır']
+    },
+    {
+      name: '3. Direct Memory Access (DMA - Doğrudan Bellek Erişimi)',
+      badge: 'En Hızlı / Blok Transferi',
+      mechanism: 'CPU tamamen aradan çekilir. Özel bir donanım yongası (Intel 8237 DMA Controller), sistem veri yolunu (Bus) devralarak I/O aygıtı ile RAM arasında doğrudan blok veri transferi gerçekleştirir.',
+      cpuOverhead: 'Sıfıra Yakın: CPU sadece transferin başlangıcında (adres ve sayaç kurarak) ve bitiş kesmesinde devreye girer.',
+      hardwareCost: 'Yüksek (Ayrı DMA Denetleyicisi ve Sayfa Yazmaçları gerekir).',
+      useCase: 'Sabit diskler (HDD/SSD), Floppy Disk, Ses Kartları, Yüksek hızlı Ağ Kartları (Ethernet) ve Ekran Kartı bellek kopyalamaları.',
+      pros: ['Maksimum veri aktarım hızı (donanım saat hızında aktarım)', 'CPU işlem gücünü tüketmez'],
+      cons: ['Karmaşık devre tasarımı', 'Transfer sırasında CPU bellek veri yolundan mahrum kalabilir (Bus Contention)']
+    }
+  ],
+  dmaArchitecture: {
+    definition: 'Doğrudan Bellek Erişimi (DMA), mikroişlemcinin her baytı tek tek okuyup yazmakla (IN/OUT döngüsü) vakit kaybetmesini önleyerek, çevre birimi ile bellek arasındaki veri akışını doğrudan donanımsal bir denetleyiciye devreden mekanizmadır.',
+    controllerName: 'Intel 8237 Programlanabilir DMA Denetleyicisi (DMAC)',
+    channels: [
+      {
+        channel: 'Kanal 0 (Channel 0)',
+        typicalUse: 'DRAM Bellek Tazeleme (DRAM Memory Refresh)',
+        description: 'Dinamik RAM hücrelerinin elektrik yükünü kaybetmemesi için periyodik olarak arka planda bellek satırlarını okur.'
+      },
+      {
+        channel: 'Kanal 1 (Channel 1)',
+        typicalUse: 'Ses Kartları (Sound Blaster) / Genel Genişleme',
+        description: 'Kesintisiz ses çalma ve kaydetme için 8-bit ses tamponlarını bellekten DAC donanımına doğrudan pompalar.'
+      },
+      {
+        channel: 'Kanal 2 (Channel 2)',
+        typicalUse: 'Disket Sürücüsü (Floppy Disk Controller)',
+        description: 'Disket sektörlerinden okunan verileri doğrudan sistem RAM belleğindeki hedef sektöre yazar.'
+      },
+      {
+        channel: 'Kanal 3 (Channel 3)',
+        typicalUse: 'Sabit Disk / Yüksek Hızlı Veri İletişimi',
+        description: 'Sabit disk tampon belleğinden sistem belleğine hızlı blok transferi sağlar.'
+      }
+    ],
+    handshakeSignals: [
+      {
+        step: 1,
+        signal: 'DREQ (DMA Request)',
+        direction: 'I/O Cihazı ➔ 8237 DMA Denetleyicisi',
+        role: 'Giriş/çıkış aygıtı bir bayt veya blok veri transferine hazır olduğunu DMA denetleyicisine bildirir.'
+      },
+      {
+        step: 2,
+        signal: 'HOLD (Bus Request)',
+        direction: '8237 DMA Denetleyicisi ➔ 8086 CPU (Pin 31)',
+        role: 'DMA denetleyicisi 8086 işlemcisine "Sistem Adres ve Veri Yollarını (Buses) bana devret" çağrısı yapar.'
+      },
+      {
+        step: 3,
+        signal: 'HLDA (Hold Acknowledge)',
+        direction: '8086 CPU ➔ 8237 DMA Denetleyicisi (Pin 30)',
+        role: 'CPU mevcut saat vuruşundaki veri yolu çevrimini tamamlar, pinlerini Yüksek Empedans (High-Z / Yüzen) durumuna alır ve kontrolü DMA\'ya teslim ettiğini onaylar.'
+      },
+      {
+        step: 4,
+        signal: 'DACK (DMA Acknowledge)',
+        direction: '8237 DMA Denetleyicisi ➔ I/O Cihazı',
+        role: 'DMA denetleyicisi çevre birimine transferin başladığını ve veriyi hatta vermesi/alması gerektiğini bildirir.'
+      },
+      {
+        step: 5,
+        signal: 'TC (Terminal Count) / EOP (End of Process)',
+        direction: '8237 DMA Denetleyicisi ➔ CPU / Cihaz',
+        role: 'Word Counter sayacı sıfıra ulaştığında blok transferinin bittiğini bildirir ve CPU\'ya kesme üretir.'
+      }
+    ],
+    transferModes: [
+      {
+        mode: 'Burst Modu (Blok Transfer)',
+        title: 'Kesintisiz Blok Transferi',
+        description: 'Tüm veri bloğu (örneğin 64 KB) aktarılana kadar sistem veri yolu DMA denetleyicisinde kalır. HOLD sinyali transfer sonuna kadar aktif tutulur.',
+        busBehavior: 'Veri yolu tamamen DMA\'nın kontrolündedir.',
+        advantage: 'En yüksek veri aktarım hızını sağlar (Diskten toplu sektör okuma için idealdir).'
+      },
+      {
+        mode: 'Cycle Stealing (Çevrim Çalma)',
+        title: 'Zaman Paylaşımlı Transfer',
+        description: 'Her bayt veya word aktarımında DMA denetleyicisi veri yolunu 1 çevrimliğine devralır, veriyi yazar ve hemen ardından HOLD sinyalini düşürerek kontrolü tekrar CPU\'ya verir.',
+        busBehavior: 'Veri yolu CPU ile DMA arasında vuruş vuruş paylaşılır.',
+        advantage: 'CPU uzun süre kilitlenmez, programlar arka planda neredeyse hiç kesintiye uğramadan çalışmaya devam eder.'
+      },
+      {
+        mode: 'Demand Transfer (Talep Modu)',
+        title: 'Cihaz Hazırlık Güdümlü Transfer',
+        description: 'I/O aygıtı DREQ sinyalini aktif tuttuğu sürece transfer sürer. Aygıtın tamponu dolduğunda DREQ pasif olur, DMA yolu CPU\'ya bırakır. Aygıt hazır olunca transfer kaldığı yerden devam eder.',
+        busBehavior: 'Aygıtın anlık hızına göre dinamik olarak düzenlenir.',
+        advantage: 'Yavaş veya değişken hızlı çevre birimleri için mükemmel uyum sağlar.'
+      }
+    ]
+  },
+  ioAddressingTypes: [
+    {
+      type: 'Isolated I/O (Port-Mapped I/O)',
+      title: 'Ayrık (Port Tabanlı) Giriş / Çıkış',
+      instructions: 'IN ve OUT komutları (Örn: IN AL, 60H, OUT DX, AL)',
+      addressSpace: 'Ayrı 64 KB Port Alanı (0000H – FFFFH). Bellek adres alanından bağımsızdır.',
+      controlSignal: '8086 M/IO# pini LOW (0) seviyesine çekilir, IORC# veya IOWC# sinyalleri üretilir.',
+      prosAndCons: 'Avantajı: 1 MB RAM alanından 1 bayt bile çalmaz. Dezavantajı: Yalnızca IN ve OUT komutlarıyla erişilebilir (doğrudan ADD veya CMP yapılamaz).'
+    },
+    {
+      type: 'Memory-Mapped I/O',
+      title: 'Bellekle Eşlenmiş Giriş / Çıkış',
+      instructions: 'Normal bellek komutları (MOV, ADD, SUB, CMP, TEST vb.)',
+      addressSpace: 'I/O portları sistem RAM alanının bir parçasıymış gibi bir bellek adresine (örn: A0000H) bağlanır.',
+      controlSignal: '8086 M/IO# pini HIGH (1) seviyesinde kalır, standart MEMR# ve MEMW# sinyalleri kullanılır.',
+      prosAndCons: 'Avantajı: Tüm 8086 komutları (ADD [8000H], AX) doğrudan port üzerinde çalışabilir. Dezavantajı: Sistem RAM adresleme kapasitesinden yer çalar.'
+    }
+  ]
+};
+
+// ============================================================================
+// WEEK 6: 8086 KESME MİMARİSİ (INTERRUPTS) VE KESME VEKTÖR TABLOSU (IVT)
+// ============================================================================
+
+export interface InterruptsGuide {
+  title: string;
+  subtitle: string;
+  syllabusRef: string;
+  ivtStructure: {
+    addressRange: string;
+    totalVectors: number;
+    vectorSizeBytes: number;
+    formula: string;
+    format: string;
+    description: string;
+  };
+  dedicatedInterrupts: Array<{
+    typeNumber: string;
+    vectorAddr: string;
+    name: string;
+    category: string;
+    trigger: string;
+    description: string;
+  }>;
+  executionSteps: Array<{
+    step: number;
+    title: string;
+    action: string;
+    hardwareDetails: string;
+  }>;
+}
+
+export const INTERRUPTS_AND_IVT_GUIDE: InterruptsGuide = {
+  title: '8086 Kesme Mimarisi (Interrupts) & Kesme Vektör Tablosu (IVT)',
+  subtitle: 'Yazılımsal, Donanımsal Kesmeler, İstisnalar (Traps) ve 00000H–003FFH Vektör Haritası',
+  syllabusRef: 'Week 6 / BMI3121 Müfredatı',
+  ivtStructure: {
+    addressRange: '00000H – 003FFH (Belleğin en altındaki ilk 1024 bayt / 1 KB)',
+    totalVectors: 256,
+    vectorSizeBytes: 4,
+    formula: 'Fiziksel IVT Adresi = Kesme Numarası (Type) × 4',
+    format: 'Her vektör 4 bayttır: Düşük 2 bayt = IP (Offset), Yüksek 2 bayt = CS (Segment)',
+    description: '8086 işlemcisi bir kesme aldığında, o kesmeye ait servis rutininin (ISR) başlangıç adresini (CS:IP) doğrudan bu tablodan okur.'
+  },
+  dedicatedInterrupts: [
+    {
+      typeNumber: 'Type 0 (INT 0)',
+      vectorAddr: '00000H – 00003H',
+      name: 'Divide Error / Sıfıra Bölme Hatası',
+      category: 'İşlemci İstisnası (Trap)',
+      trigger: 'Bölen sıfır olduğunda veya bölüm (quotient) hedef yazmacın kapasitesini aştığında (Örn: AX / BL sonucu 255\'i aşarsa).',
+      description: 'İşlemci tarafından otomatik olarak üretilen donanımsal hata kesmesidir. Programın çökmesini engellemek için hata mesajı basar.'
+    },
+    {
+      typeNumber: 'Type 1 (INT 1)',
+      vectorAddr: '00004H – 00007H',
+      name: 'Single Step Trap / Tek Adım Modu',
+      category: 'Hata Ayıklama (Debug)',
+      trigger: 'Trap Flag (TF) = 1 olduğunda her assembly komutu çalıştıktan hemen sonra.',
+      description: 'Hata ayıklayıcıların (Debuggers - EMU8086, GDB vb.) kodu satır satır çalıştırmasını ve her adımda yazmaçları incelemesini sağlar.'
+    },
+    {
+      typeNumber: 'Type 2 (INT 2)',
+      vectorAddr: '00008H – 0000BH',
+      name: 'NMI (Non-Maskable Interrupt)',
+      category: 'Donanım Kesmesi (En Yüksek Öncelik)',
+      trigger: 'İşlemcinin NMI pinine (Pin 17) yükselen kenar darbesi geldiğinde.',
+      description: 'Maskelenemez (IF bayrağı sıfır olsa bile engellenemez). Güç kesintisi, RAM parite hatası veya ölümcül veri yolu arızalarında tetiklenir.'
+    },
+    {
+      typeNumber: 'Type 3 (INT 3)',
+      vectorAddr: '0000CH – 0000FH',
+      name: 'Breakpoint / Kesme Noktası',
+      category: 'Yazılımsal Kesme (Özel 1-baytlık)',
+      trigger: 'Makine kodu 0xCC (Tek baytlık INT 3 komutu).',
+      description: 'Hata ayıklayıcıların kod içine dinamik olarak breakpoint yerleştirmesini sağlar. Tek baytlık olduğu için herhangi bir komutun ilk baytının yerine yazılabilir.'
+    },
+    {
+      typeNumber: 'Type 4 (INT 4)',
+      vectorAddr: '00010H – 00013H',
+      name: 'Overflow / Taşma Kesmesi (INTO)',
+      category: 'Koşullu İstisna',
+      trigger: 'Overflow Flag (OF) = 1 iken INTO komutu çalıştırıldığında.',
+      description: 'İşaretli aritmetik işlemlerden sonra taşma olup olmadığını kontrol etmek için kullanılır. OF=0 ise hiçbir şey yapmaz (NOP).'
+    },
+    {
+      typeNumber: 'Type 8 – 15',
+      vectorAddr: '00020H – 0003FH',
+      name: 'Donanımsal IRQ0 – IRQ7 (8259 PIC)',
+      category: 'Dış Donanım Kesmeleri',
+      trigger: 'Intel 8259 Programlanabilir Kesme Denetleyicisi üzerinden gelen harici sinyaller.',
+      description: 'IRQ0 (Sistem Saati Timer: INT 8), IRQ1 (Klavye Tuş Kesmesi: INT 9), IRQ6 (Disket Sürücü: INT 14) gibi anakart donanımlarını yönetir.'
+    },
+    {
+      typeNumber: 'Type 21H (INT 21H)',
+      vectorAddr: '00084H – 00087H',
+      name: 'DOS API Sistem Çağrıları',
+      category: 'İşletim Sistemi Servisi',
+      trigger: 'Yazılımda INT 21H komutu çağrıldığında (AH yazmacındaki fonksiyona göre).',
+      description: 'DOS işletim sisteminin giriş/çıkış, konsol ve dosya servisleridir (AH=01H: Karakter oku, AH=02H: Karakter bas, AH=09H: String bas, AH=4CH: Programdan çık).'
+    }
+  ],
+  executionSteps: [
+    {
+      step: 1,
+      title: 'FLAGS Kaydının Saklanması',
+      action: 'PUSH FLAGS',
+      hardwareDetails: 'Mevcut programın bayrak durumları (CF, ZF, SF vb.) yığına kaydedilir.'
+    },
+    {
+      step: 2,
+      title: 'Kesmelerin Maskelenmesi',
+      action: 'IF ← 0, TF ← 0',
+      hardwareDetails: 'ISR çalışırken araya başka bir maskelenebilir kesmenin girmesi ve tek adım tuzağı engellenir.'
+    },
+    {
+      step: 3,
+      title: 'Dönüş Adresinin Yığına Atılması',
+      action: 'PUSH CS ve PUSH IP',
+      hardwareDetails: 'Ana programın kaldığı yerin Segment (CS) ve Offset (IP) adresleri yığına saklanır.'
+    },
+    {
+      step: 4,
+      title: 'IVT\'den Vektörün Okunması',
+      action: 'IP ← [Tip × 4], CS ← [Tip × 4 + 2]',
+      hardwareDetails: 'İşlemci Kesme Vektör Tablosundan 4 baytlık yeni adresi okuyarak ISR koduna dallanır.'
+    },
+    {
+      step: 5,
+      title: 'Kesmeden Dönüş (IRET)',
+      action: 'POP IP, POP CS, POP FLAGS',
+      hardwareDetails: 'ISR sonundaki IRET komutu ile yığındaki eski CS:IP ve bayraklar geri yüklenerek ana programa tam kalındığı yerden dönülür.'
+    }
+  ]
+};
+
+// ============================================================================
+// WEEKS 12, 14, 15: İLERİ MİMARİ (PIPELINING, HAZARDS, CISC/RISC & 8085)
+// ============================================================================
+
+export interface AdvancedArchGuide {
+  title: string;
+  subtitle: string;
+  syllabusRef: string;
+  pipelining: {
+    description: string;
+    stages: Array<{
+      stage: string;
+      name: string;
+      description: string;
+    }>;
+    speedupFormula: string;
+  };
+  hazards: Array<{
+    type: string;
+    title: string;
+    cause: string;
+    solution: string;
+    slideRef: string;
+  }>;
+  ciscVsRisc: Array<{
+    feature: string;
+    cisc: string;
+    risc: string;
+  }>;
+  intel8085Overview: {
+    title: string;
+    description: string;
+    registers: string[];
+    registerPairs: string[];
+    mappingTo8086: Array<{ reg8085: string; reg8086: string; note: string }>;
+  };
+}
+
+export const ADVANCED_ARCH_GUIDE: AdvancedArchGuide = {
+  title: 'İleri Mimari: Pipelining (Boru Hattı), Tehlikeler (Hazards), CISC vs RISC ve 8085',
+  subtitle: 'Komut Yürütme Aşamaları, Donanımsal Çakışmalar, RISC Karşılaştırması ve Intel 8085 Mimarisi',
+  syllabusRef: 'Weeks 12, 14, 15 / BMI3121 Müfredatı',
+  pipelining: {
+    description: 'İşlemcinin komutları seri olarak tek tek bitirmesini beklemek yerine, komut işleme aşamalarını bağımsız donanım bloklarına bölerek aynı anda birden fazla komutun farklı aşamalarını paralel yürütme tekniğidir.',
+    stages: [
+      { stage: '1. IF (Instruction Fetch)', name: 'Komut Getirme', description: 'Komut bellekten (CS:IP) veya komut önbelleğinden (I-Cache) okunur, IP artırılır.' },
+      { stage: '2. ID (Instruction Decode)', name: 'Komut Çözme', description: 'Opcode çözülür, gerekli yazmaç değerleri okunur, operantlar belirlenir.' },
+      { stage: '3. EX (Execute)', name: 'Yürütme / Hesaplama', description: 'ALU aritmetik/mantık işlemini yapar veya bellek efektif adresi hesaplanır.' },
+      { stage: '4. MEM (Memory Access)', name: 'Bellek Erişimi', description: 'Eğer komut bellekten veri okuyacaksa (LOAD) veya yazacaksa (STORE) veri yolu kullanılır.' },
+      { stage: '5. WB (Write Back)', name: 'Geri Yazma', description: 'İşlem sonucu hedef yazmaca (örneğin AX) geri yazılır.' }
+    ],
+    speedupFormula: 'İdeal Hızlanma: S = k (Burada k = Boru hattı aşama sayısıdır). 5 aşamalı bir boru hattı teorik olarak 5 kat hızlanma sağlar ve CPI ≈ 1 olur.'
+  },
+  hazards: [
+    {
+      type: 'Structural Hazard (Yapısal Tehlike)',
+      title: 'Donanım Kaynağı Çakışması',
+      cause: 'İki farklı komutun aynı anda aynı donanım birimini kullanmak istemesi (örneğin IF aşamasındaki komut ile MEM aşamasındaki komutun aynı tek portlu belleğe erişmeye çalışması).',
+      solution: 'Harvard Mimarisi: Komut ve Veri için ayrı bellek veya ayrı L1 önbellekler (I-Cache ve D-Cache) kullanmak.',
+      slideRef: 'Week 12 & 15 Slaytları'
+    },
+    {
+      type: 'Data Hazard (Veri Tehlikesi - RAW / WAR / WAW)',
+      title: 'Veri Bağımlılığı (Read After Write)',
+      cause: 'Bir komutun, kendisinden bir önceki komutun henüz WB aşamasında yazmadığı yazmaç değerine ihtiyaç duyması (Örn: ADD AX, BX ardından SUB CX, AX gelmesi).',
+      solution: 'Forwarding / Bypassing (Sonucu yazmaca yazılmasını beklemeden doğrudan ALU çıkışından bir sonraki komutun girişine iletmek) veya NOP kabarcığı (Stall) eklemek.',
+      slideRef: 'Week 12 & 15 Slaytları'
+    },
+    {
+      type: 'Control Hazard (Dallanma Tehlikesi)',
+      title: 'Şartlı Atlama ve Karar Belirsizliği',
+      cause: 'JMP, JZ veya CALL komutlarında bir sonraki komutun adresinin ancak EX aşamasında (bayraklar hesaplandıktan sonra) belli olması. Boru hattına yanlış komutların getirilmesi.',
+      solution: 'Branch Prediction (Dallanma Tahmini): Donanımsal olarak atlamanın gerçekleşip gerçekleşmeyeceğini tahmin etmek. Yanlışsa hattı boşaltmak (Pipeline Flush).',
+      slideRef: 'Week 12 & 15 Slaytları'
+    }
+  ],
+  ciscVsRisc: [
+    { feature: 'Komut Seti Felsefesi', cisc: 'Karmaşık, zengin ve çok işlevli komutlar (Komut sayısını azaltmayı hedefler).', risc: 'Yalın, temel ve az sayıda komut (Komutların hızlı çalışmasını hedefler).' },
+    { feature: 'Komut Boyutu', cisc: 'Değişken uzunlukta (1 bayt ile 15 bayt arasında).', risc: 'Sabit uzunlukta (Genellikle tam 32-bit / 4 bayt).' },
+    { feature: 'Bellek Erişimi', cisc: 'Doğrudan komut içinde bellek işlemi yapılabilir (ADD AX, [BX+10H]).', risc: 'Yalnızca LOAD ve STORE komutları belleğe erişir. Aritmetik sadece yazmaçlar arasında yapılır.' },
+    { feature: 'Yazmaç Sayısı', cisc: 'Az sayıda genel amaçlı yazmaç (8086\'da 8 adet 16-bit yazmaç).', risc: 'Çok sayıda genel amaçlı yazmaç (genellikle 32 veya daha fazla: R0..R31).' },
+    { feature: 'Saat Başına Komut (CPI)', cisc: 'Değişken ve yüksek (Komut başına 2 ila 50+ saat çevrimi).', risc: 'Düşük ve sabit (Boru hattı ile neredeyse CPI = 1).' },
+    { feature: 'Mimari Örnekleri', cisc: 'Intel 8086, 80386, Pentium, x86-64, AMD64.', risc: 'ARM (Mobil işlemciler), MIPS, RISC-V, SPARC, PowerPC.' }
+  ],
+  intel8085Overview: {
+    title: 'Intel 8085 (8-bit) Mikroişlemci Mimarisi (Müfredat 14. Hafta)',
+    description: '8086\'nın öncüsü olan klasik 8-bit mikroişlemcidir. 64 KB adres uzayına (16-bit adres yolu) ve 8-bit veri yoluna sahiptir.',
+    registers: ['A (8-bit Akümülatör - Tüm aritmetik işlemler buraya yazılır)', 'B, C, D, E, H, L (6 adet 8-bit Genel Amaçlı Yazmaç)', 'SP (16-bit Yığın Göstericisi)', 'PC (16-bit Program Sayacı / Program Counter)'],
+    registerPairs: ['BC Çifti (16-bit)', 'DE Çifti (16-bit)', 'HL Çifti (16-bit): En önemli çifttir; bellek işaretçisi (Memory Pointer - M) olarak doğrudan belleğe işaret eder.'],
+    mappingTo8086: [
+      { reg8085: 'A (Akümülatör)', reg8086: 'AL (ve genişletilmişi AX)', note: 'Tüm aritmetik/G-Ç işlemleri için ana yazmaç.' },
+      { reg8085: 'B - C Çifti', reg8086: 'CH:CL (CX - Sayıcı)', note: 'Döngü ve veri işlemleri için sayaç çifti.' },
+      { reg8085: 'D - E Çifti', reg8086: 'DH:DL (DX - Veri)', note: 'Genişletilmiş veri ve I/O port göstericisi.' },
+      { reg8085: 'H - L Çifti (M)', reg8086: 'BH:BL (BX - Taban) / SI / DI', note: 'Bellek ofset adresi tutmak için kullanılan ana gösterici.' }
+    ]
+  }
+};
+
