@@ -2,7 +2,7 @@ import { CHALLENGES, ROADMAP_MILESTONES } from './challengesData.js';
 import { Challenge, GradingResult, DifficultyLevel } from './types.js';
 import { ChallengeRunner } from './runner.js';
 
-const STORAGE_SOLVED_KEY = 'assemblysim_solved_challenges_v1';
+export const STORAGE_SOLVED_KEY = 'assemblysim_solved_challenges_v1';
 
 export type LeetCodeFilter = 'all' | DifficultyLevel | 'solved' | 'unsolved';
 

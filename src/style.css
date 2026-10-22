@@ -3986,6 +3986,528 @@ body {
   border-color: #818cf8;
 }
 
+/* ==========================================================================
+   TOP TOOLBAR "TAMAMLA VE TEST ET" BUTTON
+   ========================================================================== */
+.btn-complete-and-test {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: 1px solid #047857;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+  transition: all 0.15s ease;
+  user-select: none;
+  animation: pulse-subtle-glow 2.5s infinite;
+}
+
+.btn-complete-and-test:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-complete-and-test:active {
+  transform: translateY(1px);
+}
+
+@keyframes pulse-subtle-glow {
+  0%, 100% {
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.65);
+  }
+}
+
+/* ==========================================================================
+   CHALLENGE DOCK BOX (UNDER MEMORY IN CPU SECTION)
+   ========================================================================== */
+.challenge-box-container {
+  width: 100%;
+}
+
+.challenge-box-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  font-family: var(--font-brand);
+}
+
+/* Empty State */
+.challenge-box-empty {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  text-align: center;
+  padding: 16px 14px;
+}
+
+.challenge-box-empty-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.challenge-box-empty-icon {
+  font-size: 18px;
+}
+
+.challenge-box-empty-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.challenge-box-empty-desc {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.btn-dock-goto-leetcode {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #4338ca;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-dock-goto-leetcode:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+}
+
+/* Active Challenge Dock */
+.challenge-dock-active {
+  border-top: 3px solid #10b981;
+}
+
+.challenge-dock-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.challenge-dock-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.challenge-dock-badge-milestone {
+  font-size: 10px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.challenge-dock-badge-diff {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.challenge-dock-badge-diff.kolay {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.challenge-dock-badge-diff.orta {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.challenge-dock-badge-diff.zor {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.challenge-dock-badge-status {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.challenge-dock-badge-status.solved {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.challenge-dock-badge-status.pending {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.btn-dock-subtle {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-dock-subtle:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.challenge-dock-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.challenge-dock-goal-box {
+  background: #f8fafc;
+  border-left: 3px solid #6366f1;
+  padding: 8px 10px;
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 10px;
+}
+
+.challenge-dock-goal-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #4f46e5;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.challenge-dock-goal-text {
+  font-size: 11px;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.challenge-dock-matrix {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: #fafafa;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
+.challenge-dock-matrix-col .matrix-col-title {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.challenge-dock-matrix-col .matrix-col-content {
+  font-size: 10.5px;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.challenge-dock-matrix-col .matrix-col-content code {
+  background: #e2e8f0;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+}
+
+/* Actions Row */
+.challenge-dock-actions-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-dock-primary-test {
+  flex: 2;
+  min-width: 140px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: 1px solid #047857;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+  transition: all 0.15s ease;
+}
+
+.btn-dock-primary-test:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.45);
+}
+
+.btn-dock-primary-test:active {
+  transform: translateY(1px);
+}
+
+.btn-dock-secondary {
+  flex: 1;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-dock-secondary:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+/* Collapsible Hints Panel */
+.challenge-dock-hints-panel {
+  background: #fffbeb;
+  border: 1px solid #fef08a;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
+.hints-panel-header {
+  font-size: 11px;
+  font-weight: 700;
+  color: #b45309;
+  margin-bottom: 4px;
+}
+
+.hints-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 11px;
+  color: #78350f;
+  line-height: 1.45;
+}
+
+/* Results Section in Dock */
+.challenge-dock-result-idle {
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  color: #64748b;
+  text-align: center;
+}
+
+.dock-result-card {
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 6px;
+}
+
+.dock-result-card.success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+}
+
+.dock-result-card.failed {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.dock-result-card.compile-error,
+.dock-result-card.runtime-error,
+.dock-result-card.timeout-error {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.dock-result-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dock-result-icon {
+  font-size: 16px;
+}
+
+.dock-result-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.dock-result-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.dock-result-card.success .dock-result-title {
+  color: #166534;
+}
+
+.dock-result-card.failed .dock-result-title {
+  color: #991b1b;
+}
+
+.dock-result-meta {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.dock-result-desc {
+  font-size: 11px;
+  color: #7c2d12;
+  line-height: 1.4;
+}
+
+.dock-diff-table-wrapper {
+  overflow-x: auto;
+  margin-top: 6px;
+}
+
+.dock-diff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+}
+
+.dock-diff-table th {
+  background: rgba(0,0,0,0.04);
+  padding: 4px 6px;
+  text-align: left;
+  font-weight: 700;
+  color: #475569;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.dock-diff-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  font-family: var(--font-mono, monospace);
+}
+
+.dock-diff-table tr.pass {
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.dock-diff-table tr.fail {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.dock-diff-table .tag-pass {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.dock-diff-table .tag-fail {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.dock-diff-table .fail-msg-row td {
+  padding-top: 0;
+  padding-bottom: 6px;
+}
+
+.dock-diff-table .fail-msg {
+  color: #b91c1c;
+  font-size: 10px;
+  font-family: var(--font-brand);
+}
+
+/* Next Challenge Banner */
+.challenge-dock-next-card {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.next-card-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.next-card-info .next-label {
+  font-size: 9.5px;
+  color: #166534;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.next-card-info .next-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.btn-dock-next {
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-dock-next:hover {
+  background: #15803d;
+}
+
+
 
 
 

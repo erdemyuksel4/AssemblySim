@@ -13,6 +13,7 @@ import { WorkspaceSidebar } from './sidebar.js';
 import { CpuModal } from './cpuModal.js';
 import { CHALLENGES } from '../challenges/challengesData.js';
 import { ChallengeRunner } from '../challenges/runner.js';
+import { ChallengePanel } from './challengePanel.js';
 
 export type ExecutionSpeed = '0.5' | '1' | '2';
 
@@ -32,6 +33,7 @@ export class App {
   private sidebar!: WorkspaceSidebar;
   private cpuModal!: CpuModal;
   private instructionDoc!: InstructionDoc;
+  private challengePanel!: ChallengePanel;
 
   private editor!: Editor;
   private registerPanel!: RegisterPanel;
@@ -101,6 +103,9 @@ export class App {
                   <button id="btn-stop" class="btn-ctrl" disabled>STOP</button>
                   <button id="btn-reset" class="btn-ctrl">RESET</button>
                   <button id="btn-step-back" class="btn-ctrl btn-step-back" title="Geri Adım Al (Step Back)" disabled>↶</button>
+                  <button id="btn-complete-and-test" class="btn-complete-and-test" style="display: none;" title="Görevi Doğrula ve Tamamla">
+                    <span class="btn-icon">⚡</span> Tamamla ve Test Et
+                  </button>
                 </div>
               </div>
 
@@ -108,10 +113,11 @@ export class App {
               <div id="console-container" class="console-section-wrapper"></div>
             </section>
 
-            <!-- Right Section: Registers, Segments, Pointers, Flags, Memory -->
+            <!-- Right Section: Registers, Segments, Pointers, Flags, Memory, and Challenge Box -->
             <section class="cpu-section">
               <div id="registers-container"></div>
               <div id="memory-container"></div>
+              <div id="challenge-box-container" class="challenge-box-container"></div>
             </section>
           </main>
 
@@ -210,8 +216,47 @@ export class App {
       }
     });
 
+    const challengeContainer = document.getElementById('challenge-box-container')!;
+    this.challengePanel = new ChallengePanel(challengeContainer, {
+      onTestChallenge: (ch, code) => {
+        this.workspace.updateActiveCode(code);
+        this.compile();
+        const result = ChallengeRunner.grade(ch, code);
+        if (result.status === 'COMPILE_ERROR' && result.compileError) {
+          this.editor.setErrors([result.compileError]);
+        }
+        return result;
+      },
+      onResetEnvironment: () => {
+        this.reset();
+      },
+      onNavigateToLeetCode: () => {
+        this.instructionDoc.openTab('leetcode');
+        document.getElementById('instruction-docs-container')?.scrollIntoView({ behavior: 'smooth' });
+      },
+      onLoadNextChallenge: (nextCh) => {
+        const doc = this.workspace.openDocument({
+          title: `Görev: ${nextCh.title}`,
+          type: 'challenge',
+          challengeId: nextCh.id,
+          code: nextCh.starterCode
+        });
+        this.switchToDocument(doc);
+        this.sidebar.render();
+      },
+      getCurrentCode: () => this.editor.getCode()
+    });
+
     this.attachButtonEvents();
     this.updateViews();
+
+    // Initial check for active document challenge status
+    const initialDoc = this.workspace.getActiveDocument();
+    if (initialDoc && initialDoc.type === 'challenge' && initialDoc.challengeId) {
+      this.challengePanel.setChallenge(CHALLENGES[initialDoc.challengeId] || null);
+      const btn = document.getElementById('btn-complete-and-test');
+      if (btn) btn.style.display = 'inline-flex';
+    }
   }
 
   switchToDocument(doc: WorkspaceDocument): void {
@@ -233,6 +278,17 @@ export class App {
     this.compile();
     this.updateViews();
     this.sidebar.render();
+
+    // Sync Challenge Panel & Top Toolbar Button
+    const btnCompleteAndTest = document.getElementById('btn-complete-and-test') as HTMLButtonElement;
+    if (doc.type === 'challenge' && doc.challengeId) {
+      const ch = CHALLENGES[doc.challengeId] || null;
+      this.challengePanel.setChallenge(ch);
+      if (btnCompleteAndTest) btnCompleteAndTest.style.display = 'inline-flex';
+    } else {
+      this.challengePanel.setChallenge(null);
+      if (btnCompleteAndTest) btnCompleteAndTest.style.display = 'none';
+    }
   }
 
   private attachButtonEvents(): void {
@@ -242,6 +298,7 @@ export class App {
     const btnStop = document.getElementById('btn-stop') as HTMLButtonElement;
     const btnReset = document.getElementById('btn-reset') as HTMLButtonElement;
     const btnStepBack = document.getElementById('btn-step-back') as HTMLButtonElement;
+    const btnCompleteAndTest = document.getElementById('btn-complete-and-test') as HTMLButtonElement;
 
     btnCompile.addEventListener('click', () => this.compile());
     btnNext.addEventListener('click', () => this.step());
@@ -249,6 +306,11 @@ export class App {
     btnStop.addEventListener('click', () => this.stop());
     btnReset.addEventListener('click', () => this.reset());
     btnStepBack.addEventListener('click', () => this.stepBack());
+    if (btnCompleteAndTest) {
+      btnCompleteAndTest.addEventListener('click', () => {
+        this.challengePanel.executeTest();
+      });
+    }
 
     // Format Switch buttons (HEX, DEC, BIN)
     document.querySelectorAll('.btn-fmt').forEach((btn) => {
