@@ -96,6 +96,52 @@ export interface ArchitectureGuide {
   };
 }
 
+
+export interface TerminologyItem {
+  term: string;
+  category: 'core' | 'memory' | 'architecture' | 'arithmetic' | 'strings' | 'modes';
+  tag: string;
+  definition: string;
+  details: string;
+  slideRef: string;
+  example?: string;
+}
+
+export interface ArchitectureComparison {
+  feature: string;
+  cisc: string;
+  risc: string;
+}
+
+export interface AddressingModeComparison {
+  mode: string;
+  syntax: string;
+  effectiveAddress: string;
+  advantages: string;
+  disadvantages: string;
+  typicalUse: string;
+}
+
+export interface LectureTerminology {
+  title: string;
+  fdeCycle: {
+    title: string;
+    description: string;
+    steps: Array<{ step: string; name: string; desc: string }>;
+  };
+  ciscVsRisc: {
+    title: string;
+    description: string;
+    table: ArchitectureComparison[];
+  };
+  addressingComparison: {
+    title: string;
+    description: string;
+    table: AddressingModeComparison[];
+  };
+  terms: TerminologyItem[];
+}
+
 export interface FlagsGuide {
   title: string;
   statusFlags: Array<{
@@ -356,8 +402,9 @@ export const INSTRUCTIONS: InstructionDetail[] = [
     flags: 'CF, ZF, SF, OF, AF, PF güncellenir.',
     variations: [
       {
-        syntax: 'ADD reg, reg / imm / [mem]',
-        description: 'Yazmaca başka bir yazmaç, sabit sayı veya bellek değeri ekler.',
+        syntax: 'ADD reg, reg',
+        addressingMode: 'Register Addressing',
+        description: 'İki yazmaçtaki sayıyı toplar, bellek erişimi yoktur.',
         example: 'MOV AX, 5\nADD AX, 10      ; AX = 15 (0Fh)\nADD AX, BX      ; AX = AX + BX',
         note: 'Sonuç 0 olursa ZF=1, elde taşarsa CF=1 olur.'
       },
@@ -378,6 +425,7 @@ export const INSTRUCTIONS: InstructionDetail[] = [
     variations: [
       {
         syntax: 'ADC reg, reg / imm / [mem]',
+        addressingMode: 'Multi-Precision Addition (Dest + Src + CF)',
         description: '32-bit veya daha geniş çok kelimeli toplamalarda taşan eldeyi sonraki basamağa ekler.',
         example: '; 32-bit Toplama: (DX:AX) + (CX:BX)\nADD AX, BX      ; Düşük 16-bit toplanır (elde CF\'ye gider)\nADC DX, CX      ; Yüksek 16-bit + CF toplanır',
         note: 'Büyük sayıların ardışık toplanmasında temeldir.'
@@ -392,8 +440,9 @@ export const INSTRUCTIONS: InstructionDetail[] = [
     flags: 'CF, ZF, SF, OF, AF, PF güncellenir.',
     variations: [
       {
-        syntax: 'SUB reg, reg / imm / [mem]',
-        description: 'Yazmaçtan değer çıkarır.',
+        syntax: 'SUB reg, reg',
+        addressingMode: 'Register Addressing',
+        description: 'İki yazmaç arasında çıkarma yapar.',
         example: 'MOV AX, 20\nSUB AX, 5       ; AX = 15',
         note: 'Kaynak hedeften büyükse borç oluşur ve CF=1 olur.'
       }
@@ -1456,5 +1505,261 @@ export const COMMON_PITFALLS_GUIDE: CommonPitfallsGuide = {
     { need: '2 boyutlu matris veya struct/tablo kayıtlarına erişim', reachFor: 'Base-Plus-Index (Mode 5) veya Base Relative-Plus-Index (Mode 7)' },
     { need: 'Aynı kod segmenti içinde döngü ve koşullu dallanma', reachFor: 'Relative Program Memory Addressing (JMP Short/Near)' },
     { need: 'Fonksiyon göstericisi (function pointer) veya switch/case tablosu', reachFor: 'Indirect Program Memory Addressing (JMP [BX] / JMP AX)' }
+  ]
+};
+
+export const LECTURE_TERMINOLOGY: LectureTerminology = {
+  title: 'Mikroişlemciler Dersi Terminoloji ve Kavram Rehberi (Weeks 1–5)',
+  fdeCycle: {
+    title: 'İşlemci Temel Döngüsü: Fetch - Decode - Execute (FDE Cycle - Week 1 & 5)',
+    description: 'İşlemcinin elektrik verildiği andan kapanana kadar kesintisiz tekrarladığı temel 3 aşamalı çalışma mekanizmasıdır.',
+    steps: [
+      {
+        step: '1. FETCH (Komut Getirme)',
+        name: 'CS:IP ➔ Instruction Register (IR)',
+        desc: 'İşlemci, CS:IP çiftinin işaret ettiği bellek adresindeki komut baytlarını veri yolu (Data Bus) üzerinden okur ve Komut Kuyruğuna (Prefetch Queue) alır. IP yazmacı okunan komutun boyutu kadar otomatik artırılır.'
+      },
+      {
+        step: '2. DECODE (Komut Çözme)',
+        name: 'Komut Çözücü (Instruction Decoder)',
+        desc: 'Komutun işlem kodu (Opcode) ve operandları çözümlenir. Adresleme modu (register, immediate, bellek) belirlenir, gerekiyorsa bellek efektif adresi (EA = Base + Index + Disp) hesaplanır.'
+      },
+      {
+        step: '3. EXECUTE (Yürütme)',
+        name: 'ALU / Yazmaç Yürütme',
+        desc: 'Aritmetik-Mantık Birimi (ALU) veya veri transfer birimi işlemi gerçekleştirir. Sonuç hedef yazmaca/belleğe yazılır ve durum bayrakları (FLAGS) donanımsal olarak güncellenir.'
+      }
+    ]
+  },
+  ciscVsRisc: {
+    title: 'CISC (Intel x86) vs RISC (ARM) Mimari Karşılaştırması (Week 4, Slayt 35–41)',
+    description: 'Hocanın slaytlarında vurguladığı iki temel komut seti mimarisinin farkları:',
+    table: [
+      {
+        feature: 'Tasarım Felsefesi',
+        cisc: 'Complex Instruction Set (Karmaşık Komut Seti) - Tek bir komutla çok sayıda alt donanım işlemi yapılır.',
+        risc: 'Reduced Instruction Set (İndirgenmiş Komut Seti) - Basit, tek saat vuruşunda biten temel komutlar.'
+      },
+      {
+        feature: 'Komut Boyutları',
+        cisc: 'Değişken uzunlukta (1 bayt ile 15 bayt arası komutlar; örn. CLD 1 bayt, MOV [BX+DI+4], 1234H 6 bayt).',
+        risc: 'Sabit uzunlukta (genellikle her komut standart 32-bit / 4 bayttır).'
+      },
+      {
+        feature: 'Adresleme Modları',
+        cisc: 'Çok zengin ve karmaşık bellek adresleme modları (7 temel veri modu, bellek operandı üzerinde doğrudan ADD/SUB).',
+        risc: 'Çok az ve basit adresleme modu (Sadece Load/Store mimarisi; bellek operasyonları yalnızca LDR/STR ile yapılır).'
+      },
+      {
+        feature: 'Yazmaç Sayısı',
+        cisc: 'Daha az sayıda, özelleşmiş genel amaçlı yazmaçlar (8086: AX, BX, CX, DX, SI, DI, BP, SP).',
+        risc: 'Çok geniş ve homojen yazmaç bankası (genellikle 32 veya daha fazla eşdeğer yazmaç).'
+      },
+      {
+        feature: 'Bellek Erişimi',
+        cisc: 'Aritmetik ve mantık komutları doğrudan bellek operandı alabilir (ADD AX, [BX]).',
+        risc: 'Aritmetik komutlar belleğe doğrudan dokunamaz; veri önce yazmaca yüklenmeli, sonra işlenmelidir.'
+      }
+    ]
+  },
+  addressingComparison: {
+    title: 'Adresleme Modları Avantaj & Dezavantaj Matrisi (Week 4, Slayt 18–34)',
+    description: 'Hocanın Week 4 slaytlarındaki karşılaştırmalı adresleme modu analizi:',
+    table: [
+      {
+        mode: '1. Register Addressing',
+        syntax: 'MOV AX, BX',
+        effectiveAddress: 'Yok (Yazmaç İçi)',
+        advantages: 'En yüksek çalışma hızı; harici bellek erişimi ve veri yolu bekleme vuruşu yoktur; komut baytı kısadır.',
+        disadvantages: 'Kullanılabilir yazmaç sayısı sınırlıdır (yalnızca 8 genel yazmaç).',
+        typicalUse: 'Döngü içi kritik hesaplamalar, geçici ara sonuçlar.'
+      },
+      {
+        mode: '2. Immediate Addressing',
+        syntax: 'MOV AL, 22H',
+        effectiveAddress: 'Komut İçinde',
+        advantages: 'Sabit sayı komutun içinde gelir, ek bellek araması gerekmez; sabit katsayıları kurmak çok pratiktir.',
+        disadvantages: 'Değer sabittir, çalışma anında değiştirilemez; hedef yazmacın bit sınırına bağlıdır.',
+        typicalUse: 'Sayaç başlatma, maskeleme sabitleri, başlangıç ayarları.'
+      },
+      {
+        mode: '3. Direct Addressing',
+        syntax: 'MOV CX, [1234H] / MOV CX, START',
+        effectiveAddress: 'DS * 16 + Disp16',
+        advantages: 'Sabit adlı değişkenlere ve tekil bellek alanlarına erişmek çok basittir.',
+        disadvantages: 'Statik adrestir, dinamik indeksleme yapılamaz; komut 3-4 bayt yer kaplar.',
+        typicalUse: 'Genel global değişkenleri okuma ve yazma.'
+      },
+      {
+        mode: '4. Register Indirect',
+        syntax: 'MOV AX, [BX] / [SI] / [DI] / [BP]',
+        effectiveAddress: 'Segment * 16 + [Yazmaç]',
+        advantages: 'İşaretçi (pointer) tabanlı esneklik; çalışma anında adres yazmaçta hesaplanıp dinamik değiştirilebilir.',
+        disadvantages: 'Adres yazmaca önceden yüklenmelidir; ek bellek okuma döngüsü harcar.',
+        typicalUse: 'Dizi ve metin bloklarında işaretçi ile ilerleme.'
+      },
+      {
+        mode: '5. Displacement / Relative',
+        syntax: 'MOV AX, [BX+4] / TABLE[SI]',
+        effectiveAddress: 'Segment * 16 + Reg + Disp',
+        advantages: 'Dizi tabanı + eleman indeksi mantığına mükemmel uyar; kodun yeri değişse bile çalışır (relocatable).',
+        disadvantages: 'Efektif adres için donanımsal toplama yapılır; komut boyutu yer değiştirme baytları kadar uzar.',
+        typicalUse: 'Dizi elemanları (ARRAY[SI]), yığın çerçevesi yerel değişkenleri ([BP-4]).'
+      }
+    ]
+  },
+  terms: [
+    {
+      term: 'Opcode (İşlem Kodu)',
+      category: 'core',
+      tag: 'Temel Kavram',
+      definition: 'İşlemciye hangi donanımsal işlemi gerçekleştireceğini söyleyen ikilik (binary) makine kodu baytıdır.',
+      details: 'Örneğin 8086\'da NOP komutunun opkodu 90H, PUSH AX 50H, RET C3H\'tür. İnsanların okuduğu sembolik isimlere ise Mnemonic (komut kısaltması) denir.',
+      slideRef: 'Week 1 Slayt 20 & Week 4 Slayt 4'
+    },
+    {
+      term: 'Operand (İşlenen)',
+      category: 'core',
+      tag: 'Temel Kavram',
+      definition: 'Komutun üzerinde işlem yaptığı veriler, yazmaçlar veya bellek adresleridir.',
+      details: '8086 iki operandlı bir mimaridir: MOV Hedef, Kaynak. Sağdaki Kaynak (Source), soldaki Hedef (Destination) operanttır.',
+      slideRef: 'Week 3 Slayt 5-6'
+    },
+    {
+      term: 'TPA (Transient Program Area)',
+      category: 'memory',
+      tag: 'Bellek Haritası',
+      definition: '00000H ile 9FFFFH adresleri arasındaki 640 KB\'lık ana bellek bölgesidir.',
+      details: 'DOS işletim sistemi çekirdeği, aygıt sürücüleri ve çalıştırılan tüm kullanıcı programları ve verileri bu 640 KB\'lık alanda çalışır.',
+      slideRef: 'Week 1 Slayt 12 & Week 2 Slayt 24'
+    },
+    {
+      term: 'System Area (Sistem Bellek Alanı)',
+      category: 'memory',
+      tag: 'Bellek Haritası',
+      definition: 'A0000H ile FFFFFH arasındaki 384 KB\'lık sistem donanım alanıdır.',
+      details: 'A0000H - BFFFFH arası (128 KB) Video Ekran RAM\'ine ayrılmıştır. C0000H - FFFFFH arası (256 KB) ise ROM-BIOS ve genişleme kartı yazılımlarına ayrılmıştır.',
+      slideRef: 'Week 1 Slayt 14-15'
+    },
+    {
+      term: 'I/O Port Space (Giriş/Çıkış Alanı)',
+      category: 'memory',
+      tag: 'Port Mimarisi',
+      definition: '0000H ile FFFFH arasında toplam 64K (65,536 adet) port adresinden oluşan, ana bellekten bağımsız donanım port alanıdır.',
+      details: 'Yalnızca IN ve OUT komutları ile erişilir. 00H-FFH arası sabit (fixed) port, 0000H-FFFFH arası DX ile değişken (variable) port adreslemedir.',
+      slideRef: 'Week 1 Slayt 17-18 & Week 4 Slayt 24-25'
+    },
+    {
+      term: 'Data Widths: Byte, Word, Dword, Qword',
+      category: 'architecture',
+      tag: 'Veri Genişlikleri',
+      definition: '8086 ve modern x86 işlemcilerin desteklediği temel veri boyutları hiyerarşisidir.',
+      details: 'Byte = 8-bit (AL, BL..), Word = 16-bit / 2 bayt (AX, BX..), Doubleword (Dword) = 32-bit / 4 bayt (EAX..), Quadword (Qword) = 64-bit / 8 bayt (RAX..).',
+      slideRef: 'Week 1 Slayt 24 & Week 2 Slayt 6-7'
+    },
+    {
+      term: 'PSP (Program Segment Prefix)',
+      category: 'memory',
+      tag: 'DOS Mimarisi',
+      definition: 'DOS işletim sisteminin .COM programlarının önüne eklediği 256 baytlık (100h) program tanımlama başlığıdır.',
+      details: 'Bu 256 baytlık alanda komut satırı argümanları, dosya tanıtıcıları ve çevre parametreleri bulunur. Bu nedenle programlar ORG 100H ile başlar ve giriş noktası CS:0100h olur.',
+      slideRef: 'Week 1 Slayt 12 & Code Examples'
+    },
+    {
+      term: 'Reset Vector (Donanımsal Reset Vektörü)',
+      category: 'architecture',
+      tag: 'Donanım Başlangıcı',
+      definition: '8086 mikroişlemcisine elektrik ilk verildiğinde veya RESET pinine sinyal geldiğinde, donanımın atladığı ilk adrestir.',
+      details: 'Donanımsal olarak CS = FFFFh ve IP = 0000h kurulur. Fiziksel adres FFFF0h\'dır ve doğrudan anakart üzerindeki ROM-BIOS başlangıç komutunu işaret eder.',
+      slideRef: 'Week 2 Slayt 36'
+    },
+    {
+      term: 'Carry Flag (CF) vs. Overflow Flag (OF)',
+      category: 'arithmetic',
+      tag: 'Bayrak Kuralları',
+      definition: 'Hocanın en çok sorduğu bayrak ayrımı: CF işaretsiz taşmadır; OF ise işaretli taşmadır.',
+      details: 'CF (Carry): En yüksek bitten (MSB) elde veya borç çıkarsa 1 olur (İşaretsiz sayılar için). OF (Overflow): İki pozitif sayının toplamı negatif çıkarsa veya iki negatifin toplamı pozitif çıkarsa (işaret bozulursa) 1 olur.',
+      slideRef: 'Week 2 Slayt 18 & Week 5 Slayt 6'
+    },
+    {
+      term: 'INC ve DEC Carry Kuralı',
+      category: 'arithmetic',
+      tag: 'Altın Kural',
+      definition: 'INC ve DEC komutları Carry Flag (CF) bayrağını ASLA etkilemez!',
+      details: 'Bu mimari özellik döngü sayaçlarında çok kelimeli eldeli toplama/çıkarma (ADC/SBB) zincirinin bozulmadan devam edebilmesini sağlar.',
+      slideRef: 'Week 5 Slayt 8, 14'
+    },
+    {
+      term: 'Sign Extension (İşaret Genişletme: CBW / CWD)',
+      category: 'arithmetic',
+      tag: 'Aritmetik Dönüşüm',
+      definition: 'İşaretli bir sayının değerini bozmadan daha büyük bir yazmaca kopyalamak için işaret bitinin (MSB) tüm üst bitlere yayılmasıdır.',
+      details: 'CBW: AL işaretini AH\'ye yayarak AX oluşturur. CWD: AX işaretini DX\'e yayarak DX:AX çiftini oluşturur. Özellikle 16-bit IDIV öncesinde CWD zorunludur!',
+      slideRef: 'Week 4 Slayt 31 & Week 5 Slayt 26-27'
+    },
+    {
+      term: 'Divide Error / Overflow (INT 0 Kesmesi)',
+      category: 'arithmetic',
+      tag: 'İşlemci Hatası',
+      definition: 'Bölen sıfır olduğunda veya bölüm (quotient) hedef yazmacın sınırlarını aştığında işlemcinin ürettiği donanımsal hata kesmesidir.',
+      details: 'Örneğin 8-bit bölmede (AX / BL) bölüm 255\'i (FFh) aşarsa, sonuç AL yazmacına sığmayacağı için işlemci donanımsal INT 0 üretir.',
+      slideRef: 'Week 5 Slayt 23-24'
+    },
+    {
+      term: 'Bit Maskeleme (Bit Masking - AND)',
+      category: 'arithmetic',
+      tag: 'Mantık Operasyonları',
+      definition: 'Bir yazmaçtaki belirli bitleri sıfırlayıp (maskeleyip) sadece istenen bitleri süzme işlemidir.',
+      details: 'Örneğin ASCII \'5\' karakterinin (35H = 0011 0101b) sayısal karşılığını elde etmek için 0FH ile AND yapılır: 35H AND 0FH = 05H.',
+      slideRef: 'Week 5 Slayt 29-30'
+    },
+    {
+      term: 'Bit Kurma (Bit Setting - OR)',
+      category: 'arithmetic',
+      tag: 'Mantık Operasyonları',
+      definition: 'Diğer bitleri değiştirmeden yalnızca seçilen bitleri 1 yapma işlemidir.',
+      details: 'Örneğin sayısal 5 değerini ekrana basılacak ASCII \'5\' karakterine çevirmek için: 05H OR 30H = 35H (\'5\').',
+      slideRef: 'Week 5 Slayt 31'
+    },
+    {
+      term: 'Hızlı Yazmaç Sıfırlama (XOR reg, reg)',
+      category: 'arithmetic',
+      tag: 'Optimizasyon',
+      definition: 'Bir yazmacı MOV reg, 0 yerine XOR reg, reg ile sıfırlama tekniğidir.',
+      details: 'Bir sayının kendisiyle XOR\'u daima 0 verir. XOR AX, AX sadece 2 bayt makine kodu üretir ve MOV AX, 0\'a (3 bayt) göre daha hızlıdır.',
+      slideRef: 'Week 5 Slayt 32'
+    },
+    {
+      term: 'Tahribatsız Test (Non-destructive: CMP & TEST)',
+      category: 'arithmetic',
+      tag: 'Bayrak Güncelleme',
+      definition: 'Hedef operanttaki veriyi değiştirmeden sadece FLAGS kaydını güncelleyen komutlardır.',
+      details: 'CMP çıkarma (SUB) yapar ama sonucu kaydetmez; TEST mantıksal VE (AND) yapar ama sonucu kaydetmez. Her ikisi de sadece bayrakları kurarak koşullu atlamayı (Jcc) hazırlar.',
+      slideRef: 'Week 5 Slayt 16, 34'
+    },
+    {
+      term: 'Autoincrement vs. Autodecrement (CLD / STD)',
+      category: 'strings',
+      tag: 'Dizi İlerleme Yönü',
+      definition: 'Dizi komutlarında (MOVS, LODS, STOS, CMPS, SCAS) bellek göstericilerinin (SI ve DI) otomatik artış veya azalış yönüdür.',
+      details: 'CLD (Clear Direction Flag): DF = 0 yapar, SI ve DI otomatik artar (İleri / Artan Adres). STD (Set Direction Flag): DF = 1 yapar, SI ve DI otomatik azalır (Geri / Azalan Adres).',
+      slideRef: 'Week 4 Slayt 27'
+    },
+    {
+      term: 'Tekrar Önekleri (Repeat Prefixes: REP, REPE/REPZ, REPNE/REPNZ)',
+      category: 'strings',
+      tag: 'Dizi Döngüleri',
+      definition: 'Dizi komutlarının başına eklenerek CX sayacı 0 olana kadar komutu donanımsal olarak tekrarlayan öneklerdir.',
+      details: 'REP: Koşulsuz tekrar (MOVS, STOS). REPE / REPZ: Karakterler eşit olduğu (ZF=1) sürece tekrar (CMPS, SCAS). REPNE / REPNZ: Karakterler farklı olduğu (ZF=0) sürece tekrar.',
+      slideRef: 'Week 4 Slayt 28-29'
+    },
+    {
+      term: 'Table Lookup Translation (Tablo Çevirisi - XLATB)',
+      category: 'strings',
+      tag: 'Karakter Dönüşümü',
+      definition: '256 elemanlı bir tablodan tek vuruşta indeksli veri okuyan özel komuttur: AL ← [DS:BX + AL].',
+      details: 'BX tablonun başlangıç ofsetini, AL aranacak indeksi tutar. ASCII-EBCDIC çevirisi, küçük harfi büyük harfe dönüştürme ve 7 segment LED gösterge kodlarında çok hızlıdır.',
+      slideRef: 'Week 4 Slayt 33-34'
+    }
   ]
 };

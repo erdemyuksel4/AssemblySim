@@ -7,10 +7,11 @@ import {
   STACK_ADDRESSING_GUIDE,
   COMMON_PITFALLS_GUIDE,
   ARCHITECTURE_GUIDE,
-  FLAGS_GUIDE
+  FLAGS_GUIDE,
+  LECTURE_TERMINOLOGY
 } from './instructionData.js';
 
-export type ManualTab = 'instructions' | 'addressing' | 'architecture' | 'flags';
+export type ManualTab = 'instructions' | 'addressing' | 'architecture' | 'flags' | 'glossary';
 
 export class InstructionDoc {
   private container: HTMLElement;
@@ -60,6 +61,9 @@ export class InstructionDoc {
             <button class="docs-main-tab" data-tab="flags">
               🏳️ FLAGS Kaydı & Atlama Matrisi (Week 2 & 5)
             </button>
+            <button class="docs-main-tab" data-tab="glossary">
+              📚 Ders Terminolojisi & Kavramlar (Weeks 1–5)
+            </button>
           </div>
 
           <!-- TAB 1: Instructions Master-Detail View -->
@@ -104,6 +108,11 @@ export class InstructionDoc {
           <div class="docs-tab-pane" id="pane-flags">
             <div class="docs-theory-container" id="docs-flags-container"></div>
           </div>
+
+          <!-- TAB 5: Lecture Terminology & Concepts -->
+          <div class="docs-tab-pane" id="pane-glossary">
+            <div class="docs-theory-container" id="docs-glossary-container"></div>
+          </div>
         </div>
       </section>
     `;
@@ -114,6 +123,7 @@ export class InstructionDoc {
     this.renderAddressingModes();
     this.renderArchitecture();
     this.renderFlags();
+    this.renderGlossary();
   }
 
   private attachEvents(): void {
@@ -792,4 +802,121 @@ export class InstructionDoc {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
   }
+
+  /**
+   * Render TAB 5: Lecture Terminology, FDE Cycle, CISC vs RISC, and Concepts
+   */
+  private renderGlossary(): void {
+    const container = this.container.querySelector('#docs-glossary-container') as HTMLElement;
+    if (!container) return;
+
+    const term = LECTURE_TERMINOLOGY;
+
+    container.innerHTML = `
+      <div class="theory-header">
+        <h3 class="theory-title">${term.title}</h3>
+        <p class="theory-subtitle">
+          BMI3121 ders slaytlarında geçen tüm teknik terimler, mimari karşılaştırmaları ve sınavda sorulan kavramların açıklamaları.
+        </p>
+      </div>
+
+      <!-- FDE Cycle Card -->
+      <div class="theory-card" style="border-left: 4px solid #8b5cf6;">
+        <h4 class="theory-card-title">🔄 ${term.fdeCycle.title}</h4>
+        <p class="theory-card-desc">${term.fdeCycle.description}</p>
+        <div class="theory-cards-grid" style="margin-top: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+          ${term.fdeCycle.steps.map(s => `
+            <div class="theory-card" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+              <span class="theory-card-badge" style="background:#8b5cf6;color:#fff;">${s.step}</span>
+              <h5 style="margin: 8px 0 4px; font-size: 13px; font-weight: 700; color: #1e293b;">${s.name}</h5>
+              <p style="font-size: 12px; color: #475569; line-height: 1.5; margin: 0;">${s.desc}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- CISC vs RISC Comparison Table -->
+      <div class="theory-card" style="margin-top: 16px;">
+        <h4 class="theory-card-title">⚖️ ${term.ciscVsRisc.title}</h4>
+        <p class="theory-card-desc">${term.ciscVsRisc.description}</p>
+        <div class="table-responsive" style="margin-top: 10px;">
+          <table class="theory-table">
+            <thead>
+              <tr>
+                <th style="width: 20%;">Karşılaştırma Alanı</th>
+                <th style="width: 40%; background: rgba(59, 130, 246, 0.08);">CISC (Intel 8086 / x86)</th>
+                <th style="width: 40%; background: rgba(16, 185, 129, 0.08);">RISC (ARM Architecture)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${term.ciscVsRisc.table.map(row => `
+                <tr>
+                  <td><strong>${row.feature}</strong></td>
+                  <td style="font-size: 12px;">${row.cisc}</td>
+                  <td style="font-size: 12px;">${row.risc}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Addressing Modes Advantage & Disadvantage Comparison -->
+      <div class="theory-card" style="margin-top: 16px;">
+        <h4 class="theory-card-title">🎯 ${term.addressingComparison.title}</h4>
+        <p class="theory-card-desc">${term.addressingComparison.description}</p>
+        <div class="table-responsive" style="margin-top: 10px;">
+          <table class="theory-table">
+            <thead>
+              <tr>
+                <th>Adresleme Modu</th>
+                <th>Sözdizimi</th>
+                <th>Efektif Adres (EA)</th>
+                <th>Avantajları</th>
+                <th>Dezavantajları</th>
+                <th>Tipik Kullanım</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${term.addressingComparison.table.map(row => `
+                <tr>
+                  <td><strong>${row.mode}</strong></td>
+                  <td><code>${row.syntax}</code></td>
+                  <td><code>${row.effectiveAddress}</code></td>
+                  <td style="color: #15803d; font-size: 11.5px;">✓ ${row.advantages}</td>
+                  <td style="color: #b91c1c; font-size: 11.5px;">✗ ${row.disadvantages}</td>
+                  <td style="font-size: 11.5px; color: #475569;">${row.typicalUse}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Key Concepts & Definitions Grid -->
+      <div class="theory-header" style="margin-top: 24px;">
+        <h3 class="theory-title">📖 Slaytlarda Geçen Tüm Kavramlar & Altın Kurallar</h3>
+        <p class="theory-subtitle">Slayt referansları ve ders notlarıyla tanımlanan temel terimler.</p>
+      </div>
+
+      <div class="theory-cards-grid" style="margin-top: 12px;">
+        ${term.terms.map(t => `
+          <div class="theory-card">
+            <div class="theory-card-header">
+              <span class="theory-card-badge" style="background: #0284c7; color:#fff;">${t.tag}</span>
+              <h4 class="theory-card-title">${t.term}</h4>
+            </div>
+            <p class="theory-card-desc" style="font-weight: 600; color: #0f172a;">${t.definition}</p>
+            <p style="font-size: 12px; color: #334155; line-height: 1.5; margin: 6px 0 10px;">${t.details}</p>
+            <div class="docs-var-note" style="margin-top: auto; font-size: 11px;">
+              📍 <strong>Slayt Referansı:</strong> ${t.slideRef}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    this.attachCopyButtons(container);
+  }
+
 }
