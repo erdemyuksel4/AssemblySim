@@ -1,4 +1,4 @@
-export type DocumentType = 'custom' | 'challenge' | 'example';
+export type DocumentType = 'custom' | 'challenge' | 'example' | 'lecture';
 
 export interface WorkspaceDocument {
   id: string;
@@ -7,6 +7,7 @@ export interface WorkspaceDocument {
   code: string;
   cpuInstanceId: string;
   challengeId?: string;
+  milestoneId?: string;
   createdAt: number;
   lastModified: number;
 }

@@ -139,8 +139,13 @@ export class WorkspaceManager {
     type: DocumentType;
     code: string;
     challengeId?: string;
+    milestoneId?: string;
   }): WorkspaceDocument {
-    const docId = docInput.id || (docInput.challengeId ? `challenge-${docInput.challengeId}` : `doc-${Date.now()}`);
+    const docId = docInput.id || (
+      docInput.milestoneId ? `lecture-${docInput.milestoneId}` :
+      docInput.challengeId ? `challenge-${docInput.challengeId}` : 
+      `doc-${Date.now()}`
+    );
 
     // If already open, switch to it and update code if starter
     if (this.docs.has(docId)) {
@@ -161,6 +166,7 @@ export class WorkspaceManager {
       code: docInput.code,
       cpuInstanceId: cpuInst.id,
       challengeId: docInput.challengeId,
+      milestoneId: docInput.milestoneId,
       createdAt: Date.now(),
       lastModified: Date.now()
     };

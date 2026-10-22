@@ -3,7 +3,8 @@ import { ROADMAP_MILESTONES, CHALLENGES } from './challengesData.js';
 const STORAGE_SOLVED_KEY = 'assemblysim_solved_challenges_v1';
 
 export interface RoadmapCurriculumCallbacks {
-  onNavigateToLeetCode: (milestoneId?: string) => void;
+  onOpenLecture: (milestoneId: string) => void;
+  onNavigateToLeetCode?: (milestoneId?: string) => void;
 }
 
 export class RoadmapCurriculumView {
@@ -124,9 +125,14 @@ export class RoadmapCurriculumView {
                     <div class="step-card-progress-bar">
                       <div class="step-card-progress-fill" style="width: ${percent}%;"></div>
                     </div>
-                    <button class="btn-jump-to-leetcode" data-milestone-id="${milestone.id}" title="Bu aşamadaki tüm görevleri LeetCode sekmesinde listele">
-                      ⚡ Aşama ${milestone.number} Görevlerini Çöz (LeetCode) →
-                    </button>
+                    <div class="step-actions-group">
+                      <button class="btn-open-lecture-doc" data-milestone-id="${milestone.id}" title="Bu aşamanın zengin konu anlatımı ve interaktif ders dokümanını aç">
+                        📖 Aşama ${milestone.number} Konu Anlatımını Aç (Ders)
+                      </button>
+                      <button class="btn-jump-to-leetcode" data-milestone-id="${milestone.id}" title="Bu aşamadaki tüm görevleri LeetCode sekmesinde listele">
+                        ⚡ LeetCode (${totalInMilestone}) →
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -140,10 +146,23 @@ export class RoadmapCurriculumView {
   }
 
   private bindEvents(): void {
+    // Open lecture document
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-open-lecture-doc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const milestoneId = btn.dataset.milestoneId;
+        if (milestoneId) {
+          this.callbacks.onOpenLecture(milestoneId);
+        }
+      });
+    });
+
+    // Jump to LeetCode tasks
     this.container.querySelectorAll<HTMLButtonElement>('.btn-jump-to-leetcode').forEach(btn => {
       btn.addEventListener('click', () => {
         const milestoneId = btn.dataset.milestoneId;
-        this.callbacks.onNavigateToLeetCode(milestoneId);
+        if (this.callbacks.onNavigateToLeetCode) {
+          this.callbacks.onNavigateToLeetCode(milestoneId);
+        }
       });
     });
   }

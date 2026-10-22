@@ -84,7 +84,7 @@ export class WorkspaceSidebar {
           ${docs.map(doc => {
             const cpu = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
             const isActive = doc.id === activeDoc?.id;
-            const icon = doc.type === 'challenge' ? '🎯' : (doc.type === 'example' ? '💡' : '📄');
+            const icon = doc.type === 'challenge' ? '🎯' : (doc.type === 'lecture' ? '🎓' : (doc.type === 'example' ? '💡' : '📄'));
             return `
               <li class="workspace-doc-item ${isActive ? 'active' : ''}" data-doc-id="${doc.id}">
                 <div class="doc-item-main" title="${doc.title}">

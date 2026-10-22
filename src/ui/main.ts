@@ -14,6 +14,8 @@ import { CpuModal } from './cpuModal.js';
 import { CHALLENGES } from '../challenges/challengesData.js';
 import { ChallengeRunner } from '../challenges/runner.js';
 import { ChallengePanel } from './challengePanel.js';
+import { LectureDocumentView } from '../lectures/lectureDocumentView.js';
+import { MILESTONE_LECTURES } from '../lectures/lectureData.js';
 
 export type ExecutionSpeed = '0.5' | '1' | '2';
 
@@ -34,6 +36,7 @@ export class App {
   private cpuModal!: CpuModal;
   private instructionDoc!: InstructionDoc;
   private challengePanel!: ChallengePanel;
+  private lectureDocView!: LectureDocumentView;
 
   private editor!: Editor;
   private registerPanel!: RegisterPanel;
@@ -72,7 +75,7 @@ export class App {
 
         <!-- Main Workspace Area -->
         <div class="app-main-content">
-          <main class="main-layout">
+          <main class="main-layout" id="main-ide-layout">
             <!-- Left Section: Code Editor -->
             <section class="editor-section">
               <div class="editor-header-bar">
@@ -120,6 +123,9 @@ export class App {
               <div id="challenge-box-container" class="challenge-box-container"></div>
             </section>
           </main>
+
+          <!-- Full Lecture Document View Mount (shown when active doc is a lecture) -->
+          <div id="lecture-doc-mount" class="lecture-doc-mount" style="display: none;"></div>
 
           <!-- Bottom Collapsible Instruction Manual & Roadmap -->
           <div id="instruction-docs-container" class="instruction-docs-wrapper"></div>
@@ -188,7 +194,31 @@ export class App {
         // Smooth scroll to editor
         document.querySelector('.editor-section')?.scrollIntoView({ behavior: 'smooth' });
       },
+      onOpenLectureDocument: (milestoneId) => {
+        this.openMilestoneLecture(milestoneId);
+      },
       getCurrentEditorCode: () => this.editor.getCode()
+    });
+
+    const lectureMount = document.getElementById('lecture-doc-mount')!;
+    this.lectureDocView = new LectureDocumentView(lectureMount, {
+      onNavigateToMilestoneLecture: (milestoneId: string) => {
+        this.openMilestoneLecture(milestoneId);
+      },
+      onNavigateToLeetCodeMilestone: (_milestoneId: string) => {
+        this.instructionDoc.openTab('leetcode');
+        document.getElementById('instruction-docs-container')?.scrollIntoView({ behavior: 'smooth' });
+      },
+      onOpenInMainEditor: (title: string, code: string) => {
+        const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const newDoc = this.workspace.openDocument({
+          title: `ornek-${cleanTitle}.asm`,
+          type: 'custom',
+          code
+        });
+        this.switchToDocument(newDoc);
+        this.sidebar.render();
+      }
     });
 
     this.consoleView = new ConsoleView(consoleContainer, {
@@ -259,24 +289,63 @@ export class App {
     }
   }
 
+  openMilestoneLecture(milestoneId: string): void {
+    // Check if already open in workspace
+    const existingDoc = this.workspace.getAllDocuments().find(
+      (d) => d.type === 'lecture' && d.milestoneId === milestoneId
+    );
+    if (existingDoc) {
+      this.switchToDocument(existingDoc);
+      this.sidebar.render();
+      return;
+    }
+
+    const lecture = MILESTONE_LECTURES[milestoneId];
+    const title = lecture ? `Ders: ${lecture.title}` : `Aşama ${milestoneId} Dersi`;
+    const newDoc = this.workspace.openDocument({
+      title,
+      type: 'lecture',
+      milestoneId,
+      code: `; 🎓 ${title}\n; Bu ders için interaktif örnekler dokümanın içinde yer almaktadır.\n`
+    });
+    this.switchToDocument(newDoc);
+    this.sidebar.render();
+  }
+
   switchToDocument(doc: WorkspaceDocument): void {
     this.stop();
     const currentActive = this.workspace.getActiveDocument();
     if (currentActive && currentActive.id !== doc.id) {
-      this.workspace.updateActiveCode(this.editor.getCode());
+      if (currentActive.type !== 'lecture') {
+        this.workspace.updateActiveCode(this.editor.getCode());
+      }
     }
 
     this.workspace.setActiveDocument(doc.id);
     const cpuInst = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
     this.cpu = cpuInst.cpu;
 
-    this.editor.setCode(doc.code);
-    this.consoleView.clear();
-    if (this.cpu.consoleBuffer) {
-      this.consoleView.appendStdout(this.cpu.consoleBuffer);
+    const mainIdeLayout = document.getElementById('main-ide-layout');
+    const lectureDocMount = document.getElementById('lecture-doc-mount');
+
+    if (doc.type === 'lecture' && doc.milestoneId) {
+      if (mainIdeLayout) mainIdeLayout.style.display = 'none';
+      if (lectureDocMount) lectureDocMount.style.display = 'block';
+
+      this.lectureDocView.setMilestone(doc.milestoneId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      if (mainIdeLayout) mainIdeLayout.style.display = 'grid';
+      if (lectureDocMount) lectureDocMount.style.display = 'none';
+
+      this.editor.setCode(doc.code);
+      this.consoleView.clear();
+      if (this.cpu.consoleBuffer) {
+        this.consoleView.appendStdout(this.cpu.consoleBuffer);
+      }
+      this.compile();
+      this.updateViews();
     }
-    this.compile();
-    this.updateViews();
     this.sidebar.render();
 
     // Sync Challenge Panel & Top Toolbar Button

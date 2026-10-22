@@ -20,6 +20,10 @@ import { Challenge } from '../challenges/types.js';
 export type ManualTab = 'manual' | 'lectures' | 'leetcode' | 'roadmap';
 export type LectureSubTab = 'addressing' | 'architecture' | 'flags' | 'dma_io' | 'interrupts' | 'pipelining' | 'glossary';
 
+export interface InstructionDocCallbacks extends LeetCodeCallbacks {
+  onOpenLectureDocument?: (milestoneId: string) => void;
+}
+
 export class InstructionDoc {
   private container: HTMLElement;
   private isOpen: boolean = false;
@@ -30,9 +34,9 @@ export class InstructionDoc {
   private selectedOpcode: string = 'MOV';
   private leetcodeView?: LeetCodeView;
   private roadmapCurriculumView?: RoadmapCurriculumView;
-  private callbacks?: LeetCodeCallbacks;
+  private callbacks?: InstructionDocCallbacks;
 
-  constructor(container: HTMLElement, callbacks?: LeetCodeCallbacks) {
+  constructor(container: HTMLElement, callbacks?: InstructionDocCallbacks) {
     this.container = container;
     this.callbacks = callbacks;
     this.render();
@@ -190,6 +194,11 @@ export class InstructionDoc {
     const container = this.container.querySelector('#docs-roadmap-container') as HTMLElement;
     if (container) {
       this.roadmapCurriculumView = new RoadmapCurriculumView(container, {
+        onOpenLecture: (milestoneId) => {
+          if (this.callbacks?.onOpenLectureDocument) {
+            this.callbacks.onOpenLectureDocument(milestoneId);
+          }
+        },
         onNavigateToLeetCode: (milestoneId) => {
           this.openTab('leetcode');
           if (milestoneId && this.leetcodeView) {
