@@ -5,6 +5,7 @@ import { RegisterPanel } from './registerPanel.js';
 import { MemoryView } from './memoryView.js';
 import { TooltipManager } from './tooltip.js';
 import { InstructionDoc } from './instructionDoc.js';
+import { ConsoleView } from './console.js';
 
 export type ExecutionSpeed = '0.5' | '1' | '2';
 
@@ -22,12 +23,14 @@ export class App {
   private editor!: Editor;
   private registerPanel!: RegisterPanel;
   private memoryView!: MemoryView;
+  private consoleView!: ConsoleView;
 
   private currentAsmResult: AsmResult | null = null;
   private ipToLineMap: Map<number, number> = new Map();
   private isRunning: boolean = false;
   private runTimer: number | null = null;
   private currentSpeed: ExecutionSpeed = '1';
+  private wasRunningBeforeInput: boolean = false;
 
   constructor() {
     this.cpu = new CPU();
@@ -49,7 +52,7 @@ export class App {
           <div class="editor-header-bar">
             <h2 class="editor-title">
               Code Editor
-              <span class="info-btn" data-info-title="8086 Assembly Editörü" data-info-desc="DOS COM / EMU8086 sözdizimine uygun assembly kodu yazın. Satır numaralarına tıklayarak kesme noktaları (Breakpoint) koyabilirsiniz." tabindex="-1">i</span>
+              <span class="info-btn" data-info-title="8086 Assembly Editörü" data-info-desc="DOS COM / EMU8086 sözdizimine uygun assembly kodu yazın. Satır numaralarına tıklayarak kesme noktası (Breakpoint) koyabilirsiniz. Kısayollar: Ctrl+Z (Geri Al), Ctrl+Y / Ctrl+Shift+Z (Yinele), Tab / Shift+Tab (4 boşluk girintile / geri çek), Enter (Oto-girinti), Ctrl+/ veya Ctrl+; (Yorum aç/kapa), Ctrl+D (Satır çoğalt), Alt+Yukarı/Aşağı (Satır taşı), Ctrl+Shift+K (Satır sil), F10 (Adım), F5 (Çalıştır)." tabindex="-1">i</span>
             </h2>
             <div class="editor-toolbar-right">
               <!-- Format Switch (HEX / DEC / BIN) -->
@@ -78,6 +81,7 @@ export class App {
           </div>
 
           <div id="editor-container"></div>
+          <div id="console-container" class="console-section-wrapper"></div>
         </section>
 
         <!-- Right Section: Registers, Segments, Pointers, Flags, Memory -->
@@ -94,6 +98,7 @@ export class App {
 
   private initModules(): void {
     const editorContainer = document.getElementById('editor-container')!;
+    const consoleContainer = document.getElementById('console-container')!;
     const registersContainer = document.getElementById('registers-container')!;
     const memoryContainer = document.getElementById('memory-container')!;
     const docsContainer = document.getElementById('instruction-docs-container')!;
@@ -101,6 +106,19 @@ export class App {
     this.registerPanel = new RegisterPanel(registersContainer);
     this.memoryView = new MemoryView(memoryContainer);
     new InstructionDoc(docsContainer);
+
+    this.consoleView = new ConsoleView(consoleContainer, {
+      onInput: (input) => {
+        this.cpu.feedInput(input);
+        this.consoleView.setWaitingForInput(false);
+        if (this.wasRunningBeforeInput) {
+          this.wasRunningBeforeInput = false;
+          this.run();
+        } else {
+          this.step();
+        }
+      }
+    });
 
     this.editor = new Editor({
       container: editorContainer,
@@ -173,13 +191,16 @@ export class App {
 
     const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
 
+    this.consoleView.clear();
     if (result.errors.length > 0) {
       this.editor.setErrors(result.errors);
+      result.errors.forEach(err => this.consoleView.log(`Hata (Satır ${err.line}): ${err.message}`, 'error'));
       if (btnCompile) btnCompile.disabled = false;
       return false;
     }
 
     this.editor.clearErrors();
+    this.consoleView.log(`Program başarıyla derlendi (${result.bytes.length} bayt). Giriş noktası: CS:${result.origin.toString(16).toUpperCase().padStart(4, '0')}h`, 'success');
 
     // Disable COMPILE button until user edits code
     if (btnCompile) btnCompile.disabled = true;
@@ -210,13 +231,16 @@ export class App {
 
   private reset(): void {
     this.stop();
+    this.consoleView.setWaitingForInput(false);
     if (this.currentAsmResult && this.currentAsmResult.errors.length === 0) {
       // Reload compiled binary at origin and restore initial program state
       this.cpu.loadCOM(this.currentAsmResult.bytes, this.currentAsmResult.origin);
       this.syncActiveLine();
+      this.consoleView.log('Program başlangıç durumuna sıfırlandı.', 'info');
     } else {
       this.cpu.reset();
       this.editor.setActiveLine(null);
+      this.consoleView.log('Simülatör sıfırlandı.', 'info');
     }
 
     const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
@@ -232,14 +256,34 @@ export class App {
 
     const info = this.cpu.step();
 
+    if (info.consoleText) {
+      if (info.consoleText.startsWith('[')) {
+        const isPort = info.consoleText.includes('Port');
+        this.consoleView.log(info.consoleText, isPort ? 'port' : 'info');
+      } else {
+        this.consoleView.appendStdout(info.consoleText);
+      }
+    }
+
+    if (info.waitingForInput) {
+      this.wasRunningBeforeInput = false;
+      this.stop();
+      this.consoleView.setWaitingForInput(true);
+      this.syncActiveLine();
+      this.updateViews();
+      return;
+    }
+
     if (info.error) {
       this.stop();
       this.editor.setErrors([{ line: this.ipToLineMap.get(this.cpu.regs.ip) || 1, message: info.error }]);
+      this.consoleView.log(`Çalışma Hatası: ${info.error}`, 'error');
       return;
     }
 
     if (info.halted) {
       this.stop();
+      this.consoleView.log('Program sonlandı (HLT).', 'warn');
     }
 
     this.syncActiveLine();
@@ -270,16 +314,39 @@ export class App {
       const currentLine = this.ipToLineMap.get(this.cpu.regs.ip);
       if (currentLine !== undefined && this.editor.isBreakpoint(currentLine)) {
         this.stop();
+        this.consoleView.log(`Kesme noktasına ulaşıldı (Satır ${currentLine}).`, 'warn');
         this.syncActiveLine();
         this.updateViews();
         return;
       }
 
       const info = this.cpu.step();
+
+      if (info.consoleText) {
+        if (info.consoleText.startsWith('[')) {
+          const isPort = info.consoleText.includes('Port');
+          this.consoleView.log(info.consoleText, isPort ? 'port' : 'info');
+        } else {
+          this.consoleView.appendStdout(info.consoleText);
+        }
+      }
+
+      if (info.waitingForInput) {
+        this.wasRunningBeforeInput = true;
+        this.stop();
+        this.consoleView.setWaitingForInput(true);
+        this.syncActiveLine();
+        this.updateViews();
+        return;
+      }
+
       if (info.halted || info.error) {
         this.stop();
         if (info.error) {
           this.editor.setErrors([{ line: currentLine || 1, message: info.error }]);
+          this.consoleView.log(`Çalışma Hatası: ${info.error}`, 'error');
+        } else {
+          this.consoleView.log('Program sonlandı (HLT).', 'warn');
         }
         this.syncActiveLine();
         this.updateViews();

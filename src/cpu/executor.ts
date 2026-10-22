@@ -2,6 +2,7 @@ import { Registers, Reg16, Reg8 } from './registers.js';
 import { Flags, FlagsState, computeParity } from './flags.js';
 import { Memory } from './memory.js';
 import { Decoder, DecodedModRM } from './decoder.js';
+import { IOPortManager } from './io.js';
 
 export interface StepResult {
   halted: boolean;
@@ -9,17 +10,20 @@ export interface StepResult {
   ipBefore: number;
   ipAfter: number;
   consoleText?: string;
+  waitingForInput?: boolean;
 }
 
 export class Executor {
   private mem: Memory;
   private regs: Registers;
   private flags: Flags;
+  readonly io: IOPortManager;
 
-  constructor(mem: Memory, regs: Registers, flags: Flags) {
+  constructor(mem: Memory, regs: Registers, flags: Flags, io?: IOPortManager) {
     this.mem = mem;
     this.regs = regs;
     this.flags = flags;
+    this.io = io || new IOPortManager();
   }
 
   // Helper to read operand value from ModRM (8-bit)
@@ -128,6 +132,7 @@ export class Executor {
     };
 
     let halted = false;
+    let waitingForInput = false;
     let consoleText: string | undefined;
 
     switch (opcode) {
@@ -1507,35 +1512,61 @@ export class Executor {
 
       // --- Port I/O (IN / OUT) ---
       case 0xE4: { // IN AL, imm8
-        fetchByte(); // port number
-        this.regs.al = 0xFF; // Open-bus default
+        const port = fetchByte();
+        const val = this.io.readByte(port);
+        this.regs.al = val;
+        consoleText = `[IN Port 0x${port.toString(16).toUpperCase().padStart(2, '0')}] -> 0x${val.toString(16).toUpperCase().padStart(2, '0')}`;
         break;
       }
       case 0xE5: { // IN AX, imm8
-        fetchByte();
-        this.regs.ax = 0xFFFF;
+        const port = fetchByte();
+        const val = this.io.readWord(port);
+        this.regs.ax = val;
+        consoleText = `[IN Port 0x${port.toString(16).toUpperCase().padStart(2, '0')}] -> 0x${val.toString(16).toUpperCase().padStart(4, '0')}`;
         break;
       }
       case 0xE6: { // OUT imm8, AL
-        fetchByte();
+        const port = fetchByte();
+        const val = this.regs.al;
+        this.io.writeByte(port, val);
+        const charDesc = (val >= 32 && val <= 126) ? ` ('${String.fromCharCode(val)}')` : '';
+        consoleText = `[OUT Port 0x${port.toString(16).toUpperCase().padStart(2, '0')}] <- 0x${val.toString(16).toUpperCase().padStart(2, '0')}${charDesc}`;
         break;
       }
       case 0xE7: { // OUT imm8, AX
-        fetchByte();
+        const port = fetchByte();
+        const val = this.regs.ax;
+        this.io.writeWord(port, val);
+        consoleText = `[OUT Port 0x${port.toString(16).toUpperCase().padStart(2, '0')}] <- 0x${val.toString(16).toUpperCase().padStart(4, '0')}`;
         break;
       }
       case 0xEC: { // IN AL, DX
-        this.regs.al = 0xFF;
+        const port = this.regs.dx;
+        const val = this.io.readByte(port);
+        this.regs.al = val;
+        consoleText = `[IN Port DX (0x${port.toString(16).toUpperCase().padStart(4, '0')})] -> 0x${val.toString(16).toUpperCase().padStart(2, '0')}`;
         break;
       }
       case 0xED: { // IN AX, DX
-        this.regs.ax = 0xFFFF;
+        const port = this.regs.dx;
+        const val = this.io.readWord(port);
+        this.regs.ax = val;
+        consoleText = `[IN Port DX (0x${port.toString(16).toUpperCase().padStart(4, '0')})] -> 0x${val.toString(16).toUpperCase().padStart(4, '0')}`;
         break;
       }
       case 0xEE: { // OUT DX, AL
+        const port = this.regs.dx;
+        const val = this.regs.al;
+        this.io.writeByte(port, val);
+        const charDesc = (val >= 32 && val <= 126) ? ` ('${String.fromCharCode(val)}')` : '';
+        consoleText = `[OUT Port DX (0x${port.toString(16).toUpperCase().padStart(4, '0')})] <- 0x${val.toString(16).toUpperCase().padStart(2, '0')}${charDesc}`;
         break;
       }
       case 0xEF: { // OUT DX, AX
+        const port = this.regs.dx;
+        const val = this.regs.ax;
+        this.io.writeWord(port, val);
+        consoleText = `[OUT Port DX (0x${port.toString(16).toUpperCase().padStart(4, '0')})] <- 0x${val.toString(16).toUpperCase().padStart(4, '0')}`;
         break;
       }
 
@@ -1635,7 +1666,7 @@ export class Executor {
         break;
       }
 
-      // INT 20h / INT 21h / INT 3
+      // INT 10h / INT 16h / INT 20h / INT 21h / INT 3
       case 0xCD: {
         const intNum = fetchByte();
         if (intNum === 0x10) { // BIOS video service
@@ -1645,13 +1676,47 @@ export class Executor {
           } else {
             consoleText = `[INT 10h AH=${ah.toString(16).padStart(2, '0')}h]`;
           }
+        } else if (intNum === 0x16) { // BIOS keyboard services
+          const ah = this.regs.ah;
+          if (ah === 0x00 || ah === 0x10) { // Wait for keystroke
+            if (this.io.hasInput()) {
+              const ch = this.io.popInput()!;
+              this.regs.al = ch;
+              this.regs.ah = 0; // standard scan code dummy
+              consoleText = `[INT 16h Tuş: '${String.fromCharCode(ch)}' (0x${ch.toString(16).toUpperCase()})]`;
+            } else {
+              currIp = initialIp;
+              waitingForInput = true;
+              consoleText = '[INT 16h: Tuş girdisi bekleniyor...]';
+            }
+          } else if (ah === 0x01 || ah === 0x11) { // Check keystroke status
+            if (this.io.hasInput()) {
+              this.flags.zf = false;
+              this.regs.al = this.io.peekInput()!;
+              this.regs.ah = 0;
+            } else {
+              this.flags.zf = true;
+            }
+          } else {
+            consoleText = `[Unhandled INT 16h AH=${ah.toString(16).padStart(2, '0')}h]`;
+          }
         } else if (intNum === 0x20) { // DOS terminate
           halted = true;
           consoleText = "[Program terminated via INT 20h]";
         } else if (intNum === 0x21) { // DOS service
           const ah = this.regs.ah;
-          if (ah === 0x01 || ah === 0x08) { // Console input (dummy 0 for non-interactive)
-            this.regs.al = 0;
+          if (ah === 0x01 || ah === 0x08) { // Console input (01h echoes, 08h does not)
+            if (this.io.hasInput()) {
+              const ch = this.io.popInput()!;
+              this.regs.al = ch;
+              if (ah === 0x01) {
+                consoleText = String.fromCharCode(ch);
+              }
+            } else {
+              currIp = initialIp;
+              waitingForInput = true;
+              consoleText = '[INT 21h: Karakter girdisi bekleniyor...]';
+            }
           } else if (ah === 0x02) { // Print char in DL
             const charStr = String.fromCharCode(this.regs.dl);
             consoleText = charStr;
@@ -1666,6 +1731,26 @@ export class Executor {
               if (str.length > 2000) break; // safety guard
             }
             consoleText = str;
+          } else if (ah === 0x0A) { // Buffered keyboard input at DS:DX
+            if (this.io.hasInput()) {
+              const maxLen = this.mem.readByte(this.regs.ds, this.regs.dx, true);
+              let count = 0;
+              while (this.io.hasInput() && count < maxLen) {
+                const ch = this.io.popInput()!;
+                if (ch === 0x0D || ch === 0x0A) { // Enter pressed
+                  break;
+                }
+                this.mem.writeByte(this.regs.ds, (this.regs.dx + 2 + count) & 0xFFFF, ch, true);
+                count++;
+              }
+              this.mem.writeByte(this.regs.ds, (this.regs.dx + 1) & 0xFFFF, count, true);
+              this.mem.writeByte(this.regs.ds, (this.regs.dx + 2 + count) & 0xFFFF, 0x0D, true);
+              consoleText = `[INT 21h Buffer: ${count} karakter okundu]`;
+            } else {
+              currIp = initialIp;
+              waitingForInput = true;
+              consoleText = '[INT 21h AH=0Ah: Metin girdisi bekleniyor...]';
+            }
           } else if (ah === 0x4C) { // Exit with return code AL
             halted = true;
             consoleText = `[Program terminated with return code: ${this.regs.al}]`;
@@ -1697,7 +1782,8 @@ export class Executor {
       halted,
       ipBefore: initialIp,
       ipAfter: currIp,
-      consoleText
+      consoleText,
+      waitingForInput
     };
   }
 }

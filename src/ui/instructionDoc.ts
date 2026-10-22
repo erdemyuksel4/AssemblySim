@@ -1,8 +1,18 @@
-import { INSTRUCTIONS, CATEGORIES, InstructionDetail } from './instructionData.js';
+import { 
+  INSTRUCTIONS, 
+  CATEGORIES, 
+  InstructionDetail,
+  ADDRESSING_MODES,
+  ARCHITECTURE_GUIDE,
+  FLAGS_GUIDE
+} from './instructionData.js';
+
+export type ManualTab = 'instructions' | 'addressing' | 'architecture' | 'flags';
 
 export class InstructionDoc {
   private container: HTMLElement;
   private isOpen: boolean = false;
+  private activeTab: ManualTab = 'instructions';
   private activeCategory: string = 'all';
   private searchQuery: string = '';
   private selectedOpcode: string = 'MOV';
@@ -21,7 +31,7 @@ export class InstructionDoc {
             <span class="docs-book-icon">📖</span>
             <div class="docs-title-wrap">
               <span class="docs-main-title">8086 Komut Seti ve Referans Rehberi (Instruction Set Manual)</span>
-              <span class="docs-subtitle">Simülatörün desteklediği tüm komutlar, varyasyonlar, sözdizimleri ve örnekler</span>
+              <span class="docs-subtitle">Slaytlarla tam uyumlu komutlar, 7 adresleme modu, segment:ofset hesabı ve bayraklar</span>
             </div>
             <span class="docs-count-badge">${INSTRUCTIONS.length} Komut</span>
           </div>
@@ -33,29 +43,63 @@ export class InstructionDoc {
 
         <!-- Collapsible Body Drawer -->
         <div class="docs-body-drawer" id="docs-body-drawer">
-          <!-- Filter & Search Toolbar -->
-          <div class="docs-toolbar">
-            <div class="docs-search-wrap">
-              <span class="docs-search-icon">🔍</span>
-              <input type="text" id="docs-search-input" class="docs-search-input" placeholder="Komut veya açıklama ara... (örn: MOV, JMP, ADD, BCD, DUP)" />
-              <button id="docs-search-clear" class="docs-search-clear" style="display: none;" title="Temizle">✕</button>
+          <!-- Main Subject Tabs (BMI3121 Course Modules) -->
+          <div class="docs-main-tabs" id="docs-main-tabs">
+            <button class="docs-main-tab active" data-tab="instructions">
+              📖 Komut Seti Referansı
+            </button>
+            <button class="docs-main-tab" data-tab="addressing">
+              🎯 7 Veri Adresleme Modu (Week 3)
+            </button>
+            <button class="docs-main-tab" data-tab="architecture">
+              📐 Mimari & Segment:Offset Hesabı (Week 1–2)
+            </button>
+            <button class="docs-main-tab" data-tab="flags">
+              🏳️ FLAGS Kaydı & Atlama Matrisi (Week 2 & 5)
+            </button>
+          </div>
+
+          <!-- TAB 1: Instructions Master-Detail View -->
+          <div class="docs-tab-pane active" id="pane-instructions">
+            <!-- Filter & Search Toolbar -->
+            <div class="docs-toolbar">
+              <div class="docs-search-wrap">
+                <span class="docs-search-icon">🔍</span>
+                <input type="text" id="docs-search-input" class="docs-search-input" placeholder="Komut veya açıklama ara... (örn: MOV, IN, OUT, RCL, BCD, DUP)" />
+                <button id="docs-search-clear" class="docs-search-clear" style="display: none;" title="Temizle">✕</button>
+              </div>
+              <div class="docs-categories-wrap" id="docs-categories-wrap">
+                ${CATEGORIES.map(cat => `
+                  <button class="docs-cat-btn ${cat.id === 'all' ? 'active' : ''}" data-cat="${cat.id}">
+                    ${cat.label}
+                  </button>
+                `).join('')}
+              </div>
             </div>
-            <div class="docs-categories-wrap" id="docs-categories-wrap">
-              ${CATEGORIES.map(cat => `
-                <button class="docs-cat-btn ${cat.id === 'all' ? 'active' : ''}" data-cat="${cat.id}">
-                  ${cat.label}
-                </button>
-              `).join('')}
+
+            <!-- Master-Detail Content Layout -->
+            <div class="docs-master-detail">
+              <!-- Left Panel: Instruction List -->
+              <div class="docs-list-panel" id="docs-list-panel"></div>
+
+              <!-- Right Panel: Instruction Details & Variations -->
+              <div class="docs-detail-panel" id="docs-detail-panel"></div>
             </div>
           </div>
 
-          <!-- Master-Detail Content Layout -->
-          <div class="docs-master-detail">
-            <!-- Left Panel: Instruction List -->
-            <div class="docs-list-panel" id="docs-list-panel"></div>
+          <!-- TAB 2: Addressing Modes View -->
+          <div class="docs-tab-pane" id="pane-addressing">
+            <div class="docs-theory-container" id="docs-addressing-container"></div>
+          </div>
 
-            <!-- Right Panel: Instruction Details & Variations -->
-            <div class="docs-detail-panel" id="docs-detail-panel"></div>
+          <!-- TAB 3: Architecture & Physical Address Calculation View -->
+          <div class="docs-tab-pane" id="pane-architecture">
+            <div class="docs-theory-container" id="docs-architecture-container"></div>
+          </div>
+
+          <!-- TAB 4: FLAGS Register & Jump Decision Matrix View -->
+          <div class="docs-tab-pane" id="pane-flags">
+            <div class="docs-theory-container" id="docs-flags-container"></div>
           </div>
         </div>
       </section>
@@ -64,6 +108,9 @@ export class InstructionDoc {
     this.attachEvents();
     this.renderList();
     this.renderDetail();
+    this.renderAddressingModes();
+    this.renderArchitecture();
+    this.renderFlags();
   }
 
   private attachEvents(): void {
@@ -71,11 +118,27 @@ export class InstructionDoc {
     const searchInput = this.container.querySelector('#docs-search-input') as HTMLInputElement;
     const clearBtn = this.container.querySelector('#docs-search-clear') as HTMLButtonElement;
     const catWrap = this.container.querySelector('#docs-categories-wrap') as HTMLElement;
+    const tabsWrap = this.container.querySelector('#docs-main-tabs') as HTMLElement;
 
     // Toggle expand/collapse
     toggleBar.addEventListener('click', () => {
       this.isOpen = !this.isOpen;
       this.updateOpenState();
+    });
+
+    // Main Tabs Switcher
+    tabsWrap.addEventListener('click', (e: MouseEvent) => {
+      const btn = (e.target as HTMLElement).closest('.docs-main-tab') as HTMLButtonElement;
+      if (!btn) return;
+      const tab = btn.getAttribute('data-tab') as ManualTab;
+      if (!tab || tab === this.activeTab) return;
+
+      tabsWrap.querySelectorAll('.docs-main-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      this.activeTab = tab;
+      this.container.querySelectorAll('.docs-tab-pane').forEach(p => p.classList.remove('active'));
+      this.container.querySelector(`#pane-${tab}`)?.classList.add('active');
     });
 
     // Category button selection
@@ -113,7 +176,6 @@ export class InstructionDoc {
       drawer.classList.add('open');
       arrow.classList.add('open');
       statusText.textContent = 'Kapat';
-      // Smooth scroll into view if bottom was off-screen
       setTimeout(() => {
         this.container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 100);
@@ -126,11 +188,9 @@ export class InstructionDoc {
 
   private getFilteredInstructions(): InstructionDetail[] {
     return INSTRUCTIONS.filter(inst => {
-      // Category filter
       if (this.activeCategory !== 'all' && inst.category !== this.activeCategory) {
         return false;
       }
-      // Search filter
       if (this.searchQuery) {
         const inOpcode = inst.opcode.toLowerCase().includes(this.searchQuery);
         const inName = inst.name.toLowerCase().includes(this.searchQuery);
@@ -160,7 +220,6 @@ export class InstructionDoc {
       return;
     }
 
-    // Ensure selectedOpcode is valid, or select first item
     if (!items.some(i => i.opcode === this.selectedOpcode)) {
       this.selectedOpcode = items[0].opcode;
       this.renderDetail();
@@ -180,7 +239,6 @@ export class InstructionDoc {
       `;
     }).join('');
 
-    // Attach click events on list items
     listPanel.querySelectorAll('.docs-list-item').forEach(el => {
       el.addEventListener('click', () => {
         const opcode = el.getAttribute('data-opcode');
@@ -230,7 +288,7 @@ export class InstructionDoc {
         ${inst.rules ? `
           <div class="docs-rules-box">
             <span class="docs-rules-icon">⚠️</span>
-            <div class="docs-rules-text"><strong>8086 Donanım Kuralı:</strong> ${inst.rules}</div>
+            <div class="docs-rules-text"><strong>8086 Donanım Kuralı & Slayt Notu:</strong>\n${this.escapeHtml(inst.rules).replace(/\\n/g, '<br/>')}</div>
           </div>
         ` : ''}
 
@@ -260,8 +318,322 @@ export class InstructionDoc {
       </div>
     `;
 
-    // Attach copy code buttons
-    detailPanel.querySelectorAll<HTMLButtonElement>('.btn-copy-code').forEach(btn => {
+    this.attachCopyButtons(detailPanel);
+  }
+
+  /**
+   * Render TAB 2: Addressing Modes
+   */
+  private renderAddressingModes(): void {
+    const container = this.container.querySelector('#docs-addressing-container') as HTMLElement;
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="theory-header">
+        <h3 class="theory-title">8086 Veri Adresleme Modları (The 7 Data-Addressing Modes - Week 3)</h3>
+        <p class="theory-subtitle">
+          Barry B. Brey 8. Baskı ve BMI3121 ders slaytlarına göre Intel 8086 mikroişlemcisinin 7 temel veri adresleme modu.
+          Her komutta sağdaki <strong>Kaynak (Source)</strong> operand soldaki <strong>Hedef (Destination)</strong> operanda kopyalanır.
+        </p>
+      </div>
+
+      <div class="theory-cards-grid">
+        ${ADDRESSING_MODES.map(mode => `
+          <div class="theory-card">
+            <div class="theory-card-header">
+              <span class="theory-card-badge">${mode.category.toUpperCase()}</span>
+              <h4 class="theory-card-title">${mode.modeName}</h4>
+            </div>
+            <p class="theory-card-desc">${mode.summary}</p>
+            
+            <div class="theory-meta-row">
+              <span class="theory-meta-label">İzin Verilen Yazmaçlar:</span>
+              <span class="theory-meta-val">${mode.registersAllowed}</span>
+            </div>
+
+            <div class="theory-meta-row">
+              <span class="theory-meta-label">Varsayılan Segment:</span>
+              <span class="theory-meta-val segment-val">${mode.defaultSegment}</span>
+            </div>
+
+            ${mode.formula ? `
+              <div class="theory-formula-box">
+                <span class="formula-label">Formül:</span>
+                <code>${mode.formula}</code>
+              </div>
+            ` : ''}
+
+            <div class="docs-example-box" style="margin-top: 10px;">
+              <div class="docs-example-header">
+                <span>Slayt Örneği:</span>
+                <button class="btn-copy-code" data-code="${this.escapeHtml(mode.example)}" title="Kodu Kopyala">Kopyala</button>
+              </div>
+              <pre class="docs-code-pre"><code>${this.escapeHtml(mode.example)}</code></pre>
+            </div>
+
+            <div class="docs-var-note" style="margin-top: 8px;">
+              ⚠️ <strong>Dikkat:</strong> ${mode.notes}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    this.attachCopyButtons(container);
+  }
+
+  /**
+   * Render TAB 3: Architecture & Real-Mode Addressing
+   */
+  private renderArchitecture(): void {
+    const container = this.container.querySelector('#docs-architecture-container') as HTMLElement;
+    if (!container) return;
+
+    const arch = ARCHITECTURE_GUIDE;
+
+    container.innerHTML = `
+      <div class="theory-header">
+        <h3 class="theory-title">${arch.title}</h3>
+        <p class="theory-subtitle">
+          8086 mikroişlemcisinin veri yolları, gerçek mod (Real Mode) segment:ofset bellek hesaplama kuralları ve yazmaç hiyerarşisi.
+        </p>
+      </div>
+
+      <!-- Bus Architecture & Real Mode Formula Grid -->
+      <div class="theory-grid-2col">
+        <!-- Card 1: Veri Yolu & Bellek Haritası -->
+        <div class="theory-card">
+          <h4 class="theory-card-title">Veri Yolu (Bus) & Bellek Bölütleri</h4>
+          <ul class="theory-list">
+            <li><strong>Adres Yolu (Address Bus):</strong> ${arch.busSystem.addressBus}</li>
+            <li><strong>Veri Yolu (Data Bus):</strong> ${arch.busSystem.dataBus}</li>
+            <li><strong>Denetim Yolu (Control Bus):</strong> ${arch.busSystem.controlBus}</li>
+          </ul>
+          <hr class="theory-divider" />
+          <h5 class="theory-subheading">${arch.memoryOrganization.title}</h5>
+          <div class="memory-region-item">
+            <span class="region-badge tpa">TPA (640 KB)</span>
+            <span class="region-desc">${arch.memoryOrganization.tpa}</span>
+          </div>
+          <div class="memory-region-item">
+            <span class="region-badge sys">System Area (384 KB)</span>
+            <span class="region-desc">${arch.memoryOrganization.systemArea}</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Fiziksel Adres Hesabı -->
+        <div class="theory-card">
+          <h4 class="theory-card-title">Fiziksel Adres Hesaplama (Worked Example - Slayt 34–38)</h4>
+          <div class="theory-formula-box highlighted">
+            <span class="formula-label">Temel Formül:</span>
+            <code class="formula-code">${arch.realModeFormula.formula}</code>
+          </div>
+          <p class="theory-card-desc" style="margin-top: 8px;">
+            ${arch.realModeFormula.explanation}
+          </p>
+          <div class="example-calculation-box">
+            <pre class="calculation-pre"><code>${arch.realModeFormula.example}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Default Segment Pairs Table -->
+      <div class="theory-card" style="margin-top: 14px;">
+        <h4 class="theory-card-title">Varsayılan Segment ve Ofset Eşleşmeleri (Default Segment:Offset Pairs - Slayt 37)</h4>
+        <div class="table-responsive">
+          <table class="theory-table">
+            <thead>
+              <tr>
+                <th>İşlem / Görev</th>
+                <th>Segment Yazmacı</th>
+                <th>Ofset Yazmacı</th>
+                <th>Örnek Adres Gösterimi</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${arch.defaultPairs.map(pair => `
+                <tr>
+                  <td><strong>${pair.purpose}</strong></td>
+                  <td><code>${pair.segment}</code></td>
+                  <td><code>${pair.offset}</code></td>
+                  <td><code>${pair.segment.split(' ')[0]}:${pair.offset.split(' ')[0]}</code></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Nested Register Widths Evolution Diagram -->
+      <div class="theory-card" style="margin-top: 14px;">
+        <h4 class="theory-card-title">${arch.nestedRegisters.title}</h4>
+        <p class="theory-card-desc">
+          8086'dan modern 64-bit mimariye yazmaçların içiçe geçme (nested widths) şeması.
+        </p>
+        <pre class="nested-regs-pre"><code>${arch.nestedRegisters.diagram}</code></pre>
+        <div class="docs-var-note" style="margin-top: 8px;">
+          💡 <strong>Altın Kural:</strong> ${arch.nestedRegisters.rule}
+        </div>
+      </div>
+    `;
+
+    this.attachCopyButtons(container);
+  }
+
+  /**
+   * Render TAB 4: Flags & Jump Decision Matrix
+   */
+  private renderFlags(): void {
+    const container = this.container.querySelector('#docs-flags-container') as HTMLElement;
+    if (!container) return;
+
+    const fg = FLAGS_GUIDE;
+
+    container.innerHTML = `
+      <div class="theory-header">
+        <h3 class="theory-title">${fg.title}</h3>
+        <p class="theory-subtitle">
+          Aritmetik, mantık ve karşılaştırma komutlarının etkilediği durum bayrakları ve koşullu dallanma (Conditional Jumps) kuralları.
+        </p>
+      </div>
+
+      <!-- Status Flags & Control Flags -->
+      <div class="theory-grid-2col">
+        <!-- Status Flags -->
+        <div class="theory-card">
+          <h4 class="theory-card-title">Durum Bayrakları (6 Status Flags - Donanım Sonucu)</h4>
+          <div class="flags-list">
+            ${fg.statusFlags.map(sf => `
+              <div class="flag-item">
+                <span class="flag-badge status">Bit ${sf.bit}: ${sf.flag}</span>
+                <span class="flag-desc">${sf.desc}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Control Flags & Golden Rules -->
+        <div class="theory-card">
+          <h4 class="theory-card-title">Kontrol Bayrakları (3 Control Flags - İşlemci Davranışı)</h4>
+          <div class="flags-list">
+            ${fg.controlFlags.map(cf => `
+              <div class="flag-item">
+                <span class="flag-badge control">Bit ${cf.bit}: ${cf.flag}</span>
+                <span class="flag-desc">${cf.desc}</span>
+              </div>
+            `).join('')}
+          </div>
+          <hr class="theory-divider" />
+          <h5 class="theory-subheading">⚠️ Slaytlardaki Kritik Bayrak Kuralları:</h5>
+          <ul class="theory-list golden">
+            ${fg.goldenRules.map(rule => `<li>${rule}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Conditional Jump Reference Matrix -->
+      <div class="theory-card" style="margin-top: 14px;">
+        <h4 class="theory-card-title">Koşullu Atlama Karar Matrisi (Conditional Jump Decision Matrix)</h4>
+        <div class="table-responsive">
+          <table class="theory-table">
+            <thead>
+              <tr>
+                <th>Komut</th>
+                <th>Anlamı</th>
+                <th>Test Edilen Bayrak Koşulu</th>
+                <th>Kullanım Alanı</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>JE / JZ</code></td>
+                <td>Jump if Equal / Zero</td>
+                <td><code>ZF = 1</code></td>
+                <td>Eşitlik / Sıfır kontrolü</td>
+              </tr>
+              <tr>
+                <td><code>JNE / JNZ</code></td>
+                <td>Jump if Not Equal / Not Zero</td>
+                <td><code>ZF = 0</code></td>
+                <td>Eşitsizlik kontrolü</td>
+              </tr>
+              <tr>
+                <td><code>JA / JNBE</code></td>
+                <td>Jump if Above (Büyükse)</td>
+                <td><code>CF = 0 and ZF = 0</code></td>
+                <td><strong>İşaretsiz (Unsigned)</strong> sayılarda</td>
+              </tr>
+              <tr>
+                <td><code>JB / JC / JNAE</code></td>
+                <td>Jump if Below / Carry (Küçükse)</td>
+                <td><code>CF = 1</code></td>
+                <td><strong>İşaretsiz (Unsigned)</strong> sayılarda</td>
+              </tr>
+              <tr>
+                <td><code>JAE / JNC / JNB</code></td>
+                <td>Jump if Above or Equal</td>
+                <td><code>CF = 0</code></td>
+                <td><strong>İşaretsiz (Unsigned)</strong> sayılarda</td>
+              </tr>
+              <tr>
+                <td><code>JBE / JNA</code></td>
+                <td>Jump if Below or Equal</td>
+                <td><code>CF = 1 or ZF = 1</code></td>
+                <td><strong>İşaretsiz (Unsigned)</strong> sayılarda</td>
+              </tr>
+              <tr>
+                <td><code>JG / JNLE</code></td>
+                <td>Jump if Greater (Büyükse)</td>
+                <td><code>ZF = 0 and SF = OF</code></td>
+                <td><strong>İşaretli (Signed)</strong> sayılarda</td>
+              </tr>
+              <tr>
+                <td><code>JL / JNGE</code></td>
+                <td>Jump if Less (Küçükse)</td>
+                <td><code>SF != OF</code></td>
+                <td><strong>İşaretli (Signed)</strong> sayılarda</td>
+              </tr>
+              <tr>
+                <td><code>JGE / JNL</code></td>
+                <td>Jump if Greater or Equal</td>
+                <td><code>SF = OF</code></td>
+                <td><strong>İşaretli (Signed)</strong> sayılarda</td>
+              </tr>
+              <tr>
+                <td><code>JLE / JNG</code></td>
+                <td>Jump if Less or Equal</td>
+                <td><code>ZF = 1 or SF != OF</code></td>
+                <td><strong>İşaretli (Signed)</strong> sayılarda</td>
+              </tr>
+              <tr>
+                <td><code>JO / JNO</code></td>
+                <td>Jump if Overflow / No Overflow</td>
+                <td><code>OF = 1 / OF = 0</code></td>
+                <td>İşaretli taşma kontrolü</td>
+              </tr>
+              <tr>
+                <td><code>JS / JNS</code></td>
+                <td>Jump if Sign / No Sign</td>
+                <td><code>SF = 1 / SF = 0</code></td>
+                <td>Negatif / Pozitif kontrolü</td>
+              </tr>
+              <tr>
+                <td><code>JCXZ</code></td>
+                <td>Jump if CX Register is Zero</td>
+                <td><code>CX = 0</code></td>
+                <td>Döngü öncesi sıfır kontrolü</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    this.attachCopyButtons(container);
+  }
+
+  private attachCopyButtons(parent: HTMLElement): void {
+    parent.querySelectorAll<HTMLButtonElement>('.btn-copy-code').forEach(btn => {
       btn.addEventListener('click', () => {
         const code = btn.getAttribute('data-code') || '';
         navigator.clipboard.writeText(code).then(() => {

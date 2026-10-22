@@ -1,3 +1,15 @@
+import {
+  EditorHistory,
+  indentSelection,
+  dedentSelection,
+  autoIndentOnEnter,
+  toggleComment,
+  duplicateLineOrSelection,
+  moveLines,
+  smartBackspace,
+  deleteLine
+} from './editorActions.js';
+
 export interface EditorOptions {
   container: HTMLElement;
   initialCode: string;
@@ -15,6 +27,7 @@ export class Editor {
   private activeLine: number | null = null;
   private breakpoints: Set<number> = new Set();
   private errors: Map<number, string> = new Map();
+  private history: EditorHistory = new EditorHistory();
 
   private onCodeChange?: (code: string) => void;
   private onBreakpointToggle?: (line: number, active: boolean) => void;
@@ -51,32 +64,209 @@ export class Editor {
     this.attachEvents();
   }
 
-  private attachEvents(): void {
-    const syncScroll = () => {
-      this.highlightLayer.scrollTop = this.textarea.scrollTop;
-      this.highlightLayer.scrollLeft = this.textarea.scrollLeft;
-      this.gutterLayer.scrollTop = this.textarea.scrollTop;
-    };
+  private syncScroll(): void {
+    this.highlightLayer.scrollTop = this.textarea.scrollTop;
+    this.highlightLayer.scrollLeft = this.textarea.scrollLeft;
+    this.gutterLayer.scrollTop = this.textarea.scrollTop;
+  }
 
-    this.textarea.addEventListener('scroll', syncScroll);
+  private applyEdit(newVal: string, newStart: number, newEnd: number): void {
+    const curVal = this.textarea.value;
+    const curStart = this.textarea.selectionStart;
+    const curEnd = this.textarea.selectionEnd;
 
-    this.textarea.addEventListener('input', () => {
+    // Snapshot state before applying discrete edit if uncommitted
+    const currentTop = this.history.getCurrent();
+    if (!currentTop || currentTop.value !== curVal) {
+      this.history.push({ value: curVal, selectionStart: curStart, selectionEnd: curEnd });
+    }
+
+    const prevScrollTop = this.textarea.scrollTop;
+    const prevScrollLeft = this.textarea.scrollLeft;
+
+    this.textarea.value = newVal;
+    this.textarea.selectionStart = newStart;
+    this.textarea.selectionEnd = newEnd;
+
+    this.textarea.scrollTop = prevScrollTop;
+    this.textarea.scrollLeft = prevScrollLeft;
+
+    this.history.push({ value: newVal, selectionStart: newStart, selectionEnd: newEnd });
+
+    this.updateHighlighting();
+    this.updateGutter();
+    this.syncScroll();
+    this.onCodeChange?.(newVal);
+  }
+
+  undo(): void {
+    const curVal = this.textarea.value;
+    const curStart = this.textarea.selectionStart;
+    const curEnd = this.textarea.selectionEnd;
+
+    const prevState = this.history.undo({
+      value: curVal,
+      selectionStart: curStart,
+      selectionEnd: curEnd
+    });
+
+    if (prevState) {
+      const prevScrollTop = this.textarea.scrollTop;
+      const prevScrollLeft = this.textarea.scrollLeft;
+
+      this.textarea.value = prevState.value;
+      this.textarea.selectionStart = prevState.selectionStart;
+      this.textarea.selectionEnd = prevState.selectionEnd;
+
+      this.textarea.scrollTop = prevScrollTop;
+      this.textarea.scrollLeft = prevScrollLeft;
+
       this.updateHighlighting();
       this.updateGutter();
-      this.onCodeChange?.(this.textarea.value);
+      this.syncScroll();
+      this.onCodeChange?.(prevState.value);
+    }
+  }
+
+  redo(): void {
+    const nextState = this.history.redo();
+    if (nextState) {
+      const prevScrollTop = this.textarea.scrollTop;
+      const prevScrollLeft = this.textarea.scrollLeft;
+
+      this.textarea.value = nextState.value;
+      this.textarea.selectionStart = nextState.selectionStart;
+      this.textarea.selectionEnd = nextState.selectionEnd;
+
+      this.textarea.scrollTop = prevScrollTop;
+      this.textarea.scrollLeft = prevScrollLeft;
+
+      this.updateHighlighting();
+      this.updateGutter();
+      this.syncScroll();
+      this.onCodeChange?.(nextState.value);
+    }
+  }
+
+  private attachEvents(): void {
+    this.textarea.addEventListener('scroll', () => this.syncScroll());
+
+    this.textarea.addEventListener('input', (e: Event) => {
+      const inputEvent = e as InputEvent;
+      const val = this.textarea.value;
+      const start = this.textarea.selectionStart;
+      const end = this.textarea.selectionEnd;
+
+      const isPaste = inputEvent.inputType === 'insertFromPaste' || inputEvent.inputType === 'insertFromDrop';
+      const isCut = inputEvent.inputType === 'deleteByCut';
+      const isBoundary = isPaste || isCut || inputEvent.data === ' ' || inputEvent.data === '\n';
+
+      this.history.recordTyping(
+        { value: val, selectionStart: start, selectionEnd: end },
+        isBoundary
+      );
+
+      this.updateHighlighting();
+      this.updateGutter();
+      this.syncScroll();
+      this.onCodeChange?.(val);
     });
 
     this.textarea.addEventListener('keydown', (e: KeyboardEvent) => {
+      const isCtrl = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+      const val = this.textarea.value;
+      const start = this.textarea.selectionStart;
+      const end = this.textarea.selectionEnd;
+
+      // 1. Undo: Ctrl+Z (without Shift)
+      if (isCtrl && !e.altKey && key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        this.undo();
+        return;
+      }
+
+      // 2. Redo: Ctrl+Y OR Ctrl+Shift+Z
+      if (isCtrl && !e.altKey && (key === 'y' || (key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        this.redo();
+        return;
+      }
+
+      // 3. Tab & Shift+Tab (Indentation & Dedentation with 4 spaces)
       if (e.key === 'Tab') {
         e.preventDefault();
-        const start = this.textarea.selectionStart;
-        const end = this.textarea.selectionEnd;
-        const val = this.textarea.value;
-        this.textarea.value = val.substring(0, start) + '  ' + val.substring(end);
-        this.textarea.selectionStart = this.textarea.selectionEnd = start + 2;
-        this.updateHighlighting();
-        this.updateGutter();
-        this.onCodeChange?.(this.textarea.value);
+        if (e.shiftKey) {
+          const res = dedentSelection(val, start, end, 4);
+          this.applyEdit(res.text, res.newStart, res.newEnd);
+        } else {
+          const res = indentSelection(val, start, end, '    ');
+          this.applyEdit(res.text, res.newStart, res.newEnd);
+        }
+        return;
+      }
+
+      // 4. Enter: Auto-indentation
+      if (e.key === 'Enter' && !e.shiftKey && !isCtrl && !e.altKey) {
+        e.preventDefault();
+        const res = autoIndentOnEnter(val, start, end);
+        this.applyEdit(res.text, res.newPos, res.newPos);
+        return;
+      }
+
+      // 5. Comment Toggle: Ctrl + / OR Ctrl + ;
+      if (isCtrl && !e.altKey && (e.key === '/' || e.key === ';')) {
+        e.preventDefault();
+        const res = toggleComment(val, start, end);
+        this.applyEdit(res.text, res.newStart, res.newEnd);
+        return;
+      }
+
+      // 6. Duplicate Line or Selection: Ctrl + D OR Alt + Shift + ArrowDown
+      if ((isCtrl && !e.altKey && !e.shiftKey && key === 'd') ||
+          (e.altKey && e.shiftKey && e.key === 'ArrowDown')) {
+        e.preventDefault();
+        const res = duplicateLineOrSelection(val, start, end);
+        this.applyEdit(res.text, res.newStart, res.newEnd);
+        return;
+      }
+
+      // 7. Move Line Up: Alt + ArrowUp
+      if (e.altKey && !e.shiftKey && !isCtrl && e.key === 'ArrowUp') {
+        e.preventDefault();
+        const res = moveLines(val, start, end, 'up');
+        if (res) {
+          this.applyEdit(res.text, res.newStart, res.newEnd);
+        }
+        return;
+      }
+
+      // 8. Move Line Down: Alt + ArrowDown
+      if (e.altKey && !e.shiftKey && !isCtrl && e.key === 'ArrowDown') {
+        e.preventDefault();
+        const res = moveLines(val, start, end, 'down');
+        if (res) {
+          this.applyEdit(res.text, res.newStart, res.newEnd);
+        }
+        return;
+      }
+
+      // 9. Delete Line: Ctrl + Shift + K
+      if (isCtrl && e.shiftKey && key === 'k') {
+        e.preventDefault();
+        const res = deleteLine(val, start, end);
+        this.applyEdit(res.text, res.newPos, res.newPos);
+        return;
+      }
+
+      // 10. Smart Backspace: deletes up to 4 spaces of indentation
+      if (e.key === 'Backspace' && !isCtrl && !e.altKey && !e.shiftKey && start === end) {
+        const res = smartBackspace(val, start, end, 4);
+        if (res) {
+          e.preventDefault();
+          this.applyEdit(res.text, res.newPos, res.newPos);
+          return;
+        }
       }
     });
 
@@ -95,8 +285,10 @@ export class Editor {
 
   setCode(code: string): void {
     this.textarea.value = code;
+    this.history.reset(code, 0);
     this.updateHighlighting();
     this.updateGutter();
+    this.syncScroll();
   }
 
   setActiveLine(line: number | null): void {

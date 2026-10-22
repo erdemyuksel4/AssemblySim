@@ -72,7 +72,9 @@ export class Encoder {
       case 'LODSB': return { bytes: [0xAC], length: 1 };
       case 'LODSW': return { bytes: [0xAD], length: 1 };
       case 'CMPSB': return { bytes: [0xA6], length: 1 };
+      case 'CMPSW': return { bytes: [0xA7], length: 1 };
       case 'SCASB': return { bytes: [0xAE], length: 1 };
+      case 'SCASW': return { bytes: [0xAF], length: 1 };
 
       case 'CLC': return { bytes: [0xF8], length: 1 };
       case 'STC': return { bytes: [0xF9], length: 1 };

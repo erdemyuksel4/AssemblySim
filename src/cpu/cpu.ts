@@ -2,9 +2,11 @@ import { Memory, MemoryDiffEntry } from './memory.js';
 import { Registers, RegisterState } from './registers.js';
 import { Flags, FlagsState } from './flags.js';
 import { Executor, StepResult } from './executor.js';
+import { IOPortManager } from './io.js';
 
 export interface CpuStepInfo {
   halted: boolean;
+  waitingForInput?: boolean;
   error?: string;
   ipBefore: number;
   ipAfter: number;
@@ -26,6 +28,7 @@ export class CPU {
   readonly mem: Memory;
   readonly regs: Registers;
   readonly flags: Flags;
+  readonly io: IOPortManager;
   private executor: Executor;
 
   halted: boolean = false;
@@ -39,14 +42,20 @@ export class CPU {
     this.mem = new Memory();
     this.regs = new Registers();
     this.flags = new Flags();
-    this.executor = new Executor(this.mem, this.regs, this.flags);
+    this.io = new IOPortManager();
+    this.executor = new Executor(this.mem, this.regs, this.flags, this.io);
     this.reset();
+  }
+
+  feedInput(data: string | number | number[]): void {
+    this.io.feedInput(data);
   }
 
   reset(): void {
     this.mem.reset();
     this.regs.resetCOM();
     this.flags.reset();
+    this.io.reset();
     this.halted = false;
     this.lastError = undefined;
     this.consoleBuffer = '';
@@ -171,7 +180,8 @@ export class CPU {
       changedFlags,
       memReads: memReadsList,
       memWrites: memWritesList,
-      consoleText: result.consoleText
+      consoleText: result.consoleText,
+      waitingForInput: result.waitingForInput
     };
   }
 

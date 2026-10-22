@@ -15,6 +15,61 @@ export interface InstructionDetail {
   variations: InstructionVariation[];
 }
 
+export interface AddressingModeInfo {
+  modeName: string;
+  category: string;
+  summary: string;
+  formula?: string;
+  registersAllowed: string;
+  defaultSegment: string;
+  example: string;
+  notes: string;
+}
+
+export interface ArchitectureGuide {
+  title: string;
+  busSystem: {
+    addressBus: string;
+    dataBus: string;
+    controlBus: string;
+  };
+  memoryOrganization: {
+    title: string;
+    tpa: string;
+    systemArea: string;
+  };
+  realModeFormula: {
+    formula: string;
+    explanation: string;
+    example: string;
+  };
+  defaultPairs: Array<{
+    purpose: string;
+    segment: string;
+    offset: string;
+  }>;
+  nestedRegisters: {
+    title: string;
+    diagram: string;
+    rule: string;
+  };
+}
+
+export interface FlagsGuide {
+  title: string;
+  statusFlags: Array<{
+    flag: string;
+    bit: number;
+    desc: string;
+  }>;
+  controlFlags: Array<{
+    flag: string;
+    bit: number;
+    desc: string;
+  }>;
+  goldenRules: string[];
+}
+
 export const CATEGORIES = [
   { id: 'all', label: 'Tümü' },
   { id: 'data', label: 'Veri Transferi' },
@@ -1164,3 +1219,135 @@ export const INSTRUCTIONS: InstructionDetail[] = [
     ]
   }
 ];
+
+export const ADDRESSING_MODES: AddressingModeInfo[] = [
+  {
+    modeName: '1. Register Addressing (Yazmaç Adresleme)',
+    category: 'data',
+    summary: 'Veri doğrudan bir yazmaçtan diğerine veya yazmaç içinde aktarılır. Bellek erişimi gerektirmediği için en hızlı çalışan adresleme modudur.',
+    registersAllowed: 'AX, BX, CX, DX, SI, DI, BP, SP ve 8-bit yarıları (AH, AL, BH...)',
+    defaultSegment: 'Yok (Yazmaç içi)',
+    example: 'MOV AX, BX\nADD AL, BH\nMOV SI, DI',
+    notes: 'Her iki yazmaç aynı boyutta olmalıdır (8-bit ile 16-bit karıştırılamaz: MOV AL, BX geçersizdir!).'
+  },
+  {
+    modeName: '2. Immediate Addressing (Sabit / Doğrudan Değer Adresleme)',
+    category: 'data',
+    summary: 'Operandın kendisi sabit bir sayısal değerdir ve doğrudan komut baytlarının içinde saklanır.',
+    registersAllowed: 'Hedef herhangi bir genel yazmaç veya bellek hücresi olabilir.',
+    defaultSegment: 'Yok (Kod segmenti içinde komutla gelir)',
+    example: 'MOV AX, 1234H\nMOV BL, 50\nMOV WORD PTR [BX], 0FFFFH',
+    notes: 'Segment yazmaçlarına doğrudan sabit değer yüklenemez! (MOV DS, 1000H yasaktır; önce AX\'e, sonra DS\'ye aktarılır).'
+  },
+  {
+    modeName: '3. Direct Addressing (Doğrudan Bellek Adresleme)',
+    category: 'data',
+    summary: 'Bellek ofset adresi komutun içinde doğrudan sabit bir adres veya etiket olarak verilir.',
+    formula: 'Fiziksel Adres = DS * 16 + Disp16',
+    registersAllowed: 'Kaynak veya hedef bellek ofsetidir.',
+    defaultSegment: 'DS (Data Segment)',
+    example: 'MOV AX, [1234H]   ; DS:1234h adresindeki kelimeyi AX\'e okur\nMOV [500H], BL    ; BL değerini DS:0500h adresine yazar',
+    notes: 'Doğrudan adresleme ile program değişkenlerinin ofsetleri okunur veya yazılır.'
+  },
+  {
+    modeName: '4. Register Indirect Addressing (Yazmaç Dolaylı Adresleme)',
+    category: 'data',
+    summary: 'Bellek ofset adresi köşeli parantez içinde bir işaretçi veya indeks yazmacında tutulur.',
+    formula: 'Fiziksel Adres = Segment * 16 + [Yazmaç]',
+    registersAllowed: 'Yalnızca 4 yazmaç kullanılabilir: BX, BP, SI, DI',
+    defaultSegment: 'BX, SI, DI için DS; BP için varsayılan olarak SS (Stack Segment)',
+    example: 'MOV AX, [BX]      ; DS:BX adresindeki veriyi okur\nMOV [DI], CL      ; CL değerini DS:DI adresine yazar\nMOV AX, [BP]      ; SS:BP (Yığın) adresindeki veriyi okur',
+    notes: '8086 Kuralı: AX, CX, DX veya SP köşeli parantez içinde dolaylı adresleme için KULLANILAMAZ! (MOV AX, [CX] geçersizdir).'
+  },
+  {
+    modeName: '5. Base-Plus-Index Addressing (Taban + İndeks Adresleme)',
+    category: 'data',
+    summary: 'Bir taban yazmacı (BX veya BP) ile bir indeks yazmacı (SI veya DI) toplanarak efektif adres oluşturulur.',
+    formula: 'Efektif Adres (EA) = Taban (BX/BP) + İndeks (SI/DI)',
+    registersAllowed: 'Bir Taban (BX veya BP) + Bir İndeks (SI veya DI)',
+    defaultSegment: 'BX ile DS; BP ile SS',
+    example: 'MOV AX, [BX+SI]   ; DS:[BX+SI] adresinden okur\nMOV [BP+DI], DX   ; SS:[BP+DI] adresine yazar\nMOV CL, [BX][DI]   ; [BX+DI] ile aynı sözdizimidir',
+    notes: 'İki taban ([BX+BP]) veya iki indeks ([SI+DI]) birlikte KULLANILAMAZ!'
+  },
+  {
+    modeName: '6. Register Relative Addressing (Yazmaç Bağıl Adresleme)',
+    category: 'data',
+    summary: 'Bir baz veya indeks yazmacına 8-bit veya 16-bit sabit bir yer değiştirme (displacement / ofset) eklenir.',
+    formula: 'EA = (BX/BP/SI/DI) + Displacement',
+    registersAllowed: 'BX, BP, SI, DI + Sabit Değer / Etiket',
+    defaultSegment: 'BX, SI, DI için DS; BP için SS',
+    example: 'MOV AX, [BX+4]      ; BX ofsetinden 4 bayt ileriyi okur\nMOV ARRAY[SI], AL  ; ARRAY dizisinin SI\'ıncı elemanını yazar\nMOV [BP-2], CX     ; Yığındaki yerel değişkeni okur/yazar',
+    notes: 'Dizilerde ve yığın çerçevelerindeki (Stack Frame) yerel değişkenlerde çok sık kullanılır.'
+  },
+  {
+    modeName: '7. Base Relative-Plus-Index Addressing (Taban Bağıl + İndeks Adresleme)',
+    category: 'data',
+    summary: 'En gelişmiş 8086 adresleme modu: Bir taban yazmacı, bir indeks yazmacı ve sabit bir yer değiştirme toplanır.',
+    formula: 'EA = Taban (BX/BP) + İndeks (SI/DI) + Displacement',
+    registersAllowed: '(BX veya BP) + (SI veya DI) + Sabit / Dizi İsmi',
+    defaultSegment: 'BX ile DS; BP ile SS',
+    example: 'MOV AX, [BX+SI+4]    ; Çok boyutlu matris veya yapı elemanı okuma\nMOV TABLO[BP+DI], AX\nMOV CX, [BX][SI+10H]',
+    notes: 'İki boyutlu diziler (matrisler) ve struct/record veri yapılarına erişim için idealdir.'
+  }
+];
+
+export const ARCHITECTURE_GUIDE: ArchitectureGuide = {
+  title: '8086 Mikroişlemci Mimarisi & Fiziksel Adresleme (Week 1–2)',
+  busSystem: {
+    addressBus: '20-bit Genişlik (1 MB = 1,048,576 bayt doğrudan adreslenebilir bellek)',
+    dataBus: '16-bit Genişlik (Her saat vuruşunda 1 bayt veya 1 kelime aktarılır)',
+    controlBus: 'Bellek ve I/O okuma/yazma denetim sinyalleri (MEMR, MEMW, IOR, IOW)'
+  },
+  memoryOrganization: {
+    title: 'Gerçek Mod (Real Mode) Bellek Haritası',
+    tpa: 'TPA (Transient Program Area): 00000H - 9FFFFH (640 KB) - DOS, kullanıcı programları ve veriler burada çalışır.',
+    systemArea: 'System Area: A0000H - FFFFFH (384 KB) - Video RAM (A0000H-BFFFFH) ve ROM-BIOS (C0000H-FFFFFH) alanıdır.'
+  },
+  realModeFormula: {
+    formula: 'Fiziksel Adres (20-bit) = (Segment Yazmacı * 10H) + Ofset Yazmacı',
+    explanation: 'Segment yazmacının değeri 16 ile çarpılır (ikilikte 4 bit sola kaydırılır, sonuna bir Hex 0 eklenir) ve 16-bitlik ofset ile toplanır.',
+    example: 'Örnek: CS = 348AH ve IP = 4214H ise:\n  Segment * 10H : 348A0H\n  Ofset         : +4214H\n  -----------------------\n  Fiziksel Adres:  38AB4H (Bellekteki gerçek 20-bit adres)'
+  },
+  defaultPairs: [
+    { purpose: 'Komut Getirme (Instruction Fetch)', segment: 'CS (Code Segment)', offset: 'IP (Instruction Pointer)' },
+    { purpose: 'Yığın İşlemleri (Stack Push/Pop)', segment: 'SS (Stack Segment)', offset: 'SP (Stack Pointer)' },
+    { purpose: 'Yığın Tabanlı Adresleme (Stack Frame)', segment: 'SS (Stack Segment)', offset: 'BP (Base Pointer)' },
+    { purpose: 'Genel Veri Erişimi (Data Access)', segment: 'DS (Data Segment)', offset: 'BX, SI, DI veya Doğrudan Adres' },
+    { purpose: 'Hedef Dizi İşlemleri (String Dest)', segment: 'ES (Extra Segment)', offset: 'DI (Destination Index)' }
+  ],
+  nestedRegisters: {
+    title: 'Yazmaç Evrimi ve İçiçe Geçmiş Genişlikler (Nested Widths - Week 2)',
+    diagram: `+---------------------------------------------------------------+
+|                         RAX (64-bit)                          |
++-------------------------------+-------------------------------+
+|                               |          EAX (32-bit)         |
+|                               +---------------+---------------+
+|       (Üst 32 bit)            |               |  AX (16-bit)  |
+|                               | (Üst 16 bit)  +-------+-------+
+|                               |               |AH(8b) |AL(8b) |
++-------------------------------+---------------+-------+-------+`,
+    rule: 'Daha küçük bir yazmaca (örn. AL) yazmak, sadece o 8-bitlik kısmı değiştirir. AH ve üst kısımlar korunur.'
+  }
+};
+
+export const FLAGS_GUIDE: FlagsGuide = {
+  title: 'FLAGS (Bayraklar) Kaydı ve Koşullu Dallanma Rehberi',
+  statusFlags: [
+    { flag: 'CF (Carry)', bit: 0, desc: 'Elde Bayrağı: İşaretsiz aritmetik işlemlerinde en yüksek bitten taşma (elde) veya borç oluşursa 1 olur.' },
+    { flag: 'PF (Parity)', bit: 2, desc: 'Parite Bayrağı: Sonucun en düşük 8 bitindeki 1 bitlerinin sayısı çift ise 1, tek ise 0 olur.' },
+    { flag: 'AF (Auxiliary)', bit: 4, desc: 'Yardımcı Elde: Bit 3\'ten Bit 4\'e (düşük nibble\'dan yüksek nibble\'a) elde geçerse 1 olur (BCD için kullanılır).' },
+    { flag: 'ZF (Zero)', bit: 6, desc: 'Sıfır Bayrağı: Aritmetik veya mantık işleminin sonucu 0 çıkarsa 1, sıfırdan farklı çıkarsa 0 olur.' },
+    { flag: 'SF (Sign)', bit: 7, desc: 'İşaret Bayrağı: Sonucun en yüksek biti (MSB / işaret biti) 1 ise (negatifse) 1, pozitifse 0 olur.' },
+    { flag: 'OF (Overflow)', bit: 11, desc: 'Taşma Bayrağı: İşaretli (Signed) sayı işlemlerinde sonuç hedef yazmacın sınırlarını aşarsa 1 olur.' }
+  ],
+  controlFlags: [
+    { flag: 'DF (Direction)', bit: 10, desc: 'Yön Bayrağı: Dizi komutlarında SI/DI otomatik artış (CLD: DF=0, ileri) veya azalışını (STD: DF=1, geri) belirler.' },
+    { flag: 'IF (Interrupt)', bit: 9, desc: 'Kesme Yetkilendirme: Maskelenebilir donanım kesmelerini açar (STI: IF=1) veya kapatır (CLI: IF=0).' },
+    { flag: 'TF (Trap)', bit: 8, desc: 'Tuzak / Adım Bayrağı: 1 yapıldığında işlemci her komuttan sonra INT 1 kesmesi üreterek hata ayıklama (single step) sağlar.' }
+  ],
+  goldenRules: [
+    'INC ve DEC komutları Carry Flag (CF) bayrağını ASLA etkilemez! (Döngü sayaçlarında elde zincirini korur).',
+    'CMP ve TEST komutları veriyi DEĞİŞTİRMEZ, sadece bayrakları günceller.',
+    'Bölme (DIV / IDIV) işleminden sonra hiçbir bayrak güvenilir değildir (hepsi tanımsızdır).'
+  ]
+};
