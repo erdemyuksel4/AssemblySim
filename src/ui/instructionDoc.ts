@@ -10,8 +10,10 @@ import {
   FLAGS_GUIDE,
   LECTURE_TERMINOLOGY
 } from './instructionData.js';
+import { RoadmapView, RoadmapCallbacks } from '../challenges/roadmapView.js';
+import { Challenge } from '../challenges/types.js';
 
-export type ManualTab = 'instructions' | 'addressing' | 'architecture' | 'flags' | 'glossary';
+export type ManualTab = 'instructions' | 'addressing' | 'architecture' | 'flags' | 'glossary' | 'roadmap';
 
 export class InstructionDoc {
   private container: HTMLElement;
@@ -20,9 +22,12 @@ export class InstructionDoc {
   private activeCategory: string = 'all';
   private searchQuery: string = '';
   private selectedOpcode: string = 'MOV';
+  private roadmapView?: RoadmapView;
+  private callbacks?: RoadmapCallbacks;
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, callbacks?: RoadmapCallbacks) {
     this.container = container;
+    this.callbacks = callbacks;
     this.render();
   }
 
@@ -63,6 +68,9 @@ export class InstructionDoc {
             </button>
             <button class="docs-main-tab" data-tab="glossary">
               📚 Ders Terminolojisi & Kavramlar (Weeks 1–5)
+            </button>
+            <button class="docs-main-tab" data-tab="roadmap">
+              🗺️ Yol Haritası & LeetCode (Roadmap)
             </button>
           </div>
 
@@ -113,6 +121,11 @@ export class InstructionDoc {
           <div class="docs-tab-pane" id="pane-glossary">
             <div class="docs-theory-container" id="docs-glossary-container"></div>
           </div>
+
+          <!-- TAB 6: 8086 Roadmap & LeetCode Challenges -->
+          <div class="docs-tab-pane" id="pane-roadmap">
+            <div id="docs-roadmap-container"></div>
+          </div>
         </div>
       </section>
     `;
@@ -124,6 +137,25 @@ export class InstructionDoc {
     this.renderArchitecture();
     this.renderFlags();
     this.renderGlossary();
+    this.renderRoadmap();
+  }
+
+  private renderRoadmap(): void {
+    const roadmapContainer = this.container.querySelector('#docs-roadmap-container') as HTMLElement;
+    if (roadmapContainer && this.callbacks) {
+      this.roadmapView = new RoadmapView(roadmapContainer, this.callbacks);
+    }
+  }
+
+  openTab(tab: ManualTab): void {
+    if (!this.isOpen) {
+      this.isOpen = true;
+      this.updateOpenState();
+    }
+    const btn = this.container.querySelector(`.docs-main-tab[data-tab="${tab}"]`) as HTMLButtonElement;
+    if (btn) {
+      btn.click();
+    }
   }
 
   private attachEvents(): void {

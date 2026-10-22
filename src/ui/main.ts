@@ -6,6 +6,11 @@ import { MemoryView } from './memoryView.js';
 import { TooltipManager } from './tooltip.js';
 import { InstructionDoc } from './instructionDoc.js';
 import { ConsoleView } from './console.js';
+import { CpuInstanceManager } from '../cpu/instanceManager.js';
+import { WorkspaceManager } from '../workspace/workspaceManager.js';
+import { WorkspaceDocument } from '../workspace/types.js';
+import { WorkspaceSidebar } from './sidebar.js';
+import { CpuModal } from './cpuModal.js';
 
 export type ExecutionSpeed = '0.5' | '1' | '2';
 
@@ -20,6 +25,12 @@ START:
 
 export class App {
   private cpu: CPU;
+  private cpuManager: CpuInstanceManager;
+  private workspace: WorkspaceManager;
+  private sidebar!: WorkspaceSidebar;
+  private cpuModal!: CpuModal;
+  private instructionDoc!: InstructionDoc;
+
   private editor!: Editor;
   private registerPanel!: RegisterPanel;
   private memoryView!: MemoryView;
@@ -33,11 +44,16 @@ export class App {
   private wasRunningBeforeInput: boolean = false;
 
   constructor() {
-    this.cpu = new CPU();
+    this.cpuManager = new CpuInstanceManager();
+    this.workspace = new WorkspaceManager(this.cpuManager);
+    const activeDoc = this.workspace.getActiveDocument();
+    const activeCpu = this.cpuManager.getOrDefaultInstance(activeDoc?.cpuInstanceId);
+    this.cpu = activeCpu.cpu;
+
     TooltipManager.init();
     this.initLayout();
     this.initModules();
-    this.editor.setCode(DEFAULT_CODE);
+    this.editor.setCode(activeDoc?.code || DEFAULT_CODE);
     this.compile();
   }
 
@@ -46,57 +62,66 @@ export class App {
     if (!appEl) throw new Error('#app root missing');
 
     appEl.innerHTML = `
-      <main class="main-layout">
-        <!-- Left Section: Code Editor -->
-        <section class="editor-section">
-          <div class="editor-header-bar">
-            <h2 class="editor-title">
-              Code Editor
-              <span class="info-btn" data-info-title="8086 Assembly Editörü" data-info-desc="DOS COM / EMU8086 sözdizimine uygun assembly kodu yazın. Satır numaralarına tıklayarak kesme noktası (Breakpoint) koyabilirsiniz. Kısayollar: Ctrl+Z (Geri Al), Ctrl+Y / Ctrl+Shift+Z (Yinele), Tab / Shift+Tab (4 boşluk girintile / geri çek), Enter (Oto-girinti), Ctrl+/ veya Ctrl+; (Yorum aç/kapa), Ctrl+D (Satır çoğalt), Alt+Yukarı/Aşağı (Satır taşı), Ctrl+Shift+K (Satır sil), F10 (Adım), F5 (Çalıştır)." tabindex="-1">i</span>
-            </h2>
-            <div class="editor-toolbar-right">
-              <!-- Format Switch (HEX / DEC / BIN) -->
-              <div class="format-switch-group">
-                <button class="btn-fmt active" data-fmt="hex">HEX</button>
-                <button class="btn-fmt" data-fmt="dec">DEC</button>
-                <button class="btn-fmt" data-fmt="bin">BIN</button>
-                <span class="info-btn" data-info-title="Sayı Formatı Seçici" data-info-desc="Yazmaç değerlerini Onaltılık (HEX), Onluk (DEC) veya İkilik (BIN) tabanda görüntüler." tabindex="-1">i</span>
+      <div class="app-layout-root">
+        <!-- Collapsible Full-Height Left Sidebar Mount -->
+        <div id="sidebar-mount"></div>
+
+        <!-- Main Workspace Area -->
+        <div class="app-main-content">
+          <main class="main-layout">
+            <!-- Left Section: Code Editor -->
+            <section class="editor-section">
+              <div class="editor-header-bar">
+                <h2 class="editor-title">
+                  Code Editor
+                  <span class="info-btn" data-info-title="8086 Assembly Editörü" data-info-desc="DOS COM / EMU8086 sözdizimine uygun assembly kodu yazın. Satır numaralarına tıklayarak kesme noktası (Breakpoint) koyabilirsiniz. Kısayollar: Ctrl+Z (Geri Al), Ctrl+Y / Ctrl+Shift+Z (Yinele), Tab / Shift+Tab (4 boşluk girintile / geri çek), Enter (Oto-girinti), Ctrl+/ veya Ctrl+; (Yorum aç/kapa), Ctrl+D (Satır çoğalt), Alt+Yukarı/Aşağı (Satır taşı), Ctrl+Shift+K (Satır sil), F10 (Adım), F5 (Çalıştır)." tabindex="-1">i</span>
+                </h2>
+                <div class="editor-toolbar-right">
+                  <!-- Format Switch (HEX / DEC / BIN) -->
+                  <div class="format-switch-group">
+                    <button class="btn-fmt active" data-fmt="hex">HEX</button>
+                    <button class="btn-fmt" data-fmt="dec">DEC</button>
+                    <button class="btn-fmt" data-fmt="bin">BIN</button>
+                    <span class="info-btn" data-info-title="Sayı Formatı Seçici" data-info-desc="Yazmaç değerlerini Onaltılık (HEX), Onluk (DEC) veya İkilik (BIN) tabanda görüntüler." tabindex="-1">i</span>
+                  </div>
+
+                  <!-- Speed Switch (0.5x / 1x / 2x) -->
+                  <div class="speed-switch-group">
+                    <button class="btn-speed" data-speed="0.5" title="0.5x Yavaş (600ms)">0.5x</button>
+                    <button class="btn-speed active" data-speed="1" title="1x Normal Hız (300ms)">1x</button>
+                    <button class="btn-speed" data-speed="2" title="2x Hızlı (100ms)">2x</button>
+                    <span class="info-btn" data-info-title="Çalışma Hızı" data-info-desc="RUN ile çalıştırma hızını ayarlar. 0.5x: Yavaş adım (600ms), 1x: Normal hız (300ms), 2x: Hızlı adım (100ms)." tabindex="-1">i</span>
+                  </div>
+
+                  <button id="btn-compile" class="btn-compile">COMPILE</button>
+                  <button id="btn-run" class="btn-ctrl">RUN</button>
+                  <button id="btn-next" class="btn-ctrl">NEXT</button>
+                  <button id="btn-stop" class="btn-ctrl" disabled>STOP</button>
+                  <button id="btn-reset" class="btn-ctrl">RESET</button>
+                  <button id="btn-step-back" class="btn-ctrl btn-step-back" title="Geri Adım Al (Step Back)" disabled>↶</button>
+                </div>
               </div>
 
-              <!-- Speed Switch (0.5x / 1x / 2x) -->
-              <div class="speed-switch-group">
-                <button class="btn-speed" data-speed="0.5" title="0.5x Yavaş (600ms)">0.5x</button>
-                <button class="btn-speed active" data-speed="1" title="1x Normal Hız (300ms)">1x</button>
-                <button class="btn-speed" data-speed="2" title="2x Hızlı (100ms)">2x</button>
-                <span class="info-btn" data-info-title="Çalışma Hızı" data-info-desc="RUN ile çalıştırma hızını ayarlar. 0.5x: Yavaş adım (600ms), 1x: Normal hız (300ms), 2x: Hızlı adım (100ms)." tabindex="-1">i</span>
-              </div>
+              <div id="editor-container"></div>
+              <div id="console-container" class="console-section-wrapper"></div>
+            </section>
 
-              <button id="btn-compile" class="btn-compile">COMPILE</button>
-              <button id="btn-run" class="btn-ctrl">RUN</button>
-              <button id="btn-next" class="btn-ctrl">NEXT</button>
-              <button id="btn-stop" class="btn-ctrl" disabled>STOP</button>
-              <button id="btn-reset" class="btn-ctrl">RESET</button>
-              <button id="btn-step-back" class="btn-ctrl btn-step-back" title="Geri Adım Al (Step Back)" disabled>↶</button>
-            </div>
-          </div>
+            <!-- Right Section: Registers, Segments, Pointers, Flags, Memory -->
+            <section class="cpu-section">
+              <div id="registers-container"></div>
+              <div id="memory-container"></div>
+            </section>
+          </main>
 
-          <div id="editor-container"></div>
-          <div id="console-container" class="console-section-wrapper"></div>
-        </section>
-
-        <!-- Right Section: Registers, Segments, Pointers, Flags, Memory -->
-        <section class="cpu-section">
-          <div id="registers-container"></div>
-          <div id="memory-container"></div>
-        </section>
-      </main>
-
-      <!-- Bottom Collapsible Instruction Manual -->
-      <div id="instruction-docs-container" class="instruction-docs-wrapper"></div>
+          <!-- Bottom Collapsible Instruction Manual & Roadmap -->
+          <div id="instruction-docs-container" class="instruction-docs-wrapper"></div>
+        </div>
+      </div>
     `;
   }
 
   private initModules(): void {
+    const sidebarMount = document.getElementById('sidebar-mount')!;
     const editorContainer = document.getElementById('editor-container')!;
     const consoleContainer = document.getElementById('console-container')!;
     const registersContainer = document.getElementById('registers-container')!;
@@ -105,7 +130,58 @@ export class App {
 
     this.registerPanel = new RegisterPanel(registersContainer);
     this.memoryView = new MemoryView(memoryContainer);
-    new InstructionDoc(docsContainer);
+
+    this.sidebar = new WorkspaceSidebar(
+      sidebarMount,
+      this.workspace,
+      this.cpuManager,
+      {
+        onDocumentSelect: (doc) => this.switchToDocument(doc),
+        onNewDocument: () => {
+          const count = this.workspace.getAllDocuments().length + 1;
+          const newDoc = this.workspace.openDocument({
+            title: `program${count}.asm`,
+            type: 'custom',
+            code: DEFAULT_CODE
+          });
+          this.switchToDocument(newDoc);
+        },
+        onOpenCpuModal: () => this.cpuModal.open()
+      }
+    );
+
+    this.cpuModal = new CpuModal(this.cpuManager, this.workspace, {
+      onCpuChanged: () => {
+        const doc = this.workspace.getActiveDocument();
+        const cpuInst = this.cpuManager.getOrDefaultInstance(doc?.cpuInstanceId);
+        this.cpu = cpuInst.cpu;
+        this.updateViews();
+        this.sidebar.render();
+      },
+      onDocumentCpuRemapped: (doc) => {
+        const cpuInst = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
+        this.cpu = cpuInst.cpu;
+        this.compile();
+        this.updateViews();
+        this.sidebar.render();
+      }
+    });
+
+    this.instructionDoc = new InstructionDoc(docsContainer, {
+      onLoadChallengeToEditor: (ch) => {
+        const doc = this.workspace.openDocument({
+          title: `Görev: ${ch.title}`,
+          type: 'challenge',
+          challengeId: ch.id,
+          code: ch.starterCode
+        });
+        this.switchToDocument(doc);
+        this.sidebar.render();
+        // Smooth scroll to editor
+        document.querySelector('.editor-section')?.scrollIntoView({ behavior: 'smooth' });
+      },
+      getCurrentEditorCode: () => this.editor.getCode()
+    });
 
     this.consoleView = new ConsoleView(consoleContainer, {
       onInput: (input) => {
@@ -125,6 +201,7 @@ export class App {
       initialCode: '',
       onCodeChange: () => {
         this.editor.clearErrors();
+        this.workspace.updateActiveCode(this.editor.getCode());
         // Enable COMPILE button when code changes
         const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
         if (btnCompile) btnCompile.disabled = false;
@@ -133,6 +210,27 @@ export class App {
 
     this.attachButtonEvents();
     this.updateViews();
+  }
+
+  switchToDocument(doc: WorkspaceDocument): void {
+    this.stop();
+    const currentActive = this.workspace.getActiveDocument();
+    if (currentActive && currentActive.id !== doc.id) {
+      this.workspace.updateActiveCode(this.editor.getCode());
+    }
+
+    this.workspace.setActiveDocument(doc.id);
+    const cpuInst = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
+    this.cpu = cpuInst.cpu;
+
+    this.editor.setCode(doc.code);
+    this.consoleView.clear();
+    if (this.cpu.consoleBuffer) {
+      this.consoleView.appendStdout(this.cpu.consoleBuffer);
+    }
+    this.compile();
+    this.updateViews();
+    this.sidebar.render();
   }
 
   private attachButtonEvents(): void {
