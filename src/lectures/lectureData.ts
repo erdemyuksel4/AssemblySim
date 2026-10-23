@@ -70,83 +70,244 @@ export const MILESTONE_LECTURES: Record<string, MilestoneLecture> = {
     "milestoneId": "milestone-2",
     "milestoneNumber": 2,
     "title": "Temel Veri Aktarımı Komutları & 7 Adresleme Modu (MOV, XCHG, LEA)",
-    "subtitle": "MOV Kuralları ve Kısıtlamaları, 7 Veri Adresleme Modu, Atomik XCHG, LEA vs MOV OFFSET ve Sınav İpuçları",
+    "subtitle": "Her Komut ve Adresleme Modu İçin Ayrı Ayrı Anlatım ve Anında Pratik Laboratuvarı",
     "slideRef": "Hoca: Week 3 PPTX / w3 PDF | Kitap: Barry B. Brey Bölüm 3 & 4",
-    "overviewHtml": "\n    <div class=\"lecture-hero-card\">\n      <div class=\"lecture-hero-badge\">AŞAMA 2: VERİ TRANSFERİ VE ADRESLEME MODLARI</div>\n      <p class=\"lecture-hero-text\">\n        8086 mikroişlemcisinde veriyi bir noktadan diğerine taşımak için veri aktarım komutları kullanılır. \n        Bu komutların başında <b>MOV</b>, <b>XCHG</b> ve <b>LEA</b> gelir. İşlemcinin belleğe hangi kurallarla ve formüllerle eriştiğini ise <b>7 Veri Adresleme Modu</b> belirler.\n      </p>\n      <div class=\"lecture-golden-rule\">\n        💡 <strong>Hocanın ve Barry Brey'in 5 Altın Veri Transfer Kuralı (Sınav Klasiği!):</strong><br>\n        1. <b>Bellekten Belleğe Aktarım YASAKTIR:</b> <code>MOV [0200H], [0100H]</code> komutu 8086 donanımında geçersizdir. Bellekten belleğe veri aktarmak için aracı bir yazmaç (örn: AL veya AX) kullanılmalıdır.<br>\n        2. <b>Segment Yazmaçlarına Sabit (Immediate) Yüklenemez:</b> <code>MOV DS, 1000H</code> YASAKTIR! Önce <code>MOV AX, 1000H</code>, ardından <code>MOV DS, AX</code> yapılmalıdır.<br>\n        3. <b>CS Yazmacı Asla Hedef Olamaz:</b> <code>MOV CS, AX</code> YASAKTIR! Kod segmenti yalnızca dallanma (JMP/CALL) ile değişir.<br>\n        4. <b>Boyut Uyuşmazlığı Hatası:</b> Hedef ve kaynak aynı genişlikte olmalıdır. <code>MOV AX, BL</code> (16-bit hedef, 8-bit kaynak) sözdizim hatasıdır.<br>\n        5. <b>Bayraklar Etkilenmez:</b> <code>MOV</code>, <code>XCHG</code> ve <code>LEA</code> komutları durum bayraklarını (CF, ZF, SF, OF, AF, PF) <strong>HİÇBİR ŞEKİLDE ETKİLEMEZ!</strong>\n      </div>\n    </div>\n  ",
+    "overviewHtml": "\n    <div class=\"lecture-hero-card\">\n      <div class=\"lecture-hero-badge\">AŞAMA 2: ADIM ADIM VERİ TRANSFERİ & ADRESLEME MODLARI</div>\n      <p class=\"lecture-hero-text\">\n        Bu derste tüm komutları tek seferde ezberlemeniz <b>beklenmemektedir</b>. \n        Her bir komut ve adresleme modu <b>tek tek, bağımsız bir modül</b> olarak ele alınmış ve hemen altına \n        <b>o spesifik komutu uygulayabileceğiniz canlı bir laboratuvar</b> entegre edilmiştir.\n      </p>\n      <div class=\"lecture-golden-rule\">\n        💡 <strong>Öğrenme Metodolojisi:</strong><br>\n        1. Modülün kısa kuralını ve mantığını okuyun.<br>\n        2. Hemen altındaki mini editörde sadece o komut için kodu yazıp <b>COMPILE</b> ve <b>RUN / NEXT</b> ile çalıştırın.<br>\n        3. Sağdaki <b>Registers (Yazmaçlar)</b> veya <b>Memory (Bellek)</b> panelinden sonucun nasıl değiştiğini gözlerinizle görün.<br>\n        4. Sonraki modüle geçin!\n      </div>\n    </div>\n  ",
     "sections": [
       {
-        "title": "1. MOV Komutu: Sentaks, Veri Yönü ve Kurallar",
-        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>MOV Hedef, Kaynak</code> (Move / Kopyalama)</h4>\n          <p>Kaynak operantındaki veriyi hedefe kopyalar. <strong>Veri akışı DAİMA sağdan sola doğrudur.</strong> Kaynaktaki veri silinmez, korunur.</p>\n          <p>Desteklenen aktarım kombinasyonları:</p>\n          <ul>\n            <li><b>Register ➔ Register:</b> <code>MOV AX, BX</code> (BX'in değerini AX'e kopyalar).</li>\n            <li><b>Immediate (Sabit) ➔ Register:</b> <code>MOV CX, 0050H</code>, <code>MOV AL, 5</code>.</li>\n            <li><b>Memory ➔ Register:</b> <code>MOV DX, [0200H]</code> (DS:0200h adresindeki kelimeyi okur).</li>\n            <li><b>Register ➔ Memory:</b> <code>MOV [0200H], DX</code> (DX'i DS:0200h adresine yazar).</li>\n            <li><b>Immediate ➔ Memory:</b> <code>MOV BYTE PTR [0200H], 10</code> (Boyut belirteci zorunludur).</li>\n            <li><b>Register ➔ Segment Register:</b> <code>MOV DS, AX</code>, <code>MOV ES, BX</code> (CS hariç!).</li>\n            <li><b>Segment Register ➔ Register:</b> <code>MOV AX, CS</code>, <code>MOV BX, DS</code>.</li>\n          </ul>\n        </div>\n      "
-      },
-      {
-        "title": "2. 8086'nın 7 Veri Adresleme Modu (Hocanın Week 3 Slaytları & Brey)",
-        "contentHtml": "\n        <p>8086 mikroişlemcisinde verinin nerede saklandığını ve ofset adresinin nasıl hesaplandığını 7 mod tanımlar:</p>\n        <table class=\"lecture-table\">\n          <thead>\n            <tr><th>No</th><th>Adresleme Modu</th><th>Örnek Komut</th><th>Donanımsal Anlamı & Varsayılan Segment</th></tr>\n          </thead>\n          <tbody>\n            <tr><td>1</td><td><b>Register Addressing</b></td><td><code>MOV AX, BX</code></td><td>Veri CPU içindeki yazmaçlar arasındadır. Bellek erişimi olmadığı için en hızlı moddur.</td></tr>\n            <tr><td>2</td><td><b>Immediate Addressing</b></td><td><code>MOV AL, 25H</code></td><td>Sabit değer doğrudan komutun içine (makine koduna) gömülüdür.</td></tr>\n            <tr><td>3</td><td><b>Direct Addressing</b></td><td><code>MOV AX, [1234H]</code></td><td>Ofset adresi komutta köşeli parantez içinde açıkça yazılır. Varsayılan segment: <code>DS</code>.</td></tr>\n            <tr><td>4</td><td><b>Register Indirect</b></td><td><code>MOV CL, [BX]</code></td><td>Ofset adresi <code>BX, BP, SI, DI</code> yazmaçlarından birindedir. BP için varsayılan <code>SS</code>, diğerleri için <code>DS</code>.</td></tr>\n            <tr><td>5</td><td><b>Based Addressing</b></td><td><code>MOV AX, [BX + 4]</code></td><td>Taban yazmacına (BX veya BP) 8 veya 16 bitlik sabit ofset eklenir. Tablo ve kayıt erişimi.</td></tr>\n            <tr><td>6</td><td><b>Indexed Addressing</b></td><td><code>MOV DX, [SI + 2]</code></td><td>İndeks yazmacına (SI veya DI) sabit ofset eklenir. Dizi elemanlarına erişim.</td></tr>\n            <tr><td>7</td><td><b>Based-Indexed Addressing</b></td><td><code>MOV AX, [BX + SI + 4]</code></td><td>Bir taban (BX/BP) ile bir indeks (SI/DI) toplanır, istenirse ofset eklenir. 2D matris erişimi.</td></tr>\n          </tbody>\n        </table>\n      "
-      },
-      {
-        "title": "3. XCHG (Exchange) ve LEA (Load Effective Address) Komutları",
-        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>XCHG Hedef, Kaynak</code> (Atomik Değer Takası)</h4>\n          <p>İki operantın değerini birbirleriyle değiştirir. Üçüncü bir geçici yazmaç kullanmaktan kurtarır ve atomiktir.</p>\n          <ul>\n            <li><code>XCHG AX, BX</code> $\\rightarrow$ AX ve BX yer değiştirir.</li>\n            <li><code>XCHG AL, [0200H]</code> $\\rightarrow$ AL ile bellek hücresi takas edilir.</li>\n            <li><b>Yasaklar:</b> İki bellek hücresi takas edilemez (<code>XCHG [var1], [var2]</code> YASAKTIR). Segment yazmaçları kullanılamaz. Immediate takas edilemez.</li>\n          </ul>\n        </div>\n\n        <div class=\"instruction-box\">\n          <h4><code>LEA Hedef, Kaynak</code> (Load Effective Address)</h4>\n          <p>Kaynak adresin <b>içeriğini değil</b>, hesaplanan <b>efektif ofset adresini</b> hedef yazmaca yükler.</p>\n          <ul>\n            <li><code>LEA BX, [SI + 4]</code> $\\rightarrow$ $BX = SI + 4$ (Belleğe gitmez! ALU gibi hızlı adres hesabı yapar).</li>\n            <li><b>LEA vs MOV OFFSET Farkı (Sınav Sorusu):</b> <code>MOV BX, OFFSET dizi</code> derleme anında sabit adresi yükler. Ancak <code>LEA BX, [SI + 4]</code> gibi formüller çalışma anında (run-time) dinamik hesaplanır.</li>\n          </ul>\n        </div>\n      "
-      },
-      {
-        "title": "4. İnteraktif Laboratuvar İstasyonu (3 Seviyeli Uygulama)",
-        "contentHtml": "\n        <p>Aşağıdaki editörde veri aktarım komutlarını deneyebilirsiniz. <b>Cevap hazır gelmez</b>; yönergeleri izleyerek kodunuzu yazın ve Test Et butonuna tıklayın.</p>\n      ",
+        "title": "1. Modül: Yazmaçtan Yazmaca Veri Aktarımı (Register Addressing)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>MOV Hedef, Kaynak</code> — Register Addressing</h4>\n          <p>En temel ve en hızlı aktarımdır. Veri CPU içindeki iki yazmaç arasında kopyalanır.</p>\n          <ul>\n            <li><strong>Veri Yönü (Altın Kural):</strong> Veri <b>SAĞDAN SOLA</b> akar. <code>MOV AX, BX</code> demek $AX = BX$ demektir (BX'teki değer AX'e kopyalanır).</li>\n            <li><strong>Kaynak Silinmez:</strong> BX'in içindeki değer kaybolmaz; aynen korunur.</li>\n            <li><strong>Boyut Eşleşmesi Şarttır:</strong> İki yazmaç da aynı genişlikte olmalıdır:\n              <br>• 16-bit to 16-bit: <code>MOV AX, BX</code>, <code>MOV CX, DX</code> (Geçerli ✅)\n              <br>• 8-bit to 8-bit: <code>MOV AL, BL</code>, <code>MOV CH, DL</code> (Geçerli ✅)\n              <br>• ⚠️ <code>MOV AX, BL</code> <b>HATA!</b> (16-bit hedefe 8-bit kaynak kopyalanamaz! ❌)\n            </li>\n            <li><strong>Bayrak Etkisi:</strong> <code>MOV</code> komutu bayrakları (CF, ZF, SF, OF vb.) <strong>ASLA DEĞİŞTİRMEZ!</strong></li>\n          </ul>\n        </div>\n      ",
         "examples": [
           {
-            "id": "ex-m2-kolay",
+            "id": "ex-m2-reg-reg",
             "difficulty": "kolay",
-            "difficultyLabel": "🟢 Kolay: Doğrudan & Birebir",
-            "title": "Alıştırma 2.1: Yazmaçlar Arası Veri Transferi (MOV)",
-            "scenario": "AX yazmacına 1234H, BX yazmacına 5678H değerlerini yükleyin ve ardından CX yazmacına AX'in değerini aktarın.",
-            "task": "AX'e 1234H, BX'e 5678H yükleyin, ardından MOV CX, AX ile kopyalayın.",
-            "code": "; 🟢 Kolay: Yazmac Transferi\nORG 100H\n\n; 1. AX'e 1234H yukleyin:\n; TODO:\n\n\n; 2. BX'e 5678H yukleyin:\n; TODO:\n\n\n; 3. CX'e AX degerini kopyalayin:\n; TODO:\n\n\nHLT",
-            "solutionCode": "ORG 100H\nMOV AX, 1234H\nMOV BX, 5678H\nMOV CX, AX\nHLT",
+            "difficultyLabel": "🟢 1. Modül Labı: Yazmaç Kopyalama",
+            "title": "Mini-Lab 1: Yazmaçtan Yazmaca Kopyalama (MOV AX, BX)",
+            "scenario": "Sistem başlatıldığında BX yazmacında 0x55AA donanım durum kodu hazır bulunmaktadır. Bu kodu AX ve CX yazmaçlarına kopyalamanız isteniyor.",
+            "task": "BX yazmacındaki değeri AX'e kopyalayın. Ardından AX'teki değeri CX'e kopyalayın. Programı HLT ile sonlandırın.",
+            "code": "; 🟢 Mini-Lab 1: Register Addressing\nORG 100H\n\n; BX baslangic degeri: 55AAH olarak verilmistir.\nMOV BX, 55AAH\n\n; 1. BX'in degerini AX'e kopyalayin (MOV Hedef, Kaynak):\n; TODO:\n\n\n; 2. AX'in degerini CX'e kopyalayin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV BX, 55AAH\nMOV AX, BX\nMOV CX, AX\nHLT",
             "solutionBreakdown": [
-              "1. Satır: MOV AX, 1234H — Immediate (sabit) adresleme ile AX'e yüklenir.",
-              "2. Satır: MOV BX, 5678H — Sabit değer BX'e aktarılır.",
-              "3. Satır: MOV CX, AX — Register addressing ile AX içeriği CX'e kopyalanır."
+              "1. Satır: MOV BX, 55AAh — BX başlangıç sabiti ile yüklenir.",
+              "2. Satır: MOV AX, BX — BX'teki 55AAh değeri AX'e kopyalanır (AX=55AAh, BX=55AAh).",
+              "3. Satır: MOV CX, AX — AX'teki 55AAh değeri CX'e kopyalanır (CX=55AAh)."
             ],
-            "examTips": "MOV Hedef, Kaynak biçimindedir. Hedef solda, kaynak sağdadır."
-          },
+            "examTips": "MOV komutunda hedef sol taraftadır. Asla 'MOV Kaynak, Hedef' şeklinde ters yazmayın!"
+          }
+        ]
+      },
+      {
+        "title": "2. Modül: Sabit Sayı Yükleme (Immediate Addressing)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>MOV Hedef, Sabit</code> — Immediate Addressing</h4>\n          <p>Yazmaca doğrudan sabit bir sayısal değer yüklemek için kullanılır. Değer komutun makine kodu içine doğrudan gömülüdür.</p>\n          <ul>\n            <li><strong>Sayı Formatları:</strong>\n              <br>• Onaltılık (Hex): Sonuna <code>H</code> konur (örn: <code>1234H</code>, <code>0FFH</code>). <em>Eğer sayı harfle başlıyorsa (A-F) başına 0 konulmalıdır (örn: <code>0A5H</code>)!</em>\n              <br>• Onluk (Decimal): Doğrudan yazılır (örn: <code>100</code>, <code>25</code>).\n              <br>• İkilik (Binary): Sonuna <code>B</code> konur (örn: <code>10100101B</code>).\n            </li>\n            <li><strong>Kapasite Sınırı:</strong>\n              <br>• 8-bit yazmaçlar (AL, AH, BL vb.): 0 ile 255 (00H – 0FFH) arası.\n              <br>• 16-bit yazmaçlar (AX, BX, CX, DX vb.): 0 ile 65535 (0000H – 0FFFFH) arası.\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m2-orta",
+            "id": "ex-m2-immediate",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 2. Modül Labı: Sabit Sayı Yükleme",
+            "title": "Mini-Lab 2: Immediate (Sabit) Yükleme",
+            "scenario": "Bir kontrol algoritmasında sayaç (CX) 100 onluk değerine, veri maskesi (AL) 0F0h değerine, taban gösterici (BX) ise 1000h adresine kurulmalıdır.",
+            "task": "CX'e 100 (decimal), AL'ye 0F0H (hex) ve BX'e 1000H (hex) sabitlerini yükleyin.",
+            "code": "; 🟢 Mini-Lab 2: Immediate Addressing\nORG 100H\n\n; 1. CX'e 100 onluk (decimal) degerini yukleyin:\n; TODO:\n\n\n; 2. AL'ye 0F0H onaltilik degerini yukleyin (Harfle basladigi icin 0 ile baslayin):\n; TODO:\n\n\n; 3. BX'e 1000H degerini yukleyin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV CX, 100\nMOV AL, 0F0H\nMOV BX, 1000H\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: MOV CX, 100 — Onluk tabanda 100 yüklenir (Hex karşılığı: 0064h).",
+              "2. Satır: MOV AL, 0F0H — AL 8-bit yazmacına F0h yüklenir.",
+              "3. Satır: MOV BX, 1000H — BX 16-bit yazmacına 1000h yüklenir."
+            ],
+            "examTips": "Hexadecimal sabit yazarken 'F0H' yazarsanız derleyici bunu değişken ismi zanneder. Harfle başlayan hex sayıların başına daima 0 koyun: '0F0H'."
+          }
+        ]
+      },
+      {
+        "title": "3. Modül: Doğrudan Bellek Adresleme (Direct Addressing)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>MOV Reg, [Ofset]</code> ve <code>MOV [Ofset], Reg</code> — Direct Addressing</h4>\n          <p>Köşeli parantez <code>[...]</code>, işlemciye <em>\"bu parantezin içindeki değer bir sayı değil, belleğin adresidir; belleğe git ve oradaki veriyi oku/yaz\"</em> emrini verir.</p>\n          <ul>\n            <li><strong>Örnek:</strong> <code>MOV AX, [0200H]</code> komutu, Veri Segmentindeki (DS) 0200h ofset adresine gider ve oradaki 16-bitlik kelimeyi okuyup AX'e yazar.</li>\n            <li><strong>Belleğe Yazma:</strong> <code>MOV [0202H], AX</code> komutu ise AX'in içindeki değeri bellek hücresine yazar.</li>\n            <li><strong>🚨 1. Sınav Klasiği — Köşeli Parantez Farkı:</strong>\n              <br>• <code>MOV AX, 0200H</code> ➔ AX'in içine doğrudan 0200H sayısını koyar (Immediate).\n              <br>• <code>MOV AX, [0200H]</code> ➔ Belleğin 0200H adresindeki <b>içeriği</b> okur (Direct).\n            </li>\n            <li><strong>🚨 2. Sınav Klasiği — Bellekten Belleğe Aktarım YASAKTIR:</strong>\n              <br>• ⚠️ <code>MOV [0202H], [0200H]</code> <b>8086'DA DONANIMSAL OLARAK İMKANSIZDIR!</b>\n              <br>• Çözüm: Bellekteki veri önce bir yazmaca okunur, sonra hedef adrese yazılır:\n              <pre><code>MOV AX, [0200H]   ; 1. Once yazmaca oku\nMOV [0202H], AX   ; 2. Yazmactan hedef bellege yaz</code></pre>\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m2-direct-mem",
             "difficulty": "orta",
-            "difficultyLabel": "🟡 Orta: Anlamlı Senaryo",
-            "title": "Alıştırma 2.2: Doğrudan Bellek Erişimi ve XCHG",
-            "scenario": "Belleğin [0200H] adresindeki 16-bit kelimeyi AX'e okuyun. BX'e 9999H yükleyin ve XCHG ile AX ile BX değerlerini takas edin.",
-            "task": "MOV AX, [0200H] ile okuyun, MOV BX, 9999H yükleyin, XCHG AX, BX ile takas edin.",
-            "code": "; 🟡 Orta: Bellek Okuma ve XCHG\nORG 100H\n\n; 1. [0200H] adresindeki kelimeyi AX'e okuyun:\n; TODO:\n\n\n; 2. BX'e 9999H yukleyin:\n; TODO:\n\n\n; 3. AX ve BX degerlerini XCHG ile takas edin:\n; TODO:\n\n\nHLT",
+            "difficultyLabel": "🟡 3. Modül Labı: Doğrudan Bellek Erişimi",
+            "title": "Mini-Lab 3: Bellekten Okuma ve Başka Adrese Yazma",
+            "scenario": "Belleğin [0200H] adresinde sensörden gelen 16-bitlik ham sıcaklık verisi saklanmaktadır. Bu veriyi okuyup [0202H] adresindeki telemetri çıkışına aktarmanız gerekiyor.",
+            "task": "Belleğin [0200H] adresindeki 16-bit kelimeyi AX'e okuyun. Ardından AX'teki bu değeri [0202H] adresine yazın.",
+            "code": "; 🟡 Mini-Lab 3: Direct Addressing\nORG 100H\n\n; 1. [0200H] adresindeki 16-bit veriyi AX yazmacina okuyun:\n; TODO:\n\n\n; 2. AX'teki degeri [0202H] adresine kaydedin:\n; TODO:\n\n\nHLT\n",
             "initialMemory": [
               {
                 "segment": 0,
                 "offset": 512,
                 "bytes": [
-                  52,
-                  18
+                  239,
+                  190
                 ]
               }
             ],
-            "solutionCode": "ORG 100H\nMOV AX, [0200H]\nMOV BX, 9999H\nXCHG AX, BX\nHLT",
+            "solutionCode": "ORG 100H\nMOV AX, [0200H]\nMOV [0202H], AX\nHLT",
             "solutionBreakdown": [
-              "1. Satır: MOV AX, [0200H] — Direct addressing ile belleğin 0200H adresinden 1234H okunur.",
-              "2. Satır: MOV BX, 9999H — BX'e 9999H yüklenir.",
-              "3. Satır: XCHG AX, BX — AX=9999H, BX=1234H olur."
+              "1. Satır: MOV AX, [0200H] — DS:0200h adresindeki Little-Endian (EF BE) verisi AX'e 0xBEEF olarak okunur.",
+              "2. Satır: MOV [0202H], AX — AX'teki 0xBEEF değeri DS:0202h bellek adresine yazılır."
             ],
-            "examTips": "XCHG komutu iki register arasındaki değerleri üçüncü bir geçici değişkene ihtiyaç duymadan takas eder."
-          },
+            "examTips": "Doğrudan 'MOV [0202H], [0200H]' yazamazsınız! 8086'da bellekten belleğe komut yoktur; mutlaka bir aracı yazmaç (AX, BX, CX vb.) kullanılmalıdır."
+          }
+        ]
+      },
+      {
+        "title": "4. Modül: Yazmaç Dolaylı Adresleme (Register Indirect Addressing)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>MOV Reg, [İşaretçi]</code> — Register Indirect Addressing</h4>\n          <p>Adresi doğrudan komutun içine sabit yazmak yerine, adresi bir <b>işaretçi yazmacın (Pointer Register)</b> içine koyup belleğe o yazmaç üzerinden erişiriz.</p>\n          <ul>\n            <li><strong>🚨 Çok Önemli Sınav Kuralı (Hangi Yazmaçlar Köşeli Paranteze Girebilir?):</strong>\n              <br>8086'da köşeli parantez içine <strong>YALNIZCA 4 TANE YAZMAÇ</strong> girebilir:\n              <br>✅ <code>[BX]</code> ➔ Taban (Base)\n              <br>✅ <code>[BP]</code> ➔ Taban İşaretçisi (Base Pointer - Varsayılan segment: <b>SS</b>)\n              <br>✅ <code>[SI]</code> ➔ Kaynak İndeksi (Source Index)\n              <br>✅ <code>[DI]</code> ➔ Hedef İndeksi (Destination Index)\n              <br>❌ <code>[AX]</code>, <code>[CX]</code>, <code>[DX]</code>, <code>[SP]</code> <b>ASLA KÖŞELİ PARANTEZE GİREMEZ!</b>\n              <br>Örn: <code>MOV AX, [CX]</code> ➔ <b>SÖZDİZİM HATASI!</b> (Sınavda hoca sıklıkla sorar!).\n            </li>\n            <li><strong>Varsayılan Segment Kuralı:</strong>\n              <br>• <code>[BX]</code>, <code>[SI]</code>, <code>[DI]</code> kullanıldığında CPU otomatik olarak <b>DS (Data Segment)</b> kullanır.\n              <br>• <code>[BP]</code> kullanıldığında CPU otomatik olarak <b>SS (Stack Segment)</b> kullanır!\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m2-zor",
+            "id": "ex-m2-reg-indirect",
+            "difficulty": "orta",
+            "difficultyLabel": "🟡 4. Modül Labı: Pointer ile Dolaylı Bellek Erişimi",
+            "title": "Mini-Lab 4: BX İşaretçisi ile Bellek Okuma",
+            "scenario": "Dinamik bir bellek tamponuna erişmek için BX yazmacını gösterici (pointer) olarak kullanmanız gerekiyor. Tampon başlangıcı 0200H adresidir.",
+            "task": "BX yazmacına 0200H adresini yükleyin (Immediate). Ardından [BX] dolaylı adreslemesini kullanarak o adresteki 16-bit veriyi DX yazmacına okuyun.",
+            "code": "; 🟡 Mini-Lab 4: Register Indirect Addressing\nORG 100H\n\n; 1. BX yazmacina tampon baslangic ofsetini (0200H) yukleyin:\n; TODO:\n\n\n; 2. [BX] dolayli adreslemesi ile bellekteki veriyi DX yazmacina okuyun:\n; TODO:\n\n\nHLT\n",
+            "initialMemory": [
+              {
+                "segment": 0,
+                "offset": 512,
+                "bytes": [
+                  66,
+                  19
+                ]
+              }
+            ],
+            "solutionCode": "ORG 100H\nMOV BX, 0200H\nMOV DX, [BX]\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: MOV BX, 0200H — BX yazmacı bellek işaretçisi (pointer) olarak hazırlanır.",
+              "2. Satır: MOV DX, [BX] — CPU, BX'in tuttuğu 0200h adresine gider ve oradaki 16-bit kelimeyi (1342h) DX'e okur."
+            ],
+            "examTips": "Neden doğrudan [0200H] yerine [BX] kullanılır? Çünkü BX bir yazmaçtır; döngü içinde INC BX yaparak bir sonraki bellek hücresine kolayca ilerleyebilirsiniz!"
+          }
+        ]
+      },
+      {
+        "title": "5. Modül: Taban ve İndeks Bağıl Adresleme (Based & Indexed Addressing)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>MOV Reg, [BX + Ofset]</code> ve <code>MOV Reg, [SI + Ofset]</code></h4>\n          <p>Bir işaretçi yazmacın üzerine sabit bir yer değiştirme (displacement / ofset) eklenerek bellek adresinin hesaplanmasıdır.</p>\n          <ul>\n            <li><strong>Based Addressing (Taban Adresleme):</strong> <code>MOV AX, [BX + 4]</code> veya <code>MOV AX, [BP - 2]</code>\n              <br>Kullanım Alanı: Veri yapıları (struct/record) ve yerel fonksiyon değişkenleri. Taban adresi BX'tedir, yapı alanlarına (+4, +8 vb.) sabit ofsetle ulaşılır.\n            </li>\n            <li><strong>Indexed Addressing (İndeksli Adresleme):</strong> <code>MOV AX, [SI + 10H]</code> veya <code>MOV AX, [DI + 2]</code>\n              <br>Kullanım Alanı: Dizi (array) ve tablo işlemleri. Dizi başlangıcı sabittir (+10H), SI indisi ile elemanlar taranır.\n            </li>\n            <li><strong>Sözdizim Esnekliği:</strong> <code>[BX + 4]</code> ile <code>[BX][4]</code> veya <code>4[BX]</code> yazılışları tamamen aynı anlama gelir ve aynı makine kodunu üretir.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m2-based-indexed",
+            "difficulty": "orta",
+            "difficultyLabel": "🟡 5. Modül Labı: Based/Indexed Ofsetli Erişim",
+            "title": "Mini-Lab 5: [BX + Ofset] ile Tablo Elemanı Okuma",
+            "scenario": "Bir sensör kalibrasyon tablosu 0200H adresinde başlamaktadır. Tablonun 4. baytındaki kalibrasyon katsayısını [BX + 4] adresleme modu ile AL yazmacına okuyun.",
+            "task": "BX'e taban adresi olan 0200H değerini yükleyin. Ardından [BX + 4] komutunu kullanarak o adresteki 8-bitlik veriyi AL yazmacına okuyun.",
+            "code": "; 🟡 Mini-Lab 5: Based Addressing\nORG 100H\n\n; 1. BX'e tablo baslangic adresini (0200H) yukleyin:\n; TODO:\n\n\n; 2. [BX + 4] adresleme modu ile 4 bayt ilerideki veriyi AL'ye okuyun:\n; TODO:\n\n\nHLT\n",
+            "initialMemory": [
+              {
+                "segment": 0,
+                "offset": 512,
+                "bytes": [
+                  16,
+                  32,
+                  48,
+                  64,
+                  153
+                ]
+              }
+            ],
+            "solutionCode": "ORG 100H\nMOV BX, 0200H\nMOV AL, [BX + 4]\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: MOV BX, 0200H — Taban adres BX içine alınır.",
+              "2. Satır: MOV AL, [BX + 4] — CPU efektif adresi hesaplar: 0200H + 4 = 0204H. O adresteki bayt (99H) AL yazmacına okunur."
+            ],
+            "examTips": "Burada AL 8-bit olduğu için bellekten sadece 1 bayt (99H) okunur. Eğer MOV AX, [BX+4] yazılsaydı 16-bit (2 bayt) okunurdu."
+          }
+        ]
+      },
+      {
+        "title": "6. Modül: Taban-İndeksli Adresleme (Based-Indexed Addressing)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>MOV Reg, [Taban + İndeks + Ofset]</code> — Based-Indexed Addressing</h4>\n          <p>8086'nın en gelişmiş bellek adresleme modudur. <b>Bir taban yazmacı (BX veya BP)</b> ile <b>bir indeks yazmacı (SI veya DI)</b> toplanır, istenirse üzerine sabit bir deplasman eklenir.</p>\n          <ul>\n            <li><strong>Formül:</strong> <code>Efektif Adres = Taban + İndeks + Deplasman</code></li>\n            <li><strong>Geçerli Kombinasyonlar:</strong>\n              <br>✅ <code>[BX + SI]</code>, <code>[BX + DI]</code>\n              <br>✅ <code>[BP + SI]</code>, <code>[BP + DI]</code> (Varsayılan segment SS!)\n              <br>✅ <code>[BX + SI + 4]</code>, <code>[BP + DI + 8]</code>\n            </li>\n            <li><strong>🚨 Sınav Tuzağı — İki Taban veya İki İndeks Toplanamaz:</strong>\n              <br>❌ <code>[BX + BP]</code> <b>YASAK!</b> (İkisi de taban yazmacıdır).\n              <br>❌ <code>[SI + DI]</code> <b>YASAK!</b> (İkisi de indeks yazmacıdır).\n              <br>Bir taban ile bir indeks eşleşmek zorundadır!\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m2-based-index-comb",
             "difficulty": "zor",
-            "difficultyLabel": "🔴 Zor: Gerçek Hayat / Adresleme",
-            "title": "Alıştırma 2.3: LEA ile Efektif Adres Hesaplama",
-            "scenario": "BX=0100H ve SI=0020H olarak verilmiştir. Efektif adresi [BX + SI + 4] formülüyle hesaplayıp LEA komutu ile DI yazmacına yükleyin.",
-            "task": "BX ve SI'yi yükleyin, ardından LEA DI, [BX + SI + 4] komutunu çalıştırın.",
-            "code": "; 🔴 Zor: LEA Efektif Adres\nORG 100H\n\n; 1. BX'e 0100H yukleyin:\n; TODO:\n\n\n; 2. SI'ye 0020H yukleyin:\n; TODO:\n\n\n; 3. LEA komutu ile [BX + SI + 4] adresini DI'ye aktarin:\n; TODO:\n\n\nHLT",
+            "difficultyLabel": "🔴 6. Modül Labı: 2D Matris Erişimi",
+            "title": "Mini-Lab 6: [BX + SI + 2] Taban-İndeks Adresleme",
+            "scenario": "2 boyutlu bir matris bellek hücrelerinde tutulmaktadır. BX satır başlangıcını (0200H), SI sütun ofsetini (0010H) göstermektedir. +2 baytlık başlık ofseti ile hedef hücreyi okuyun.",
+            "task": "BX=0200H, SI=0010H yükleyin. Ardından [BX + SI + 2] komutu ile adresteki 16-bit kelimeyi AX yazmacına okuyun (Efektif Adres: 0212H).",
+            "code": "; 🔴 Mini-Lab 6: Based-Indexed Addressing\nORG 100H\n\n; 1. BX'e 0200H yukleyin:\n; TODO:\n\n\n; 2. SI'ye 0010H yukleyin:\n; TODO:\n\n\n; 3. [BX + SI + 2] adresleme modu ile veriyi AX'e okuyun:\n; TODO:\n\n\nHLT\n",
+            "initialMemory": [
+              {
+                "segment": 0,
+                "offset": 530,
+                "bytes": [
+                  119,
+                  136
+                ]
+              }
+            ],
+            "solutionCode": "ORG 100H\nMOV BX, 0200H\nMOV SI, 0010H\nMOV AX, [BX + SI + 2]\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: MOV BX, 0200H — Taban adresi.",
+              "2. Satır: MOV SI, 0010H — Sütun indisi.",
+              "3. Satır: MOV AX, [BX + SI + 2] — Efektif adres: 0200H + 0010H + 2 = 0212H. Bellekten 8877h kelimesi okunur."
+            ],
+            "examTips": "[BX+SI+2] yazımı ile [BX][SI][2] tamamen aynı anlama gelir."
+          }
+        ]
+      },
+      {
+        "title": "7. Modül: Segment Yazmaç Kuralları & Başlatma Kısıtlamaları",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4>Segment Yazmaçlarının Özel Kuralları (CS, DS, SS, ES)</h4>\n          <p>Segment yazmaçları 8086 mimarisinde 64 KB'lık bellek bloklarının tabanını gösterir ve donanımsal korumalara tabidir.</p>\n          <ul>\n            <li><strong>🚨 1. Kural: Segment Yazmacına Sabit (Immediate) Atılamaz!</strong>\n              <br>• ❌ <code>MOV DS, 1000H</code> <b>KESİNLİKLE YASAKTIR!</b>\n              <br>• Doğru Yöntem: Sabit sayı önce genel bir yazmaca (örn: AX) yüklenir, ardından segment yazmacına aktarılır:\n              <pre><code>MOV AX, 1000H   ; Once AX'e yukle\nMOV DS, AX      ; Sonra DS'ye aktar</code></pre>\n            </li>\n            <li><strong>🚨 2. Kural: CS Yazmacı Asla Hedef Olamaz!</strong>\n              <br>• ❌ <code>MOV CS, AX</code> <b>YASAKTIR!</b>\n              <br>• Sebep: Eğer CS doğrudan değiştirilebilirse işlemcinin yürütme akışı bozulur. CS yalnızca JMP ve CALL ile değişebilir.\n            </li>\n            <li><strong>🚨 3. Kural: İki Segment Yazmacı Arasında Doğrudan Aktarım Yoktur!</strong>\n              <br>• ❌ <code>MOV DS, ES</code> <b>YASAKTIR!</b> (Araya AX girmelidir: <code>MOV AX, ES</code> ➔ <code>MOV DS, AX</code>).\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m2-segment-init",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 7. Modül Labı: Segment Başlatma",
+            "title": "Mini-Lab 7: Data Segmentini (DS) Kurallara Uygun Başlatma",
+            "scenario": "Bir DOS programı başlarken veri segmentinin (DS) taban adresini 2000H segmentine ayarlamanız gerekmektedir.",
+            "task": "DS yazmacına doğrudan sabit yükleyemezsiniz. AX yazmacını aracı olarak kullanarak DS yazmacını 2000H segmentine ayarlayın.",
+            "code": "; 🟢 Mini-Lab 7: Segment Register Rules\nORG 100H\n\n; 1. Araci genel yazmac olan AX'e 2000H sabitini yukleyin:\n; TODO:\n\n\n; 2. AX'teki bu degeri DS segment yazmacina aktarin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 2000H\nMOV DS, AX\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: MOV AX, 2000H — 2000h segment adresi AX genel amaçlı yazmacına alınır.",
+              "2. Satır: MOV DS, AX — AX üzerinden DS segment yazmacı güncellenir."
+            ],
+            "examTips": "Sınavda hoca 'MOV DS, 1000H komutu neden hata verir?' diye sorar. Cevap: 8086 mimarisinde segment yazmaçlarına doğrudan ivedi (immediate) sabit atanamaz; mutlaka genel bir yazmaç üzerinden aktarılmalıdır."
+          }
+        ]
+      },
+      {
+        "title": "8. Modül: XCHG Komutu ile Atomik Değer Takası",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>XCHG Hedef, Kaynak</code> (Exchange / Değer Takası)</h4>\n          <p>İki operantın değerini birbirleriyle donanımsal olarak yer değiştirir.</p>\n          <ul>\n            <li><strong>Neden Kullanılır?</strong> Normalde iki değişkeni takas etmek için 3. bir geçici değişkene (temp) ihtiyaç vardır. <code>XCHG</code> tek komutta ve donanımsal atomik çevrimde takas yapar.</li>\n            <li><strong>Desteklenen Durumlar:</strong>\n              <br>✅ Register ile Register: <code>XCHG AX, BX</code> (AX ve BX yer değiştirir).\n              <br>✅ Register ile Bellek: <code>XCHG AL, [0200H]</code> (AL ile bellek hücresi takas edilir).\n            </li>\n            <li><strong>🚨 Kesin Yasaklar (Sınav Sorusu):</strong>\n              <br>❌ İki bellek hücresi takas edilemez: <code>XCHG [0100H], [0200H]</code> <b>YASAK!</b>\n              <br>❌ Segment yazmaçları takas edilemez: <code>XCHG AX, DS</code> <b>YASAK!</b>\n              <br>❌ Sabit (Immediate) sayı takas edilemez: <code>XCHG AX, 5</code> <b>YASAK!</b>\n              <br>❌ Durum bayraklarını <b>ETKİLEMEZ!</b>\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m2-xchg-swap",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 8. Modül Labı: XCHG Atomik Takas",
+            "title": "Mini-Lab 8: AX ve BX Değerlerini Takas Etme",
+            "scenario": "Kanal A (AX = 1111H) ve Kanal B (BX = 2222H) tamponları karıştı. İki yazmacın içeriğini tek bir XCHG komutu ile yer değiştirin.",
+            "task": "AX'e 1111H, BX'e 2222H yükleyin. Ardından XCHG AX, BX komutu ile değerleri takas edin. Adım adım (NEXT) çalıştırarak Register panelinde izleyin.",
+            "code": "; 🟢 Mini-Lab 8: XCHG Komutu\nORG 100H\n\nMOV AX, 1111H\nMOV BX, 2222H\n\n; 1. AX ve BX degerlerini tek bir XCHG komutu ile yer degistirin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 1111H\nMOV BX, 2222H\nXCHG AX, BX\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: MOV AX, 1111H (AX = 1111h)",
+              "2. Satır: MOV BX, 2222H (BX = 2222h)",
+              "3. Satır: XCHG AX, BX — İşlemci atomik olarak AX=2222h, BX=1111h yapar."
+            ],
+            "examTips": "XCHG komutu bayrakları değiştirmez ve üçüncü bir yazmaca ihtiyaç duymaz."
+          }
+        ]
+      },
+      {
+        "title": "9. Modül: LEA (Load Effective Address) Komutu",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>LEA Hedef, Kaynak</code> (Load Effective Address)</h4>\n          <p>Kaynak adresin <b>bellekteki içeriğini DEĞİL</b>, o adresin matematiksel olarak <b>hesaplanan ofset değerini</b> hedef yazmaca yükler.</p>\n          <ul>\n            <li><strong>Nasıl Çalışır?</strong> <code>LEA BX, [SI + 4]</code> komutunda işlemci belleğe hiç gitmez! Yalnızca $SI + 4$ toplamasını yapar ve sonucu BX'e yazar.</li>\n            <li><strong>🚨 En Büyük Sınav Klasiği: LEA vs MOV Farkı:</strong>\n              <table class=\"lecture-table\">\n                <thead>\n                  <tr><th>Komut</th><th>Ne Yapar?</th><th>Açıklama</th></tr>\n                </thead>\n                <tbody>\n                  <tr><td><code>MOV AX, [SI + 4]</code></td><td>Bellek İçeriğini Okur</td><td>Belleğe gider ve o adresteki veriyi çeker.</td></tr>\n                  <tr><td><code>LEA AX, [SI + 4]</code></td><td>Ofset Adresini Hesaplar</td><td>Belleğe gitmez! Sadece $SI + 4$ değerini AX'e yazar.</td></tr>\n                  <tr><td><code>MOV AX, OFFSET Dizi</code></td><td>Sabit Ofset Alır</td><td>Derleme anında (Compile-time) bilinen sabit adresler içindir.</td></tr>\n                  <tr><td><code>LEA AX, [BX + SI + 4]</code></td><td>Dinamik Ofset Alır</td><td>Çalışma anında (Run-time) yazmaçlara bağlı dinamik formüller içindir.</td></tr>\n                </tbody>\n              </table>\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m2-lea-calc",
+            "difficulty": "orta",
+            "difficultyLabel": "🟡 9. Modül Labı: LEA Efektif Adres Yükleme",
+            "title": "Mini-Lab 9: LEA ile Belleğe Gitmeden Adres Hesaplama",
+            "scenario": "Dizi indeksleme işleminde hedef gösterici (DI), BX tabanı (0100H) ve SI indisinin (0020H) toplamına +4 eklenerek hesaplanacaktır.",
+            "task": "BX=0100H, SI=0020H yükleyin. LEA DI, [BX + SI + 4] komutunu çalıştırarak DI içine hesaplanan adresi (0124H) yükleyin.",
+            "code": "; 🟡 Mini-Lab 9: LEA Komutu\nORG 100H\n\nMOV BX, 0100H\nMOV SI, 0020H\n\n; 1. LEA komutu ile [BX + SI + 4] adresini DI register'ina aktarin:\n; TODO:\n\n\nHLT\n",
             "solutionCode": "ORG 100H\nMOV BX, 0100H\nMOV SI, 0020H\nLEA DI, [BX + SI + 4]\nHLT",
             "solutionBreakdown": [
-              "1. Satır: MOV BX, 0100H",
-              "2. Satır: MOV SI, 0020H",
-              "3. Satır: LEA DI, [BX + SI + 4] — Belleğe gitmeden 0100H + 0020H + 4 = 0124H değerini DI'ye yazar."
+              "1. Satır: BX = 0100H",
+              "2. Satır: SI = 0020H",
+              "3. Satır: LEA DI, [BX + SI + 4] — CPU bellek okuması yapmaz; 0100H + 0020H + 4 = 0124H değerini doğrudan DI'ye atar."
             ],
-            "examTips": "LEA komutu belleğin içeriğini okumaz; sadece hesaplanan adres değerini hedefe aktarır."
+            "examTips": "LEA komutu 8086'da çarpma içermeyen hızlı toplama hileleri (örn: LEA AX, [BX+SI]) için de sıklıkla kullanılır ve bayrakları etkilemez!"
           }
         ]
       }
