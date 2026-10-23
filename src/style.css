@@ -5152,6 +5152,229 @@ body {
   transform: translateY(-1px);
 }
 
+/* =========================================================================
+   Interactive Architecture Explorers (Stage 1 Conceptual Tools)
+   ========================================================================= */
+
+.interactive-calc-card {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 16px 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.calc-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.calc-card-badge {
+  background: #4f46e5;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.calc-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.calc-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.calc-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.calc-input-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.calc-input {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.calc-input:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.btn-calc-action {
+  background: #4f46e5;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  height: 38px;
+}
+
+.btn-calc-action:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+.calc-res-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.calc-res-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.calc-res-item.highlight {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+}
+
+.calc-res-item.highlight .big {
+  font-size: 16px;
+  color: #4338ca;
+}
+
+.calc-res-item.region {
+  background: #f8fafc;
+  border-left: 4px solid #10b981;
+}
+
+.calc-res-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.calc-res-val {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  color: #1e293b;
+}
+
+/* Little Endian Visualizer */
+.endian-boxes-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.endian-slot-card {
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 18px;
+  text-align: center;
+  min-width: 150px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.endian-slot-card.low {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.endian-slot-card.high {
+  border-color: #8b5cf6;
+  background: #f5f3ff;
+}
+
+.slot-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.slot-addr {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.slot-byte {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 4px 0;
+}
+
+.slot-role {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.endian-arrow-card {
+  text-align: center;
+  padding: 8px;
+}
+
+.endian-arrow-icon {
+  font-size: 22px;
+  color: #94a3b8;
+  display: block;
+}
+
+.endian-arrow-text {
+  font-size: 11px;
+  color: #475569;
+}
+
+.endian-rule-note {
+  background: #f0fdf4;
+  border-left: 4px solid #22c55e;
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+  font-size: 13px;
+  color: #15803d;
+  line-height: 1.5;
+}
+
 
 
 
