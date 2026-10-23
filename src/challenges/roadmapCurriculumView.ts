@@ -99,8 +99,8 @@ export class RoadmapCurriculumView {
                       <h3 class="step-title">${this.escapeHtml(milestone.title)}</h3>
                     </div>
 
-                    <div class="step-progress-badge ${isCompleted ? 'badge-completed' : ''}">
-                      ${solvedInMilestone} / ${totalInMilestone} Görev (%${percent})
+                    <div class="step-progress-badge ${isCompleted || totalInMilestone === 0 ? 'badge-completed' : ''}">
+                      ${totalInMilestone === 0 ? '🎓 Teori & İnteraktif Keşif' : `${solvedInMilestone} / ${totalInMilestone} Görev (%${percent})`}
                     </div>
                   </div>
 
@@ -115,7 +115,7 @@ export class RoadmapCurriculumView {
                           <span class="topic-brief">${this.escapeHtml(topic.description)}</span>
                         </div>
                         <div class="topic-opcodes-strip">
-                          ${topic.opcodes.map(op => `<span class="opcode-pill">${op}</span>`).join('')}
+                          ${topic.opcodes.length > 0 ? topic.opcodes.map(op => `<span class="opcode-pill">${op}</span>`).join('') : '<span class="opcode-pill pill-concept">Kavram & Mimari</span>'}
                         </div>
                       </div>
                     `).join('')}
@@ -123,15 +123,21 @@ export class RoadmapCurriculumView {
 
                   <div class="step-footer">
                     <div class="step-card-progress-bar">
-                      <div class="step-card-progress-fill" style="width: ${percent}%;"></div>
+                      <div class="step-card-progress-fill" style="width: ${totalInMilestone === 0 ? 100 : percent}%;"></div>
                     </div>
                     <div class="step-actions-group">
                       <button class="btn-open-lecture-doc" data-milestone-id="${milestone.id}" title="Bu aşamanın zengin konu anlatımı ve interaktif ders dokümanını aç">
                         📖 Aşama ${milestone.number} Konu Anlatımını Aç (Ders)
                       </button>
-                      <button class="btn-jump-to-leetcode" data-milestone-id="${milestone.id}" title="Bu aşamadaki tüm görevleri LeetCode sekmesinde listele">
-                        ⚡ LeetCode (${totalInMilestone}) →
-                      </button>
+                      ${totalInMilestone === 0 ? `
+                        <button class="btn-open-lecture-doc btn-theory-explore" data-milestone-id="${milestone.id}" title="İnteraktif 20-bit adres hesaplayıcı ve mimari keşif araçlarını aç">
+                          ⚡ İnteraktif Araçları Aç →
+                        </button>
+                      ` : `
+                        <button class="btn-jump-to-leetcode" data-milestone-id="${milestone.id}" title="Bu aşamadaki tüm görevleri LeetCode sekmesinde listele">
+                          ⚡ LeetCode (${totalInMilestone}) →
+                        </button>
+                      `}
                     </div>
                   </div>
                 </div>

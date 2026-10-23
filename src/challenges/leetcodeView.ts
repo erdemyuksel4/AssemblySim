@@ -8,6 +8,7 @@ export type LeetCodeFilter = 'all' | DifficultyLevel | 'solved' | 'unsolved';
 
 export interface LeetCodeCallbacks {
   onLoadChallengeToEditor: (challenge: Challenge) => void;
+  onOpenLectureDocument?: (milestoneId: string) => void;
   getCurrentEditorCode?: () => string;
 }
 
@@ -127,7 +128,7 @@ export class LeetCodeView {
 
           <div class="leetcode-controls-right">
             <select id="select-milestone-filter" class="leetcode-select">
-              <option value="all" ${this.selectedMilestoneId === 'all' ? 'selected' : ''}>Tüm Aşamalar (1-9)</option>
+              <option value="all" ${this.selectedMilestoneId === 'all' ? 'selected' : ''}>Tüm Aşamalar (1-10)</option>
               ${ROADMAP_MILESTONES.map(m => `
                 <option value="${m.id}" ${this.selectedMilestoneId === m.id ? 'selected' : ''}>
                   Aşama ${m.number}: ${this.escapeHtml(m.title)}
@@ -190,11 +191,23 @@ export class LeetCodeView {
                 </div>
               </div>
             `;
-          }).join('') : `
+          }).join('') : (this.selectedMilestoneId === 'milestone-1' ? `
+            <div class="leetcode-empty-state" style="padding: 32px 16px;">
+              <span style="font-size: 32px;">🎓</span>
+              <h3 style="margin: 8px 0; color: #1e293b; font-size: 16px;">Aşama 1: Mimari & Kavramsal Keşif Aşaması</h3>
+              <p style="color: #64748b; max-width: 540px; margin: 0 auto 16px auto; font-size: 13px; line-height: 1.5;">
+                Bu aşamada mikroişlemcinin donanım blokları (BIU & EU), 14 adet yazmaç ve 20-bit adresleme formülleri öğretilmektedir. 
+                Henüz komut anlatılmadığı için <strong>kodlama görevi istenmez</strong>. İlk komutlar ve kodlama görevleri <b>Aşama 2 (MOV, XCHG, LEA)</b> ile başlar.
+              </p>
+              <button id="btn-open-m1-from-empty" class="btn-primary-highlight" style="padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; background: #0284c7; color: #fff; border: none;">
+                📖 Aşama 1 İnteraktif Ders Dokümanını Aç →
+              </button>
+            </div>
+          ` : `
             <div class="leetcode-empty-state">
               <span>🔍 Arama veya filtreleme kriterlerine uygun görev bulunamadı.</span>
             </div>
-          `}
+          `)}
         </div>
 
         <!-- Grading Result Modal Host -->
@@ -206,6 +219,11 @@ export class LeetCodeView {
   }
 
   private bindEvents(): void {
+    // Open milestone 1 lecture button from empty state
+    this.container.querySelector('#btn-open-m1-from-empty')?.addEventListener('click', () => {
+      this.callbacks.onOpenLectureDocument?.('milestone-1');
+    });
+
     // Filter buttons
     this.container.querySelectorAll<HTMLButtonElement>('.btn-lt-filter').forEach(btn => {
       btn.addEventListener('click', () => {

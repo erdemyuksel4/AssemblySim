@@ -4,19 +4,48 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
   {
     id: 'milestone-1',
     number: 1,
+    title: '8086 Mimarisi, Bus Yapısı ve Bellek Segmentasyonu',
+    description: '8086 donanım blokları (BIU & EU), 14 adet yazmaç kümesi, 1 MB bellek haritası (TPA / Video / BIOS), 20-bit adresleme ve Little-Endian prensibi. Bu aşamada kodlama görevi yoktur; interaktif hesaplayıcı ve görselleştirici keşif araçları yer alır.',
+    topics: [
+      {
+        id: 'topic-biu-eu',
+        title: 'BIU ve EU Donanım Birimleri',
+        opcodes: [],
+        description: 'Komut ön getirme kuyruğu (Prefetch Queue) ve ALU yürütme birimi işbölümü.',
+        challengeIds: []
+      },
+      {
+        id: 'topic-regs',
+        title: '14 Adet Yazmaç Kümesi & Durum Bayrakları',
+        opcodes: [],
+        description: 'Genel amaçlı veri yazmaçları (AX, BX, CX, DX), işaretçiler/indeksler (SP, BP, SI, DI) ve segment yazmaçları (CS, DS, SS, ES).',
+        challengeIds: []
+      },
+      {
+        id: 'topic-addr-endian',
+        title: '20-Bit Fiziksel Adresleme & Little-Endian Prensibi',
+        opcodes: [],
+        description: 'Segment:Offset hesaplama formülü (PA = Segment × 16 + Offset) ve bellekte düşük baytın önce saklanması.',
+        challengeIds: []
+      }
+    ]
+  },
+  {
+    id: 'milestone-2',
+    number: 2,
     title: 'Temel Veri Aktarımı ve Adresleme Modları',
-    description: '8086 mimarisinin temel taşı olan veri transfer komutları ve işlemcinin belleğe erişim yöntemleri.',
+    description: '8086 mimarisinin temel taşı olan veri transfer komutları (MOV, XCHG, LEA) ve işlemcinin belleğe erişim sağlayan 7 adresleme modu.',
     topics: [
       {
         id: 'topic-mov',
-        title: 'MOV Komutu ve Adresleme Modları',
+        title: 'MOV Komutu ve 7 Adresleme Modu',
         opcodes: ['MOV'],
-        description: 'Immediate (ivedi), Register ve Direct/Indirect bellek adresleme modları ile veri taşıma.',
+        description: 'Immediate (ivedi), Register ve Direct/Indirect bellek adresleme modları ile veri taşıma kuralları.',
         challengeIds: ['ch-mov-basic', 'ch-mov-memory']
       },
       {
         id: 'topic-xchg',
-        title: 'XCHG Komutu ile Değer Takası',
+        title: 'XCHG Komutu ile Atomik Değer Takası',
         opcodes: ['XCHG'],
         description: 'İki register veya bir register ile bellek arasındaki verileri üçüncü bir değişkene gerek duymadan takas etme.',
         challengeIds: ['ch-xchg-swap']
@@ -31,16 +60,16 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
     ]
   },
   {
-    id: 'milestone-2',
-    number: 2,
+    id: 'milestone-3',
+    number: 3,
     title: 'Aritmetik İşlemler ve Bayrak Dinamikleri',
-    description: 'Toplama, çıkarma, çarpma, bölme ve işlem sonucunun Status Register (Bayraklar) üzerindeki etkileri.',
+    description: 'Toplama, çıkarma, çarpma, bölme ve işlem sonucunun Status Register (Bayraklar: CF, ZF, SF, OF, AF, PF) üzerindeki etkileri.',
     topics: [
       {
         id: 'topic-add-sub',
         title: 'Toplama, Çıkarma ve İki\'nin Tümleyeni',
         opcodes: ['ADD', 'SUB', 'INC', 'DEC', 'NEG'],
-        description: 'Temel tam sayı aritmetiği ve NEG ile işaret değiştirme.',
+        description: 'Temel tam sayı aritmetiği ve NEG ile işaret değiştirme (INC/DEC kuralı: CF asla değişmez!).',
         challengeIds: ['ch-add-sub-sum', 'ch-neg-twos']
       },
       {
@@ -54,16 +83,16 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
         id: 'topic-mul-div',
         title: 'Çarpma ve Bölme İşlemleri',
         opcodes: ['MUL', 'IMUL', 'DIV', 'IDIV'],
-        description: 'İşaretsiz ve işaretli çarpma/bölme, DX:AX register çiftinin kullanımı ve kalan (modulus) hesabı.',
+        description: 'İşaretsiz ve işaretli çarpma/bölme, DX:AX register çiftinin kullanımı, CBW/CWD ve bölme taşması (INT 0).',
         challengeIds: ['ch-mul-square', 'ch-div-mod']
       }
     ]
   },
   {
-    id: 'milestone-3',
-    number: 3,
+    id: 'milestone-4',
+    number: 4,
     title: 'Mantıksal ve Bit Düzeyi İşlemler',
-    description: 'Bit maskeleme, tersleme, bit testi ve donanım kontrolünde kullanılan kaydırma işlemleri.',
+    description: 'Bit maskeleme, tersleme, bit testi ve donanım kontrolünde kullanılan kaydırma/döndürme işlemleri.',
     topics: [
       {
         id: 'topic-logic-mask',
@@ -82,8 +111,8 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
     ]
   },
   {
-    id: 'milestone-4',
-    number: 4,
+    id: 'milestone-5',
+    number: 5,
     title: 'Program Akışı, Koşullar ve Döngüler',
     description: 'Şartlı/şartsız dallanmalar, döngü komutları ve karar mekanizmaları.',
     topics: [
@@ -104,8 +133,8 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
     ]
   },
   {
-    id: 'milestone-5',
-    number: 5,
+    id: 'milestone-6',
+    number: 6,
     title: 'Yığın (Stack) ve Alt Programlar (Prosedürler)',
     description: 'LIFO bellek yapısı, fonksiyon çağırma mekanizması ve yerel değişken yönetimi.',
     topics: [
@@ -126,8 +155,8 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
     ]
   },
   {
-    id: 'milestone-6',
-    number: 6,
+    id: 'milestone-7',
+    number: 7,
     title: 'Dizi ve String İşlemleri',
     description: 'Donanımsal hızlandırıcılı blok bellek kopyalama, doldurma ve tarama komutları.',
     topics: [
@@ -148,8 +177,8 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
     ]
   },
   {
-    id: 'milestone-7',
-    number: 7,
+    id: 'milestone-8',
+    number: 8,
     title: 'BCD ve ASCII Aritmetiği',
     description: 'Muhasebe sistemleri ve eski ekran/klavye formatlarında kullanılan onluk tabanlı düzeltmeler.',
     topics: [
@@ -163,8 +192,8 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
     ]
   },
   {
-    id: 'milestone-8',
-    number: 8,
+    id: 'milestone-9',
+    number: 9,
     title: 'Giriş / Çıkış (I/O) ve Sistem Kesmeleri',
     description: 'Port tabanlı haberleşme ve MS-DOS / BIOS kesme (interrupt) fonksiyonları.',
     topics: [
@@ -185,8 +214,8 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
     ]
   },
   {
-    id: 'milestone-9',
-    number: 9,
+    id: 'milestone-10',
+    number: 10,
     title: 'İleri Seviye Algoritmalar & 8086 LeetCode',
     description: 'Klasik bilgisayar bilimi algoritmalarını saf 8086 assembly ile optimize bir şekilde yazma.',
     topics: [
@@ -202,11 +231,11 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
 ];
 
 export const CHALLENGES: Record<string, Challenge> = {
-  // --- MILESTONE 1: DATA TRANSFER ---
+  // --- MILESTONE 2: DATA TRANSFER & ADDRESSING MODES ---
   'ch-mov-basic': {
     id: 'ch-mov-basic',
     title: 'Temel Register ve Sabit (Immediate) Yükleme',
-    milestoneId: 'milestone-1',
+    milestoneId: 'milestone-2',
     difficulty: 'Kolay',
     opcodes: ['MOV'],
     scenario: 'Bir gömülü sensör kontrol ünitesi başlatılıyor. Sensörün konfigürasyon register\'larına ön tanımlı sabit değerlerin yüklenmesi gerekiyor.',
@@ -243,7 +272,7 @@ HLT`,
   'ch-mov-memory': {
     id: 'ch-mov-memory',
     title: 'Doğrudan Bellek Adresleme (Direct Addressing)',
-    milestoneId: 'milestone-1',
+    milestoneId: 'milestone-2',
     difficulty: 'Kolay',
     opcodes: ['MOV'],
     scenario: 'Belleğin DS:0200h adresinde bir telemetri ham sıcaklık verisi saklanmaktadır. Bu 16-bit veriyi okuyup 10 katı olarak DS:0202h adresine yazmanız isteniyor (bu aşamada doğrudan okuma ve başka bir adrese aktarma testi).',
@@ -284,7 +313,7 @@ HLT`,
   'ch-xchg-swap': {
     id: 'ch-xchg-swap',
     title: 'XCHG ile Atomik Register Takası',
-    milestoneId: 'milestone-1',
+    milestoneId: 'milestone-2',
     difficulty: 'Kolay',
     opcodes: ['XCHG'],
     scenario: 'İki kanalın veri tamponları karıştı. Kanal A (AX) ve Kanal B (BX) verilerinin üçüncü bir yedek register harcamadan yer değiştirmesi gerekiyor.',
@@ -321,7 +350,7 @@ HLT`,
   'ch-lea-offset': {
     id: 'ch-lea-offset',
     title: 'LEA ile Efektif Adres Yükleme',
-    milestoneId: 'milestone-1',
+    milestoneId: 'milestone-2',
     difficulty: 'Orta',
     opcodes: ['LEA', 'MOV'],
     scenario: 'Dizi indeksleme algoritmasında DI pointer\'ı BX taban adresi ve SI indisinin toplamına 4 baytlık ofset eklenerek hesaplanmalıdır.',
@@ -357,7 +386,7 @@ HLT`,
   'ch-add-sub-sum': {
     id: 'ch-add-sub-sum',
     title: 'Temel Toplama, Çıkarma ve Bayrak İncelemesi',
-    milestoneId: 'milestone-2',
+    milestoneId: 'milestone-3',
     difficulty: 'Kolay',
     opcodes: ['ADD', 'SUB', 'INC'],
     scenario: 'Bir paket sayaç ünitesi: Gelen paket sayısını (AX) işlenen paket sayısıyla (BX) toplayın, ardından kayıp paket sayısını (CX) çıkarın ve son olarak sıra numarasını 1 artırın (INC).',
@@ -399,7 +428,7 @@ HLT`,
   'ch-neg-twos': {
     id: 'ch-neg-twos',
     title: 'NEG ile İki\'nin Tümleyeni (Negatifleme)',
-    milestoneId: 'milestone-2',
+    milestoneId: 'milestone-3',
     difficulty: 'Kolay',
     opcodes: ['NEG'],
     scenario: 'Sensörden okunan hata payı negatif bir değer (-25 / 0xFFE7) olarak geldi. Sistemin mutlak değer veya ters işaretli kazanç olarak hesap yapabilmesi için sayının negatifini alması gerekiyor.',
@@ -433,7 +462,7 @@ HLT`,
   'ch-adc-32bit': {
     id: 'ch-adc-32bit',
     title: 'ADC ile 32-bit Sayı Toplama (Genişletilmiş Hassasiyet)',
-    milestoneId: 'milestone-2',
+    milestoneId: 'milestone-3',
     difficulty: 'Orta',
     opcodes: ['ADD', 'ADC'],
     scenario: '8086 bir 16-bit işlemcidir. Ancak finansal hesaplamalarda 32-bit sayılar gerekir. Sayı 1: DX:AX (Yüksek: DX, Düşük: AX), Sayı 2: CX:BX (Yüksek: CX, Düşük: BX).',
@@ -477,7 +506,7 @@ HLT`,
   'ch-mul-square': {
     id: 'ch-mul-square',
     title: 'MUL ile Karesini Alma ve DX:AX Sonucu',
-    milestoneId: 'milestone-2',
+    milestoneId: 'milestone-3',
     difficulty: 'Orta',
     opcodes: ['MUL', 'MOV'],
     scenario: 'Bir grafik render motorunda piksel mesafesi karesi (x^2) hesaplanmalıdır. AX = 1000 (03E8h) sayısının karesi 1,000,000 (0F4240h) olup 16-biti aştığı için DX:AX ikilisine yayılır.',
@@ -515,7 +544,7 @@ HLT`,
   'ch-div-mod': {
     id: 'ch-div-mod',
     title: 'DIV ile Bölüm ve Kalan (Modulus) Ayrıştırma',
-    milestoneId: 'milestone-2',
+    milestoneId: 'milestone-3',
     difficulty: 'Orta',
     opcodes: ['DIV', 'MOV'],
     scenario: 'Zaman dönüştürücü: Toplam saniye sayısı (AX = 125) verilmiştir. Bunu dakikaya (Bölüm -> AL) ve artık saniyeye (Kalan -> AH) dönüştürmeniz gerekmektedir (60\'a bölme).',
@@ -554,7 +583,7 @@ HLT`,
   'ch-logic-masking': {
     id: 'ch-logic-masking',
     title: 'AND ve OR ile Bit Maskeleme ve Kurma (Set)',
-    milestoneId: 'milestone-3',
+    milestoneId: 'milestone-4',
     difficulty: 'Kolay',
     opcodes: ['AND', 'OR'],
     scenario: 'Bir mikrodenetleyici G/Ç port durumunda: 0. ve 1. bitlerin mutlaka temizlenmesi (0 yapılması), 7. bitin ise mutlaka etkinleştirilmesi (1 yapılması) istenmektedir.',
@@ -591,7 +620,7 @@ HLT`,
   'ch-xor-zero': {
     id: 'ch-xor-zero',
     title: 'XOR ile Hızlı Sıfırlama ve Parity Testi',
-    milestoneId: 'milestone-3',
+    milestoneId: 'milestone-4',
     difficulty: 'Kolay',
     opcodes: ['XOR'],
     scenario: 'Assembly programcıları bir register\'ı sıfırlamak için "MOV AX, 0" (3 bayt) yerine "XOR AX, AX" (2 bayt) kullanırlar. Bu hem daha az bayt tutar hem de Zero Flag (ZF) bayrağını 1 yapar.',
@@ -628,7 +657,7 @@ HLT`,
   'ch-shl-multiply': {
     id: 'ch-shl-multiply',
     title: 'SHL ile Hızlı Çarpma Optimizasyonu (x * 10)',
-    milestoneId: 'milestone-3',
+    milestoneId: 'milestone-4',
     difficulty: 'Orta',
     opcodes: ['SHL', 'ADD', 'MOV'],
     scenario: 'Eski işlemcilerde MUL komutu onlarca çevrim (clock cycle) sürerken, SHL ve ADD komutları 1-2 çevrimde biter. Bir sayıyı 10 ile çarpmak için formül: x * 10 = (x * 8) + (x * 2) = (x << 3) + (x << 1).',
@@ -672,7 +701,7 @@ HLT`,
   'ch-sar-signed': {
     id: 'ch-sar-signed',
     title: 'SAR ile İşaret Korumalı Aritmetik Sağa Kaydırma',
-    milestoneId: 'milestone-3',
+    milestoneId: 'milestone-4',
     difficulty: 'Orta',
     opcodes: ['SAR'],
     scenario: 'Negatif bir sıcaklık değeri (-16 / 0xFFF0) 4\'e bölünmek isteniyor. Mantıksal kaydırma (SHR) yapılırsa en yüksek bite 0 geleceğinden sayı pozitife döner ve bozulur. Aritmetik kaydırma (SAR) işaret bitini korur.',
@@ -708,7 +737,7 @@ HLT`,
   'ch-cmp-max': {
     id: 'ch-cmp-max',
     title: 'CMP ve Şartlı Sıçrama ile Maksimum Sayıyı Bulma',
-    milestoneId: 'milestone-4',
+    milestoneId: 'milestone-5',
     difficulty: 'Orta',
     opcodes: ['CMP', 'JAE', 'MOV'],
     scenario: 'İki sensör okumasından (AX ve BX) büyük olanı seçilmelidir. AX < BX ise AX\'e BX değeri yazılmalı, aksi takdirde AX korunmalıdır.',
@@ -750,7 +779,7 @@ HLT`,
   'ch-loop-sum-n': {
     id: 'ch-loop-sum-n',
     title: 'LOOP ile 1\'den N\'e Kadar Olan Sayıların Toplamı',
-    milestoneId: 'milestone-4',
+    milestoneId: 'milestone-5',
     difficulty: 'Orta',
     opcodes: ['LOOP', 'ADD', 'XOR'],
     scenario: 'Matematiksel Gauss toplamı: CX register\'ında verilen N sayısına kadar olan sayıların toplamını (1 + 2 + ... + N) döngü ile hesaplayın.',
@@ -792,7 +821,7 @@ HLT`,
   'ch-loopne-find': {
     id: 'ch-loopne-find',
     title: 'LOOPNE ile Dizide Bayt Arama',
-    milestoneId: 'milestone-4',
+    milestoneId: 'milestone-5',
     difficulty: 'Zor',
     opcodes: ['LOOPNE', 'CMP', 'INC'],
     scenario: 'Bir bellek tamponunda (DS:0200h) aranan bir bayt değeri (AL=0x42) bulunmaktadır. Dizi boyutu CX=5 olarak ayarlanmıştır. Aranan değer bulunduğunda döngü erken sonlanmalıdır.',
@@ -848,7 +877,7 @@ HLT`,
   'ch-stack-reverse': {
     id: 'ch-stack-reverse',
     title: 'Yığın (Stack) ile Üç Register Değerini Ters Çevirme',
-    milestoneId: 'milestone-5',
+    milestoneId: 'milestone-6',
     difficulty: 'Kolay',
     opcodes: ['PUSH', 'POP'],
     scenario: 'LIFO (Son Giren İlk Çıkar) prensibi: AX=1, BX=2, CX=3 değerlerini yığına atıp ters sırayla çekerek AX=3, BX=2, CX=1 yapmanız istenmektedir.',
@@ -892,7 +921,7 @@ HLT`,
   'ch-proc-abs': {
     id: 'ch-proc-abs',
     title: 'CALL ve RET ile Mutlak Değer Prosedürü (Subroutine)',
-    milestoneId: 'milestone-5',
+    milestoneId: 'milestone-6',
     difficulty: 'Orta',
     opcodes: ['CALL', 'RET', 'CMP', 'NEG'],
     scenario: 'Matematik kütüphanesi modülü: Program ana akışında bir alt yordam çağrılacak (CALL ABS_VAL). Alt yordam AX negatif ise NEG uygulayıp RET ile dönecektir.',
@@ -940,7 +969,7 @@ RET`,
   'ch-string-copy': {
     id: 'ch-string-copy',
     title: 'REP MOVSB ile Yüksek Hızlı Bellek Kopyalama (Memcpy)',
-    milestoneId: 'milestone-6',
+    milestoneId: 'milestone-7',
     difficulty: 'Orta',
     opcodes: ['MOVSB', 'REP', 'CLD'],
     scenario: 'İşletim sistemi bellek yöneticisi, DS:0200h adresindeki 4 baytlık veri bloğunu ES:0300h hedef adresine kopyalamak istiyor.',
@@ -988,7 +1017,7 @@ HLT`,
   'ch-string-fill': {
     id: 'ch-string-fill',
     title: 'REP STOSB ile Bellek Alanı Doldurma (Memset)',
-    milestoneId: 'milestone-6',
+    milestoneId: 'milestone-7',
     difficulty: 'Kolay',
     opcodes: ['STOSB', 'REP', 'CLD'],
     scenario: 'Ekran veya video belleğini temizleme / sıfırlama işlemi. ES:0250h adresindeki 5 baytlık alanı AL=0AAh deseni ile doldurmanız gerekmektedir.',
@@ -1030,7 +1059,7 @@ HLT`,
   'ch-string-len': {
     id: 'ch-string-len',
     title: 'REPNE SCASB ile String Uzunluğu Bulma (Strlen)',
-    milestoneId: 'milestone-6',
+    milestoneId: 'milestone-7',
     difficulty: 'Zor',
     opcodes: ['SCASB', 'REPNE', 'CLD', 'NOT', 'DEC'],
     scenario: 'C dilindeki "strlen" fonksiyonunun donanımsal karşılığı. DS:0200h adresinde sonu 00h (Null terminator) ile biten bir string bulunmaktadır ("TEST\0" -> 4 karakter).',
@@ -1084,7 +1113,7 @@ HLT`,
   'ch-bcd-daa': {
     id: 'ch-bcd-daa',
     title: 'DAA ile Paketlenmiş BCD Toplama Düzeltmesi',
-    milestoneId: 'milestone-7',
+    milestoneId: 'milestone-8',
     difficulty: 'Orta',
     opcodes: ['DAA', 'ADD'],
     scenario: 'Yazar kasa sisteminde 38 TL (0x38 BCD) ile 45 TL (0x45 BCD) toplanmaktadır. Standart ikili toplama 0x7D verir ki bu geçersiz bir onluk sayıdır. DAA komutu bunu 0x83 (83 TL) olarak düzeltir.',
@@ -1121,7 +1150,7 @@ HLT`,
   'ch-aam-unpack': {
     id: 'ch-aam-unpack',
     title: 'AAM ile Çarpım Sonucunu Onlar ve Birler Basamağına Ayırma',
-    milestoneId: 'milestone-7',
+    milestoneId: 'milestone-8',
     difficulty: 'Orta',
     opcodes: ['AAM', 'MUL'],
     scenario: 'Bir hesap makinesinde 7 * 8 = 56 işlemi yapıldıktan sonra ekranda gösterilmek üzere 5 (onlar basamağı -> AH) ve 6 (birler basamağı -> AL) olarak ayrıştırılmalıdır.',
@@ -1160,7 +1189,7 @@ HLT`,
   'ch-io-port': {
     id: 'ch-io-port',
     title: 'IN ve OUT ile Port Tabanlı Donanım İletişimi',
-    milestoneId: 'milestone-8',
+    milestoneId: 'milestone-9',
     difficulty: 'Kolay',
     opcodes: ['IN', 'OUT'],
     scenario: 'Donanım aygıtına port 20H üzerinden bir yapılandırma baytı (7EH) gönderilmesi ve ardından geri okunarak doğrulanması istenmektedir.',
@@ -1199,7 +1228,7 @@ HLT`,
   'ch-int21h-hello': {
     id: 'ch-int21h-hello',
     title: 'INT 21h (AH=09h) ile Ekrana String Yazdırma',
-    milestoneId: 'milestone-8',
+    milestoneId: 'milestone-9',
     difficulty: 'Orta',
     opcodes: ['INT', 'MOV', 'LEA'],
     scenario: 'MS-DOS işletim sisteminin en meşhur fonksiyonu: AH=09h ve DX=string ofseti ile çağrılan INT 21h, \'$\' karakterine kadar olan metni konsola basar.',
@@ -1240,7 +1269,7 @@ HLT`,
   'ch-algo-bubble-sort': {
     id: 'ch-algo-bubble-sort',
     title: 'LeetCode: 5 Elemanlı Diziyi Sıralama (Bubble Sort)',
-    milestoneId: 'milestone-9',
+    milestoneId: 'milestone-10',
     difficulty: 'Zor',
     opcodes: ['CMP', 'JBE', 'XCHG', 'LOOP'],
     scenario: 'DS:0200h adresinde 5 elemanlı sırasız bir bayt dizisi bulunmaktadır: [50, 20, 40, 10, 30]. Bu diziyi küçükten büyüğe sıralamanız istenmektedir.',
@@ -1313,7 +1342,7 @@ HLT`,
   'ch-algo-fibonacci': {
     id: 'ch-algo-fibonacci',
     title: 'LeetCode: N. Fibonacci Sayısını Hesaplama',
-    milestoneId: 'milestone-9',
+    milestoneId: 'milestone-10',
     difficulty: 'Orta',
     opcodes: ['ADD', 'MOV', 'LOOP'],
     scenario: 'Klasik Fibonacci dizisi: F(1)=1, F(2)=1, F(3)=2, F(4)=3, F(5)=5, F(6)=8, F(7)=13, F(8)=21... CX=7 verilmiştir. 7. Fibonacci sayısını hesaplayıp AX içine yazın.',
@@ -1365,7 +1394,7 @@ HLT`,
   'ch-algo-palindrome': {
     id: 'ch-algo-palindrome',
     title: 'LeetCode: Palindrom Kontrolü (İki Uçtan Tarama)',
-    milestoneId: 'milestone-9',
+    milestoneId: 'milestone-10',
     difficulty: 'Zor',
     opcodes: ['CMP', 'JNE', 'INC', 'DEC'],
     scenario: 'DS:0200h adresinde 5 harfli bir kelime bulunmaktadır: "RADAR". Bir kelimenin tersten okunuşu kendisiyle aynı ise palindromdur. Eğer palindrom ise AX = 1, değilse AX = 0 olmalıdır.',

@@ -109,6 +109,31 @@ export class InstructionDoc {
 
           <!-- TAB 2: 🎓 2. Dersler & Teori (Lectures & Course Modules) -->
           <div class="docs-tab-pane" id="pane-lectures">
+            <!-- Full Interactive Curriculum Direct Launch Grid -->
+            <div class="theory-curriculum-banner">
+              <div class="banner-top-row">
+                <span class="theory-badge">🎓 10 AŞAMALI TAM DERS MÜFREDATI</span>
+                <span class="theory-sources">Kaynak Sıralaması: 1. Doç. Dr. Mehmet Akif Çifci Slaytları | 2. Barry B. Brey Kitabı</span>
+              </div>
+              <h3 class="curriculum-main-title">8086 İnteraktif Ders Dokümanları ve Konu Anlatımları</h3>
+              <p class="curriculum-desc">
+                Her aşamanın zengin konu anlatımını, hoca slaytlarındaki formülleri, sınav tuzaklarını ve 
+                <strong>20-Bit Adres Hesaplayıcı</strong>, <strong>Little-Endian Simülatörü</strong> gibi interaktif keşif araçlarını açmak için bir aşamaya tıklayın:
+              </p>
+              <div class="curriculum-pills-grid">
+                <button class="btn-lecture-pill" data-milestone="milestone-1">📖 Aşama 1: Mimari, Bus & 20-Bit Adresleme</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-2">📖 Aşama 2: MOV, XCHG, LEA & 7 Mod</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-3">📖 Aşama 3: Aritmetik & Bayraklar</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-4">📖 Aşama 4: Mantıksal & Bit Kaydırma</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-5">📖 Aşama 5: Akış & Döngüler</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-6">📖 Aşama 6: Yığın & Prosedürler</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-7">📖 Aşama 7: Dizi & String</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-8">📖 Aşama 8: BCD & ASCII</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-9">📖 Aşama 9: I/O & Kesmeler (IVT)</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-10">📖 Aşama 10: Pipelining & LeetCode</button>
+              </div>
+            </div>
+
             <div class="lecture-sub-tabs" id="lecture-sub-tabs">
               <button class="lecture-sub-tab active" data-subtab="addressing">
                 🎯 7 Adresleme Modu (Week 3)
@@ -262,6 +287,16 @@ export class InstructionDoc {
       this.activeLectureSubTab = subtab;
       this.container.querySelectorAll('.lecture-sub-pane').forEach(p => p.classList.remove('active'));
       this.container.querySelector(`#subpane-${subtab}`)?.classList.add('active');
+    });
+
+    // Direct milestone lecture buttons in Theory tab
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-lecture-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const milestoneId = btn.getAttribute('data-milestone');
+        if (milestoneId && this.callbacks?.onOpenLectureDocument) {
+          this.callbacks.onOpenLectureDocument(milestoneId);
+        }
+      });
     });
 
     // Category button selection

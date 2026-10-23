@@ -87,9 +87,15 @@ export class LectureDocumentView {
               </button>
             ` : '<div style="flex:1;"></div>'}
 
-            <button id="btn-lecture-jump-leetcode" class="btn-lecture-leetcode">
-              ⚡ Bu Aşamanın LeetCode Görevlerini Çöz →
-            </button>
+            ${this.currentMilestoneId === 'milestone-1' ? `
+              <button id="btn-lecture-jump-leetcode" class="btn-lecture-leetcode btn-lecture-start-ch" title="Aşama 2'ye geçerek ilk komutları öğrenin ve kodlama görevlerine başlayın">
+                🚀 Aşama 2: İlk Komutlar ve Görevlere Başla ➡️
+              </button>
+            ` : `
+              <button id="btn-lecture-jump-leetcode" class="btn-lecture-leetcode">
+                ⚡ Bu Aşamanın LeetCode Görevlerini Çöz →
+              </button>
+            `}
 
             ${nextKey ? `
               <button id="btn-lecture-next" class="btn-lecture-nav next" data-next="${nextKey}">
@@ -261,7 +267,11 @@ export class LectureDocumentView {
     }
 
     this.container.querySelector('#btn-lecture-jump-leetcode')?.addEventListener('click', () => {
-      this.callbacks.onNavigateToLeetCodeMilestone(this.currentMilestoneId);
+      if (this.currentMilestoneId === 'milestone-1') {
+        this.callbacks.onNavigateToMilestoneLecture('milestone-2');
+      } else {
+        this.callbacks.onNavigateToLeetCodeMilestone(this.currentMilestoneId);
+      }
     });
   }
 

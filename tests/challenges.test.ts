@@ -249,7 +249,10 @@ describe('ChallengeRunner', () => {
       for (const m of ROADMAP_MILESTONES) {
         expect(m.topics.length).toBeGreaterThan(0);
         for (const topic of m.topics) {
-          expect(topic.challengeIds.length).toBeGreaterThan(0);
+          // Milestone 1 is pure architecture theory & interactive calculators (no premature coding tasks)
+          if (m.id !== 'milestone-1') {
+            expect(topic.challengeIds.length).toBeGreaterThan(0);
+          }
           for (const chId of topic.challengeIds) {
             expect(CHALLENGES[chId]).toBeDefined();
             expect(CHALLENGES[chId].milestoneId).toBe(m.id);
