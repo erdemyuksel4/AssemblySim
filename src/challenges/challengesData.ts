@@ -185,7 +185,7 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
       {
         id: 'topic-bcd',
         title: 'Paketlenmiş ve Paketlenmemiş BCD',
-        opcodes: ['DAA', 'DAS', 'AAA', 'AAM'],
+        opcodes: ['DAA', 'DAS', 'AAA', 'AAS', 'AAM', 'AAD'],
         description: 'İkili toplama/çarpma sonuçlarını BCD/ASCII formatına dönüştürme.',
         challengeIds: ['ch-bcd-daa', 'ch-aam-unpack']
       }
@@ -225,6 +225,36 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
         opcodes: ['CMP', 'JMP', 'LOOP', 'MOV', 'XCHG'],
         description: 'Dizi sıralama, Fibonacci serisi ve palindrom tespiti gibi ileri düzey algoritmalar.',
         challengeIds: ['ch-algo-bubble-sort', 'ch-algo-fibonacci', 'ch-algo-palindrome']
+      }
+    ]
+  }
+,
+  {
+    id: 'milestone-11',
+    number: 11,
+    title: 'İleri Sistem Komutları, Bayrak Manipülasyonu & Donanım Tabloları',
+    description: 'Manualda yer alan özel sistem ve bayrak komutları (CLC/STC/CMC, CLI/STI, LAHF/SAHF, XLAT, LDS/LES, JCXZ, CBW/CWD) ve veri tanımlama direktifleri (DB, DW, DUP, OFFSET, PTR).',
+    topics: [
+      {
+        id: 'topic-flags-ctrl',
+        title: 'Bayrak Denetim ve Manipülasyon Komutları',
+        opcodes: ['CLC', 'STC', 'CMC', 'CLI', 'STI', 'LAHF', 'SAHF'],
+        description: 'Carry ve Interrupt bayraklarını doğrudan değiştirme, durum bayraklarını AH yazmacına yükleyip geri yazma.',
+        challengeIds: ['ch-flags-manipulation']
+      },
+      {
+        id: 'topic-xlat-lookup',
+        title: 'Donanımsal Tablo Çevirisi (XLAT) ve Gösterici Yükleme (LDS/LES)',
+        opcodes: ['XLAT', 'LDS', 'LES'],
+        description: 'AL yazmacını indeks olarak kullanıp tablodan hızlı veri çekme ve tek komutta 32-bit segment:ofset göstericisi yükleme.',
+        challengeIds: ['ch-xlat-table']
+      },
+      {
+        id: 'topic-jcxz-guard',
+        title: 'Sıfır Sayaç Koruması (JCXZ) ve İşaret Genişletme (CBW/CWD)',
+        opcodes: ['JCXZ', 'CBW', 'CWD'],
+        description: 'CX=0 olduğunda döngünün 65535 kez dönmesini önleyen güvenlik atlaması ve IDIV öncesi işaret genişletme.',
+        challengeIds: ['ch-jcxz-guard']
       }
     ]
   }
@@ -1458,6 +1488,149 @@ HLT`,
         ax: 1
       },
       maxSteps: 100
+    }
+  },
+  // --- MILESTONE 11: ADVANCED SYSTEM & TABLE INSTRUCTIONS ---
+  'ch-flags-manipulation': {
+    id: 'ch-flags-manipulation',
+    title: 'Bayrak Denetim Komutları (STC, CMC, LAHF)',
+    milestoneId: 'milestone-11',
+    difficulty: 'Kolay',
+    opcodes: ['STC', 'CMC', 'LAHF', 'MOV'],
+    scenario: 'Eldeli bir aritmetik zincirinden önce ve sonrasında Carry Flag (CF) durumunun doğrudan kurulması ve durum bayraklarının AH yazmacına saklanması gerekiyor.',
+    task: 'STC ile CF=1 yapın. CMC ile CF bayrağını tersleyin (CF=0). Ardından tekrar STC ile CF=1 yapın ve LAHF komutu ile bayrakları AH yazmacına okuyun.',
+    starterCode: `; Görev: Bayrak Manipulasyonu
+ORG 100H
+
+; 1. STC komutu ile CF bayragini 1 yapin:
+; TODO:
+
+
+; 2. CMC komutu ile CF bayragini tersleyin (0 yapin):
+; TODO:
+
+
+; 3. STC ile tekrar CF=1 yapin:
+; TODO:
+
+
+; 4. LAHF komutu ile bayraklari AH yazmacina yukleyin:
+; TODO:
+
+
+HLT
+`,
+    hints: [
+      'STC Carry bayrağını 1 yapar (Set Carry).',
+      'CMC Carry bayrağını tersler (Complement Carry).',
+      'LAHF bayrakları AH içine aktarır (Load AH from Flags).'
+    ],
+    solutionCode: `ORG 100H
+STC
+CMC
+STC
+LAHF
+HLT`,
+    testSetup: {},
+    assertions: {
+      expectedFlags: {
+        cf: 1
+      },
+      maxSteps: 15
+    }
+  },
+
+  'ch-xlat-table': {
+    id: 'ch-xlat-table',
+    title: 'XLAT ile Donanımsal Lookup Tablosu Çevirisi',
+    milestoneId: 'milestone-11',
+    difficulty: 'Orta',
+    opcodes: ['XLAT', 'MOV'],
+    scenario: '7-Segment display veya şifreleme dönüşüm tablosu 0200H adresinde saklanmaktadır. AL = 3 indeksindeki dönüşüm baytını tek bir XLAT komutu ile okuyun.',
+    task: 'BX = 0200H (tablo tabanı) ve AL = 3 (indis) yükleyin. XLAT komutunu çalıştırarak [BX + AL] adresindeki veriyi AL içine çekin.',
+    starterCode: `; Görev: XLAT ile Tablo Donusumu
+ORG 100H
+
+; 1. BX'e tablo baslangic adresini (0200H) yukleyin:
+; TODO:
+
+
+; 2. AL'ye 3 indisini yukleyin:
+; TODO:
+
+
+; 3. XLAT komutu ile [BX + AL] verisini AL'ye donusturun:
+; TODO:
+
+
+HLT
+`,
+    hints: [
+      'XLAT komutu AL = [BX + AL] işlemini tek çevrimde donanımsal olarak yapar.'
+    ],
+    solutionCode: `ORG 100H
+MOV BX, 0200H
+MOV AL, 3
+XLAT
+HLT`,
+    testSetup: {
+      initialMemory: [
+        { segment: 0x0000, offset: 0x0200, bytes: [0x10, 0x20, 0x30, 0x42, 0x50] } // index 3 is 0x42
+      ]
+    },
+    assertions: {
+      expectedRegisters: {
+        al: 0x42
+      },
+      maxSteps: 15
+    }
+  },
+
+  'ch-jcxz-guard': {
+    id: 'ch-jcxz-guard',
+    title: 'JCXZ ile Sıfır Döngü Taşma Koruması',
+    milestoneId: 'milestone-11',
+    difficulty: 'Orta',
+    opcodes: ['JCXZ', 'LOOP', 'MOV', 'ADD'],
+    scenario: 'Döngü sayacı CX = 0 olarak geldiğinde LOOP komutu çalıştırılırsa CX önce 0xFFFF (65535) olur ve sistem sonsuz döngüye girer. Döngü öncesinde JCXZ ile güvenlik atlaması yapın.',
+    task: 'CX = 0 iken JCXZ DONGUDEN_CIK komutu ile döngüyü tamamen atlayın. Döngü gövdesinde ADD AX, 1 ve LOOP DONGU yer alacaktır. AX değerinin 0 kaldığını doğrulayın.',
+    starterCode: `; Görev: JCXZ Sifir Sayac Guvenligi
+ORG 100H
+
+MOV CX, 0
+MOV AX, 0
+
+; 1. Eger CX == 0 ise DONGUDEN_CIK etiketine atlayin (JCXZ):
+; TODO:
+
+
+DONGU:
+ADD AX, 1
+LOOP DONGU
+
+DONGUDEN_CIK:
+HLT
+`,
+    hints: [
+      'JCXZ Etiket komutu CX == 0 ise doğrudan belirtilen etikete atlar.',
+      'Bu sayede LOOP komutunun FFFFh taşması önlenmiş olur.'
+    ],
+    solutionCode: `ORG 100H
+MOV CX, 0
+MOV AX, 0
+JCXZ DONGUDEN_CIK
+DONGU:
+ADD AX, 1
+LOOP DONGU
+DONGUDEN_CIK:
+HLT`,
+    testSetup: {},
+    assertions: {
+      expectedRegisters: {
+        ax: 0x0000,
+        cx: 0x0000
+      },
+      maxSteps: 15
     }
   }
 };

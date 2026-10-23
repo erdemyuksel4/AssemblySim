@@ -128,7 +128,7 @@ export class LeetCodeView {
 
           <div class="leetcode-controls-right">
             <select id="select-milestone-filter" class="leetcode-select">
-              <option value="all" ${this.selectedMilestoneId === 'all' ? 'selected' : ''}>Tüm Aşamalar (1-10)</option>
+              <option value="all" ${this.selectedMilestoneId === 'all' ? 'selected' : ''}>Tüm Aşamalar (1-11)</option>
               ${ROADMAP_MILESTONES.map(m => `
                 <option value="${m.id}" ${this.selectedMilestoneId === m.id ? 'selected' : ''}>
                   Aşama ${m.number}: ${this.escapeHtml(m.title)}

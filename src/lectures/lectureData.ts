@@ -971,6 +971,27 @@ export const MILESTONE_LECTURES: Record<string, MilestoneLecture> = {
             "examTips": "AAM komutu çarpma sonrası unpacked BCD formatına dönüştürür."
           }
         ]
+      },
+      {
+        "title": "3. Modül: ASCII Çıkarma ve Bölme Öncesi Düzeltme (AAS & AAD)",
+        "contentHtml": "\n      <div class=\"instruction-box\">\n        <h4><code>AAS</code> (ASCII Adjust after Subtraction)</h4>\n        <p>Unpacked iki tek basamaklı sayının <code>SUB</code> ile çıkarılmasından sonra çalıştırılır. Borç alınmışsa (AF=1 veya alt nibble > 9), AL'den 6 çıkarılır ve AH 1 azaltılır.</p>\n      </div>\n\n      <div class=\"instruction-box\">\n        <h4><code>AAD</code> (ASCII Adjust before Division)</h4>\n        <p>Bölme işleminden <strong>ÖNCE</strong> çalıştırılan tek düzeltme komutudur! AH ve AL'deki iki haneyi tek bir ikili sayıya dönüştürür: $AL = (AH \\times 10) + AL$, $AH = 0$. Ardından standart <code>DIV</code> komutu çalıştırılır.</p>\n      </div>\n    ",
+        "examples": [
+          {
+            "id": "ex-m8-aad",
+            "difficulty": "orta",
+            "difficultyLabel": "🟡 3. Modül Labı: AAD Bölme Öncesi",
+            "title": "Mini-Lab 8.3: AAD ile İki Basamaklı Sayıyı Bölmeye Hazırlama",
+            "scenario": "AH = 2 (onlar) ve AL = 5 (birler) olarak verilen 25 unpacked sayısını, AAD komutu ile ikili (binary) 25 (19h) değerine dönüştürün.",
+            "task": "MOV AH, 2, MOV AL, 5 yükleyin. AAD komutunu çalıştırarak AL = 25 (0019H) ve AH = 0 olduğunu Registers panelinde görün.",
+            "code": "; 🟡 Mini-Lab 8.3: AAD Komutu\nORG 100H\n\nMOV AH, 2\nMOV AL, 5\n\n; 1. AAD komutunu calistirarak sayiyi binary formata donusturun:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AH, 2\nMOV AL, 5\nAAD\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: AH = 2, AL = 5 (Unpacked 25)",
+              "2. Satır: AAD — AL = (2 * 10) + 5 = 25 (19H), AH = 0."
+            ],
+            "examTips": "AAD komutu bölme işleminden ÖNCE çalışan tek komuttur!"
+          }
+        ]
       }
     ]
   },
@@ -1097,6 +1118,136 @@ export const MILESTONE_LECTURES: Record<string, MilestoneLecture> = {
               "3-4. Satırlar: ADD AX, 10 ve ADD CX, 20 ile boru hattında duraklama engellenir."
             ],
             "examTips": "Derleyiciler pipeline verimini artırmak için komut sırasını bağımlılıklara göre otomatik olarak yeniden düzenler."
+          }
+        ]
+      }
+    ]
+  },
+  "milestone-11": {
+    "milestoneId": "milestone-11",
+    "milestoneNumber": 11,
+    "title": "İleri Sistem Komutları, Bayrak Manipülasyonu & Donanım Tabloları",
+    "subtitle": "CLC/STC/CMC, CLI/STI, LAHF/SAHF, XLAT, LDS/LES, JCXZ, CBW/CWD ve Assembler Direktifleri",
+    "slideRef": "Hoca: Week 3, 5, 6 & Code Examples PDF | Kitap: Barry B. Brey Bölüm 4 & 5",
+    "overviewHtml": "\n    <div class=\"lecture-hero-card\">\n      <div class=\"lecture-hero-badge\">AŞAMA 11: İLERİ SİSTEM KOMUTLARI & VERİ TABLOLARI</div>\n      <p class=\"lecture-hero-text\">\n        8086 Instruction Manual'ında yer alan ve doğrudan donanımı denetleyen özel bayrak komutları, \n        hızlı tablo dönüştürme (Lookup Table) ve assembler direktifleri bu kapanış aşamasında tek tek pratik edilir.\n      </p>\n      <div class=\"lecture-golden-rule\">\n        💡 <strong>Hocanın ve Barry Brey'in Altın Sistem Kuralları:</strong><br>\n        1. <b>Carry Bayrağı Denetimi:</b> <code>CLC</code> (CF=0 yapar), <code>STC</code> (CF=1 yapar), <code>CMC</code> (CF'yi tersler).<br>\n        2. <b>Donanımsal Tablo Çevirisi (XLAT):</b> <code>DS:BX</code> adresindeki tablodan <code>AL</code> indeksindeki elemanı tek bir makine çevriminde AL içine okur ($AL = [BX + AL]$).<br>\n        3. <b>Sıfır Sayaç Koruması (JCXZ):</b> LOOP komutu öncesinde CX=0 ise döngünün 65535 kez dönüp taşmasını önlemek için <code>JCXZ</code> ile güvenlik atlaması yapılır.\n      </div>\n    </div>\n  ",
+    "sections": [
+      {
+        "title": "1. Modül: Carry Bayrağı Denetim Komutları (CLC, STC, CMC)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>CLC</code>, <code>STC</code> ve <code>CMC</code></h4>\n          <p>Carry Flag (CF - Elde Bayrağı) durumunu doğrudan donanımsal olarak kurmak, sıfırlamak veya terslemek için kullanılır.</p>\n          <ul>\n            <li><code>CLC</code> (Clear Carry) ➔ $CF = 0$. <code>ADC</code> veya <code>SBB</code> zincirinden önce eldeyi sıfırlamak için kullanılır.</li>\n            <li><code>STC</code> (Set Carry) ➔ $CF = 1$. Hata göstergesi döndürmek veya eldenin 1 olduğunu bildirmek için kullanılır.</li>\n            <li><code>CMC</code> (Complement Carry) ➔ $CF = NOT(CF)$. Elde 1 ise 0, 0 ise 1 yapar.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m11-flags",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 1. Modül Labı: CLC, STC ve CMC",
+            "title": "Mini-Lab 11.1: Carry Bayrağını Kurma, Tersleme ve Temizleme",
+            "scenario": "Sistemde Carry Flag durumunu sırasıyla 1 yapın (STC), tersleyin (CMC ile 0) ve ardından tekrar 1 yapın.",
+            "task": "STC, CMC, STC komutlarını sırasıyla yazın. Adım adım çalıştırarak Flags panelinde CF değişimini izleyin.",
+            "code": "; 🟢 Mini-Lab 11.1: Bayrak Kontrol Komutlari\nORG 100H\n\n; 1. STC ile CF=1 yapin:\n; TODO:\n\n\n; 2. CMC ile CF'yi tersleyin (CF=0):\n; TODO:\n\n\n; 3. STC ile tekrar CF=1 yapin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nSTC\nCMC\nSTC\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: STC — Carry Flag (CF) = 1 olur.",
+              "2. Satır: CMC — CF = 0 olur (Terslenir).",
+              "3. Satır: STC — CF = 1 olur."
+            ],
+            "examTips": "Bu komutlar operand almaz; doğrudan bayrak bitini etkiler."
+          }
+        ]
+      },
+      {
+        "title": "2. Modül: Bayrakları AH Yazmacına Alma ve Yükleme (LAHF & SAHF)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>LAHF</code> ve <code>SAHF</code> (8080/8085 Uyumluluğu)</h4>\n          <p>8086 durum bayrakları ile AH yazmacı arasında doğrudan veri transferi sağlar.</p>\n          <ul>\n            <li><code>LAHF</code> (Load AH from Flags): SF, ZF, AF, PF, CF bayraklarını AH yazmacının 7, 6, 4, 2, 0 bitlerine tek seferde okur.</li>\n            <li><code>SAHF</code> (Store AH into Flags): AH yazmacındaki bitleri bayraklar yazmacına geri yazar.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m11-lahf",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 2. Modül Labı: LAHF ve SAHF",
+            "title": "Mini-Lab 11.2: Bayrakları AH Yazmacına Okuma",
+            "scenario": "CF=1 iken LAHF komutu ile bayraklar kümesini AH yazmacına aktarın ve AH'nin 0. bitinin 1 olduğunu görün.",
+            "task": "STC komutu ile CF=1 yapın. Ardından LAHF komutu ile bayrakları AH'ye okuyun.",
+            "code": "; 🟢 Mini-Lab 11.2: LAHF Komutu\nORG 100H\n\n; 1. STC ile CF=1 kurun:\n; TODO:\n\n\n; 2. LAHF komutu ile bayraklari AH'ye okuyun:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nSTC\nLAHF\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: STC — CF = 1 kurulur.",
+              "2. Satır: LAHF — Durum bayrakları AH içine aktarılır (bit 0 = CF = 1)."
+            ],
+            "examTips": "LAHF ve SAHF Intel 8080/8085 işlemcilerinden 8086'ya kod taşınırken geliştirilmiş özel komutlardır."
+          }
+        ]
+      },
+      {
+        "title": "3. Modül: Donanımsal Tablo Çeviri Komutu (XLAT / XLATB)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>XLAT</code> (Translate / Lookup Table)</h4>\n          <p>Barry B. Brey kitabının Bölüm 4'ünde genişçe anlatılan donanımsal tablo çeviri komutudur.</p>\n          <ul>\n            <li><strong>Formül:</strong> $AL = [DS:BX + AL]$</li>\n            <li>Tablo başlangıç adresi <code>BX</code> içindedir. Çevrilecek indeks <code>AL</code> içindedir.</li>\n            <li><code>XLAT</code> komutu çalıştığında işlemci otomatik olarak $BX + AL$ adresindeki baytı okur ve sonucu tekrar <code>AL</code> içine yazar!</li>\n            <li>Kullanım Alanı: 7 segment display tablosu, ASCII'den EBCDIC'e çeviri veya şifre çözme tabloları.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m11-xlat",
+            "difficulty": "orta",
+            "difficultyLabel": "🟡 3. Modül Labı: XLAT ile Tablo Okuma",
+            "title": "Mini-Lab 11.3: 7-Segment Kod Tablosundan XLAT ile Okuma",
+            "scenario": "Tablo 0200H adresinde başlamaktadır: [0200H]=3FH ('0'), [0201H]=06H ('1'), [0202H]=5BH ('2'), [0203H]=4FH ('3'). 3 sayısının kodunu tek bir XLAT komutu ile çekin.",
+            "task": "BX=0200H, AL=3 ayarlayın. XLAT komutunu çalıştırarak AL içine 4FH değerinin geldiğini görün.",
+            "code": "; 🟡 Mini-Lab 11.3: XLAT Komutu\nORG 100H\n\n; 1. BX'e tablo adresini (0200H) yukleyin:\n; TODO:\n\n\n; 2. AL'ye aranacak indis olan 3'u yukleyin:\n; TODO:\n\n\n; 3. XLAT komutunu calistirin (AL = [BX + AL]):\n; TODO:\n\n\nHLT\n",
+            "initialMemory": [
+              {
+                "segment": 0,
+                "offset": 512,
+                "bytes": [
+                  63,
+                  6,
+                  91,
+                  79,
+                  102
+                ]
+              }
+            ],
+            "solutionCode": "ORG 100H\nMOV BX, 0200H\nMOV AL, 3\nXLAT\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: MOV BX, 0200H — Tablo tabanı.",
+              "2. Satır: MOV AL, 3 — İndis.",
+              "3. Satır: XLAT — [0200H + 3] = [0203H] hücresindeki 4FH baytını AL içine yazar."
+            ],
+            "examTips": "XLAT operand almaz; sabit olarak BX tabanını ve AL akümülatörünü kullanır."
+          }
+        ]
+      },
+      {
+        "title": "4. Modül: Sıfır Sayaç Güvenlik Atlaması (JCXZ)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>JCXZ Etiket</code> (Jump if CX is Zero)</h4>\n          <p>CX yazmacı sıfır ($CX == 0$) ise belirtilen etikete atlar. Hiçbir bayrağı etkilemez ve denetlemez.</p>\n          <ul>\n            <li>🚨 <strong>Hocanın Önemli Sınav Uyarısı:</strong>\n              <br>Eğer bir döngüye girerken $CX = 0$ ise, döngü sonundaki <code>LOOP</code> komutu CX'i 1 azaltarak <code>0FFFFH</code> (65535) yapar ve döngü 65535 kez gereksiz yere çalışır!\n              <br>Bunu önlemek için döngünün hemen başına <code>JCXZ DONGUDEN_CIK</code> yazılarak CX=0 durumu güvenle atlanır.\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m11-jcxz",
+            "difficulty": "orta",
+            "difficultyLabel": "🟡 4. Modül Labı: JCXZ Döngü Güvenliği",
+            "title": "Mini-Lab 11.4: CX = 0 İken Döngüyü Güvenle Atlama",
+            "scenario": "CX = 0 olduğunda döngünün 65535 kez dönmesini engellemek için döngü öncesinde JCXZ ile ATLA etiketine sıçrayın.",
+            "task": "CX=0 iken JCXZ ATLA yazarak döngüyü atlayın. AX'in 0 kaldığını doğrulayın.",
+            "code": "; 🟡 Mini-Lab 11.4: JCXZ Komutu\nORG 100H\n\nMOV CX, 0\nMOV AX, 0\n\n; 1. CX == 0 ise ATLA etiketine sicrayin (JCXZ):\n; TODO:\n\n\nDONGU:\nADD AX, 1\nLOOP DONGU\n\nATLA:\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV CX, 0\nMOV AX, 0\nJCXZ ATLA\nDONGU:\nADD AX, 1\nLOOP DONGU\nATLA:\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: CX = 0",
+              "2. Satır: JCXZ ATLA — CX sıfır olduğu için döngüye girmeden doğrudan ATLA etiketine atlar."
+            ],
+            "examTips": "JCXZ komutu bayrakları denetlemez; doğrudan CX yazmacının donanımsal değerine bakar."
+          }
+        ]
+      },
+      {
+        "title": "5. Modül: İşaret Genişletme Komutları (CBW & CWD)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>CBW</code> (Convert Byte to Word) ve <code>CWD</code> (Convert Word to Doubleword)</h4>\n          <p>İşaretli (negatif/pozitif) sayılarda <code>IDIV</code> bölmesi yapmadan önce işaret bitini üst parçaya yaymak için kullanılır.</p>\n          <ul>\n            <li><code>CBW</code>: <code>AL</code>'deki 8-bit sayının işaret bitini (bit 7) <code>AH</code>'ye yayarak 16-bit <code>AX</code> yapar.\n              <br>• $AL = -5$ (0FBH) iken <code>CBW</code> ➔ $AX = 0FFFBH$ (-5).\n            </li>\n            <li><code>CWD</code>: <code>AX</code>'teki 16-bit sayının işaret bitini (bit 15) <code>DX</code>'e yayarak 32-bit <code>DX:AX</code> yapar.\n              <br>• Sayı negatifse DX = 0FFFFH, pozitifse DX = 0000H olur.\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m11-cbw",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 5. Modül Labı: CBW Komutu",
+            "title": "Mini-Lab 11.5: 8-Bit Negatif Sayıyı 16-Bit'e Genişletme",
+            "scenario": "AL = -10 (0F6H) sayısını CBW komutu ile 16-bit AX'e genişleterek AX = 0FFF6H (-10) yapın.",
+            "task": "MOV AL, 0F6H ardından CBW komutunu çalıştırın. AH'nin 0FFH olduğunu görün.",
+            "code": "; 🟢 Mini-Lab 11.5: CBW Komutu\nORG 100H\n\nMOV AL, 0F6H   ; -10\n\n; 1. CBW komutu ile isareti AH'ye yayarak 16-bit yapin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AL, 0F6H\nCBW\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: AL = 0F6H (bit 7 = 1, negatif)",
+              "2. Satır: CBW — İşaret biti AH'ye yayılır: AH = 0FFH, AX = 0FFF6H (-10)."
+            ],
+            "examTips": "IDIV komutundan önce CBW veya CWD çalıştırılmazsa AH/DX içinde kalan çöp veriler sonucu bozar!"
           }
         ]
       }

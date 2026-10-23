@@ -131,6 +131,7 @@ export class InstructionDoc {
                 <button class="btn-lecture-pill" data-milestone="milestone-8">📖 Aşama 8: BCD & ASCII</button>
                 <button class="btn-lecture-pill" data-milestone="milestone-9">📖 Aşama 9: I/O & Kesmeler (IVT)</button>
                 <button class="btn-lecture-pill" data-milestone="milestone-10">📖 Aşama 10: Pipelining & LeetCode</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-11">📖 Aşama 11: Sistem & Tablo Komutları (XLAT, LDS, Flags)</button>
               </div>
             </div>
 
