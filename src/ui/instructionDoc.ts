@@ -22,6 +22,8 @@ export type LectureSubTab = 'addressing' | 'architecture' | 'flags' | 'dma_io' |
 
 export interface InstructionDocCallbacks extends LeetCodeCallbacks {
   onOpenLectureDocument?: (milestoneId: string) => void;
+  onReturnToEditor?: () => void;
+  onTabChange?: (tab: ManualTab) => void;
 }
 
 export class InstructionDoc {
@@ -44,25 +46,31 @@ export class InstructionDoc {
 
   private render(): void {
     this.container.innerHTML = `
-      <section class="docs-section">
-        <!-- Collapsible Toggle Header (Default: Closed) -->
-        <div class="docs-toggle-bar" id="docs-toggle-bar" title="8086 Referans, Ders ve Görev Merkezini Aç / Kapat">
-          <div class="docs-toggle-left">
-            <span class="docs-book-icon">📖</span>
-            <div class="docs-title-wrap">
-              <span class="docs-main-title">8086 Öğrenme ve Referans Merkezi</span>
-              <span class="docs-subtitle">1. Manuel | 2. Dersler & Teori | 3. LeetCode Görevleri | 4. Yol Haritası</span>
-            </div>
-            <span class="docs-count-badge">${INSTRUCTIONS.length} Komut</span>
-          </div>
-          <div class="docs-toggle-right">
-            <span class="docs-toggle-status" id="docs-toggle-status">Rehberi Aç</span>
-            <span class="docs-arrow-icon" id="docs-arrow-icon">▼</span>
+      <div class="reference-doc-container">
+        <!-- Top Navigation Bar with Return to Editor Button & Breadcrumbs -->
+        <div class="reference-doc-topbar">
+          <button class="btn-return-editor" id="btn-ref-return-editor" title="Kod Editörüne Geri Dön">
+            <span class="btn-icon">❮</span>
+            <span class="btn-text">Editöre Dön</span>
+          </button>
+          <div class="reference-doc-breadcrumb">
+            <span class="bc-item">📚 Öğrenme & Referans</span>
+            <span class="bc-sep">/</span>
+            <span class="bc-item highlight" id="ref-bc-active">📖 1. Manuel (Komut Seti)</span>
           </div>
         </div>
 
-        <!-- Collapsible Body Drawer -->
-        <div class="docs-body-drawer" id="docs-body-drawer">
+        <!-- Reference Header Banner -->
+        <div class="reference-doc-header">
+          <div class="ref-header-top">
+            <span class="ref-pill" id="ref-header-pill">8086 ASSEMBLY KOMUT REFERANSI</span>
+            <span class="ref-count-badge">${INSTRUCTIONS.length} Komut • 10 Aşama</span>
+          </div>
+          <h1 class="ref-main-title" id="ref-header-title">8086 Komut Manueli & Referans Kılavuzu</h1>
+          <p class="ref-subtitle-text" id="ref-header-desc">
+            8086 mimarisinin tüm temel ve gelişmiş komutları, opcodelar, bayrak etkileri, operand kuralları ve örnek kullanımlar.
+          </p>
+
           <!-- 4 Main Navigation Tabs -->
           <div class="docs-main-tabs" id="docs-main-tabs">
             <button class="docs-main-tab active" data-tab="manual">
@@ -78,6 +86,10 @@ export class InstructionDoc {
               🗺️ 4. Yol Haritası
             </button>
           </div>
+        </div>
+
+        <!-- Document Body Drawer (Always Open) -->
+        <div class="docs-body-drawer open" id="docs-body-drawer">
 
           <!-- TAB 1: 📖 1. Manuel (Komut Seti Referansı) -->
           <div class="docs-tab-pane active" id="pane-manual">
@@ -192,7 +204,7 @@ export class InstructionDoc {
             <div id="docs-roadmap-container"></div>
           </div>
         </div>
-      </section>
+      </div>
     `;
 
     this.attachEvents();
@@ -235,15 +247,51 @@ export class InstructionDoc {
     }
   }
 
+  updateHeaderForTab(tab: ManualTab): void {
+    const pill = this.container.querySelector('#ref-header-pill');
+    const title = this.container.querySelector('#ref-header-title');
+    const desc = this.container.querySelector('#ref-header-desc');
+    const bc = this.container.querySelector('#ref-bc-active');
+
+    switch (tab) {
+      case 'manual':
+        if (pill) pill.textContent = '8086 ASSEMBLY KOMUT REFERANSI';
+        if (title) title.textContent = '8086 Komut Manueli & Referans Kılavuzu';
+        if (desc) desc.textContent = '8086 mimarisinin tüm temel ve gelişmiş komutları, opcodelar, bayrak etkileri, operand kuralları ve örnek kullanımlar.';
+        if (bc) bc.textContent = '📖 1. Manuel (Komut Seti)';
+        break;
+      case 'lectures':
+        if (pill) pill.textContent = '10 AŞAMALI TAM DERS MÜFREDATI';
+        if (title) title.textContent = '8086 İnteraktif Ders Dokümanları ve Konu Anlatımları';
+        if (desc) desc.textContent = 'Doç. Dr. Mehmet Akif Çifci slaytları ve Barry B. Brey müfredatına dayalı konu anlatımları ve teori rehberleri.';
+        if (bc) bc.textContent = '🎓 2. Dersler & Teori';
+        break;
+      case 'leetcode':
+        if (pill) pill.textContent = 'UYGULAMALI PROBLEM ÇÖZME & TESTLER';
+        if (title) title.textContent = '8086 LeetCode Arenası & Sınav Soruları';
+        if (desc) desc.textContent = 'Aşama aşama kümülatif sınav ve algoritma görevleri. Kodunuzu yazın, otomatik testlerle puanlayın.';
+        if (bc) bc.textContent = '⚡ 3. 8086 LeetCode';
+        break;
+      case 'roadmap':
+        if (pill) pill.textContent = 'MÜFREDAT VE YETKİNLİK AĞACI';
+        if (title) title.textContent = '8086 Assembly Tam Müfredat Yol Haritası';
+        if (desc) desc.textContent = 'Aşama aşama komut dağılımı, mimari hedefler ve öğrenme sırası.';
+        if (bc) bc.textContent = '🗺️ 4. Yol Haritası';
+        break;
+    }
+  }
+
   openTab(tab: ManualTab): void {
-    if (!this.isOpen) {
-      this.isOpen = true;
-      this.updateOpenState();
+    this.activeTab = tab;
+    const tabsWrap = this.container.querySelector('#docs-main-tabs');
+    if (tabsWrap) {
+      tabsWrap.querySelectorAll('.docs-main-tab').forEach(b => b.classList.remove('active'));
+      const btn = tabsWrap.querySelector(`.docs-main-tab[data-tab="${tab}"]`) as HTMLButtonElement;
+      if (btn) btn.classList.add('active');
     }
-    const btn = this.container.querySelector(`.docs-main-tab[data-tab="${tab}"]`) as HTMLButtonElement;
-    if (btn) {
-      btn.click();
-    }
+    this.container.querySelectorAll('.docs-tab-pane').forEach(p => p.classList.remove('active'));
+    this.container.querySelector(`#pane-${tab}`)?.classList.add('active');
+    this.updateHeaderForTab(tab);
   }
 
   filterLeetCodeByMilestone(milestoneId: string, challengeId?: string): void {
@@ -254,17 +302,16 @@ export class InstructionDoc {
   }
 
   private attachEvents(): void {
-    const toggleBar = this.container.querySelector('#docs-toggle-bar') as HTMLElement;
+    const returnBtn = this.container.querySelector('#btn-ref-return-editor') as HTMLElement;
     const searchInput = this.container.querySelector('#docs-search-input') as HTMLInputElement;
     const clearBtn = this.container.querySelector('#docs-search-clear') as HTMLButtonElement;
     const catWrap = this.container.querySelector('#docs-categories-wrap') as HTMLElement;
     const tabsWrap = this.container.querySelector('#docs-main-tabs') as HTMLElement;
     const subtabsWrap = this.container.querySelector('#lecture-sub-tabs') as HTMLElement;
 
-    // Toggle expand/collapse
-    toggleBar.addEventListener('click', () => {
-      this.isOpen = !this.isOpen;
-      this.updateOpenState();
+    // Return to Editor Button
+    returnBtn?.addEventListener('click', () => {
+      this.callbacks?.onReturnToEditor?.();
     });
 
     // Main 4 Tabs Switcher
@@ -280,6 +327,8 @@ export class InstructionDoc {
       this.activeTab = tab;
       this.container.querySelectorAll('.docs-tab-pane').forEach(p => p.classList.remove('active'));
       this.container.querySelector(`#pane-${tab}`)?.classList.add('active');
+      this.updateHeaderForTab(tab);
+      this.callbacks?.onTabChange?.(tab);
     });
 
     // Lecture Sub-tabs Switcher
@@ -334,22 +383,7 @@ export class InstructionDoc {
   }
 
   private updateOpenState(): void {
-    const drawer = this.container.querySelector('#docs-body-drawer') as HTMLElement;
-    const arrow = this.container.querySelector('#docs-arrow-icon') as HTMLElement;
-    const statusText = this.container.querySelector('#docs-toggle-status') as HTMLElement;
-
-    if (this.isOpen) {
-      drawer.classList.add('open');
-      arrow.classList.add('open');
-      statusText.textContent = 'Kapat';
-      setTimeout(() => {
-        this.container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 100);
-    } else {
-      drawer.classList.remove('open');
-      arrow.classList.remove('open');
-      statusText.textContent = 'Rehberi Aç';
-    }
+    // Document drawer is always open in document mode
   }
 
   private getFilteredInstructions(): InstructionDetail[] {

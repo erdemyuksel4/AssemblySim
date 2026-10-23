@@ -6,6 +6,7 @@ export interface SidebarCallbacks {
   onDocumentSelect: (doc: WorkspaceDocument) => void;
   onNewDocument: () => void;
   onOpenCpuModal: () => void;
+  onOpenLearningDoc?: (tab: 'manual' | 'lectures' | 'leetcode' | 'roadmap') => void;
 }
 
 export class WorkspaceSidebar {
@@ -84,7 +85,15 @@ export class WorkspaceSidebar {
           ${docs.map(doc => {
             const cpu = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
             const isActive = doc.id === activeDoc?.id;
-            const icon = doc.type === 'challenge' ? '🎯' : (doc.type === 'lecture' ? '🎓' : (doc.type === 'example' ? '💡' : '📄'));
+            const icon = doc.type === 'challenge' ? '🎯' : 
+              (doc.type === 'lecture' ? '🎓' : 
+              (doc.type === 'example' ? '💡' : 
+              (doc.type === 'reference' ? (
+                doc.referenceTab === 'manual' ? '📖' :
+                doc.referenceTab === 'lectures' ? '🎓' :
+                doc.referenceTab === 'leetcode' ? '⚡' :
+                doc.referenceTab === 'roadmap' ? '🗺️' : '📚'
+              ) : '📄')));
             return `
               <li class="workspace-doc-item ${isActive ? 'active' : ''}" data-doc-id="${doc.id}">
                 <div class="doc-item-main" title="${doc.title}">
@@ -101,6 +110,31 @@ export class WorkspaceSidebar {
             `;
           }).join('')}
         </ul>
+      </div>
+
+      <!-- Öğrenme & Referans Merkezi Bölümü (En Altta, Alt Alta) -->
+      <div class="sidebar-learning-section">
+        <div class="sidebar-section-header">
+          <span>Öğrenme & Referans</span>
+        </div>
+        <div class="sidebar-learning-list">
+          <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'manual' ? 'active' : ''}" data-nav="manual" title="📖 Manuel (8086 Komut Seti Referansı)">
+            <span class="learning-btn-icon">📖</span>
+            <span class="learning-btn-text">Manuel</span>
+          </button>
+          <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'lectures' ? 'active' : ''}" data-nav="lectures" title="🎓 Dersler & Teori Kataloğu">
+            <span class="learning-btn-icon">🎓</span>
+            <span class="learning-btn-text">Dersler</span>
+          </button>
+          <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'leetcode' ? 'active' : ''}" data-nav="leetcode" title="⚡ 8086 LeetCode Görev Arenası">
+            <span class="learning-btn-icon">⚡</span>
+            <span class="learning-btn-text">LeetCode</span>
+          </button>
+          <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'roadmap' ? 'active' : ''}" data-nav="roadmap" title="🗺️ Yol Haritası & Müfredat Ağacı">
+            <span class="learning-btn-icon">🗺️</span>
+            <span class="learning-btn-text">Yol Haritası</span>
+          </button>
+        </div>
       </div>
 
       <div class="sidebar-footer">
@@ -138,6 +172,17 @@ export class WorkspaceSidebar {
     cpuBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.callbacks.onOpenCpuModal();
+    });
+
+    // Learning & Reference buttons at bottom
+    this.container.querySelectorAll<HTMLButtonElement>('.sidebar-learning-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const nav = btn.dataset.nav as 'manual' | 'lectures' | 'leetcode' | 'roadmap';
+        if (nav && this.callbacks.onOpenLearningDoc) {
+          this.callbacks.onOpenLearningDoc(nav);
+        }
+      });
     });
 
     // Document item selection

@@ -399,6 +399,14 @@ export class InteractiveExampleWidget {
   }
 
   private step(): void {
+    const btnCompile = this.container.querySelector('.btn-compile') as HTMLButtonElement;
+    if (btnCompile && !btnCompile.disabled) {
+      if (!this.compile()) return;
+    }
+    if (this.currentAsmResult && this.currentAsmResult.errors.length > 0) {
+      return;
+    }
+
     if (this.cpu.halted) {
       this.stop();
       this.consoleView.log('Program sonlandı (HLT). Yeniden çalıştırmak için RESET butonuna basın.', 'info');
@@ -414,7 +422,10 @@ export class InteractiveExampleWidget {
         statusBadge.textContent = 'ÇALIŞMA HATASI';
         statusBadge.className = 'console-status-badge error';
       }
-      this.consoleView.log(`❌ Çalışma Hatası: ${info.error}`, 'error');
+      const line = this.ipToLineMap.get(this.cpu.regs.ip) || 1;
+      this.editor.setErrors([{ line, message: info.error }]);
+      this.consoleView.log(`❌ [Çalışma Hatası] Satır ${line}: ${info.error}`, 'error');
+      return;
     }
 
     if (info.waitingForInput) {
@@ -425,7 +436,12 @@ export class InteractiveExampleWidget {
     }
 
     if (info.consoleText) {
-      this.consoleView.appendStdout(info.consoleText);
+      if (info.consoleText.startsWith('[')) {
+        const isPort = info.consoleText.includes('Port');
+        this.consoleView.log(info.consoleText, isPort ? 'port' : 'info');
+      } else {
+        this.consoleView.appendStdout(info.consoleText);
+      }
     }
 
     this.syncActiveLine();
@@ -439,6 +455,15 @@ export class InteractiveExampleWidget {
 
   private run(): void {
     if (this.isRunning) return;
+
+    const btnCompile = this.container.querySelector('.btn-compile') as HTMLButtonElement;
+    if (btnCompile && !btnCompile.disabled) {
+      if (!this.compile()) return;
+    }
+    if (this.currentAsmResult && this.currentAsmResult.errors.length > 0) {
+      return;
+    }
+
     if (this.cpu.halted) {
       this.reset();
     }

@@ -140,8 +140,10 @@ export class WorkspaceManager {
     code: string;
     challengeId?: string;
     milestoneId?: string;
+    referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap';
   }): WorkspaceDocument {
     const docId = docInput.id || (
+      docInput.referenceTab ? `ref-${docInput.referenceTab}` :
       docInput.milestoneId ? `lecture-${docInput.milestoneId}` :
       docInput.challengeId ? `challenge-${docInput.challengeId}` : 
       `doc-${Date.now()}`
@@ -167,6 +169,7 @@ export class WorkspaceManager {
       cpuInstanceId: cpuInst.id,
       challengeId: docInput.challengeId,
       milestoneId: docInput.milestoneId,
+      referenceTab: docInput.referenceTab,
       createdAt: Date.now(),
       lastModified: Date.now()
     };

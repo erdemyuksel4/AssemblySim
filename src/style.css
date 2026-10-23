@@ -433,19 +433,9 @@ body {
   background: #e5e7eb;
 }
 
-/* Errors Area */
+/* Errors Area - Directed to Terminal & I/O Console */
 .errors-box {
-  margin-top: 14px;
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 10px 14px;
-  min-height: 80px;
-  max-height: 120px;
-  overflow-y: auto;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 18px;
+  display: none !important;
 }
 
 .errors-header {
@@ -2195,7 +2185,8 @@ body {
 .workspace-sidebar.collapsed .doc-title,
 .workspace-sidebar.collapsed .doc-item-meta,
 .workspace-sidebar.collapsed .footer-btn-text,
-.workspace-sidebar.collapsed .status-cpu-name {
+.workspace-sidebar.collapsed .status-cpu-name,
+.workspace-sidebar.collapsed .learning-btn-text {
   display: none !important;
 }
 
@@ -2429,6 +2420,80 @@ body {
 .btn-doc-close:hover {
   background: #fee2e2;
   color: #dc2626;
+}
+
+/* Sidebar Learning & Reference Section (Bottom of Sidebar, Stacked) */
+.sidebar-learning-section {
+  padding: 8px 6px;
+  border-top: 1px solid var(--border-color);
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.sidebar-learning-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.sidebar-learning-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #334155;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.sidebar-learning-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.sidebar-learning-btn.active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
+}
+
+.learning-btn-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.learning-btn-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace-sidebar.collapsed .sidebar-learning-section {
+  padding: 8px 4px;
+}
+
+.workspace-sidebar.collapsed .sidebar-learning-list {
+  align-items: center;
+}
+
+.workspace-sidebar.collapsed .sidebar-learning-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 6px;
 }
 
 /* Sidebar Footer */
@@ -5143,6 +5208,18 @@ body {
   padding: 16px 20px 24px 20px;
 }
 
+.embedded-console-container {
+  margin-top: 14px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #334155;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+}
+
+.embedded-console-container .console-wrapper {
+  height: 180px;
+}
+
 @media (max-width: 1080px) {
   .embedded-ide-grid.main-layout {
     grid-template-columns: 1fr;
@@ -5703,6 +5780,175 @@ body {
     box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
   }
 }
+
+/* ==========================================================================
+   FULL REFERENCE & LEARNING CENTER DOCUMENT VIEW (Sidebar-Triggered Document)
+   ========================================================================== */
+.reference-doc-mount {
+  width: 100%;
+  min-height: 100%;
+  background-color: var(--bg-page, #f8f9fa);
+  box-sizing: border-box;
+}
+
+.reference-doc-container {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px 28px 90px 28px;
+  font-family: var(--font-sans);
+}
+
+.reference-doc-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.btn-return-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  background: #ffffff;
+  border: 1px solid var(--border-dark, #cbd5e1);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.btn-return-editor:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  transform: translateX(-2px);
+}
+
+.reference-doc-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.reference-doc-breadcrumb .bc-sep {
+  color: var(--text-muted);
+}
+
+.reference-doc-breadcrumb .bc-item.highlight {
+  color: #0d9488;
+  font-weight: 700;
+}
+
+/* Reference Header Banner */
+.reference-doc-header {
+  padding: 24px 28px 20px 28px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f766e 100%);
+  border-radius: 12px;
+  color: #ffffff;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ref-header-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.ref-pill {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  background: #0d9488;
+  color: #ffffff;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.ref-count-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  color: #e2e8f0;
+}
+
+.ref-main-title {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+}
+
+.ref-subtitle-text {
+  font-size: 13.5px;
+  color: #cbd5e1;
+  margin: 0 0 18px 0;
+  line-height: 1.5;
+  max-width: 900px;
+}
+
+.reference-doc-header .docs-main-tabs {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 8px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  gap: 6px;
+  backdrop-filter: blur(8px);
+}
+
+.reference-doc-header .docs-main-tab {
+  color: #cbd5e1;
+  border-radius: 6px;
+  border-bottom: none;
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  background: transparent;
+}
+
+.reference-doc-header .docs-main-tab:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.reference-doc-header .docs-main-tab.active {
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.reference-doc-container .docs-body-drawer {
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-dark);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.reference-doc-container .docs-master-detail {
+  min-height: 600px;
+  height: 680px;
+}
+
 
 
 

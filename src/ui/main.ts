@@ -4,7 +4,7 @@ import { Editor } from './editor.js';
 import { RegisterPanel } from './registerPanel.js';
 import { MemoryView } from './memoryView.js';
 import { TooltipManager } from './tooltip.js';
-import { InstructionDoc } from './instructionDoc.js';
+import { InstructionDoc, ManualTab } from './instructionDoc.js';
 import { ConsoleView } from './console.js';
 import { CpuInstanceManager } from '../cpu/instanceManager.js';
 import { WorkspaceManager } from '../workspace/workspaceManager.js';
@@ -127,8 +127,8 @@ export class App {
           <!-- Full Lecture Document View Mount (shown when active doc is a lecture) -->
           <div id="lecture-doc-mount" class="lecture-doc-mount" style="display: none;"></div>
 
-          <!-- Bottom Collapsible Instruction Manual & Roadmap -->
-          <div id="instruction-docs-container" class="instruction-docs-wrapper"></div>
+          <!-- Full Reference & Learning Document View Mount (shown when active doc is a reference doc) -->
+          <div id="reference-doc-mount" class="reference-doc-mount" style="display: none;"></div>
         </div>
       </div>
     `;
@@ -140,7 +140,7 @@ export class App {
     const consoleContainer = document.getElementById('console-container')!;
     const registersContainer = document.getElementById('registers-container')!;
     const memoryContainer = document.getElementById('memory-container')!;
-    const docsContainer = document.getElementById('instruction-docs-container')!;
+    const docsContainer = document.getElementById('reference-doc-mount')!;
 
     this.registerPanel = new RegisterPanel(registersContainer);
     this.memoryView = new MemoryView(memoryContainer);
@@ -160,7 +160,8 @@ export class App {
           });
           this.switchToDocument(newDoc);
         },
-        onOpenCpuModal: () => this.cpuModal.open()
+        onOpenCpuModal: () => this.cpuModal.open(),
+        onOpenLearningDoc: (tab) => this.openLearningDocument(tab)
       }
     );
 
@@ -197,6 +198,12 @@ export class App {
       onOpenLectureDocument: (milestoneId) => {
         this.openMilestoneLecture(milestoneId);
       },
+      onReturnToEditor: () => {
+        this.returnToEditor();
+      },
+      onTabChange: (tab) => {
+        this.syncReferenceDocumentTab(tab);
+      },
       getCurrentEditorCode: () => this.editor.getCode()
     });
 
@@ -206,8 +213,11 @@ export class App {
         this.openMilestoneLecture(milestoneId);
       },
       onNavigateToLeetCodeMilestone: (milestoneId: string, challengeId?: string) => {
+        this.openLearningDocument('leetcode');
         this.instructionDoc.filterLeetCodeByMilestone(milestoneId, challengeId);
-        document.getElementById('instruction-docs-container')?.scrollIntoView({ behavior: 'smooth' });
+      },
+      onNavigateToRoadmap: () => {
+        this.openLearningDocument('roadmap');
       },
       onOpenInMainEditor: (title: string, code: string) => {
         const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -250,19 +260,50 @@ export class App {
     this.challengePanel = new ChallengePanel(challengeContainer, {
       onTestChallenge: (ch, code) => {
         this.workspace.updateActiveCode(code);
-        this.compile();
+        this.consoleView.clear();
+        this.consoleView.log(`🧪 '${ch.title}' görevi test ediliyor...`, 'info');
+
         const result = ChallengeRunner.grade(ch, code);
+
         if (result.status === 'COMPILE_ERROR' && result.compileError) {
           this.editor.setErrors([result.compileError]);
+          this.consoleView.log(`❌ [Derleme Hatası] Satır ${result.compileError.line}: ${result.compileError.message}`, 'error');
+          const statusBadge = document.getElementById('console-status-badge') as HTMLElement;
+          if (statusBadge) {
+            statusBadge.textContent = 'DERLEME HATASI';
+            statusBadge.className = 'console-status-badge error';
+          }
+        } else if (result.status === 'RUNTIME_ERROR') {
+          this.consoleView.log(`❌ [Çalışma Hatası]: ${result.runtimeError || 'Hata'}`, 'error');
+          const statusBadge = document.getElementById('console-status-badge') as HTMLElement;
+          if (statusBadge) {
+            statusBadge.textContent = 'ÇALIŞMA HATASI';
+            statusBadge.className = 'console-status-badge error';
+          }
+        } else if (result.status === 'TIMEOUT') {
+          this.consoleView.log(`⏱️ [Zaman Aşımı]: Program ${result.stepCount} adımda durmadı (Sonsuz döngü kontrolü yapın).`, 'warn');
+        } else if (result.status === 'FAILED') {
+          this.consoleView.log(`❌ [Test Başarısız]: Bazı beklenen değerler karşılanamadı:`, 'error');
+          result.diffs.filter(d => !d.passed).forEach(d => {
+            this.consoleView.log(`  • ${d.target}: Beklenen ${d.expected}, Gerçek ${d.actual}${d.message ? ` (${d.message})` : ''}`, 'warn');
+          });
+        } else if (result.status === 'PASSED') {
+          this.editor.clearErrors();
+          this.consoleView.log(`✅ [Tebrikler] '${ch.title}' tüm testleri başarıyla geçti! (${result.stepCount} adım, ${result.executionTimeMs} ms)`, 'success');
+          const statusBadge = document.getElementById('console-status-badge') as HTMLElement;
+          if (statusBadge) {
+            statusBadge.textContent = 'BAŞARILI';
+            statusBadge.className = 'console-status-badge ready';
+          }
         }
+
         return result;
       },
       onResetEnvironment: () => {
         this.reset();
       },
       onNavigateToLeetCode: () => {
-        this.instructionDoc.openTab('leetcode');
-        document.getElementById('instruction-docs-container')?.scrollIntoView({ behavior: 'smooth' });
+        this.openLearningDocument('leetcode');
       },
       onLoadNextChallenge: (nextCh) => {
         const doc = this.workspace.openDocument({
@@ -286,6 +327,57 @@ export class App {
       this.challengePanel.setChallenge(CHALLENGES[initialDoc.challengeId] || null);
       const btn = document.getElementById('btn-complete-and-test');
       if (btn) btn.style.display = 'inline-flex';
+    }
+  }
+
+  openLearningDocument(tab: ManualTab): void {
+    const existingDoc = this.workspace.getAllDocuments().find(
+      (d) => d.type === 'reference' && d.referenceTab === tab
+    );
+    if (existingDoc) {
+      this.switchToDocument(existingDoc);
+      this.sidebar.render();
+      return;
+    }
+
+    const titles: Record<ManualTab, string> = {
+      manual: '📖 Komut Manueli',
+      lectures: '🎓 Dersler & Teori',
+      leetcode: '⚡ LeetCode Arenası',
+      roadmap: '🗺️ Yol Haritası'
+    };
+
+    const newDoc = this.workspace.openDocument({
+      title: titles[tab] || '📚 Öğrenme Merkezi',
+      type: 'reference',
+      referenceTab: tab,
+      code: `; 📚 ${titles[tab]}\n; 8086 Öğrenme ve Referans dokümanı.\n`
+    });
+    this.switchToDocument(newDoc);
+    this.sidebar.render();
+  }
+
+  returnToEditor(): void {
+    const allDocs = this.workspace.getAllDocuments();
+    const editorDoc = allDocs.find((d) => d.type === 'custom' || d.type === 'challenge' || d.type === 'example') || allDocs[0];
+    if (editorDoc) {
+      this.switchToDocument(editorDoc);
+      this.sidebar.render();
+    }
+  }
+
+  syncReferenceDocumentTab(tab: ManualTab): void {
+    const activeDoc = this.workspace.getActiveDocument();
+    if (activeDoc && activeDoc.type === 'reference') {
+      activeDoc.referenceTab = tab;
+      const titles: Record<ManualTab, string> = {
+        manual: '📖 Komut Manueli',
+        lectures: '🎓 Dersler & Teori',
+        leetcode: '⚡ LeetCode Arenası',
+        roadmap: '🗺️ Yol Haritası'
+      };
+      activeDoc.title = titles[tab] || activeDoc.title;
+      this.sidebar.render();
     }
   }
 
@@ -316,7 +408,7 @@ export class App {
     this.stop();
     const currentActive = this.workspace.getActiveDocument();
     if (currentActive && currentActive.id !== doc.id) {
-      if (currentActive.type !== 'lecture') {
+      if (currentActive.type !== 'lecture' && currentActive.type !== 'reference') {
         this.workspace.updateActiveCode(this.editor.getCode());
       }
     }
@@ -327,16 +419,26 @@ export class App {
 
     const mainIdeLayout = document.getElementById('main-ide-layout');
     const lectureDocMount = document.getElementById('lecture-doc-mount');
+    const refDocMount = document.getElementById('reference-doc-mount');
 
     if (doc.type === 'lecture' && doc.milestoneId) {
       if (mainIdeLayout) mainIdeLayout.style.display = 'none';
+      if (refDocMount) refDocMount.style.display = 'none';
       if (lectureDocMount) lectureDocMount.style.display = 'block';
 
       this.lectureDocView.setMilestone(doc.milestoneId);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (doc.type === 'reference' && doc.referenceTab) {
+      if (mainIdeLayout) mainIdeLayout.style.display = 'none';
+      if (lectureDocMount) lectureDocMount.style.display = 'none';
+      if (refDocMount) refDocMount.style.display = 'block';
+
+      this.instructionDoc.openTab(doc.referenceTab);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       if (mainIdeLayout) mainIdeLayout.style.display = 'grid';
       if (lectureDocMount) lectureDocMount.style.display = 'none';
+      if (refDocMount) refDocMount.style.display = 'none';
 
       this.editor.setCode(doc.code);
       this.consoleView.clear();
@@ -421,17 +523,27 @@ export class App {
     this.currentAsmResult = result;
 
     const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
+    const statusBadge = document.getElementById('console-status-badge') as HTMLElement;
 
     this.consoleView.clear();
     if (result.errors.length > 0) {
       this.editor.setErrors(result.errors);
-      result.errors.forEach(err => this.consoleView.log(`Hata (Satır ${err.line}): ${err.message}`, 'error'));
+      if (statusBadge) {
+        statusBadge.textContent = `${result.errors.length} DERLEME HATASI`;
+        statusBadge.className = 'console-status-badge error';
+      }
+      result.errors.forEach(err => this.consoleView.log(`❌ [Derleme Hatası] Satır ${err.line}: ${err.message}`, 'error'));
       if (btnCompile) btnCompile.disabled = false;
       return false;
     }
 
+    if (statusBadge) {
+      statusBadge.textContent = 'HAZIR';
+      statusBadge.className = 'console-status-badge ready';
+    }
+
     this.editor.clearErrors();
-    this.consoleView.log(`Program başarıyla derlendi (${result.bytes.length} bayt). Giriş noktası: CS:${result.origin.toString(16).toUpperCase().padStart(4, '0')}h`, 'success');
+    this.consoleView.log(`✓ Program başarıyla derlendi (${result.bytes.length} bayt). Giriş noktası: CS:${result.origin.toString(16).toUpperCase().padStart(4, '0')}h`, 'success');
 
     // Disable COMPILE button until user edits code
     if (btnCompile) btnCompile.disabled = true;
@@ -508,9 +620,33 @@ export class App {
   }
 
   private step(): void {
-    if (this.cpu.halted) return;
+    const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
+    if (btnCompile && !btnCompile.disabled) {
+      if (!this.compile()) return;
+    }
+    if (this.currentAsmResult && this.currentAsmResult.errors.length > 0) {
+      return;
+    }
+
+    if (this.cpu.halted) {
+      this.consoleView.log('Program sonlandı (HLT). Yeniden çalıştırmak için RESET butonuna basın.', 'info');
+      return;
+    }
 
     const info = this.cpu.step();
+
+    if (info.error) {
+      this.stop();
+      const line = this.ipToLineMap.get(this.cpu.regs.ip) || 1;
+      this.editor.setErrors([{ line, message: info.error }]);
+      this.consoleView.log(`❌ [Çalışma Hatası] Satır ${line}: ${info.error}`, 'error');
+      const statusBadge = document.getElementById('console-status-badge') as HTMLElement;
+      if (statusBadge) {
+        statusBadge.textContent = 'ÇALIŞMA HATASI';
+        statusBadge.className = 'console-status-badge error';
+      }
+      return;
+    }
 
     if (info.consoleText) {
       if (info.consoleText.startsWith('[')) {
@@ -530,13 +666,6 @@ export class App {
       return;
     }
 
-    if (info.error) {
-      this.stop();
-      this.editor.setErrors([{ line: this.ipToLineMap.get(this.cpu.regs.ip) || 1, message: info.error }]);
-      this.consoleView.log(`Çalışma Hatası: ${info.error}`, 'error');
-      return;
-    }
-
     if (info.halted) {
       this.stop();
       this.consoleView.log('Program sonlandı (HLT).', 'warn');
@@ -547,7 +676,19 @@ export class App {
   }
 
   private run(): void {
-    if (this.cpu.halted || this.isRunning) return;
+    if (this.isRunning) return;
+
+    const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
+    if (btnCompile && !btnCompile.disabled) {
+      if (!this.compile()) return;
+    }
+    if (this.currentAsmResult && this.currentAsmResult.errors.length > 0) {
+      return;
+    }
+
+    if (this.cpu.halted) {
+      this.reset();
+    }
 
     this.isRunning = true;
     const btnRun = document.getElementById('btn-run') as HTMLButtonElement;

@@ -122,7 +122,16 @@ export class ConsoleView {
       this.log(`> ${val}`, 'info');
       inputField.value = '';
       this.setWaitingForInput(false);
-      this.onInput?.(val);
+
+      const trimmed = val.trim();
+      const hexMatch = trimmed.match(/^(?:0x([0-9a-fA-F]+)|([0-9a-fA-F]+)h)$/i);
+      if (hexMatch) {
+        const hexNum = parseInt(hexMatch[1] || hexMatch[2], 16);
+        this.onInput?.(String.fromCharCode(hexNum & 0xFF));
+      } else {
+        // Send with carriage return \r so standard DOS inputs (e.g. INT 21h AH=0Ah) finish properly
+        this.onInput?.(val + '\r');
+      }
     };
 
     sendBtn?.addEventListener('click', submitInput);
