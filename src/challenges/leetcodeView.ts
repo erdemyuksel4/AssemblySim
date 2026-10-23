@@ -4,7 +4,7 @@ import { ChallengeRunner } from './runner.js';
 
 export const STORAGE_SOLVED_KEY = 'assemblysim_solved_challenges_v1';
 
-export type LeetCodeFilter = 'all' | DifficultyLevel | 'solved' | 'unsolved';
+export type LeetCodeFilter = 'all' | DifficultyLevel | 'solved' | 'unsolved' | 'capstone';
 
 export interface LeetCodeCallbacks {
   onLoadChallengeToEditor: (challenge: Challenge) => void;
@@ -19,6 +19,7 @@ export class LeetCodeView {
   private selectedFilter: LeetCodeFilter = 'all';
   private selectedMilestoneId: string = 'all';
   private searchQuery: string = '';
+  private highlightedChallengeId: string | null = null;
 
   constructor(container: HTMLElement, callbacks: LeetCodeCallbacks) {
     this.container = container;
@@ -55,15 +56,28 @@ export class LeetCodeView {
     this.render();
   }
 
-  filterByMilestone(milestoneId: string): void {
+  filterByMilestone(milestoneId: string, highlightChallengeId?: string): void {
     this.selectedMilestoneId = milestoneId;
+    this.highlightedChallengeId = highlightChallengeId || null;
     this.render();
+
+    if (this.highlightedChallengeId) {
+      setTimeout(() => {
+        const el = this.container.querySelector(`.leetcode-card[data-ch-id="${this.highlightedChallengeId}"]`) as HTMLElement;
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('pulse-highlight');
+          setTimeout(() => el.classList.remove('pulse-highlight'), 3000);
+        }
+      }, 150);
+    }
   }
 
   render(): void {
     const allChallengesList = Object.values(CHALLENGES);
     const totalChallenges = allChallengesList.length;
     const solvedCount = this.solvedIds.size;
+    const capstoneCount = allChallengesList.filter(c => c.isCapstone).length;
     const percent = totalChallenges > 0 ? Math.round((solvedCount / totalChallenges) * 100) : 0;
 
     const filteredChallenges = allChallengesList.filter(ch => {
@@ -72,7 +86,8 @@ export class LeetCodeView {
         return false;
       }
 
-      // Difficulty / Solved filter
+      // Difficulty / Solved / Capstone filter
+      if (this.selectedFilter === 'capstone' && !ch.isCapstone) return false;
       if (this.selectedFilter === 'solved' && !this.solvedIds.has(ch.id)) return false;
       if (this.selectedFilter === 'unsolved' && this.solvedIds.has(ch.id)) return false;
       if (['Kolay', 'Orta', 'Zor'].includes(this.selectedFilter) && ch.difficulty !== this.selectedFilter) {
@@ -120,6 +135,7 @@ export class LeetCodeView {
         <div class="leetcode-toolbar">
           <div class="filter-pills-group">
             <button class="btn-lt-filter ${this.selectedFilter === 'all' ? 'active' : ''}" data-filter="all">Tümü (${totalChallenges})</button>
+            <button class="btn-lt-filter ${this.selectedFilter === 'capstone' ? 'active' : ''}" data-filter="capstone">🏆 Kapsayıcı Görevler (${capstoneCount})</button>
             <button class="btn-lt-filter ${this.selectedFilter === 'Kolay' ? 'active' : ''}" data-filter="Kolay">🟢 Kolay</button>
             <button class="btn-lt-filter ${this.selectedFilter === 'Orta' ? 'active' : ''}" data-filter="Orta">🟡 Orta</button>
             <button class="btn-lt-filter ${this.selectedFilter === 'Zor' ? 'active' : ''}" data-filter="Zor">🔴 Zor</button>
@@ -156,7 +172,14 @@ export class LeetCodeView {
             const milestone = ROADMAP_MILESTONES.find(m => m.id === ch.milestoneId);
 
             return `
-              <div class="leetcode-card ${isSolved ? 'is-solved' : ''}" data-ch-id="${ch.id}">
+              <div class="leetcode-card ${isSolved ? 'is-solved' : ''} ${ch.isCapstone ? 'is-capstone-card' : ''}" data-ch-id="${ch.id}">
+                ${ch.isCapstone ? `
+                  <div class="card-capstone-banner">
+                    <span class="capstone-trophy">🏆</span>
+                    <span class="capstone-banner-text">AŞAMA ${milestone?.number} SONU KAPSAYICI SENTEZ</span>
+                    <span class="capstone-stage-pill">${this.escapeHtml(ch.cumulativeStages || '')}</span>
+                  </div>
+                ` : ''}
                 <div class="leetcode-card-top">
                   <div class="card-status-title">
                     <span class="status-indicator">${isSolved ? '✅' : '⚪'}</span>

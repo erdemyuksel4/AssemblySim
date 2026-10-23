@@ -246,6 +246,13 @@ export class InstructionDoc {
     }
   }
 
+  filterLeetCodeByMilestone(milestoneId: string, challengeId?: string): void {
+    this.openTab('leetcode');
+    if (this.leetcodeView) {
+      this.leetcodeView.filterByMilestone(milestoneId, challengeId);
+    }
+  }
+
   private attachEvents(): void {
     const toggleBar = this.container.querySelector('#docs-toggle-bar') as HTMLElement;
     const searchInput = this.container.querySelector('#docs-search-input') as HTMLInputElement;

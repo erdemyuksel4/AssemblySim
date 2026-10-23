@@ -1,7 +1,7 @@
 import { Token, Lexer } from './lexer.js';
 import { Operand, OperandParser } from './operands.js';
 
-export type DirectiveType = 'ORG' | 'DB' | 'DW' | 'EQU';
+export type DirectiveType = 'ORG' | 'DB' | 'DW' | 'EQU' | 'PROC' | 'ENDP';
 
 export interface DupItem {
   count: number;
@@ -54,7 +54,7 @@ export class Parser {
     else if (
       tokens.length >= 2 &&
       tokens[0].type === 'IDENTIFIER' &&
-      ['DB', 'DW', 'EQU'].includes(tokens[1].text.toUpperCase())
+      ['DB', 'DW', 'EQU', 'PROC', 'ENDP'].includes(tokens[1].text.toUpperCase())
     ) {
       label = tokens[0].text;
       tokenIdx = 1;
@@ -107,6 +107,29 @@ export class Parser {
           type: 'EQU',
           items: [numTok.value],
           equValue: numTok.value
+        }
+      };
+    }
+
+    // Check for PROC directive
+    if (keyword === 'PROC') {
+      return {
+        lineNumber,
+        label,
+        directive: {
+          type: 'PROC',
+          items: []
+        }
+      };
+    }
+
+    // Check for ENDP directive
+    if (keyword === 'ENDP') {
+      return {
+        lineNumber,
+        directive: {
+          type: 'ENDP',
+          items: []
         }
       };
     }

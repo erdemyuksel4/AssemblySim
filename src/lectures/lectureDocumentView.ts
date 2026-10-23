@@ -1,10 +1,11 @@
 import { MILESTONE_LECTURES, MilestoneLecture } from './lectureData.js';
 import { InteractiveExampleWidget } from './interactiveExampleWidget.js';
+import { CHALLENGES } from '../challenges/challengesData.js';
 
 export interface LectureDocCallbacks {
   onOpenInMainEditor: (title: string, code: string) => void;
   onNavigateToMilestoneLecture: (milestoneId: string) => void;
-  onNavigateToLeetCodeMilestone: (milestoneId: string) => void;
+  onNavigateToLeetCodeMilestone: (milestoneId: string, challengeId?: string) => void;
 }
 
 export class LectureDocumentView {
@@ -35,6 +36,7 @@ export class LectureDocumentView {
     const currIdx = keys.indexOf(this.currentMilestoneId);
     const prevKey = currIdx > 0 ? keys[currIdx - 1] : null;
     const nextKey = currIdx < keys.length - 1 ? keys[currIdx + 1] : null;
+    const capstone = Object.values(CHALLENGES).find(ch => ch.milestoneId === this.currentMilestoneId && ch.isCapstone);
 
     this.container.innerHTML = `
       <div class="lecture-doc-container">
@@ -76,6 +78,61 @@ export class LectureDocumentView {
               ` : ''}
             </div>
           `).join('')}
+        </div>
+
+        <!-- Stage Capstone Challenge Card (Aşama Sonu Kapsayıcı Sentez Görevi) -->
+        <div class="lecture-capstone-container">
+          ${this.currentMilestoneId === 'milestone-1' ? `
+            <div class="lecture-capstone-card milestone-1-notice">
+              <div class="capstone-card-badge-row">
+                <span class="capstone-badge arch">🏛️ MİMARİ VE BELLEK TEMELİ TAMAMLANDI</span>
+                <span class="capstone-scope-tag">1. Aşama: Donanım & Mimari</span>
+              </div>
+              <h3 class="capstone-title">Aşama 1 Tamamlandı: Kodlama Öncesi Mimari Donanım</h3>
+              <p class="capstone-desc">
+                Bu aşamada 8086'nın iç mimarisini (BIU & EU), 14 adet yazmaç kümesini, 20-bit adresleme formülünü ve Little-Endian prensibini öğrendiniz.
+                Henüz assembly komutu (MOV, ADD vb.) anlatılmadığı için bu aşamada kodlama görevi bulunmamaktadır.
+                <strong>Aşama 2'ye geçerek ilk komutları öğrendiğinizde, hem Aşama 1'i hem Aşama 2'yi harmanlayan ilk Kapsayıcı LeetCode Göreviniz açılacaktır!</strong>
+              </p>
+              <div class="capstone-card-actions">
+                <button id="btn-capstone-m1-next" class="btn-capstone-action primary">
+                  🚀 Aşama 2'ye Geç ve İlk Kapsayıcı Göreve Hazırlan ➡️
+                </button>
+              </div>
+            </div>
+          ` : capstone ? `
+            <div class="lecture-capstone-card">
+              <div class="capstone-card-badge-row">
+                <span class="capstone-badge">🏆 AŞAMA ${lecture.milestoneNumber} SONU KAPSAYICI SENTEZ GÖREVİ</span>
+                <span class="capstone-diff-tag ${capstone.difficulty.toLowerCase()}">${capstone.difficulty}</span>
+                <span class="capstone-scope-tag">${this.escapeHtml(capstone.cumulativeStages || '')}</span>
+              </div>
+
+              <h3 class="capstone-title">${this.escapeHtml(capstone.title)}</h3>
+              <p class="capstone-desc">${this.escapeHtml(capstone.scenario)}</p>
+
+              <div class="capstone-task-box">
+                <div class="capstone-task-title">🎯 Sınav Görevi:</div>
+                <div class="capstone-task-content">${this.escapeHtml(capstone.task).replace(/\n/g, '<br/>')}</div>
+              </div>
+
+              <div class="capstone-meta-row">
+                <span class="capstone-opcodes-label">Kullanılacak Komutlar:</span>
+                <div class="capstone-opcodes-list">
+                  ${capstone.opcodes.map(op => `<span class="capstone-op-pill">${op}</span>`).join('')}
+                </div>
+              </div>
+
+              <div class="capstone-card-actions">
+                <button id="btn-capstone-open-leetcode" class="btn-capstone-action primary" data-ch-id="${capstone.id}">
+                  ⚡ Bu Kapsayıcı Görevi LeetCode Panelinde Çöz →
+                </button>
+                <button id="btn-capstone-load-editor" class="btn-capstone-action secondary" data-ch-id="${capstone.id}">
+                  📝 Görev Şablonunu Editöre Aktar
+                </button>
+              </div>
+            </div>
+          ` : ''}
         </div>
 
         <!-- Navigation Footer -->
@@ -273,6 +330,30 @@ export class LectureDocumentView {
         this.callbacks.onNavigateToLeetCodeMilestone(this.currentMilestoneId);
       }
     });
+
+    // Capstone event handlers
+    this.container.querySelector('#btn-capstone-m1-next')?.addEventListener('click', () => {
+      this.callbacks.onNavigateToMilestoneLecture('milestone-2');
+    });
+
+    const btnOpenLeetCode = this.container.querySelector('#btn-capstone-open-leetcode') as HTMLButtonElement | null;
+    if (btnOpenLeetCode) {
+      btnOpenLeetCode.addEventListener('click', () => {
+        const chId = btnOpenLeetCode.getAttribute('data-ch-id') || undefined;
+        this.callbacks.onNavigateToLeetCodeMilestone(this.currentMilestoneId, chId);
+      });
+    }
+
+    const btnLoadEditor = this.container.querySelector('#btn-capstone-load-editor') as HTMLButtonElement | null;
+    if (btnLoadEditor) {
+      btnLoadEditor.addEventListener('click', () => {
+        const chId = btnLoadEditor.getAttribute('data-ch-id');
+        if (chId && CHALLENGES[chId]) {
+          const ch = CHALLENGES[chId];
+          this.callbacks.onOpenInMainEditor(ch.title, ch.starterCode);
+        }
+      });
+    }
   }
 
   private escapeHtml(str: string): string {

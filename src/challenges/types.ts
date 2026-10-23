@@ -99,6 +99,8 @@ export interface Challenge {
   starterCode: string;
   hints: string[];
   solutionCode?: string;
+  isCapstone?: boolean;
+  cumulativeStages?: string;
   testSetup: ChallengeTestSetup;
   assertions: ChallengeAssertion;
 }

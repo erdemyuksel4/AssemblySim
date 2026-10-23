@@ -5452,6 +5452,258 @@ body {
   line-height: 1.5;
 }
 
+/* ========================================================================= */
+/* --- CAPSTONE / KAPSAYICI SENTEZ LEETCODE GÖREVLERİ STİLLERİ --- */
+/* ========================================================================= */
+
+.lecture-capstone-container {
+  margin-top: 32px;
+  margin-bottom: 24px;
+}
+
+.lecture-capstone-card {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(217, 119, 6, 0.03) 100%);
+  border: 2px solid rgba(245, 158, 11, 0.45);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.lecture-capstone-card.milestone-1-notice {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(2, 132, 199, 0.03) 100%);
+  border-color: rgba(2, 132, 199, 0.4);
+  box-shadow: 0 4px 18px rgba(2, 132, 199, 0.08);
+}
+
+.capstone-card-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.capstone-badge {
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.capstone-badge.arch {
+  background: #0284c7;
+}
+
+.capstone-diff-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.capstone-diff-tag.kolay {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.capstone-diff-tag.orta {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.capstone-diff-tag.zor {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.capstone-scope-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.15);
+  padding: 4px 9px;
+  border-radius: 6px;
+}
+
+.lecture-capstone-card.milestone-1-notice .capstone-scope-tag {
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.15);
+}
+
+.capstone-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.capstone-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.capstone-task-box {
+  background: rgba(0, 0, 0, 0.025);
+  border-left: 4px solid #f59e0b;
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 14px;
+}
+
+.capstone-task-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #b45309;
+  margin-bottom: 6px;
+}
+
+.capstone-task-content {
+  font-size: 13px;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.capstone-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.capstone-opcodes-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.capstone-opcodes-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.capstone-op-pill {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.capstone-card-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-capstone-action {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-capstone-action.primary {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(180, 83, 9, 0.3);
+}
+
+.btn-capstone-action.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(180, 83, 9, 0.4);
+}
+
+.lecture-capstone-card.milestone-1-notice .btn-capstone-action.primary {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+}
+
+.lecture-capstone-card.milestone-1-notice .btn-capstone-action.primary:hover {
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+}
+
+.btn-capstone-action.secondary {
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-capstone-action.secondary:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+/* LeetCode Card Capstone Special Styling */
+.leetcode-card.is-capstone-card {
+  border: 2px solid #f59e0b !important;
+  background: linear-gradient(180deg, rgba(254, 243, 199, 0.15) 0%, #ffffff 100%) !important;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.1) !important;
+}
+
+.card-capstone-banner {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 6px 6px 0 0;
+  margin: -16px -16px 12px -16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.capstone-banner-text {
+  flex: 1;
+  margin-left: 6px;
+}
+
+.capstone-stage-pill {
+  background: rgba(0, 0, 0, 0.22);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.pulse-highlight {
+  animation: pulseCard 1.8s infinite ease-in-out;
+}
+
+@keyframes pulseCard {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
 
 
 

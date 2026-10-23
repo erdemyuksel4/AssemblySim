@@ -110,7 +110,7 @@ export class Assembler {
             if (parsed.directive.orgValue !== undefined) {
               currentAddr = parsed.directive.orgValue;
             }
-          } else if (parsed.directive.type === 'EQU') {
+          } else if (parsed.directive.type === 'EQU' || parsed.directive.type === 'PROC' || parsed.directive.type === 'ENDP') {
             // EQU emits no machine code bytes
           } else {
             const dataBytes = this.generateDirectiveBytes(parsed.directive, symbols, lineNum);
@@ -153,7 +153,7 @@ export class Assembler {
 
   // Calculate size in bytes for DB and DW directives
   private static getDirectiveSize(directive: ParsedDirective): number {
-    if (directive.type === 'ORG' || directive.type === 'EQU') return 0;
+    if (directive.type === 'ORG' || directive.type === 'EQU' || directive.type === 'PROC' || directive.type === 'ENDP') return 0;
     const mult = directive.type === 'DW' ? 2 : 1;
     let size = 0;
 

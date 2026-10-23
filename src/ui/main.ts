@@ -205,8 +205,8 @@ export class App {
       onNavigateToMilestoneLecture: (milestoneId: string) => {
         this.openMilestoneLecture(milestoneId);
       },
-      onNavigateToLeetCodeMilestone: (_milestoneId: string) => {
-        this.instructionDoc.openTab('leetcode');
+      onNavigateToLeetCodeMilestone: (milestoneId: string, challengeId?: string) => {
+        this.instructionDoc.filterLeetCodeByMilestone(milestoneId, challengeId);
         document.getElementById('instruction-docs-container')?.scrollIntoView({ behavior: 'smooth' });
       },
       onOpenInMainEditor: (title: string, code: string) => {
