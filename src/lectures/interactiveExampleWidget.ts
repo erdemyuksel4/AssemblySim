@@ -334,13 +334,23 @@ export class InteractiveExampleWidget {
     this.currentAsmResult = result;
 
     const btnCompile = this.container.querySelector('.btn-compile') as HTMLButtonElement;
+    const statusBadge = this.container.querySelector('#console-status-badge') as HTMLElement;
     this.consoleView.clear();
 
     if (result.errors.length > 0) {
       this.editor.setErrors(result.errors);
-      result.errors.forEach(err => this.consoleView.log(`Hata (Satır ${err.line}): ${err.message}`, 'error'));
+      if (statusBadge) {
+        statusBadge.textContent = `${result.errors.length} DERLEME HATASI`;
+        statusBadge.className = 'console-status-badge error';
+      }
+      result.errors.forEach(err => this.consoleView.log(`❌ Derleme Hatası (Satır ${err.line}): ${err.message}`, 'error'));
       if (btnCompile) btnCompile.disabled = false;
       return false;
+    }
+
+    if (statusBadge) {
+      statusBadge.textContent = 'HAZIR';
+      statusBadge.className = 'console-status-badge ready';
     }
 
     this.editor.clearErrors();
@@ -399,7 +409,12 @@ export class InteractiveExampleWidget {
 
     if (info.error) {
       this.stop();
-      this.consoleView.log(`Çalışma Hatası: ${info.error}`, 'error');
+      const statusBadge = this.container.querySelector('#console-status-badge') as HTMLElement;
+      if (statusBadge) {
+        statusBadge.textContent = 'ÇALIŞMA HATASI';
+        statusBadge.className = 'console-status-badge error';
+      }
+      this.consoleView.log(`❌ Çalışma Hatası: ${info.error}`, 'error');
     }
 
     if (info.waitingForInput) {
