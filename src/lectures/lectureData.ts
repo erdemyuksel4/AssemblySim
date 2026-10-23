@@ -317,70 +317,154 @@ export const MILESTONE_LECTURES: Record<string, MilestoneLecture> = {
     "milestoneId": "milestone-3",
     "milestoneNumber": 3,
     "title": "Aritmetik İşlemler & Bayraklar (ADD, ADC, SUB, SBB, MUL, DIV)",
-    "subtitle": "ALU Donanım İşlemleri, 32-bit Eldeli Toplama/Çıkarma, Bayrak Analizi (CF, ZF, SF, OF) ve İşaretli Bölme/Taşma (INT 0)",
+    "subtitle": "Her Aritmetik Komut İçin Ayrı Anlatım, Durum Bayrakları ve Anında Pratik Laboratuvarı",
     "slideRef": "Hoca: Week 5 PPTX / w5, w11 PDF | Kitap: Barry B. Brey Bölüm 5",
-    "overviewHtml": "\n          <div class=\"lecture-hero-card\">\n            <div class=\"lecture-hero-badge\">AŞAMA 3: ALGORİTMİK HESAPLAMA & BAYRAKLAR</div>\n            <p class=\"lecture-hero-text\">\n              8086 mikroişlemcisinde tüm aritmetik hesaplamalar 16-bitlik Aritmetik Mantık Birimi (ALU) tarafından yürütülür. \n              İşlem sonucunda işlemcinin <b>Bayraklar (Flags)</b> yazmacındaki 6 durum biti (CF, PF, AF, ZF, SF, OF) donanımsal olarak güncellenir.\n            </p>\n            <div class=\"lecture-golden-rule\">\n              💡 <strong>Hocanın Altın Sınav Kuralları:</strong><br>\n              1. <b>INC ve DEC Kuralı (Sınav Klasiği):</b> <code>INC</code> ve <code>DEC</code> komutları ZF, SF, OF, AF, PF bayraklarını günceller fakat <strong>CARRY FLAG'i (CF - Elde Bayrağı) ASLA DEĞİŞTİRMEZ!</strong> Çok kelimeli döngülerde sayaç artırılırken elde bayrağının kaybolmaması için bu özellik kasıtlı tasarlanmıştır.<br>\n              2. <b>Bölme Aşımı (Divide Overflow / INT 0):</b> Bölme işleminde bölen sayı 0 ise veya bölüm sonucu hedef yazmaca sığmıyorsa (örn: AX=3000, BL=2 yapıldığında bölüm 1500 çıkar ve 8-bitlik AL'ye sığmaz), işlemci otomatik olarak <strong>Interrupt 0 (Divide Error)</strong> üretir!<br>\n              3. <b>İşaret Genişletme:</b> <code>IDIV</code> komutundan önce negatif sayıların işaretini yaymak için byte için <code>CBW</code>, word için <code>CWD</code> kullanılmalıdır.\n            </div>\n          </div>\n        ",
+    "overviewHtml": "\n    <div class=\"lecture-hero-card\">\n      <div class=\"lecture-hero-badge\">AŞAMA 3: ADIM ADIM ARİTMETİK & BAYRAK ANALİZİ</div>\n      <p class=\"lecture-hero-text\">\n        8086 mikroişlemcisinde tüm aritmetik hesaplamalar 16-bitlik ALU tarafından yürütülür. \n        Her işlem sonucunda <b>Bayraklar (Flags)</b> yazmacındaki durum bitleri (CF, ZF, SF, OF, AF, PF) donanımsal olarak kurulur.\n        Bu derste her aritmetik komut bağımsız bir modül olarak incelenir ve hemen altında pratik laboratuvarı yer alır.\n      </p>\n      <div class=\"lecture-golden-rule\">\n        💡 <strong>Hocanın 3 Altın Aritmetik Sınav Kuralı:</strong><br>\n        1. <b>INC ve DEC Kuralı (Sınav Klasiği):</b> <code>INC</code> ve <code>DEC</code> komutları ZF, SF, OF bayraklarını günceller fakat <strong>CARRY FLAG'i (CF) ASLA DEĞİŞTİRMEZ!</strong> Çok kelimeli döngülerde sayaç artırılırken elde kaybolmasın diye bu özellik kasıtlı tasarlanmıştır.<br>\n        2. <b>Bölme Aşımı (Divide Overflow / INT 0):</b> Bölme işleminde bölen 0 ise veya bölüm sonucu hedef yazmaca sığmıyorsa, işlemci otomatik olarak <strong>Interrupt 0 (Bölme Hatası)</strong> üretir!<br>\n        3. <b>İşaret Genişletme:</b> <code>IDIV</code> öncesinde negatif sayının işaretini yaymak için bayt için <code>CBW</code>, kelime için <code>CWD</code> kullanılmalıdır.\n      </div>\n    </div>\n  ",
     "sections": [
       {
-        "title": "1. ALU Mimarisi ve Aritmetik Durum Bayrakları (CF, ZF, SF, OF, AF, PF)",
-        "contentHtml": "\n                  <p>8086 ALU'su bir aritmetik işlem yürüttüğünde sonuç yazmaca yazılırken bayraklar şu kurallarla kurulur:</p>\n                  <table class=\"lecture-table\">\n                    <thead>\n                      <tr><th>Bayrak</th><th>Adı</th><th>Kurulma (1 Olma) Durumu</th><th>Sınav Örnek Senaryosu</th></tr>\n                    </thead>\n                    <tbody>\n                      <tr><td><code>CF</code></td><td>Carry Flag (Elde)</td><td>İşaretsiz toplama işleminde MSB'den dışarı elde çıktığında veya çıkarmada borç alındığında 1 olur.</td><td><code>FFh + 01h = 100h</code> (AL=00h, CF=1).</td></tr>\n                      <tr><td><code>ZF</code></td><td>Zero Flag (Sıfır)</td><td>İşlem sonucu tamamen sıfır çıktığında 1 olur.</td><td><code>SUB AX, AX</code> sonucu AX=0 ve ZF=1 olur.</td></tr>\n                      <tr><td><code>SF</code></td><td>Sign Flag (İşaret)</td><td>Sonucun en yüksek biti (MSB: 8-bitte bit 7, 16-bitte bit 15) 1 ise (negatifse) 1 olur.</td><td><code>5 - 10 = -5</code> sonucunda SF=1.</td></tr>\n                      <tr><td><code>OF</code></td><td>Overflow Flag (Taşma)</td><td>İşaretli iki sayı toplandığında/çıkarıldığında kapasite aşıldığında 1 olur ($+ + + = -$ veya $- + - = +$).</td><td>İşaretli <code>7Fh (+127) + 01h = 80h (-128)</code> $\\rightarrow$ OF=1.</td></tr>\n                      <tr><td><code>AF</code></td><td>Auxiliary Carry</td><td>Bit 3'ten Bit 4'e (düşük nibble'dan yüksek nibble'a) elde çıktığında 1 olur (BCD düzeltmeleri için).</td><td><code>DAA</code> ve <code>DAS</code> komutları AF'yi okur.</td></tr>\n                      <tr><td><code>PF</code></td><td>Parity Flag (Eşlik)</td><td>Sonucun düşük baytındaki (bit 0–7) toplam 1 sayısının adedi <b>ÇİFT</b> ise 1 olur.</td><td>Seri iletişimde hata sezme.</td></tr>\n                    </tbody>\n                  </table>\n                "
-      },
-      {
-        "title": "2. Komut Kılavuzu: Aritmetik Komutlar & Sınav Tuzakları (ADD, ADC, SUB, SBB, MUL, DIV, CBW, CWD)",
-        "contentHtml": "\n                  <div class=\"instruction-box\">\n                    <h4><code>ADD</code> ve <code>ADC</code> — Toplama ve Eldeli Toplama</h4>\n                    <ul>\n                      <li><code>ADD Hedef, Kaynak</code> $\\rightarrow$ $Hedef = Hedef + Kaynak$. Tüm 6 durum bayrağını günceller.</li>\n                      <li><code>ADC Hedef, Kaynak</code> $\\rightarrow$ $Hedef = Hedef + Kaynak + CF$. 32-bit veya daha geniş çok kelimeli sayılarda alt parçadan gelen eldeyi üst parçaya eklemek için kullanılır.</li>\n                      <li><b>32-Bit Toplama Kalıbı (Slayt 9):</b>\n                        <pre><code>ADD AX, CX     ; Dusuk 16-bitleri topla (AX = AX + CX), CF kurulur\nADC DX, BX     ; Yuksek 16-bitleri elde ile topla (DX = DX + BX + CF)</code></pre>\n                      </li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4><code>SUB</code>, <code>SBB</code> ve <code>CMP</code> — Çıkarma, Borçlu Çıkarma ve Karşılaştırma</h4>\n                    <ul>\n                      <li><code>SUB Hedef, Kaynak</code> $\\rightarrow$ $Hedef = Hedef - Kaynak$.</li>\n                      <li><code>SBB Hedef, Kaynak</code> $\\rightarrow$ $Hedef = Hedef - Kaynak - CF$. Çok kelimeli çıkarmada alt parçadan gelen borcu (CF) düşer.</li>\n                      <li><code>CMP Hedef, Kaynak</code> $\\rightarrow$ Çıkarma işlemi ($Hedef - Kaynak$) yapar ancak <b>sonucu hiçbir yere yazmaz</b>, sadece bayrakları (CF, ZF, SF, OF) günceller. Koşullu atlamalardan önce karar vermek için kullanılır.</li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4><code>INC</code> ve <code>DEC</code> — Bir Artırma ve Bir Azaltma</h4>\n                    <ul>\n                      <li><code>INC Hedef</code> ($Hedef = Hedef + 1$) | <code>DEC Hedef</code> ($Hedef = Hedef - 1$).</li>\n                      <li><b>⚠️ Altın Kural:</b> CF (Carry Flag) bayrağını <strong>ASLA ETKİLEMEZ!</strong> ZF, SF, OF, AF, PF etkilenir.</li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4><code>MUL</code> ve <code>IMUL</code> — Çarpma İşlemleri</h4>\n                    <ul>\n                      <li><b>8-Bit Çarpma:</b> <code>MUL r/m8</code> $\\rightarrow$ $AX = AL \\times r/m8$. (Çarpan AL'dedir, 16-bit sonuç AX'e yazılır).</li>\n                      <li><b>16-Bit Çarpma:</b> <code>MUL r/m16</code> $\\rightarrow$ $DX:AX = AX \\times r/m16$. (Çarpan AX'tedir; sonucun üst 16 biti DX'e, alt 16 biti AX'e yazılır).</li>\n                      <li><code>IMUL</code> işaretli (2'ye tümleyen) çarpmadır.</li>\n                      <li><b>Bayrak Etkisi:</b> Sonucun üst yarısı anlamlı veri içeriyorsa (sıfır değilse) CF=1 ve OF=1 olur, aksi halde 0 olur.</li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4><code>DIV</code>, <code>IDIV</code>, <code>CBW</code> ve <code>CWD</code> — Bölme ve İşaret Genişletme</h4>\n                    <ul>\n                      <li><b>8-Bit Bölme (Bölünen AX, Bölen r/m8):</b>\n                        <br>Bölüm $\\rightarrow$ <code>AL</code>, Kalan $\\rightarrow$ <code>AH</code>.\n                      </li>\n                      <li><b>16-Bit Bölme (Bölünen DX:AX, Bölen r/m16):</b>\n                        <br>Bölüm $\\rightarrow$ <code>AX</code>, Kalan $\\rightarrow$ <code>DX</code>.\n                      </li>\n                      <li><b>İşaret Genişletme Komutları (IDIV Öncesi Şarttır):</b>\n                        <ul>\n                          <li><code>CBW</code> (Convert Byte to Word): AL'deki 8-bit sayının işaretini (bit 7) AH'ye yayarak 16-bit AX yapar.</li>\n                          <li><code>CWD</code> (Convert Word to Doubleword): AX'teki 16-bit sayının işaretini DX'e yayarak 32-bit DX:AX yapar.</li>\n                        </ul>\n                      </li>\n                      <li><b>⚠️ Bölme Taşması (Divide Overflow / INT 0):</b> Bölen 0 ise VEYA bölüm sonucu hedef yazmaca sığmıyorsa (örn: 8-bit bölmede bölüm > 255 ise) CPU donanımsal <b>INT 0 (Bölme Hatası)</b> üretir!</li>\n                    </ul>\n                  </div>\n                "
-      },
-      {
-        "title": "3. İnteraktif Laboratuvar İstasyonu (3 Seviyeli Uygulama)",
-        "contentHtml": "\n                  <p>Aşağıdaki editörde aritmetik komutları test edebilirsiniz. <b>Cevap hazır gelmez</b>; yönergeleri takip ederek kodunuzu yazın.</p>\n                ",
+        "title": "1. Modül: Temel Toplama ve Çıkarma (ADD & SUB)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>ADD Hedef, Kaynak</code> ve <code>SUB Hedef, Kaynak</code></h4>\n          <p>En temel iki aritmetik komuttur. 6 durum bayrağının tamamını (CF, ZF, SF, OF, AF, PF) işlem sonucuna göre günceller.</p>\n          <ul>\n            <li><code>ADD Hedef, Kaynak</code> $\\rightarrow$ $Hedef = Hedef + Kaynak$</li>\n            <li><code>SUB Hedef, Kaynak</code> $\\rightarrow$ $Hedef = Hedef - Kaynak$</li>\n            <li><strong>Bayrak Mantığı:</strong>\n              <br>• Sonuç sıfır çıkarsa ➔ <b>ZF = 1</b> (Zero Flag)\n              <br>• Sonucun en yüksek biti (MSB) 1 ise ➔ <b>SF = 1</b> (Sign Flag - Negatif)\n              <br>• İşaretsiz toplamada elde çıkarsa veya çıkarmada borç alınırsa ➔ <b>CF = 1</b> (Carry Flag)\n              <br>• İşaretli iki sayı toplandığında kapasite aşılırsa ➔ <b>OF = 1</b> (Overflow Flag)\n            </li>\n          </ul>\n        </div>\n      ",
         "examples": [
           {
-            "id": "ex-m2-kolay",
+            "id": "ex-m3-add-sub",
             "difficulty": "kolay",
-            "difficultyLabel": "🟢 Kolay: Doğrudan & Birebir",
-            "title": "Alıştırma 2.1: 32-bit Eldeli Toplama (ADD & ADC)",
-            "scenario": "8086 16-bitlik bir işlemci olduğu için 32-bit sayılar iki parça halinde toplanır. Düşük kelimeden doğacak eldenin yüksek kelimeye aktarılması gerekir.",
-            "task": "Düşük kelimeleri (AX=0FFFFh ve CX=0002h) ADD ile toplayın. Yüksek kelimeleri (DX=0001h ve BX=0003h) ADC ile toplayarak 32-bitlik toplamı DX:AX içinde elde edin.",
-            "code": "; 🟢 Kolay: 32-bit Eldeli Toplama\nORG 100H\n\n; 1. Ilk 32-bit sayiyi yukleyin (DX:AX = 0001FFFFh):\nMOV DX, 0001H\nMOV AX, 0FFFFH\n\n; 2. Ikinci 32-bit sayiyi yukleyin (BX:CX = 00030002h):\nMOV BX, 0003H\nMOV CX, 0002H\n\n; 3. Dusuk 16-bitleri toplayin (AX = AX + CX):\n; TODO: Buraya ADD komutunu yazin\n\n\n; 4. Yuksek 16-bitleri elde ile toplayin (DX = DX + BX + CF):\n; TODO: Buraya ADC komutunu yazin\n\n\nHLT",
-            "solutionCode": "ORG 100H\nMOV DX, 0001H\nMOV AX, 0FFFFH\nMOV BX, 0003H\nMOV CX, 0002H\nADD AX, CX\nADC DX, BX\nHLT",
+            "difficultyLabel": "🟢 1. Modül Labı: ADD ve SUB",
+            "title": "Mini-Lab 3.1: Toplama ve Çıkarma ile Paket Sayımı",
+            "scenario": "Bir ağ anahtarında gelen paket sayısı (AX=50), işlenen paketler (BX=30) ile toplanacak ve ardından hatalı paketler (CX=15) çıkarılacaktır.",
+            "task": "AX = AX + BX yapın. Ardından AX = AX - CX yapın. HLT ile programı bitirin. Sağdaki Bayraklar panelinde ZF ve CF durumlarını izleyin.",
+            "code": "; 🟢 Mini-Lab 3.1: ADD ve SUB\nORG 100H\n\nMOV AX, 50\nMOV BX, 30\nMOV CX, 15\n\n; 1. AX = AX + BX toplamasini yapin:\n; TODO:\n\n\n; 2. AX = AX - CX cikarmasini yapin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 50\nMOV BX, 30\nMOV CX, 15\nADD AX, BX\nSUB AX, CX\nHLT",
             "solutionBreakdown": [
-              "1-4. Satırlar: 32-bit sayılar DX:AX ve BX:CX yazmaç çiftlerine paylaştırılır.",
-              "5. Satır: ADD AX, CX — FFFFh + 0002h = 0001h olur ve Carry Flag (CF=1) kurulur.",
-              "6. Satır: ADC DX, BX — DX = 0001h + 0003h + CF(1) = 0005h olur.",
-              "Sonuç: DX:AX = 00050001h (32-bit doğru toplam elde edilir)."
+              "1. Satır: ADD AX, BX — 50 + 30 = 80 (50H) AX içine yazılır.",
+              "2. Satır: SUB AX, CX — 80 - 15 = 65 (41H) AX içine yazılır. ZF=0, CF=0 olur."
             ],
-            "examTips": "Sınavda 32-bit toplama sorulduğunda düşük parçada ADD, yüksek parçada ise önceki eldenin kaybolmaması için kesinlikle ADC kullanılmalıdır!"
-          },
+            "examTips": "Toplama ve çıkarma komutları hedef yazmacın eski değerinin üzerine yeni sonucu yazar."
+          }
+        ]
+      },
+      {
+        "title": "2. Modül: Bir Artırma ve Bir Azaltma (INC & DEC) — Altın Sınav Kuralı",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>INC Hedef</code> ve <code>DEC Hedef</code></h4>\n          <p>Yazmaç veya bellek içeriğini 1 artırır ($+1$) veya 1 azaltır ($-1$). Döngü sayaçlarında ve adres ilerletmede kullanılır.</p>\n          <ul>\n            <li><code>INC AX</code> $\\rightarrow$ $AX = AX + 1$ | <code>DEC CX</code> $\\rightarrow$ $CX = CX - 1$</li>\n            <li><code>ADD AX, 1</code> yerine <code>INC AX</code> kullanmak kodu 1 bayta indirir ve daha hızlıdır.</li>\n            <li>🚨 <strong>HOCANIN EN ÇOK SORDUĞU SINAV SORUSU:</strong>\n              <br><code>INC</code> ve <code>DEC</code> komutları ZF, SF, OF, AF, PF bayraklarını günceller fakat <strong>CARRY FLAG'İ (CF - ELDE BAYRAĞI) ASLA DEĞİŞTİRMEZ!</strong>\n              <br>Örnek: AX = 0FFFFH iken <code>INC AX</code> çalışırsa AX = 0000H olur, <b>ZF=1</b> olur fakat <b>CF kesinlikle 0 kalır!</b>\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m2-orta",
+            "id": "ex-m3-inc-dec",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 2. Modül Labı: INC ve DEC",
+            "title": "Mini-Lab 3.2: Sayaç Artırma/Azaltma ve CF Analizi",
+            "scenario": "Döngü sayacı CX=5 olarak verilmiştir. CX değerini DEC ile 1 azaltın. Ardından AX=0FFFFH iken INC AX çalıştırarak CF'nin 0 kaldığını kanıtlayın.",
+            "task": "CX'i DEC ile 1 azaltın. Ardından INC AX komutunu çalıştırın. AX'in sıfırlandığını ama CF bayrağının 0 kaldığını Registers panelinden doğrulayın.",
+            "code": "; 🟢 Mini-Lab 3.2: INC ve DEC\nORG 100H\n\nMOV CX, 5\nMOV AX, 0FFFFH\n\n; 1. CX'i DEC komutu ile 1 azaltin:\n; TODO:\n\n\n; 2. AX'i INC komutu ile 1 artirin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV CX, 5\nMOV AX, 0FFFFH\nDEC CX\nINC AX\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: DEC CX — CX = 4 olur.",
+              "2. Satır: INC AX — FFFFh + 1 = 0000h olur. Sonuç sıfır çıktığı için ZF=1 olur, ancak INC kuralı gereği CARRY FLAG (CF) 0 kalır!"
+            ],
+            "examTips": "Sınavda hoca 'AX=FFFFh iken INC AX sonrası CF ve ZF ne olur?' diye sorarsa cevap: ZF=1, CF=0 (değişmez)!"
+          }
+        ]
+      },
+      {
+        "title": "3. Modül: İki'nin Tümleyeni ile İşaret Değiştirme (NEG)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>NEG Hedef</code> (Two's Complement / Negatifleme)</h4>\n          <p>Hedefteki sayının işaretini tersine çevirir ($Hedef = 0 - Hedef$). Pozitif sayıyı negatif, negatifi pozitif yapar.</p>\n          <ul>\n            <li>Örnek: $AX = 5$ iken <code>NEG AX</code> $\\rightarrow$ $AX = -5$ (16-bit karşılığı: <code>0FFFBH</code>).</li>\n            <li><strong>NOT vs NEG Farkı:</strong> <code>NOT</code> komutu sadece 1'e tümleyen alır (bitleri tersler) ve bayrakları etkilemez. <code>NEG</code> ise 2'nin tümleyenini alır ve bayrakları (özellikle CF ve ZF) günceller.</li>\n            <li><strong>Bayrak Kuralı:</strong> Eğer sayı 0 ise sonuç 0 ve CF=0 olur. Sayı 0 dışında herhangi bir sayı ise <code>NEG</code> işlemi daima <b>CF = 1</b> yapar!</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m3-neg",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 3. Modül Labı: NEG Komutu",
+            "title": "Mini-Lab 3.3: Sıcaklık Farkını Negatife Çevirme",
+            "scenario": "Pozitif bir sapma değeri olan 25 (0019h), iki'nin tümleyeni formatında -25 olarak sistem belleğine aktarılmalıdır.",
+            "task": "AX yazmacındaki 25 değerini NEG komutu ile negatif yapın (-25 / 0xFFE7).",
+            "code": "; 🟢 Mini-Lab 3.3: NEG Komutu\nORG 100H\n\nMOV AX, 25\n\n; 1. AX'in iki'nin tumleyenini (negatifini) alin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 25\nNEG AX\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: MOV AX, 25 (AX = 0019H)",
+              "2. Satır: NEG AX — 0 - 0019H = 0FFE7H (-25). CF=1 ve SF=1 kurulur."
+            ],
+            "examTips": "NEG komutu 0'dan hedefi çıkardığı için hedef sıfır olmadığı sürece daima CF=1 kurar."
+          }
+        ]
+      },
+      {
+        "title": "4. Modül: 32-Bit Genişletilmiş Eldeli Toplama ve Borçlu Çıkarma (ADC & SBB)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>ADC</code> (Add with Carry) ve <code>SBB</code> (Subtract with Borrow)</h4>\n          <p>8086 bir 16-bit işlemcidir fakat 32-bit veya daha geniş çok kelimeli sayıları toplamak/çıkarmak için <code>ADC</code> ve <code>SBB</code> kullanılır.</p>\n          <ul>\n            <li><code>ADC Hedef, Kaynak</code> $\\rightarrow$ $Hedef = Hedef + Kaynak + CF$ (Alt parçadan gelen eldeyi üst parçaya ekler).</li>\n            <li><code>SBB Hedef, Kaynak</code> $\\rightarrow$ $Hedef = Hedef - Kaynak - CF$ (Alt parçadan gelen borcu üst parçadan düşer).</li>\n            <li><strong>32-Bit Toplama Şablonu (Hocanın Slaytı):</strong>\n              <pre><code>; Sayi 1: DX:AX (DX yuksek, AX dusuk 16-bit)\n; Sayi 2: CX:BX (CX yuksek, BX dusuk 16-bit)\nADD AX, BX      ; 1. Dusuk 16-bitleri topla, tasarsa CF=1 kurulur\nADC DX, CX      ; 2. Yuksek 16-bitleri topla + alt kelimeden gelen CF'yi ekle!</code></pre>\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m3-adc-32",
             "difficulty": "orta",
-            "difficultyLabel": "🟡 Orta: Anlamlı Senaryo",
-            "title": "Alıştırma 2.2: Karmaşık Aritmetik Formül Hesabı ((5 + 3) * 4) - 6",
-            "scenario": "Hocanın ders notlarında (Week 10 Kod Örneği 4) yer alan standart aritmetik hiyerarşi formülünün 8-bit register mimarisi üzerinde çözülmesi gerekmektedir.",
-            "task": "AX içine 5 değerini yükleyin. 3 ile toplayın. Sonucu 4 ile çarpın. Çıkan sonuçtan 6 çıkarın. Sonucu AX yazmacında bırakın.",
-            "code": "; 🟡 Orta: Karmaşık Aritmetik Hesap ((5 + 3) * 4) - 6\nORG 100H\n\n; 1. AX icine 5 yukleyin ve 3 ekleyin:\n; TODO:\n\n\n; 2. Sonucu 4 ile carpmak icin BL'ye 4 yukleyin ve carpin (MUL BL):\n; TODO:\n\n\n; 3. Sonuctan 6 cikarin:\n; TODO:\n\n\nHLT",
-            "solutionCode": "ORG 100H\nMOV AX, 5\nADD AX, 3\nMOV BL, 4\nMUL BL\nSUB AX, 6\nHLT",
+            "difficultyLabel": "🟡 4. Modül Labı: ADC ile 32-Bit Toplama",
+            "title": "Mini-Lab 3.4: 32-Bit İki Sayıyı Toplama (DX:AX + CX:BX)",
+            "scenario": "Sayı 1 = 0001FFFFH (DX:AX), Sayı 2 = 00020001H (CX:BX). Düşük parçalar (FFFFh + 0001h) toplanınca 0000h çıkar ve CF=1 elde üretilir.",
+            "task": "Önce ADD AX, BX ile düşük parçaları toplayın. Ardından ADC DX, CX ile yüksek parçaları toplayıp eldeyi sonuca dahil edin (Sonuç DX:AX = 00040000H).",
+            "code": "; 🟡 Mini-Lab 3.4: 32-Bit Toplama\nORG 100H\n\nMOV DX, 0001H\nMOV AX, 0FFFFH\nMOV CX, 0002H\nMOV BX, 0001H\n\n; 1. Dusuk 16-bitleri ADD ile toplayin:\n; TODO:\n\n\n; 2. Yuksek 16-bitleri ADC ile toplayin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV DX, 0001H\nMOV AX, 0FFFFH\nMOV CX, 0002H\nMOV BX, 0001H\nADD AX, BX\nADC DX, CX\nHLT",
             "solutionBreakdown": [
-              "1. Satır: MOV AX, 5 ve ADD AX, 3 — AX = 8 olur.",
-              "2. Satır: MOV BL, 4 ve MUL BL — AL (8) * BL (4) = 32 (20h), sonuç AX içine yazılır.",
-              "3. Satır: SUB AX, 6 — 32 - 6 = 26 (1Ah) elde edilir."
+              "1. Satır: ADD AX, BX — FFFFh + 0001h = 0000h, taşma olduğu için CF=1 kurulur.",
+              "2. Satır: ADC DX, CX — 0001h + 0002h + 1 (CF) = 0004h. Toplam sonuç: 00040000H."
             ],
-            "examTips": "8-bit MUL işleminde çarpan yazmacı (örn: BL) belirtilir, çarpılan ise DAİMA AL yazmacıdır. 16-bit sonuç AX'e yazılır."
-          },
+            "examTips": "ADC komutundan önce asla INC veya başka bir işlem araya sokulmamalıdır, yoksa elde zinciri bozulabilir."
+          }
+        ]
+      },
+      {
+        "title": "5. Modül: Çarpma İşlemleri (MUL & IMUL) — DX:AX Register Çifti",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>MUL Operant</code> (Unsigned) ve <code>IMUL Operant</code> (Signed)</h4>\n          <p>Çarpma işleminde çarpanlardan biri DAİMA akümülatörde (AL veya AX) bulunmak zorundadır!</p>\n          <ul>\n            <li><strong>8-Bit Çarpma:</strong> <code>MUL BL</code> $\\rightarrow$ $AX = AL \\times BL$. 16-bit sonuç doğrudan <code>AX</code> yazmacına yazılır.</li>\n            <li><strong>16-Bit Çarpma:</strong> <code>MUL BX</code> $\\rightarrow$ $DX:AX = AX \\times BX$. 32-bit sonucun üst 16 biti <code>DX</code>, alt 16 biti <code>AX</code> içine yazılır.</li>\n            <li><strong>Bayrak Mantığı:</strong> Sonucun üst yarısı anlamlı veri içeriyorsa (sıfır değilse) <b>CF = 1</b> ve <b>OF = 1</b> olur.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m2-zor",
-            "difficulty": "zor",
-            "difficultyLabel": "🔴 Zor: Gerçek Hayat / Sinyal İşleme",
-            "title": "Alıştırma 2.3: İşaretli Bölme & CBW ile Sıcaklık Ortalaması Hesabı",
-            "scenario": "Negatif sıcaklık değerleri üreten bir sensörden okunan 8-bitlik işaretli bir değer (-50, yani CEh) 5'e bölünecektir. Bölme öncesinde işaretin bozulmaması için CBW ile AX genişletilmeli ve IDIV ile bölünmelidir.",
-            "task": "AL içine -50 yükleyin. CBW komutu ile 16-bit AX'e işaret genişletmesi yapın. BL içine 5 yükleyin ve IDIV BL ile bölün. Bölüm AL'de, kalan AH'de oluşsun.",
-            "code": "; 🔴 Zor: Isaretli Bolme ve CBW\nORG 100H\n\n; 1. AL icine -50 yukleyin:\n; TODO:\n\n\n; 2. CBW komutu ile AL'nin isaretini AH'ye yayin:\n; TODO:\n\n\n; 3. BL icine 5 yukleyin ve isaretli bolme yapin (IDIV BL):\n; TODO:\n\n\nHLT",
-            "solutionCode": "ORG 100H\nMOV AL, -50\nCBW\nMOV BL, 5\nIDIV BL\nHLT",
+            "id": "ex-m3-mul",
+            "difficulty": "orta",
+            "difficultyLabel": "🟡 5. Modül Labı: MUL ile Karesini Alma",
+            "title": "Mini-Lab 3.5: 16-Bit Sayının Karesini Hesaplama",
+            "scenario": "AX = 1000 (03E8h) sayısının karesi hesaplanacaktır ($1000 \\times 1000 = 1,000,000 = 000F4240H$). Sonuç DX:AX ikilisine yazılacaktır.",
+            "task": "AX'in değerini BX'e kopyalayın ve MUL BX komutu ile çarpımı gerçekleştirin. Sonucun DX ve AX içindeki dağılımını izleyin.",
+            "code": "; 🟡 Mini-Lab 3.5: 16-Bit MUL\nORG 100H\n\nMOV AX, 1000\n\n; 1. AX'i BX'e kopyalayin:\n; TODO:\n\n\n; 2. MUL BX ile carpimi gerceklestirin (DX:AX = AX * BX):\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 1000\nMOV BX, AX\nMUL BX\nHLT",
             "solutionBreakdown": [
-              "1. Satır: MOV AL, -50 — AL = CEh (-50'nin 2'ye tümleyeni) olur.",
-              "2. Satır: CBW — AL negatif olduğundan (bit 7 = 1), AH = FFh yapılır. AX = FFCEh (-50 16-bit) olur.",
-              "3. Satır: IDIV BL — -50 / 5 = -10 (F6h) bölüm AL içine, 0 kalan AH içine yazılır."
+              "1. Satır: MOV BX, AX — Çarpan BX'e kopyalanır (BX = 03E8h).",
+              "2. Satır: MUL BX — 1000 * 1000 = 1,000,000 = 000F4240h. DX = 000Fh, AX = 4240h olur."
             ],
-            "examTips": "İşaretli bölmede (IDIV) CBW unutulursa AH'de önceki çöpler kalır ve pozitif sayı gibi işlem görür, sonuç tamamen yanlış çıkar!"
+            "examTips": "16-bit çarpmada sonucun üst kısmı DX'e taştığı için DX içindeki önceki veri ezilir!"
+          }
+        ]
+      },
+      {
+        "title": "6. Modül: Bölme ve İşaret Genişletme (DIV, IDIV, CBW, CWD) — INT 0 Uyarısı",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>DIV Operant</code> ve <code>IDIV Operant</code></h4>\n          <p>Bölme işleminde bölünen sayı daima akümülatör çiftindedir ve sonuç hem bölümü hem kalanı (modulus) üretir.</p>\n          <ul>\n            <li><strong>8-Bit Bölme (Bölünen AX, Bölen r/m8):</strong>\n              <br>• Bölüm $\\rightarrow$ <code>AL</code> | Kalan $\\rightarrow$ <code>AH</code>\n            </li>\n            <li><strong>16-Bit Bölme (Bölünen DX:AX, Bölen r/m16):</strong>\n              <br>• Bölüm $\\rightarrow$ <code>AX</code> | Kalan $\\rightarrow$ <code>DX</code>\n            </li>\n            <li><strong>İşaret Genişletme Komutları (IDIV Öncesi Zorunludur!):</strong>\n              <br>• <code>CBW</code> (Convert Byte to Word): AL'nin işaret bitini AH'ye yayar.\n              <br>• <code>CWD</code> (Convert Word to Doubleword): AX'in işaret bitini DX'e yayar.\n            </li>\n            <li>🚨 <strong>Bölme Taşması (Divide Overflow / INT 0):</strong>\n              <br>Eğer bölen 0 ise VEYA bölüm hedef yazmaca sığmıyorsa (örn: AX=3000, BL=2 yapıldığında bölüm 1500 çıkar ve AL'ye sığmaz), işlemci anında donanımsal <b>INT 0 (Bölme Hatası)</b> kesmesi üretir!\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m3-div",
+            "difficulty": "orta",
+            "difficultyLabel": "🟡 6. Modül Labı: DIV Bölüm ve Kalan",
+            "title": "Mini-Lab 3.6: Toplam Saniyeyi Dakika ve Artık Saniyeye Ayırma",
+            "scenario": "Toplam saniye sayısı AX = 125 olarak verilmiştir. 60'a bölerek (DIV BL) dakikayı AL'ye, kalan saniyeyi AH'ye ayırın.",
+            "task": "BL yazmacına 60 (3Ch) yükleyin. DIV BL komutunu çalıştırın. AL=2 (Bölüm), AH=5 (Kalan) olduğunu Registers panelinde görün.",
+            "code": "; 🟡 Mini-Lab 3.6: 8-Bit DIV\nORG 100H\n\nMOV AX, 125\n\n; 1. BL'ye bolen sabiti olan 60'i yukleyin:\n; TODO:\n\n\n; 2. DIV BL komutu ile AX'i BL'ye bolun:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 125\nMOV BL, 60\nDIV BL\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: MOV BL, 60 — Bölen atanır.",
+              "2. Satır: DIV BL — 125 / 60 = 2 (Bölüm -> AL), 125 % 60 = 5 (Kalan -> AH). AX = 0502H olur."
+            ],
+            "examTips": "8-bit bölmede bölünen sayı AX'tir. Bölüm AL'ye, kalan AH'ye düşer."
+          }
+        ]
+      },
+      {
+        "title": "7. Modül: Karşılaştırma Komutu (CMP) ve Bayrak Dinamikleri",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>CMP Hedef, Kaynak</code> (Compare / Karşılaştırma)</h4>\n          <p>İki sayıyı karşılaştırmak için kullanılan en temel komuttur.</p>\n          <ul>\n            <li><strong>Nasıl Çalışır?</strong> Dahili olarak $Hedef - Kaynak$ çıkarma işlemi yapar.</li>\n            <li><strong>🚨 SUB'dan Tek Farkı:</strong> Çıkarma sonucunu <b>HİÇBİR YAZMACA YAZMAZ</b>! Sadece bayrakları (CF, ZF, SF, OF) günceller. Hedefin değeri bozulmaz.</li>\n            <li><strong>Sonuç Durumları:</strong>\n              <br>• $Hedef == Kaynak$ ise ➔ Sonuç 0 olur, <b>ZF = 1</b>, <b>CF = 0</b>\n              <br>• $Hedef > Kaynak$ ise ➔ <b>ZF = 0</b>, <b>CF = 0</b>\n              <br>• $Hedef < Kaynak$ ise ➔ Borç alınır, <b>CF = 1</b>, <b>ZF = 0</b>\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m3-cmp",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 7. Modül Labı: CMP ile Eşitlik Testi",
+            "title": "Mini-Lab 3.7: CMP ile Eşitlik ve Büyüklük Testi",
+            "scenario": "AX = 50 ve BX = 50 olarak ayarlanmıştır. CMP AX, BX çalıştırıp ZF bayrağının 1 olduğunu doğrulayın. Ardından BX'e 70 yükleyip tekrar CMP yapın (CF=1 olmalı).",
+            "task": "CMP AX, BX komutu ile karşılaştırın. Ardından MOV BX, 70 ve CMP AX, BX yaparak bayrakların değişimini adım adım izleyin.",
+            "code": "; 🟢 Mini-Lab 3.7: CMP Komutu\nORG 100H\n\nMOV AX, 50\nMOV BX, 50\n\n; 1. AX ile BX'i karsilastirin (Esit olduklari icin ZF=1 olmalidir):\n; TODO:\n\n\n; 2. BX'e 70 yukleyin ve tekrar CMP AX, BX yapin (AX < BX oldugu icin CF=1 olmalidir):\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 50\nMOV BX, 50\nCMP AX, BX\nMOV BX, 70\nCMP AX, BX\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: CMP AX, BX — 50 - 50 = 0. ZF=1, CF=0 (Eşit).",
+              "2. Satır: CMP AX, BX (50 ve 70) — 50 - 70 borç gerektirir. CF=1, ZF=0 (AX < BX)."
+            ],
+            "examTips": "CMP komutundan hemen sonra genellikle JE, JNE, JA, JB gibi koşullu atlama komutları gelir."
           }
         ]
       }
@@ -389,73 +473,155 @@ export const MILESTONE_LECTURES: Record<string, MilestoneLecture> = {
   "milestone-4": {
     "milestoneId": "milestone-4",
     "milestoneNumber": 4,
-    "title": "Mantıksal İşlemler, Maskeleme & Bit Kaydırma (AND, OR, XOR, NOT, TEST, SHL, SHR, SAR, ROTATE)",
-    "subtitle": "The Seven Data-Addressing Modes, Bit Düzeyinde Donanım Maskeleme, Hızlı 2^n Çarpma/Bölme ve Döndürme Komutları",
-    "slideRef": "Hoca: Week 3 & 5 PPTX / w3, w3extra, w5, w10 PDF | Kitap: Barry B. Brey Bölüm 3 & 5",
-    "overviewHtml": "\n          <div class=\"lecture-hero-card\">\n            <div class=\"lecture-hero-badge\">AŞAMA 4: ADRESLEME MODLARI & BİT MANİPÜLASYONU</div>\n            <p class=\"lecture-hero-text\">\n              8086 mikroişlemcisinde verinin nerede bulunduğunu (yazmaç, ivedi sabit veya bellek) ve belleğe nasıl erişileceğini <b>Veri Adresleme Modları</b> belirler. \n              Mantıksal komutlar ise donanım portlarındaki durum bitlerini filtrelemek (maskelemek), tek bir biti 1 veya 0 yapmak için kullanılır.\n            </p>\n            <div class=\"lecture-golden-rule\">\n              💡 <strong>Hocanın Altın Kuralları & Sınav Kılavuzu:</strong><br>\n              1. <b>Sıfırlamada Hız:</b> <code>MOV AX, 0</code> yerine <code>XOR AX, AX</code> kullanmak hem program kodunu küçültür (2 bayt vs 3 bayt) hem de işlemci saat çevriminde daha hızlıdır.<br>\n              2. <b>SAR vs SHR Farkı (Sınav Sorusu):</b> <code>SHR</code> sağa kaydırırken soldan daima 0 sokar (işaretsiz bölme). <code>SAR</code> (Aritmetik Sağa Kaydırma) ise en yüksek biti (işaret bitini) koruyarak sağa kaydırır (işaretli sayıyı 2'ye bölme).<br>\n              3. <b>NOT vs NEG Farkı:</b> <code>NOT</code> komutu 1'e tümleyenini alır ve <strong>HİÇBİR BAYRAĞI ETKİLEMEZ!</strong> <code>NEG</code> komutu ise 2'ye tümleyenini ($0 - Dest$) alır ve CF dahil bayrakları kurar.\n            </div>\n          </div>\n        ",
+    "title": "Mantıksal ve Bit Düzeyi İşlemler (AND, OR, XOR, NOT, TEST, SHL, SHR, SAR, ROTATE)",
+    "subtitle": "Bit Düzeyinde Maskeleme, Hızlı 2^n Çarpma/Bölme ve Döngüsel Kaydırma",
+    "slideRef": "Hoca: Week 3 & 5 PPTX / w3, w5 PDF | Kitap: Barry B. Brey Bölüm 5",
+    "overviewHtml": "\n    <div class=\"lecture-hero-card\">\n      <div class=\"lecture-hero-badge\">AŞAMA 4: BİT DÜZEYİ MANİPÜLASYON & KAYDIRMA</div>\n      <p class=\"lecture-hero-text\">\n        Mantıksal komutlar; donanım portlarındaki tek bir biti açıp kapatmak, istenmeyen bitleri maskelemek \n        ve bit düzeyinde filtreleme yapmak için kullanılır. Kaydırma komutları ise işlemcinin en hızlı çarpma/bölme mekanizmasıdır.\n      </p>\n      <div class=\"lecture-golden-rule\">\n        💡 <strong>Hocanın 3 Altın Mantıksal Kuralı:</strong><br>\n        1. <b>Hızlı Sıfırlama:</b> <code>MOV AX, 0</code> yerine <code>XOR AX, AX</code> kullanmak kodu 2 bayta düşürür ve saat çevriminde daha hızlıdır.<br>\n        2. <b>SAR vs SHR Farkı (Büyük Sınav Sorusu):</b> <code>SHR</code> sağa kaydırırken soldan daima 0 sokar (işaretsiz bölme). <code>SAR</code> (Aritmetik Sağa Kaydırma) ise işaret bitini (MSB) koruyarak sağa kaydırır (işaretli sayıyı 2'ye bölme!).<br>\n        3. <b>NOT vs NEG Farkı:</b> <code>NOT</code> komutu 1'e tümleyen alır ve <strong>HİÇBİR BAYRAĞI ETKİLEMEZ!</strong> <code>NEG</code> ise 2'ye tümleyen alır ve bayrakları kurar.\n      </div>\n    </div>\n  ",
     "sections": [
       {
-        "title": "1. The Seven Data-Addressing Modes & Program Memory Addressing (Hocanın 7 Modu)",
-        "contentHtml": "\n                  <p>Hocanızın Week 3 sunumunda ve ders notlarında listelenen <b>7 Veri Adresleme Modu</b> şunlardır:</p>\n                  <table class=\"lecture-table\">\n                    <thead>\n                      <tr><th>No</th><th>Adresleme Modu</th><th>Örnek Komut</th><th>Açıklama</th></tr>\n                    </thead>\n                    <tbody>\n                      <tr><td>1</td><td><b>Register Addressing</b></td><td><code>MOV AX, BX</code></td><td>Veri tamamen CPU yazmaçları arasında aktarılır. En hızlı moddur.</td></tr>\n                      <tr><td>2</td><td><b>Immediate Addressing</b></td><td><code>MOV AL, 22H</code></td><td>Sabit sayı doğrudan komutun içine gömülüdür (makine kodunda taşınır).</td></tr>\n                      <tr><td>3</td><td><b>Direct Addressing</b></td><td><code>MOV [1234H], AX</code></td><td>Verinin bellekteki ofset adresi komutta açıkça belirtilmiştir.</td></tr>\n                      <tr><td>4</td><td><b>Register Indirect Addressing</b></td><td><code>MOV [BX], CL</code></td><td>Bellek adresi bir gösterici yazmaçta (BX, BP, SI, DI) tutulur.</td></tr>\n                      <tr><td>5</td><td><b>Base-Plus-Index Addressing</b></td><td><code>MOV [BX+SI], SP</code></td><td>Bir taban yazmacı (BX veya BP) ile bir indeks yazmacı (SI veya DI) toplanarak adres bulunur.</td></tr>\n                      <tr><td>6</td><td><b>Register Relative Addressing</b></td><td><code>MOV [BX+4], AX</code></td><td>Bir gösterici yazmaca sabit bir deplasman (ofset) eklenir (dizi/tablo erişimi).</td></tr>\n                      <tr><td>7</td><td><b>Base Relative-Plus-Index</b></td><td><code>MOV [BX+DI+4], CX</code></td><td>Taban + İndeks + Deplasman birleştirilir (2 boyutlu matris/kayıt erişimi).</td></tr>\n                    </tbody>\n                  </table>\n\n                  <h4>Program Bellek Adresleme Modları (JMP / CALL için):</h4>\n                  <ul>\n                    <li><b>Direct Program Memory:</b> <code>JMP FAR PTR TARGET</code> (Yeni CS ve IP komutta sabittir).</li>\n                    <li><b>Relative Program Memory:</b> <code>JMP LABEL</code> (Mevcut IP'ye göre $+2$ veya $-5$ gibi bağıl atlama).</li>\n                    <li><b>Indirect Program Memory:</b> <code>JMP AX</code> veya <code>JMP [BX]</code> (Atlanacak hedef adres yazmaçta veya bellektedir).</li>\n                  </ul>\n                "
-      },
-      {
-        "title": "2. Komut Kılavuzu: Mantıksal ve Bit Kaydırma Komutları (AND, OR, XOR, TEST, SHL, SHR, SAR, ROL, ROR, RCL, RCR)",
-        "contentHtml": "\n                  <div class=\"instruction-box\">\n                    <h4><code>AND</code>, <code>OR</code>, <code>XOR</code> ve <code>TEST</code></h4>\n                    <ul>\n                      <li><code>AND Hedef, Kaynak</code>: İki operant arasında bit düzeyinde VE işlemi yapar. İstenmeyen bitleri sıfırlamak (maskelemek) için kullanılır. Örnek: ASCII rakamı BCD'ye dönüştürme: <code>AND AL, 0FH</code>.</li>\n                      <li><code>OR Hedef, Kaynak</code>: Belirli bitleri 1 yapmak için kullanılır.</li>\n                      <li><code>XOR Hedef, Kaynak</code>: Bitleri terslemek veya bir yazmacı hızlıca sıfırlamak için kullanılır (<code>XOR AX, AX</code>).</li>\n                      <li><code>TEST Hedef, Kaynak</code>: <code>AND</code> işlemi yapar fakat <b>sonucu hedefe YAZMAZ</b>. Yalnızca Zero Flag (ZF), Sign Flag (SF) ve Parity Flag (PF) bayraklarını kurar. Donanım durum bitlerini denetlemek için kullanılır.</li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4><code>SHL</code>, <code>SHR</code> ve <code>SAR</code> — Bit Kaydırma Komutları</h4>\n                    <ul>\n                      <li><code>SHL Hedef, 1</code> (veya <code>SHL Hedef, CL</code>): Sola mantıksal kaydırır. Sağdan 0 girer, en soldan çıkan bit Carry Flag'e (CF) gider. <b>Sayıyı 2 ile çarpar.</b></li>\n                      <li><code>SHR Hedef, 1</code>: Sağa mantıksal kaydırır. Soldan 0 girer, en sağdan çıkan bit CF'ye gider. <b>İşaretsiz sayıyı 2'ye böler.</b></li>\n                      <li><code>SAR Hedef, 1</code>: Sağa aritmetik kaydırır. <b>En soldaki işaret bitini (bit 7 veya 15) KORUR</b> ve sağa yayar. <b>İşaretli negatif/pozitif sayıyı 2'ye böler.</b></li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4><code>ROL</code>, <code>ROR</code>, <code>RCL</code> ve <code>RCR</code> — Döngüsel Kaydırma Komutları</h4>\n                    <ul>\n                      <li><code>ROL</code> / <code>ROR</code>: Bitler bir uçtan çıkıp diğer uca girer (halka şeklinde döner).</li>\n                      <li><code>RCL</code> / <code>RCR</code>: Bitler Carry Flag (CF) ile birlikte 9-bitlik (byte için) veya 17-bitlik (word için) geniş bir döngüde kayar. Çok kelimeli (32-bit, 48-bit) sayıları sola/sağa kaydırmada kullanılır.</li>\n                    </ul>\n                  </div>\n                "
-      },
-      {
-        "title": "3. İnteraktif Laboratuvar İstasyonu (3 Seviyeli Uygulama)",
-        "contentHtml": "\n                  <p>Aşağıdaki editörde mantıksal ve bit kaydırma komutlarını deneyebilirsiniz. <b>Cevap hazır gelmez</b>; yönergeleri izleyerek kodunuzu tamamlayın.</p>\n                ",
+        "title": "1. Modül: Bit Düzeyinde VE (AND) ile Maskeleme",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>AND Hedef, Kaynak</code> — Bit Maskeleme</h4>\n          <p>İki operant arasında bit düzeyinde mantıksal VE işlemi yapar ($1 \\land 1 = 1$, diğer tüm durumlarda $0$).</p>\n          <ul>\n            <li><strong>Kullanım Amacı (Maskeleme):</strong> Bir baytın istemediğimiz bitlerini 0 yapmak (sıfırlamak), istediğimiz bitlerini ise aynen korumak için 0 ile AND'leriz.</li>\n            <li><strong>Örnek (ASCII'den Rakam Ayıklama):</strong> Klavyeden okunan '5' karakterinin ASCII kodu <code>35H</code> (0011 0101B)'dir. Üst 4 biti sıfırlayıp saf 5 sayısını elde etmek için <code>AND AL, 0FH</code> uygulanır.</li>\n          </ul>\n        </div>\n      ",
         "examples": [
           {
-            "id": "ex-m3-kolay",
+            "id": "ex-m4-and-mask",
             "difficulty": "kolay",
-            "difficultyLabel": "🟢 Kolay: Doğrudan & Birebir",
-            "title": "Alıştırma 3.1: Hızlı 2 ile Çarpma (SHL) ve 4'e Bölme (SHR) & Sıfırlama",
-            "scenario": "Hocanın ders notlarında (Week 10 Kod Örneği 5) yer alan donanımsal kaydırma aritmetiği uygulanacaktır.",
-            "task": "AX içine 12 yükleyin. SHL AX, 1 ile 2 ile çarpın (24 olsun). SHR AX, 2 ile 4'e bölün (6 olsun). Son olarak XOR BX, BX ile BX yazmacını sıfırlayın.",
-            "code": "; 🟢 Kolay: Hizli Carpma/Bolme ve Sifirlama\nORG 100H\n\n; 1. AX icine 12 yukleyin:\n; TODO:\n\n\n; 2. AX'i 1 bit sola kaydirin (SHL AX, 1 -> sayi 2 ile carpilir):\n; TODO:\n\n\n; 3. AX'i 2 bit saga kaydirin (SHR AX, 2 -> sayi 4'e bolunur):\n; TODO:\n\n\n; 4. BX yazmacini XOR ile tek komutta sifirlayin:\n; TODO:\n\n\nHLT",
-            "solutionCode": "ORG 100H\nMOV AX, 12\nSHL AX, 1\nSHR AX, 2\nXOR BX, BX\nHLT",
+            "difficultyLabel": "🟢 1. Modül Labı: AND Maskeleme",
+            "title": "Mini-Lab 4.1: ASCII Karakteri Rakam Değerine Dönüştürme",
+            "scenario": "Klavyeden okunan '9' karakteri AL yazmacında ASCII kodu 39H (0011 1001b) olarak bulunmaktadır. Yüksek nibble'ı sıfırlayarak AL'yi saf 9 (09h) yapın.",
+            "task": "AND AL, 0FH komutunu kullanarak AL yazmacına maskeleme uygulayın.",
+            "code": "; 🟢 Mini-Lab 4.1: AND ile Maskeleme\nORG 100H\n\nMOV AL, 39H   ; ASCII '9'\n\n; 1. AL'deki ust 4 biti 0FH ile maskeleyerek sifirlayin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AL, 39H\nAND AL, 0FH\nHLT",
             "solutionBreakdown": [
-              "1. Satır: MOV AX, 12 — Başlangıç değeri yüklenir.",
-              "2. Satır: SHL AX, 1 — Sayı sola 1 bit kayarak 2 ile çarpılır (AX = 24).",
-              "3. Satır: SHR AX, 2 — Sayı sağa 2 bit kayarak 4'e bölünür (AX = 6).",
-              "4. Satır: XOR BX, BX — BX yazmacı sıfırlanır (BX = 0000h) ve ZF=1 olur."
+              "1. Satır: MOV AL, 39H (0011 1001B)",
+              "2. Satır: AND AL, 0FH (0000 1111B) ➔ Sonuç: 0000 1001B = 09H. Üst nibble temizlenir."
             ],
-            "examTips": "Sınavda 2'nin kuvvetleriyle çarpma ve bölmelerde MUL/DIV yerine SHL/SHR kullanılması hem daha az çevrim tüketir hem de daha az kod üretir."
-          },
+            "examTips": "Bir biti 0 yapmak istiyorsanız o konumu 0 ile AND'lersiniz; korumak istiyorsanız 1 ile AND'lersiniz."
+          }
+        ]
+      },
+      {
+        "title": "2. Modül: Bit Düzeyinde VEYA (OR) ile Bit Kurma (Set Bit)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>OR Hedef, Kaynak</code> — Bit Kurma (1 Yapma)</h4>\n          <p>İki operant arasında bit düzeyinde VEYA işlemi yapar ($0 \\lor 0 = 0$, herhangi biri 1 ise sonuç $1$).</p>\n          <ul>\n            <li><strong>Kullanım Amacı:</strong> Bir kontrol yazmacındaki belirli bitleri diğer bitleri bozmadan <b>1 (aktif)</b> yapmak için kullanılır.</li>\n            <li>Örnek: AL'nin en düşük bitini (bit 0) 1 yapmak için: <code>OR AL, 01H</code>.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m3-orta",
+            "id": "ex-m4-or-set",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 2. Modül Labı: OR ile Bit Açma",
+            "title": "Mini-Lab 4.2: Donanım Kontrol Bitlerini Aktifleştirme",
+            "scenario": "Bir motor sürücüsünün kontrol yazmacında (AL = 10H) bit 0 (Motor Açık) ve bit 7 (Hazır) bitleri 1 yapılmalıdır (Maske: 81H).",
+            "task": "OR AL, 81H komutunu çalıştırarak AL'nin bit 0 ve bit 7'sini 1 yapın (Diğer bitler korunacaktır).",
+            "code": "; 🟢 Mini-Lab 4.2: OR Komutu\nORG 100H\n\nMOV AL, 10H\n\n; 1. OR AL, 81H komutu ile hedef bitleri 1 yapin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AL, 10H\nOR AL, 81H\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: AL = 0001 0000B (10H)",
+              "2. Satır: OR AL, 81H (1000 0001B) ➔ Sonuç: 1001 0001B = 91H."
+            ],
+            "examTips": "Belirli bir biti 1 yapmak için maskede o konuma 1 koyup OR işlemi yapın."
+          }
+        ]
+      },
+      {
+        "title": "3. Modül: Dışlamalı VEYA (XOR) ile Hızlı Sıfırlama ve Tersleme",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>XOR Hedef, Kaynak</code> — Hızlı Sıfırlama</h4>\n          <p>İki bit birbirinden farklıysa 1, aynıysa 0 üretir ($1 \\oplus 1 = 0$, $0 \\oplus 0 = 0$).</p>\n          <ul>\n            <li><strong>Sınav Klasiği: Neden <code>XOR AX, AX</code>?</strong>\n              <br>Bir sayıyı kendisiyle XOR'lamak tüm bitleri kesinlikle 0 yapar ($AX = 0$).\n              <br><code>MOV AX, 0</code> yerine <code>XOR AX, AX</code> tercih edilir çünkü makine kodu 2 bayttır (daha küçük) ve daha az saat çevrimi harcar. Ayrıca ZF=1 yapar.\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m4-xor-zero",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 3. Modül Labı: XOR Sıfırlama",
+            "title": "Mini-Lab 4.3: XOR ile Optimize Yazmaç Sıfırlama",
+            "scenario": "Program başlamadan önce AX ve BX yazmaçlarındaki eski artık verileri temizleyip sıfırlamanız gerekiyor.",
+            "task": "XOR AX, AX ve XOR BX, BX komutları ile iki yazmacı optimize biçimde sıfırlayın. ZF bayrağının 1 olduğunu izleyin.",
+            "code": "; 🟢 Mini-Lab 4.3: XOR ile Sifirlama\nORG 100H\n\nMOV AX, 0ABCDH\nMOV BX, 1234H\n\n; 1. AX'i XOR komutu ile sifirlayin:\n; TODO:\n\n\n; 2. BX'i XOR komutu ile sifirlayin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 0ABCDH\nMOV BX, 1234H\nXOR AX, AX\nXOR BX, BX\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: XOR AX, AX ➔ AX = 0000H, ZF = 1.",
+              "2. Satır: XOR BX, BX ➔ BX = 0000H, ZF = 1."
+            ],
+            "examTips": "Assembly'de yazmaç sıfırlamanın endüstri standardı 'XOR Reg, Reg' komutudur."
+          }
+        ]
+      },
+      {
+        "title": "4. Modül: Bire Tümleyen (NOT) — Bayrak Değiştirmeme Kuralı",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>NOT Hedef</code> (One's Complement)</h4>\n          <p>Hedefteki tüm 0 bitlerini 1, tüm 1 bitlerini 0 yapar.</p>\n          <ul>\n            <li>🚨 <strong>Hocanın Çok Sevdiği Sınav Sorusu:</strong>\n              <br><code>NOT</code> komutu <strong>HİÇBİR DURUM BAYRAĞINI (CF, ZF, SF, OF, AF, PF) DEĞİŞTİRMEZ!</strong>\n              <br>Bayrak kuran komut <code>NEG</code> komutudur; <code>NOT</code> ise saf bir mantıksal bit tersleyicidir.\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m4-not",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 4. Modül Labı: NOT Komutu",
+            "title": "Mini-Lab 4.4: Bit Tersleme ve Bayrak Analizi",
+            "scenario": "AL = 0000 1111b (0Fh) olarak verilmiştir. NOT AL çalıştırarak bitleri tersleyin (F0h) ve bayrakların hiç değişmediğini görün.",
+            "task": "NOT AL komutunu çalıştırın. AL'nin 0F0H olduğunu ve bayrakların etkilenmediğini doğrulayın.",
+            "code": "; 🟢 Mini-Lab 4.4: NOT Komutu\nORG 100H\n\nMOV AL, 0FH\n\n; 1. NOT AL komutu ile tum bitleri tersleyin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AL, 0FH\nNOT AL\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: AL = 0000 1111B (0FH)",
+              "2. Satır: NOT AL — Tüm bitler terslenir: 1111 0000B (0F0H). Bayraklar etkilenmez."
+            ],
+            "examTips": "NOT komutu bayrakları değiştirmez!"
+          }
+        ]
+      },
+      {
+        "title": "5. Modül: Bit Testi (TEST) Komutu",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>TEST Hedef, Kaynak</code> (Non-Destructive AND)</h4>\n          <p>İki operant arasında <code>AND</code> işlemi yapar ancak <b>sonucu hiçbir yere yazmaz</b>! Yalnızca ZF, SF ve PF bayraklarını kurar.</p>\n          <ul>\n            <li><strong>Kullanım Amacı:</strong> Bir durum baytında belirli bir bitin 0 mı yoksa 1 mi olduğunu kontrol etmek için kullanılır.</li>\n            <li>Örnek: <code>TEST AL, 01H</code> ➔ Eğer AL'nin 0. biti 0 ise sonuç 0 çıkar ve <b>ZF = 1</b> olur. 0. biti 1 ise sonuç 1 çıkar ve <b>ZF = 0</b> olur!</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m4-test",
             "difficulty": "orta",
-            "difficultyLabel": "🟡 Orta: Anlamlı Senaryo",
-            "title": "Alıştırma 3.2: ASCII Rakamı BCD'ye Çevirme (AND) & Parity (PF) Kontrolü",
-            "scenario": "Klavyeden okunan ASCII formatındaki bir rakam karakterinin ('7', yani 37h) nümerik BCD değerine (07h) dönüştürülmesi ve en düşük bitinin TEST ile kontrol edilmesi gerekmektedir.",
-            "task": "AL içine '7' (37h) yükleyin. AND AL, 0FH komutu ile yüksek nibble'ı temizleyin. Ardından TEST AL, 01H ile sayının tek/çift olduğunu test edip HLT ile durun.",
-            "code": "; 🟡 Orta: ASCII-BCD Donusumu ve Bit Testi\nORG 100H\n\n; 1. AL icine '7' (37h) yukleyin:\n; TODO:\n\n\n; 2. AND komutu ile yuksek 4 biti maskeleyin (0Fh ile AND yapin):\n; TODO:\n\n\n; 3. TEST komutu ile AL'nin 0. bitini (tek/cift) test edin:\n; TODO:\n\n\nHLT",
-            "solutionCode": "ORG 100H\nMOV AL, '7'\nAND AL, 0FH\nTEST AL, 01H\nHLT",
+            "difficultyLabel": "🟡 5. Modül Labı: TEST Komutu",
+            "title": "Mini-Lab 4.5: Tek / Çift Sayı Tespiti (Bit 0 Testi)",
+            "scenario": "Bir sayının en düşük biti (bit 0) 0 ise sayı çift, 1 ise sayı tektir. AL'deki sayının tek mi çift mi olduğunu TEST AL, 1 komutu ile denetleyin.",
+            "task": "AL=42 (Çift) iken TEST AL, 1 çalıştırın (ZF=1 olmalı). Ardından AL=43 (Tek) yapıp TEST AL, 1 çalıştırın (ZF=0 olmalı).",
+            "code": "; 🟡 Mini-Lab 4.5: TEST Komutu\nORG 100H\n\nMOV AL, 42    ; Cift sayi (bit 0 = 0)\n\n; 1. TEST AL, 1 komutunu calistirin (ZF=1 kurulmalidir):\n; TODO:\n\n\n; 2. AL'yi 43 yapin ve tekrar TEST AL, 1 calistirin (ZF=0 olmalidir):\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AL, 42\nTEST AL, 1\nMOV AL, 43\nTEST AL, 1\nHLT",
             "solutionBreakdown": [
-              "1. Satır: MOV AL, '7' — AL = 37h olur.",
-              "2. Satır: AND AL, 0FH — 37h AND 0Fh = 07h (Sayı saf BCD rakamına dönüşür).",
-              "3. Satır: TEST AL, 01H — 7'nin son biti 1 olduğundan sonuç 1 çıkar, Zero Flag sıfırlanır (ZF=0)."
+              "1. Satır: 42 (00101010b) & 1 = 0 ➔ ZF = 1 (Çift sayı).",
+              "2. Satır: 43 (00101011b) & 1 = 1 ➔ ZF = 0 (Tek sayı)."
             ],
-            "examTips": "ASCII rakamlarını ('0'-'9', yani 30h-39h) saf sayıya dönüştürmenin standart yolu AND AL, 0FH komutudur."
-          },
+            "examTips": "TEST komutu AL'nin değerini değiştirmez; yalnızca bayrakları günceller."
+          }
+        ]
+      },
+      {
+        "title": "6. Modül: Mantıksal Kaydırma (SHL & SHR) — Hızlı 2^n Çarpma ve Bölme",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>SHL</code> (Shift Left) ve <code>SHR</code> (Shift Right)</h4>\n          <p>Bitleri sola veya sağa kaydırır. İşlemcide $2^n$ ile en hızlı çarpma/bölme yöntemidir.</p>\n          <ul>\n            <li><code>SHL Hedef, 1</code> ➔ Sola 1 bit kaydırır (Sağdan 0 girer, MSB bit CF'ye çıkar). <b>Sayıyı 2 ile çarpar.</b></li>\n            <li><code>SHR Hedef, 1</code> ➔ Sağa 1 bit kaydırır (Soldan 0 girer, LSB bit CF'ye çıkar). <b>İşaretsiz sayıyı 2'ye böler.</b></li>\n            <li>🚨 <strong>Kural (1'den Fazla Kaydırma):</strong> Eğer 1'den fazla bit kaydırılacaksa, kaydırma miktarı <strong>MUTLAKA CL YAZMACINA</strong> yüklenmelidir:\n              <pre><code>MOV CL, 3\nSHL AX, CL      ; AX'i 3 bit sola kaydir (8 ile carp)</code></pre>\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m3-zor",
-            "difficulty": "zor",
-            "difficultyLabel": "🔴 Zor: Gerçek Hayat / Bitwise Kombinasyonlar",
-            "title": "Alıştırma 3.3: Donanım Portu Bit Maskeleme Kombinasyonu (Hocanın Kod PDF'i Örnek 6)",
-            "scenario": "Hocanın sınav/lab kod belgesindeki Hafta 10 Örnek 6'da yer alan donanım portu filtreleme algoritması uygulanacaktır.",
-            "task": "AX içine 0FFFFh yükleyin. Sırasıyla AND AX, 0F0F0h, OR AX, 0F00Fh, XOR AX, 0FFFFh ve NOT AX işlemlerini uygulayarak bayrak ve yazmaç durumunu izleyin.",
-            "code": "; 🔴 Zor: Donanim Bitwise Kombinasyonlari (Hocanin Ornek 6'si)\nORG 100H\n\n; 1. AX icine 0FFFFh yukleyin:\n; TODO:\n\n\n; 2. AND AX, 0F0F0h ile belirli bitleri maskeleyin:\n; TODO:\n\n\n; 3. OR AX, 0F00Fh ile kose bitleri set edin:\n; TODO:\n\n\n; 4. XOR AX, 0FFFFh ile tum bitleri tersleyin:\n; TODO:\n\n\n; 5. NOT AX ile bitleri tekrar tersleyip orjinale dondurun:\n; TODO:\n\n\nHLT",
-            "solutionCode": "ORG 100H\nMOV AX, 0FFFFH\nAND AX, 0F0F0H\nOR AX, 0F00FH\nXOR AX, 0FFFFH\nNOT AX\nHLT",
+            "id": "ex-m4-shl-shr",
+            "difficulty": "orta",
+            "difficultyLabel": "🟡 6. Modül Labı: SHL ve SHR",
+            "title": "Mini-Lab 4.6: SHL ile 8 Katına Çıkarma ($2^3$)",
+            "scenario": "AX = 5 sayısını çarpma komutu (MUL) kullanmadan, yalnızca 3 bit sola kaydırarak (SHL) 8 ile çarpmanız isteniyor ($5 \\times 8 = 40$).",
+            "task": "CL yazmacına 3 yükleyin. Ardından SHL AX, CL komutu ile AX'i 8 katına çıkarın (AX=40 / 0028H).",
+            "code": "; 🟡 Mini-Lab 4.6: SHL Komutu\nORG 100H\n\nMOV AX, 5\n\n; 1. Kaydirma miktari olan 3'u CL yazmacina yukleyin:\n; TODO:\n\n\n; 2. SHL AX, CL komutu ile 3 bit sola kaydirin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 5\nMOV CL, 3\nSHL AX, CL\nHLT",
             "solutionBreakdown": [
-              "1. Satır: AX = FFFFh yüklenir.",
-              "2. Satır: AND AX, 0F0F0h — AX = F0F0h olur.",
-              "3. Satır: OR AX, 0F00Fh — AX = F0FFh olur.",
-              "4. Satır: XOR AX, 0FFFFh — F0FFh XOR FFFFh = 0F00h olur.",
-              "5. Satır: NOT AX — 0F00h terslenerek AX = F0FFh değerine geri döner."
+              "1. Satır: MOV CL, 3 — Kaydırma miktarı CL'ye atanır.",
+              "2. Satır: SHL AX, CL — 5 (0000 0101b) 3 bit sola kayar ➔ 0010 1000b = 40 (28h)."
             ],
-            "examTips": "NOT komutunun bayrakları asla değiştirmediğini, fakat AND/OR/XOR komutlarının ZF, SF, PF bayraklarını kurduğunu unutmayın."
+            "examTips": "8086'da 'SHL AX, 3' şeklinde doğrudan sabit 3 yazılamaz! Sadece 1 için doğrudan 'SHL AX, 1' yazılabilir; 1'den büyükler için CL şarttır."
+          }
+        ]
+      },
+      {
+        "title": "7. Modül: Aritmetik Sağa Kaydırma (SAR) vs SHR — Büyük Sınav Sorusu",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>SAR Hedef, 1</code> (Shift Arithmetic Right)</h4>\n          <p>Aritmetik sağa kaydırma komutudur. İşaretli (negatif ve pozitif) sayıları 2'ye bölmek için tasarlanmıştır.</p>\n          <ul>\n            <li>🚨 <strong>SAR ile SHR Arasındaki Hayati Fark (Sınav Klasiği!):</strong>\n              <table class=\"lecture-table\">\n                <thead>\n                  <tr><th>Komut</th><th>En Soldan Ne Girer?</th><th>Hangi Sayılar İçin?</th></tr>\n                </thead>\n                <tbody>\n                  <tr><td><code>SHR</code></td><td>Daima <b>0</b> girer</td><td>İşaretsiz (Unsigned) sayılar için 2'ye bölme</td></tr>\n                  <tr><td><code>SAR</code></td><td><b>İşaret Biti (MSB) KORUNUR</b> ve aynen yayılır!</td><td>İşaretli (Signed / Negatif) sayılar için 2'ye bölme</td></tr>\n                </tbody>\n              </table>\n            </li>\n            <li>Örnek: $AL = -8$ (1111 1000b). <code>SAR AL, 1</code> yapılırsa en soldaki 1 korunur: $1111 1100b = -4$ olur!</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m4-sar",
+            "difficulty": "orta",
+            "difficultyLabel": "🟡 7. Modül Labı: SAR ile Negatif Bölme",
+            "title": "Mini-Lab 4.7: Negatif Sayıyı SAR ile 2'ye Bölme",
+            "scenario": "AL = -16 (0F0H) negatif sayısı SAR komutu ile 1 bit sağa kaydırılarak -8 (0F8H) sonucuna ulaştırılacaktır.",
+            "task": "SAR AL, 1 komutunu çalıştırın. En yüksek işaret bitinin korunduğunu ve AL'nin 0F8H olduğunu doğrulayın.",
+            "code": "; 🟡 Mini-Lab 4.7: SAR Komutu\nORG 100H\n\nMOV AL, 0F0H   ; -16 (1111 0000b)\n\n; 1. SAR AL, 1 komutu ile isareti koruyarak 2'ye bolun:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AL, 0F0H\nSAR AL, 1\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: AL = 1111 0000B (-16)",
+              "2. Satır: SAR AL, 1 ➔ En soldaki 1 korunur ve sağa yayılır: 1111 1000B = -8 (0F8H)."
+            ],
+            "examTips": "Eğer burada SAR yerine SHR kullanılsaydı soldan 0 gireceği için sayı pozitif +120'ye dönüşürdü ve sonuç tamamen çökerdi!"
           }
         ]
       }
@@ -465,101 +631,115 @@ export const MILESTONE_LECTURES: Record<string, MilestoneLecture> = {
     "milestoneId": "milestone-5",
     "milestoneNumber": 5,
     "title": "Program Akışı, Koşullar ve Döngüler (JMP, JE, JNE, JL/JG, JB/JA, LOOP)",
-    "subtitle": "İşaretli vs İşaretsiz Karşılaştırma Matrisi, JCXZ Güvenlik Kuralı, Döngü Mekanizmaları ve 0xAA Sentinel Arama",
-    "slideRef": "Hoca: Week 5 & 6 Slaytları / w6, w11 PDF | Kitap: Barry B. Brey Bölüm 6",
-    "overviewHtml": "\n          <div class=\"lecture-hero-card\">\n            <div class=\"lecture-hero-badge\">AŞAMA 5: PROGRAM AKIŞ KONTROLÜ & DÖNGÜLER</div>\n            <p class=\"lecture-hero-text\">\n              Mikroişlemcide karar yapıları (if-else, switch) ve döngüler (for, while); <code>CMP</code> veya <code>TEST</code> ile bayrakların kurulması ve ardından gelen <b>Koşullu Atlama (Conditional Jump)</b> komutlarıyla gerçekleştirilir.\n            </p>\n            <div class=\"lecture-golden-rule\">\n              💡 <strong>Hocanın Altın Kuralları & Sınav Kılavuzu:</strong><br>\n              1. <b>İşaretli vs İşaretsiz Ayrımı (Sınavın En Büyük Tuzağı):</b><br>\n                 • İşaretsiz sayılarda: <code>JA (Above)</code>, <code>JB (Below)</code>, <code>JAE</code>, <code>JBE</code> kullanılır (Carry ve Zero bayraklarına bakar).<br>\n                 • İşaretli sayılarda: <code>JG (Greater)</code>, <code>JL (Less)</code>, <code>JGE</code>, <code>JLE</code> kullanılır (Sign ve Overflow bayraklarına bakar). Sınavda asla karıştırmayın!<br>\n              2. <b>Hocanın JCXZ Kuralı:</b> <code>LOOP</code> komutuna girmeden önce <code>CX = 0</code> ise, döngü 0 kez dönmez! <code>DEC CX</code> ile CX = FFFFh (65.535) olur ve döngü <strong>65.536 KEZ</strong> döner. Bu hatayı önlemek için döngünün başına daima <code>JCXZ Cikis</code> konulmalıdır.<br>\n              3. <b>0xAA Sentinel Arama:</b> Hocanın sınav sorularında dizilerin uzunluğu bazen CX ile verilmez; dizinin bittiğini gösteren <code>0xAA</code> sonlandırıcı sabiti kullanılır.\n            </div>\n          </div>\n        ",
+    "subtitle": "Her Koşullu Atlama ve Döngü İçin Ayrı Anlatım, Bayrak Kontrolü ve Anında Pratik",
+    "slideRef": "Hoca: Week 5 PPTX / w5, w10 PDF | Kitap: Barry B. Brey Bölüm 6",
+    "overviewHtml": "\n    <div class=\"lecture-hero-card\">\n      <div class=\"lecture-hero-badge\">AŞAMA 5: KARAR MEKANİZMALARI, SIÇRAMALAR & DÖNGÜLER</div>\n      <p class=\"lecture-hero-text\">\n        Mikroişlemcinin akıllı kararlar vermesini sağlayan temel yapı <b>Koşullu Dallanmalar (Conditional Jumps)</b> ve <b>Döngülerdir (Loops)</b>. \n        Her bir atlama komutu ALU'nun ürettiği durum bayraklarını (ZF, CF, SF, OF) sorgulayarak programın hangi satırdan devam edeceğini belirler.\n      </p>\n      <div class=\"lecture-golden-rule\">\n        💡 <strong>Hocanın 3 Altın Akış Kuralı:</strong><br>\n        1. <b>İşaretsiz vs İşaretli Ayrımı (Sınav Klasiği):</b> İşaretsiz sayılarda <code>JA</code> (Above) ve <code>JB</code> (Below) kullanılır (CF ve ZF kontrol edilir). İşaretli sayılarda ise <code>JG</code> (Greater) ve <code>JL</code> (Less) kullanılır (SF ve OF kontrol edilir). Asla karıştırmayın!<br>\n        2. <b>LOOP Komutu ve Bayraklar:</b> <code>LOOP</code> komutu CX sayacını otomatik olarak 1 azaltır ve $CX \\neq 0$ ise etikete döner. <strong>LOOP KOMUTU BAYRAKLARI ASLA DEĞİŞTİRMEZ!</strong><br>\n        3. <b>Short Jump Sınırı:</b> Koşullu atlamalar 8086'da 8-bitlik bağıl (relative) ofset kullanır ($-128$ ile $+127$ bayt arası).\n      </div>\n    </div>\n  ",
     "sections": [
       {
-        "title": "1. Karşılaştırma Mekanizması ve Tam Atlama Bayrak Matrisi",
-        "contentHtml": "\n                  <p><code>CMP Hedef, Kaynak</code> komutu $Hedef - Kaynak$ çıkarması yaptıktan sonra aşağıdaki atlama komutları çalışır:</p>\n                  \n                  <h4>İşaretsiz Karşılaştırma Komutları (Unsigned Jumps):</h4>\n                  <table class=\"lecture-table\">\n                    <thead>\n                      <tr><th>Komut</th><th>Anlamı</th><th>Test Edilen Bayrak Koşulu</th></tr>\n                    </thead>\n                    <tbody>\n                      <tr><td><code>JA / JNBE</code></td><td>Jump if Above (Büyükse)</td><td>$CF = 0 \\land ZF = 0$</td></tr>\n                      <tr><td><code>JAE / JNB / JNC</code></td><td>Jump if Above or Equal / No Carry</td><td>$CF = 0$</td></tr>\n                      <tr><td><code>JB / JNAE / JC</code></td><td>Jump if Below / Carry (Küçükse)</td><td>$CF = 1$</td></tr>\n                      <tr><td><code>JBE / JNA</code></td><td>Jump if Below or Equal (Küçük veya Eşitse)</td><td>$CF = 1 \\lor ZF = 1$</td></tr>\n                    </tbody>\n                  </table>\n\n                  <h4>İşaretli Karşılaştırma Komutları (Signed Jumps):</h4>\n                  <table class=\"lecture-table\">\n                    <thead>\n                      <tr><th>Komut</th><th>Anlamı</th><th>Test Edilen Bayrak Koşulu</th></tr>\n                    </thead>\n                    <tbody>\n                      <tr><td><code>JG / JNLE</code></td><td>Jump if Greater (Büyükse)</td><td>$ZF = 0 \\land SF = OF$</td></tr>\n                      <tr><td><code>JGE / JNL</code></td><td>Jump if Greater or Equal</td><td>$SF = OF$</td></tr>\n                      <tr><td><code>JL / JNGE</code></td><td>Jump if Less (Küçükse)</td><td>$SF \\neq OF$</td></tr>\n                      <tr><td><code>JLE / JNG</code></td><td>Jump if Less or Equal</td><td>$ZF = 1 \\lor SF \\neq OF$</td></tr>\n                    </tbody>\n                  </table>\n\n                  <h4>Tek Bayrak Denetleyen Komutlar:</h4>\n                  <ul>\n                    <li><code>JE / JZ</code>: $ZF = 1$ (Sonuç sıfırsa veya eşitse atlar).</li>\n                    <li><code>JNE / JNZ</code>: $ZF = 0$ (Sonuç sıfır değilse veya eşit değilse atlar).</li>\n                    <li><code>JS</code> ($SF = 1$, negatifse), <code>JNS</code> ($SF = 0$, pozitifse).</li>\n                    <li><code>JO</code> ($OF = 1$, işaretli taşma varsa), <code>JNO</code> ($OF = 0$).</li>\n                    <li><code>JP / JPE</code> ($PF = 1$, parite çiftse), <code>JNP / JPO</code> ($PF = 0$, tekse).</li>\n                  </ul>\n                "
-      },
-      {
-        "title": "2. Komut Kılavuzu: Döngü Komutları & Sınav Kuralları (LOOP, LOOPE, LOOPNE, JCXZ)",
-        "contentHtml": "\n                  <div class=\"instruction-box\">\n                    <h4><code>LOOP HedefEtiket</code> — Donanımsal Sayaçlı Döngü</h4>\n                    <ul>\n                      <li><b>Çalışma Mantığı:</b> Önce <code>CX = CX - 1</code> yapar. Eğer <code>CX != 0</code> ise HedefEtiket'e atlar; <code>CX == 0</code> olduğunda bir alt satıra geçer.</li>\n                      <li><b>Bayraklara Etkisi:</b> <strong>HİÇBİR BAYRAĞI DEĞİŞTİRMEZ!</strong> (ZF bayrağını etkilemez).</li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4><code>JCXZ HedefEtiket</code> — CX Sıfırsa Atla</h4>\n                    <ul>\n                      <li>CX yazmacının değeri 0 ise doğrudan atlar. Hiçbir bayrağı etkilemez.</li>\n                      <li><b>Hocanın Kullanım Kuralı:</b> Bir dizi işlemeden önce sayaç kontrolü için <code>LOOP</code>'tan önce mutlaka yazılmalıdır.</li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4><code>LOOPE / LOOPZ</code> ve <code>LOOPNE / LOOPNZ</code></h4>\n                    <ul>\n                      <li><code>LOOPE label</code> (Loop while Equal): CX'i 1 azaltır. Eğer <code>CX != 0</code> VE <code>ZF == 1</code> (elemanlar eşit) ise döner. Eşitlik bozulursa döngüden çıkar.</li>\n                      <li><code>LOOPNE label</code> (Loop while Not Equal): CX'i 1 azaltır. Eğer <code>CX != 0</code> VE <code>ZF == 0</code> ise döner. Eşleşen eleman bulunduğunda (ZF=1 olduğunda) döngüden erken çıkar.</li>\n                    </ul>\n                  </div>\n                "
-      },
-      {
-        "title": "3. İnteraktif Laboratuvar İstasyonu (3 Seviyeli Uygulama)",
-        "contentHtml": "\n                  <p>Aşağıdaki editörde akış kontrolü ve döngü algoritmalarını test edin. <b>Cevap hazır gelmez</b>; yönergeleri takip edin.</p>\n                ",
+        "title": "1. Modül: Koşulsuz Atlama (JMP) ve Kod Blokları",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>JMP Etiket</code> — Unconditional Jump</h4>\n          <p>Hiçbir bayrağa veya şarta bakmaksızın program akışını doğrudan belirtilen etikete (Label) yönlendirir.</p>\n          <ul>\n            <li>İşlemci Komut Göstericisine (IP) yeni adresi yükler.</li>\n            <li>Hatalı kod bloklarını atlamak veya sonsuz döngü kurmak için kullanılır.</li>\n          </ul>\n        </div>\n      ",
         "examples": [
           {
-            "id": "ex-m5-kolay",
+            "id": "ex-m5-jmp",
             "difficulty": "kolay",
-            "difficultyLabel": "🟢 Kolay: Doğrudan & Birebir",
-            "title": "Alıştırma 5.1: Koşullu Atlama ile Mutlak Fark (Hocanın Kod PDF'i Örnek 16)",
-            "scenario": "Hocanın sınav kod dokümanındaki Örnek 16'da yer alan 'Absolute Difference' algoritması uygulanacaktır. İki sayının mutlak farkı ($|AX - BX|$) hesaplanacaktır.",
-            "task": "AX=15 ve BX=25 değerlerini yükleyin. CMP AX, BX ile karşılaştırın. Eğer AX < BX ise (JC DIFF2) BX'ten AX'i çıkarın. Değilse AX'ten BX'i çıkarın. Mutlak farkı AX yazmacında bırakın.",
-            "code": "; 🟢 Kolay: Absolute Difference (Hocanin Ornek 16'si)\nORG 100H\n\nMOV AX, 15\nMOV BX, 25\n\n; 1. AX ve BX'i karsilastirin (CMP AX, BX):\n; TODO:\n\n\n; 2. Eger AX < BX ise (Carry olusmussa) DIFF2 etiketine atlayin (JC DIFF2):\n; TODO:\n\n\nDIFF1:\n; 3. AX buyuk veya esitse SUB AX, BX yapip DONE'a atlayin:\n; TODO:\n\n\nDIFF2:\n; 4. BX buyukse SUB BX, AX yapip sonucu AX'e tasiyin:\n; TODO:\n\n\nDONE:\nHLT",
-            "solutionCode": "ORG 100H\nMOV AX, 15\nMOV BX, 25\nCMP AX, BX\nJC DIFF2\n\nDIFF1:\nSUB AX, BX\nJMP DONE\n\nDIFF2:\nSUB BX, AX\nMOV AX, BX\n\nDONE:\nHLT",
+            "difficultyLabel": "🟢 1. Modül Labı: JMP Komutu",
+            "title": "Mini-Lab 5.1: Hatalı Kod Bloğunu JMP ile Atlama",
+            "scenario": "Normal akışta aradaki hatalı 'MOV AX, 0' komutunu atlayıp doğrudan 'SONUC' etiketine sıçrayarak AX'in 100 kalmasını sağlayın.",
+            "task": "JMP SONUC komutunu kullanarak aradaki sıfırlama komutunu atlayın ve programı HLT ile bitirin.",
+            "code": "; 🟢 Mini-Lab 5.1: JMP Komutu\nORG 100H\n\nMOV AX, 100\n\n; 1. Asagidaki hatali blogu atlamak icin SONUC etiketine JMP yapin:\n; TODO:\n\n\nMOV AX, 0   ; Bu komut calismamalidir!\n\nSONUC:\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 100\nJMP SONUC\nMOV AX, 0\nSONUC:\nHLT",
             "solutionBreakdown": [
-              "1. Satır: AX = 15 (0Fh), BX = 25 (19h) yüklenir.",
-              "2. Satır: CMP AX, BX — 15 - 25 borç gerektirdiğinden Carry Flag kurulur (CF=1).",
-              "3. Satır: JC DIFF2 — CF=1 olduğundan DIFF2 etiketine atlanır.",
-              "4. Satır: SUB BX, AX — BX = 25 - 15 = 10 olur ve MOV AX, BX ile AX = 10 elde edilir."
+              "1. Satır: MOV AX, 100 — AX = 100.",
+              "2. Satır: JMP SONUC — İşlemci aradaki komutu atlayıp doğrudan SONUC etiketine sıçrar (AX=100 kalır)."
             ],
-            "examTips": "İşaretsiz sayılarda CMP sonrası küçük olma durumu Carry Flag (CF=1) ile denetlenir. JC veya JB aynı görevi görür."
-          },
+            "examTips": "JMP komutu bayrakları etkilemez."
+          }
+        ]
+      },
+      {
+        "title": "2. Modül: Eşitlik Kontrolü (JE / JZ ve JNE / JNZ)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>JE</code> (Jump if Equal) / <code>JZ</code> (Jump if Zero)</h4>\n          <p><code>CMP</code> veya aritmetik bir işlem sonrasında <b>Zero Flag (ZF = 1)</b> ise atlama yapar.</p>\n          <ul>\n            <li><code>CMP AX, BX</code> yapıldığında eğer $AX == BX$ ise $AX - BX = 0$ çıkar ve <b>ZF = 1</b> olur. <code>JE ESIT</code> komutu bu durumda atlar.</li>\n            <li><code>JNE</code> (Jump if Not Equal) ise $AX \\neq BX$ (ZF = 0) iken atlama yapar.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m5-orta",
+            "id": "ex-m5-je-jne",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 2. Modül Labı: JE Eşitlik Testi",
+            "title": "Mini-Lab 5.2: İki Sayının Eşitliğini JE ile Test Etme",
+            "scenario": "AX = 50 ve BX = 50 sayıları karşılaştırılacaktır. Eşitlerse program ESIT_LABEL etiketine atlayacak ve DX = 1 yapacaktır.",
+            "task": "CMP AX, BX ardından JE ESIT_LABEL yazın. Adım adım çalıştırarak ZF=1 olduğunda atlamanın gerçekleştiğini izleyin.",
+            "code": "; 🟢 Mini-Lab 5.2: JE Komutu\nORG 100H\n\nMOV AX, 50\nMOV BX, 50\nMOV DX, 0\n\n; 1. AX ile BX'i karsilastirin:\n; TODO:\n\n\n; 2. Eger esitlerse ESIT_LABEL etiketine atlayin (JE):\n; TODO:\n\n\nHLT\n\nESIT_LABEL:\nMOV DX, 1\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 50\nMOV BX, 50\nMOV DX, 0\nCMP AX, BX\nJE ESIT_LABEL\nHLT\nESIT_LABEL:\nMOV DX, 1\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: CMP AX, BX — 50 == 50 olduğu için ZF = 1 kurulur.",
+              "2. Satır: JE ESIT_LABEL — ZF=1 olduğu için ESIT_LABEL'a atlar ve DX = 1 atanır."
+            ],
+            "examTips": "JE ve JZ aynı makine kodudur (74h). Anlamsal olarak kod okunabilirliği için eşitlikte JE, sıfır testinde JZ tercih edilir."
+          }
+        ]
+      },
+      {
+        "title": "3. Modül: İşaretsiz Sayı Karşılaştırmaları (JA, JB, JAE, JBE)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>JA</code> (Jump if Above) ve <code>JB</code> (Jump if Below)</h4>\n          <p>İşaretsiz tam sayılarda büyüklük/küçüklük kontrolü için <b>Carry Flag (CF)</b> ve <b>Zero Flag (ZF)</b> kullanılır.</p>\n          <ul>\n            <li><code>CMP AX, BX</code> sonrasında:\n              <br>• $AX > BX$ (Büyükse) ➔ <code>JA</code> atlar (CF=0 ve ZF=0).\n              <br>• $AX < BX$ (Küçükse) ➔ <code>JB</code> atlar (CF=1).\n            </li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m5-ja-jb",
             "difficulty": "orta",
-            "difficultyLabel": "🟡 Orta: Anlamlı Senaryo",
-            "title": "Alıştırma 5.2: Kelime Dizisinde Tek/Çift Sayı Ayıklayıcı (Hocanın Örnek 19'u)",
-            "scenario": "Hocanın kod belgesindeki Hafta 11 Örnek 19'da yer alan dizi analizi uygulanacaktır. Bellekteki kelime dizisi taranarak tek sayılar BX'te, çift sayılar DX'te sayılacaktır.",
-            "task": "Diziyi döngü ile tarayın. Her kelime için SHR AX, 1 uygulayın. Eğer CF=0 ise (JNC even) çift sayacı DX'i artırın; CF=1 ise tek sayacı BX'i artırın. Dizi bitene kadar devam edin.",
-            "code": "; 🟡 Orta: Tek/Cift Sayi Ayiklayici (Hocanin Ornek 19'u)\nORG 100H\n\nLEA SI, [0200H]     ; Dizi baslangic adresi\nMOV CX, 4           ; 4 elemanli dizi\nMOV BX, 0           ; Tek sayilar sayaci\nMOV DX, 0           ; Cift sayilar sayaci\n\nL0:\n; 1. [SI] adresindeki kelimeyi AX'e okuyun ve SI'yi 2 artirin:\n; TODO:\n\n\n; 2. SHR AX, 1 ile en dusuk biti Carry Flag'e atin:\n; TODO:\n\n\n; 3. Eger Carry yoksa (cift ise) EVEN_NUM etiketine atlayin (JNC EVEN_NUM):\n; TODO:\n\n\n; 4. Carry varsa (tek ise) tek sayaci BX'i artirin ve CNT_LOOP'a atlayin:\n; TODO:\n\n\nEVEN_NUM:\n; 5. Cift sayaci DX'i artirin:\n; TODO:\n\n\nCNT_LOOP:\nLOOP L0\n\nHLT",
-            "initialMemory": [
-              {
-                "segment": 0,
-                "offset": 512,
-                "bytes": [
-                  5,
-                  0,
-                  8,
-                  0,
-                  3,
-                  0,
-                  12,
-                  0
-                ]
-              }
-            ],
-            "solutionCode": "ORG 100H\nLEA SI, [0200H]\nMOV CX, 4\nMOV BX, 0\nMOV DX, 0\n\nL0:\nMOV AX, [SI]\nADD SI, 2\nSHR AX, 1\nJNC EVEN_NUM\nINC BX\nJMP CNT_LOOP\n\nEVEN_NUM:\nINC DX\n\nCNT_LOOP:\nLOOP L0\n\nHLT",
+            "difficultyLabel": "🟡 3. Modül Labı: JA ile Büyüğü Bulma",
+            "title": "Mini-Lab 5.3: İki İşaretsiz Sayıdan Büyüğünü Seçme (Max)",
+            "scenario": "AX = 200 ve BX = 150 sayıları karşılaştırılacak, büyük olan sayı CX yazmacına yazılacaktır.",
+            "task": "CMP AX, BX ardından JA AX_BUYUK yapın. Büyüğü CX içine aktarın.",
+            "code": "; 🟡 Mini-Lab 5.3: JA Komutu\nORG 100H\n\nMOV AX, 200\nMOV BX, 150\n\n; 1. AX ile BX'i karsilastirin:\n; TODO:\n\n\n; 2. AX > BX ise AX_BUYUK etiketine atlayin (JA):\n; TODO:\n\n\nMOV CX, BX\nJMP BITIR\n\nAX_BUYUK:\nMOV CX, AX\n\nBITIR:\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 200\nMOV BX, 150\nCMP AX, BX\nJA AX_BUYUK\nMOV CX, BX\nJMP BITIR\nAX_BUYUK:\nMOV CX, AX\nBITIR:\nHLT",
             "solutionBreakdown": [
-              "1. Satır: Dizi elemanı AX'e okunur.",
-              "2. Satır: SHR AX, 1 komutu sayının son bitini (bit 0) Carry Flag'e iter.",
-              "3. Satır: Son bit 0 ise sayı çifttir (CF=0) ve JNC EVEN_NUM ile DX artırılır.",
-              "4. Satır: Son bit 1 ise sayı tektir (CF=1) ve INC BX çalışır.",
-              "5. Satır: 4 eleman sonunda 2 tek (5, 3) ve 2 çift (8, 12) için BX=2, DX=2 elde edilir."
+              "1. Satır: CMP AX, BX — 200 > 150 olduğu için CF=0 ve ZF=0.",
+              "2. Satır: JA AX_BUYUK — Şart sağlandığı için AX_BUYUK'e atlar ve CX = 200 (AX) olur."
             ],
-            "examTips": "Hoca tek/çift kontrolünü sınavlarda AND yerine genellikle 'SHR AX, 1' ve 'JNC' kombinasyonuyla sormaktadır!"
-          },
+            "examTips": "İşaretsiz sayılarda daima JA/JB kullanılır; JG/JL kullanılırsa negatiflik işaret biti yanlış karara sebep olur!"
+          }
+        ]
+      },
+      {
+        "title": "4. Modül: İşaretli Sayı Karşılaştırmaları (JG, JL, JGE, JLE)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>JG</code> (Jump if Greater) ve <code>JL</code> (Jump if Less)</h4>\n          <p>İşaretli (iki'nin tümleyeni / negatif) sayılarda büyüklük testi için kullanılır.</p>\n          <ul>\n            <li>İşlemci <b>Sign Flag (SF)</b> ile <b>Overflow Flag (OF)</b> durumlarını XOR mantığıyla birlikte denetler ($SF \\oplus OF$).</li>\n            <li>Örnek: $+5$ sayısı $-10$'dan büyüktür. İşaretli <code>JG</code> komutu $+5$'in büyük olduğunu doğru bilir. (Eğer JA kullanılsaydı $-10$ hex olarak 0FFF6h göründüğü için yanlış karar verirdi!).</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m5-zor",
-            "difficulty": "zor",
-            "difficultyLabel": "🔴 Zor: Gerçek Hayat / Sentinel Arama",
-            "title": "Alıştırma 5.3: 0xAA Sentinel ile Dizi Maksimumu Bulma (Hocanın Örnek 15'i)",
-            "scenario": "Hocanın sınav kod dokümanındaki Sayfa 6 Örnek 15'te yer alan sentinel tabanlı maksimum bulma algoritması uygulanacaktır.",
-            "task": "Bellekten MOV AL, [SI] ve INC SI ile baytları sırayla okuyun (SADECE Aşama 1-5 komutları). Eğer okunan değer 0AAh ise (JZ END_SEARCH) aramayı bitirin. Değilse BL'deki mevcut maksimum ile karşılaştırın (CMP AL, BL) ve daha büyükse BL'yi güncelleyin.",
-            "code": "; 🔴 Zor: 0xAA Sentinel Array Max (Hocanin Ornek 15'i)\nORG 100H\n\nLEA SI, [0200H]     ; Dizi adresi\nMOV BL, 0           ; Mevcut maksimum (en kucuk baslangic)\n\nSEARCH_LOOP:\n; 1. [SI]'den bir bayti AL'ye okuyun ve SI'yi 1 artirin (INC SI):\n; TODO:\n\n\n; 2. AL ile 0AAh (sonlandirici) degerini karsilastirin:\n; TODO:\n\n\n; 3. Eger 0AAh bulunduysa END_SEARCH etiketine atlayin (JZ END_SEARCH):\n; TODO:\n\n\n; 4. AL ile mevcut maksimum BL'yi karsilastirin (CMP AL, BL):\n; TODO:\n\n\n; 5. Eger AL <= BL ise CONTINUE_LOOP etiketine atlayin (JBE CONTINUE_LOOP):\n; TODO:\n\n\n; 6. AL daha buyukse yeni maksimum olarak BL'ye atayin:\n; TODO:\n\n\nCONTINUE_LOOP:\nJMP SEARCH_LOOP\n\nEND_SEARCH:\nHLT",
-            "initialMemory": [
-              {
-                "segment": 0,
-                "offset": 512,
-                "bytes": [
-                  18,
-                  69,
-                  137,
-                  51,
-                  170
-                ]
-              }
-            ],
-            "solutionCode": "ORG 100H\nLEA SI, [0200H]\nMOV BL, 0\n\nSEARCH_LOOP:\nMOV AL, [SI]\nINC SI\nCMP AL, 0AAH\nJZ END_SEARCH\nCMP AL, BL\nJBE CONTINUE_LOOP\nMOV BL, AL\n\nCONTINUE_LOOP:\nJMP SEARCH_LOOP\n\nEND_SEARCH:\nHLT",
+            "id": "ex-m5-jg-jl",
+            "difficulty": "orta",
+            "difficultyLabel": "🟡 4. Modül Labı: JG ile İşaretli Karşılaştırma",
+            "title": "Mini-Lab 5.4: Pozitif Sayının Negatif Sayıdan Büyüklüğü",
+            "scenario": "AX = +5, BX = -10 (0FFF6h). İşaretli JG komutu ile AX'in BX'ten büyük olduğunu test edip POZITIF_BUYUK etiketine sıçrayın.",
+            "task": "CMP AX, BX ardından JG POZITIF_BUYUK komutunu çalıştırın. DX = 1 yapın.",
+            "code": "; 🟡 Mini-Lab 5.4: JG Komutu\nORG 100H\n\nMOV AX, 5\nMOV BX, -10\nMOV DX, 0\n\n; 1. AX ile BX'i karsilastirin:\n; TODO:\n\n\n; 2. Isaretli olarak AX > BX ise POZITIF_BUYUK etiketine atlayin (JG):\n; TODO:\n\n\nHLT\n\nPOZITIF_BUYUK:\nMOV DX, 1\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 5\nMOV BX, -10\nMOV DX, 0\nCMP AX, BX\nJG POZITIF_BUYUK\nHLT\nPOZITIF_BUYUK:\nMOV DX, 1\nHLT",
             "solutionBreakdown": [
-              "1. Satır: MOV AL, [SI] ve INC SI ile dizi sırayla taranır (Henüz Aşama 6'daki LODSB komutuna ihtiyaç duymadan saf Aşama 1-5 komutlarıyla çözülür).",
-              "2. Satır: CMP AL, 0AAh ile sentinel sonlandırıcı kontrol edilir, dizi sonuna gelindiğinde (0AAh görüldüğünde) döngü kırılır.",
-              "3. Satır: CMP AL, BL ve JBE ile mevcut maksimumdan büyük sayılar tespit edilerek BL = 89h olarak bulunur."
+              "1. Satır: CMP AX, BX (5 ile -10) — SF = 0, OF = 0.",
+              "2. Satır: JG POZITIF_BUYUK — +5 > -10 olduğu için atlama gerçekleşir ve DX = 1 olur."
             ],
-            "examTips": "Sabit sayaç CX yerine belleğin sonunda özel bir karakter (0xAA veya 0x00) arayan bu yapı hocanın sınavlarının en klasik sorusudur."
+            "examTips": "Negatif sayı içeren algoritmalarda kesinlikle JG veya JL kullanmalısınız."
+          }
+        ]
+      },
+      {
+        "title": "5. Modül: Donanımsal Döngü Komutu (LOOP) — Altın Kural",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>LOOP Etiket</code> (Donanımsal Sayaç Döngüsü)</h4>\n          <p>Döngü komutu her çalıştığında tek bir makine çevriminde iki işlem yapar:</p>\n          <ol>\n            <li><b>CX sayacını 1 azaltır:</b> $CX = CX - 1$</li>\n            <li><b>Kontrol eder:</b> Eğer $CX \\neq 0$ ise döngü etiketine geri atlar! $CX == 0$ olduğunda döngüden çıkar.</li>\n          </ol>\n          <ul>\n            <li>🚨 <strong>HOCANIN ALTIN KURALI:</strong> <code>LOOP</code> komutu <strong>DURUM BAYRAKLARINI (ZF, CF VB.) ASLA DEĞİŞTİRMEZ!</strong> CX=0 olduğunda bile ZF 1 olmaz!</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m5-loop-sum",
+            "difficulty": "orta",
+            "difficultyLabel": "🟡 5. Modül Labı: LOOP Döngüsü",
+            "title": "Mini-Lab 5.5: 1'den N'e Kadar Sayıların Toplamı",
+            "scenario": "Döngü sayacı CX = 5 olarak verilmiştir. LOOP döngüsü ile 1'den 5'e kadar olan sayıları toplayarak AX içinde biriktirin ($5 + 4 + 3 + 2 + 1 = 15$).",
+            "task": "DONGU etiketi altında ADD AX, CX yapın ve ardından LOOP DONGU yazın.",
+            "code": "; 🟡 Mini-Lab 5.5: LOOP Komutu\nORG 100H\n\nMOV CX, 5\nMOV AX, 0\n\nDONGU:\n; 1. AX = AX + CX toplamini yapin:\n; TODO:\n\n\n; 2. LOOP DONGU komutu ile donguyu dondurun:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV CX, 5\nMOV AX, 0\nDONGU:\nADD AX, CX\nLOOP DONGU\nHLT",
+            "solutionBreakdown": [
+              "1. Adım: AX = 0 + 5 = 5, CX=4",
+              "2. Adım: AX = 5 + 4 = 9, CX=3",
+              "3. Adım: AX = 9 + 3 = 12, CX=2",
+              "4. Adım: AX = 12 + 2 = 14, CX=1",
+              "5. Adım: AX = 14 + 1 = 15 (0Fh), CX=0 olur ve döngü biter."
+            ],
+            "examTips": "LOOP komutu döngü sayacını daima CX yazmacından okur; başka bir yazmaç sayaç olarak kullanılamaz."
           }
         ]
       }
@@ -569,75 +749,71 @@ export const MILESTONE_LECTURES: Record<string, MilestoneLecture> = {
     "milestoneId": "milestone-6",
     "milestoneNumber": 6,
     "title": "Yığın (Stack) & Prosedür Çağrıları (PUSH, POP, CALL, RET, Stack Frame)",
-    "subtitle": "LIFO Bellek Organizasyonu, SS:SP Mekaniği, Donanımsal Saklama Sırası, Aktivasyon Kaydı (Stack Frame) ve RET n",
-    "slideRef": "Hoca: Week 3 & 4 PPTX / w3, w4, w6, w11 PDF | Kitap: Barry B. Brey Bölüm 4 & 6",
-    "overviewHtml": "\n          <div class=\"lecture-hero-card\">\n            <div class=\"lecture-hero-badge\">AŞAMA 6: YIĞIN (STACK) VE PROSEDÜR ÇAĞRILARI</div>\n            <p class=\"lecture-hero-text\">\n              Yığın (Stack), <b>Son Giren İlk Çıkar (LIFO - Last In First Out)</b> kuralıyla çalışan bellek bölgesidir. \n              İşlemci; fonksiyon çağrılarında dönüş adresini (IP/CS), yazmaç durumlarını ve fonksiyon parametrelerini yığında saklar.\n            </p>\n            <div class=\"lecture-golden-rule\">\n              💡 <strong>Hocanın Altın Kuralları & Sınav Kılavuzu:</strong><br>\n              1. <b>Yığının Yönü:</b> 8086 mimarisinde yığın <strong>YÜKSEK ADRESTEN DÜŞÜK ADRESE DOĞRU BÜYÜR</strong>. <code>PUSH</code> komutu SP'yi 2 AZALTIR (SP = SP - 2), <code>POP</code> komutu SP'yi 2 ARTIRIR (SP = SP + 2).<br>\n              2. <b>Donanımsal Sıralama (PUSHA/POPA):</b> <code>PUSHA</code> komutu yazmaçları yığına <code>AX, CX, DX, BX, SP, BP, SI, DI</code> sırasıyla iter. <code>POPA</code> ise yığından tam ters sırada çeker.<br>\n              3. <b>Stack Frame & Parametre Temizleme (RET n):</b> Fonksiyona yığın üzerinden parametre geçildiğinde, fonksiyon sonundaki <code>RET n</code> komutu dönüş adresini çektikten sonra SP'ye $n$ bayt ekleyerek yığını tek adımda temizler.\n            </div>\n          </div>\n        ",
+    "subtitle": "LIFO Bellek Yönetimi, SP:SS Dinamikleri, Fonksiyon Çağrısı ve BP Tabanlı Çerçeve",
+    "slideRef": "Hoca: Week 5 PPTX / w5, w10 PDF | Kitap: Barry B. Brey Bölüm 5 & 6",
+    "overviewHtml": "\n    <div class=\"lecture-hero-card\">\n      <div class=\"lecture-hero-badge\">AŞAMA 6: YIĞIN MİMARİSİ (LIFO) & ALT PROGRAMLAR</div>\n      <p class=\"lecture-hero-text\">\n        Yığın (Stack), geçici verileri saklamak, yazmaç durumlarını korumak ve fonksiyon çağırma (CALL/RET) \n        mekanizmasını yönetmek için kullanılan <b>Son Giren İlk Çıkar (LIFO)</b> bellek alanıdır.\n      </p>\n      <div class=\"lecture-golden-rule\">\n        💡 <strong>Hocanın 3 Altın Yığın Kuralı:</strong><br>\n        1. <b>Yığının Aşağı Büyümesi (Sınav Klasiği):</b> <code>PUSH</code> yapıldığında <strong>SP değeri 2 AZALIR</strong> ($SP = SP - 2$). <code>POP</code> yapıldığında ise <strong>SP değeri 2 ARTAR</strong> ($SP = SP + 2$).<br>\n        2. <b>CALL ve RET Mekanizması:</b> <code>CALL</code> komutu sıradaki komutun adresini (IP) yığına iter (PUSH IP). <code>RET</code> komutu ise yığından bu dönüş adresini çeker (POP IP).<br>\n        3. <b>BP Tabanlı Stack Frame:</b> SP sürekli değiştiği için fonksiyon parametrelerine erişimde taban göstericisi <code>BP</code> kullanılır (varsayılan segment <b>SS</b>).\n      </div>\n    </div>\n  ",
     "sections": [
       {
-        "title": "1. Yığın Mimarisi (LIFO), SS:SP ve Yığının Aşağı Büyümesi",
-        "contentHtml": "\n                  <p>Yığın bellek alanı, <code>SS (Stack Segment)</code> segment yazmacı ve <code>SP (Stack Pointer)</code> ofset yazmacı ile adreslenir:</p>\n                  <ul>\n                    <li><b>Fiziksel Yığın Adresi Formülü:</b> <code>Fiziksel Adres = (SS × 10H) + SP</code>.</li>\n                    <li><b>16-Bit Kelime Kuralı:</b> 8086 mimarisinde yığına 8-bitlik tek bir bayt itilemez. PUSH ve POP işlemleri daima 16-bit (2 bayt) kelimeler üzerinde gerçekleşir.</li>\n                    <li><b>Yığının Boşalması ve Taşması:</b> Yığın doldukça SP küçülür (0000h'a yaklaşır). Yığın boşaldıkça SP büyür.</li>\n                  </ul>\n                "
-      },
-      {
-        "title": "2. Komut Kılavuzu: Yığın ve Prosedür Komutları (PUSH, POP, PUSHA, POPA, PUSHF, POPF, CALL, RET, RET n)",
-        "contentHtml": "\n                  <div class=\"instruction-box\">\n                    <h4><code>PUSH</code> ve <code>POP</code></h4>\n                    <ul>\n                      <li><code>PUSH Kaynak</code>: SP = SP - 2 yapılır, ardından 16-bit veri <code>[SS:SP]</code> adresine yazılır.</li>\n                      <li><code>POP Hedef</code>: <code>[SS:SP]</code> adresindeki 16-bit veri hedefe okunur, ardından SP = SP + 2 yapılır.</li>\n                      <li><b>Stack ile Takas Kalıbı (Slayt 34 & Kod PDF'i Örnek 18):</b>\n                        <pre><code>PUSH AX     ; Once AX yigina atilir\nPUSH BX     ; Sonra BX yigina atilir\nPOP AX      ; Yiginin tepesindeki BX degeri AX'e cikar!\nPOP BX      ; Ilk atilan AX degeri BX'e cikar! (Takas tamamlandi)</code></pre>\n                      </li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4><code>PUSHA</code> ve <code>POPA</code> — Tüm Genel Yazmaçları Saklama</h4>\n                    <ul>\n                      <li><code>PUSHA</code>: 8 adet genel amaçlı yazmacı yığına şu kesin sırayla iter: <b>AX, CX, DX, BX, SP (orijinal), BP, SI, DI</b> (toplam 16 bayt yer kaplar).</li>\n                      <li><code>POPA</code>: Yığından sırayla geri çeker: <b>DI, SI, BP, (orijinal SP atlanır), BX, DX, CX, AX</b>.</li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4><code>PUSHF</code> ve <code>POPF</code> — Bayrakları Saklama</h4>\n                    <ul>\n                      <li><code>PUSHF</code>: 16-bitlik Flags yazmacının tamamını yığına iter.</li>\n                      <li><code>POPF</code>: Yığından 16-bitlik kelimeyi çeker ve Flags yazmacına yükler.</li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4><code>CALL</code>, <code>RET</code> ve <code>RET n</code> — Prosedür Çağırma ve Dönüş</h4>\n                    <ul>\n                      <li><b>Near CALL:</b> Yürütülmekte olan komutun hemen sonrasındaki <code>IP</code> adresini yığına iter ve hedef ofsete atlar. <b>Near RET:</b> Yığından <code>IP</code>'yi çeker.</li>\n                      <li><b>Far CALL:</b> Önce <code>CS</code>, sonra <code>IP</code> yığına itilir. <b>Far RET:</b> Önce <code>IP</code>, sonra <code>CS</code> yığından çekilir.</li>\n                      <li><b><code>RET n</code> (Callee Clean-up):</b> Dönüş adresini çektikten sonra <code>SP = SP + n</code> yapar. Fonksiyona yığından aktarılan $n$ baytlık parametreleri tek adımda temizlemek için kullanılır.</li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4>Standart Aktivasyon Kaydı (Stack Frame)</h4>\n                    <pre><code>Prosedur:\n  PUSH BP          ; Onceki cerceve gostericisini sakla\n  MOV BP, SP       ; Yeni cerceveyi yigin tepesine sabitle\n  MOV AX, [BP+4]   ; Yigindaki son parametreye eris\n  MOV BX, [BP+6]   ; Yigindaki ilk parametreye eris\n  ...\n  POP BP           ; Eski cerceveyi geri yukle\n  RET n            ; Parametreleri temizleyerek don</code></pre>\n                  </div>\n                "
-      },
-      {
-        "title": "3. İnteraktif Laboratuvar İstasyonu (3 Seviyeli Uygulama)",
-        "contentHtml": "\n                  <p>Aşağıdaki editörde yığın mekanizmasını ve prosedür çağrılarını test edin. <b>Cevap hazır gelmez</b>; yönergeleri izleyin.</p>\n                ",
+        "title": "1. Modül: Yığına Veri Atma (PUSH) — SP'nin 2 Azalması",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>PUSH Kaynak</code> (Yığına Kelime Ekleme)</h4>\n          <p>16-bitlik bir yazmaç veya bellek kelimesini yığının en üstüne (TOS) kaydeder.</p>\n          <ul>\n            <li>🚨 <strong>Donanımsal 2 Adım:</strong>\n              <br>1. Önce Yığın Göstericisi 2 azaltılır: $SP = SP - 2$\n              <br>2. Veri <code>SS:SP</code> adresine yazılır.\n            </li>\n            <li>Sadece 16-bit veri atılabilir (8-bit PUSH AL yapılamaz!).</li>\n          </ul>\n        </div>\n      ",
         "examples": [
           {
-            "id": "ex-m4-kolay",
+            "id": "ex-m6-push",
             "difficulty": "kolay",
-            "difficultyLabel": "🟢 Kolay: Doğrudan & Birebir",
-            "title": "Alıştırma 4.1: Stack ile Register Değiş Tokuşu (Hocanın Slayt 34 ve Örnek 18'i)",
-            "scenario": "Hocanın Week 3 sunumunda ve kod belgesindeki Hafta 11 Örnek 18'de yer alan stack tabanlı LIFO takas algoritması uygulanacaktır.",
-            "task": "AX içine 1111h, BX içine 2222h yükleyin. Sırasıyla PUSH AX ve PUSH BX yapın. Ardından POP AX ve POP BX yaparak değerleri takas edin ve HLT ile durun.",
-            "code": "; 🟢 Kolay: Stack ile Register Degis Tokusu (Hocanin Ornek 18'i)\nORG 100H\n\n; 1. AX icine 1111H, BX icine 2222H yukleyin:\n; TODO:\n\n\n; 2. Once AX'i, ardindan BX'i yigina itin (PUSH):\n; TODO:\n\n\n; 3. Once AX'e, ardindan BX'e yigindan cekin (POP) - LIFO geregi yer degisirler:\n; TODO:\n\n\nHLT",
+            "difficultyLabel": "🟢 1. Modül Labı: PUSH Komutu",
+            "title": "Mini-Lab 6.1: Yazmaçları Yığına Saklama ve SP Değişimi",
+            "scenario": "Kritik bir hesaplamadan önce AX = 1234H ve BX = 5678H değerlerini yığına saklayın. SP yazmacının her PUSH komutunda 2 azaldığını izleyin.",
+            "task": "PUSH AX ve PUSH BX komutlarını sırasıyla çalıştırın. Registers panelinde SP'nin azaldığını görün.",
+            "code": "; 🟢 Mini-Lab 6.1: PUSH Komutu\nORG 100H\n\nMOV AX, 1234H\nMOV BX, 5678H\n\n; 1. AX'i yigina atin (PUSH AX):\n; TODO:\n\n\n; 2. BX'i yigina atin (PUSH BX):\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AX, 1234H\nMOV BX, 5678H\nPUSH AX\nPUSH BX\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: PUSH AX — SP = SP - 2 olur ve 1234h yığına yazılır.",
+              "2. Satır: PUSH BX — SP = SP - 2 olur ve 5678h yığına yazılır."
+            ],
+            "examTips": "PUSH yapıldığında SP artmaz, DAİMA AZALIR!"
+          }
+        ]
+      },
+      {
+        "title": "2. Modül: Yığından Geri Yükleme (POP) — LIFO Sırası",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>POP Hedef</code> (Yığından Kelime Çekme)</h4>\n          <p>Yığının en üstündeki veriyi okur ve hedef yazmaca yazar.</p>\n          <ul>\n            <li>🚨 <strong>Donanımsal 2 Adım:</strong>\n              <br>1. <code>SS:SP</code> adresindeki veri hedefe okunur.\n              <br>2. Yığın Göstericisi 2 artırılır: $SP = SP + 2$\n            </li>\n            <li><strong>LIFO Kuralı:</strong> Son giren ilk çıkar! PUSH sırası $AX, BX$ ise, POP sırası tam tersi $BX, AX$ olmalıdır.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m6-pop-swap",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 2. Modül Labı: POP ile LIFO Takas",
+            "title": "Mini-Lab 6.2: Yığın Üzerinden İki Yazmacı Takas Etme",
+            "scenario": "AX = 1111H ve BX = 2222H verilmiştir. PUSH ve POP komutlarını kullanarak iki yazmacın değerini yığın üzerinden takas edin.",
+            "task": "PUSH AX, PUSH BX ardından POP AX, POP BX yaparak değerleri yer değiştirin.",
+            "code": "; 🟢 Mini-Lab 6.2: POP Komutu\nORG 100H\n\nMOV AX, 1111H\nMOV BX, 2222H\n\n; 1. AX ve BX'i yigina atin:\n; TODO:\n\n\n; 2. Ters sira ile AX ve BX'e geri cekin (LIFO Takas):\n; TODO:\n\n\nHLT\n",
             "solutionCode": "ORG 100H\nMOV AX, 1111H\nMOV BX, 2222H\nPUSH AX\nPUSH BX\nPOP AX\nPOP BX\nHLT",
             "solutionBreakdown": [
-              "1. Satır: AX = 1111h, BX = 2222h yüklenir.",
-              "2. Satır: PUSH AX — Yığına 1111h atılır (SP 2 azalır).",
-              "3. Satır: PUSH BX — Yığına 2222h atılır (yığının tepesinde artık 2222h var).",
-              "4. Satır: POP AX — Yığının tepesindeki 2222h AX içine çekilir!",
-              "5. Satır: POP BX — Yığında kalan 1111h BX içine çekilir! (Takas tamamlandı)."
+              "1. Adım: PUSH AX (1111h), PUSH BX (2222h) yığına girer.",
+              "2. Adım: POP AX çalışınca en son giren 2222h AX'e çıkar. POP BX çalışınca 1111h BX'e çıkar."
             ],
-            "examTips": "LIFO mantığında en son atılan (PUSH BX) ilk çekilir (POP AX). Bu sayede üçüncü bir yazmaç olmadan takas yapılır."
-          },
+            "examTips": "Yığın LIFO prensibinde çalıştığı için ters sırayla POP yapılarak doğal bir takas sağlanır."
+          }
+        ]
+      },
+      {
+        "title": "3. Modül: Prosedür / Fonksiyon Çağrısı (CALL & RET)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>CALL Prosedür</code> ve <code>RET</code></h4>\n          <p>Modüler programlamanın temelidir. Kod tekrarını önler.</p>\n          <ul>\n            <li><strong>CALL:</strong> Sırada çalıştırılacak komutun IP ofsetini yığına iter (<code>PUSH IP</code>) ve prosedür adresine atlar.</li>\n            <li><strong>RET:</strong> Prosedür bittiğinde yığından dönüş adresini çeker (<code>POP IP</code>) ve ana programa kaldığı yerden devam ettirir.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m4-orta",
+            "id": "ex-m6-call-ret",
             "difficulty": "orta",
-            "difficultyLabel": "🟡 Orta: Anlamlı Senaryo",
-            "title": "Alıştırma 4.2: Toplama Prosedürü Çağrısı (CALL & RET - Hocanın Örnek 17'si)",
-            "scenario": "Hocanın kod belgesindeki Hafta 11 Örnek 17'de yer alan 'sumAxBx' alt programı yazılacak ve çağrılacaktır.",
-            "task": "AX içine 10, BX içine 20 yükleyin. CALL sumAxBx ile alt rutine gidin. Alt rutinde DX içine AX ve BX'i toplayarak ekleyin ve RET ile dönün. Ana programda HLT ile durun.",
-            "code": "; 🟡 Orta: Prosedur Cagrisi ve Toplama (Hocanin Ornek 17'si)\nORG 100H\n\n; 1. AX icine 10, BX icine 20, DX icine 0 yukleyin:\n; TODO:\n\n\n; 2. sumAxBx alt programini CALL ile cagirin:\n; TODO:\n\n\n; 3. Fonksiyon donusunde islemi durdurun:\nHLT\n\n; --- sumAxBx Alt Programi ---\nsumAxBx:\n; 4. DX icine AX ve BX degerlerini toplayarak ekleyin:\n; TODO:\n\n\n; 5. RET komutu ile cagiran noktaya geri donun:\n; TODO:\n",
-            "solutionCode": "ORG 100H\nMOV AX, 10\nMOV BX, 20\nMOV DX, 0\nCALL sumAxBx\nHLT\n\nsumAxBx:\nADD DX, AX\nADD DX, BX\nRET",
+            "difficultyLabel": "🟡 3. Modül Labı: CALL ve RET Fonksiyonu",
+            "title": "Mini-Lab 6.3: Mutlak Değer Hesaplayan Prosedür Çağırma",
+            "scenario": "AX = -25 sayısını mutlak değere (+25) çeviren 'MUTLAK_AL' isimli alt programı CALL ile çağırın.",
+            "task": "CALL MUTLAK_AL komutunu çalıştırın. Fonksiyon içinde NEG AX ve RET yazın.",
+            "code": "; 🟡 Mini-Lab 6.3: CALL ve RET\nORG 100H\n\nMOV AX, -25\n\n; 1. Proseduru CALL ile cagirin:\n; TODO:\n\n\nHLT\n\nMUTLAK_AL PROC\n; 2. AX'in negatifini alip RET ile donun:\n; TODO:\n\n\nMUTLAK_AL ENDP\n",
+            "solutionCode": "ORG 100H\nMOV AX, -25\nCALL MUTLAK_AL\nHLT\n\nMUTLAK_AL PROC\nNEG AX\nRET\nMUTLAK_AL ENDP",
             "solutionBreakdown": [
-              "1. Satır: Girdi yazmaçları hazırlanır (AX=10, BX=20, DX=0).",
-              "2. Satır: CALL sumAxBx — Dönüş adresi yığına itilir ve sumAxBx etiketine atlanır.",
-              "3. Satır: sumAxBx içinde ADD DX, AX ve ADD DX, BX ile DX = 30 hesaplanır.",
-              "4. Satır: RET — Yığındaki dönüş adresi IP'ye geri yüklenir ve program HLT komutuna döner."
+              "1. Adım: CALL MUTLAK_AL — Dönüş adresi yığına itilir ve fonksiyona atlanır.",
+              "2. Adım: NEG AX — -25 sayısı +25 yapılır.",
+              "3. Adım: RET — Yığından dönüş adresi çekilip HLT satırına geri dönülür."
             ],
-            "examTips": "CALL komutunun IP'yi yığına ittiğini, RET komutunun ise yığındaki adresi çekip IP'ye yazarak geri döndüğünü unutmayın."
-          },
-          {
-            "id": "ex-m4-zor",
-            "difficulty": "zor",
-            "difficultyLabel": "🔴 Zor: Gerçek Hayat / Stack Frame & RET n",
-            "title": "Alıştırma 4.3: Stack Frame Mimarisi & Yığından Parametre Temizleme (RET n)",
-            "scenario": "Gömülü sistemlerde ve derleyicilerde (C calling convention) fonksiyonlara parametreler yığın üzerinden geçirilir. Prosedür BP üzerinden parametreleri okur, hesaplar ve RET 4 ile yığını tek adımda temizleyerek döner.",
-            "task": "Ana programda yığına sırasıyla 1000h ve 2000h parametrelerini itin (PUSH). CALL AddParams ile prosedürü çağırın. Prosedür içinde PUSH BP ve MOV BP, SP ile stack frame kurun. Parametreleri [BP+4] ve [BP+6] üzerinden AX ve BX'e okuyun. DX içinde toplayın. POP BP yapın ve RET 4 komutu ile yığını temizleyerek dönün. (SADECE Aşama 1-4 komutları).",
-            "code": "; 🔴 Zor: Stack Frame & RET n Callee Cleanup\nORG 100H\n\n; 1. Yigina sirasiyla 1000h ve 2000h parametrelerini itin (PUSH):\n; TODO:\n\n\n; 2. AddParams prosedurunu CALL ile cagirin:\n; TODO:\n\n\n; 3. Fonksiyon donusunde islemi durdurun:\nHLT\n\n; --- AddParams Proseduru ---\nAddParams:\n; 4. Stack frame kurun (PUSH BP ve MOV BP, SP):\n; TODO:\n\n\n; 5. Yigindan parametreleri AX ve BX'e okuyun ([BP+4] ve [BP+6]):\n; TODO:\n\n\n; 6. DX icinde toplami elde edin (DX=0, ADD DX, AX ve ADD DX, BX):\n; TODO:\n\n\n; 7. Onceki BP'yi geri yukleyin (POP BP):\n; TODO:\n\n\n; 8. RET 4 ile donus adresini cekip yigindaki 4 bayti temizleyin:\n; TODO:\n",
-            "solutionCode": "ORG 100H\nPUSH 1000H\nPUSH 2000H\nCALL AddParams\nHLT\n\nAddParams:\nPUSH BP\nMOV BP, SP\nMOV AX, [BP+4]\nMOV BX, [BP+6]\nMOV DX, 0\nADD DX, AX\nADD DX, BX\nPOP BP\nRET 4",
-            "solutionBreakdown": [
-              "1-2. Satırlar: Yığına 1000h ve 2000h parametreleri atılır (toplam 4 bayt).",
-              "3. Satır: CALL AddParams — Dönüş IP adresi (2 bayt) yığına itilir.",
-              "4-5. Satırlar: PUSH BP ve MOV BP, SP — Çerçeve sabitlenir. Yığında: [BP]=Eski BP, [BP+2]=Dönüş IP, [BP+4]=2000h, [BP+6]=1000h bulunur.",
-              "6-7. Satırlar: Parametreler okunup DX = 3000h hesaplanır.",
-              "8. Satır: POP BP ile çağıran fonksiyonun BP'si geri yüklenir.",
-              "9. Satır: RET 4 — Dönüş adresini IP'ye çeker ve SP = SP + 4 yaparak yığındaki 2 parametreyi tek adımda temizler."
-            ],
-            "examTips": "Sınavda 'Callee clean-up' mekanizması sorulduğunda cevabın RET n olduğu ve ilk parametrenin [BP+4]'ten başladığı (çünkü CALL 2 bayt, PUSH BP 2 bayt tüketir) kuralını unutmayın!"
+            "examTips": "CALL dönüş adresi yığında saklanır; bu yüzden fonksiyon içinde PUSH yapıldıysa mutlaka RET'ten önce POP edilmelidir!"
           }
         ]
       }
@@ -646,127 +822,95 @@ export const MILESTONE_LECTURES: Record<string, MilestoneLecture> = {
   "milestone-7": {
     "milestoneId": "milestone-7",
     "milestoneNumber": 7,
-    "title": "Dizi & String İşlemleri (MOVS, LODS, STOS, CMPS, SCAS, REP)",
-    "subtitle": "Yüksek Hızlı Donanımsal Blok Transferi, Arama, Karşılaştırma, DF Bayrağı ve XLAT Lookup Tabloları",
-    "slideRef": "Hoca: Week 4 PPTX / w4, w11 PDF, Code Examples PDF | Kitap: Barry B. Brey Bölüm 4",
-    "overviewHtml": "\n          <div class=\"lecture-hero-card\">\n            <div class=\"lecture-hero-badge\">AŞAMA 7: DİZİ VE STRİNG İŞLEMLERİ</div>\n            <p class=\"lecture-hero-text\">\n              8086 mikroişlemcisinde ardışık bellek blokları (metinler, diziler, veri tamponları) döngü yazmadan, tek komut ve donanımsal <b>Tekrar Ön Ekleri (REP Prefixes)</b> ile saat çevrimi düzeyinde yüksek hızla işlenir.\n            </p>\n            <div class=\"lecture-golden-rule\">\n              💡 <strong>Hocanın Altın Kuralları & Sınav Kılavuzu:</strong><br>\n              1. <b>Sabit Segment Kuralı:</b> String komutlarında kaynak adres <strong>DAİMA DS:SI</strong>, hedef adres ise <strong>DAİMA ES:DI</strong> olmak zorundadır. Hedef segment (ES) kesinlikle değiştirilemez.<br>\n              2. <b>Direction Flag (CLD / STD Tuzağı):</b> String işleminden önce yön bayrağını belirlemek <strong>ZORUNLUDUR</strong>. Artan adreslerde (0000 ➔ FFFF) <code>CLD</code> (DF=0) kullanılmalıdır. <code>CLD</code> unutulursa DF bayrağı 1 kalabilir ve hafıza geriye doğru yazılarak bozulur!<br>\n              3. <b>XLAT Tablo Dönüşümü:</b> <code>XLAT</code> komutu <code>[DS:BX + AL]</code> adresindeki tablo verisini doğrudan AL içine yükler. Karakter dönüşümleri ve 7-segment gösterge kodlamasında hocanın favori komutudur.\n            </div>\n          </div>\n        ",
+    "title": "Dizi ve String İşlemleri (MOVS, LODS, STOS, CMPS, SCAS, REP)",
+    "subtitle": "Donanımsal Hızlandırıcılı Blok Bellek Transferi, Arama ve Direction Flag",
+    "slideRef": "Hoca: Week 6 PPTX / w6 PDF | Kitap: Barry B. Brey Bölüm 5",
+    "overviewHtml": "\n    <div class=\"lecture-hero-card\">\n      <div class=\"lecture-hero-badge\">AŞAMA 7: DONANIMSAL STRİNG İŞLEMCİSİ</div>\n      <p class=\"lecture-hero-text\">\n        8086 mikroişlemcisi bellek bloklarını kopyalamak, aramak ve doldurmak için donanımsal özel komutlara sahiptir. \n        Tek bir <code>REP MOVSB</code> komutu binlerce baytlık veriyi işlemci döngü cezası olmadan yüksek hızla aktarır.\n      </p>\n      <div class=\"lecture-golden-rule\">\n        💡 <strong>Hocanın 3 Altın String Kuralı:</strong><br>\n        1. <b>Sabit Yazmaç Çiftleri (Asla Değişmez!):</b> Kaynak daima <code>DS:SI</code>, hedef ise daima <code>ES:DI</code> olmak zorundadır.<br>\n        2. <b>Direction Flag (DF):</b> <code>CLD</code> (Clear DF ➔ 0) indeksleri <b>ARTIRIR</b> (ileri yönde gider). <code>STD</code> (Set DF ➔ 1) indeksleri <b>AZALTIR</b> (geri yönde gider). Her string işleminden önce yön bayrağı belirlenmelidir!<br>\n        3. <b>REP Ön Eki:</b> <code>CX</code> sayacı sıfır olana kadar komutu tekrarlar ($CX = CX - 1$, $SI = SI pm 1$, $DI = DI pm 1$).\n      </div>\n    </div>\n  ",
     "sections": [
       {
-        "title": "1. String İşlem Mimarisi ve Direction Flag (DF)",
-        "contentHtml": "\n                  <p>String komutları, diğer 8086 komutlarından farklı olarak otomatik adres artırma/azaltma yeteneğine sahiptir:</p>\n                  <ul>\n                    <li><b>Kaynak Yazmaç:</b> <code>SI (Source Index)</code> — Varsayılan segmenti <code>DS</code>'dir.</li>\n                    <li><b>Hedef Yazmaç:</b> <code>DI (Destination Index)</code> — Varsayılan segmenti <b>KESİNLİKLE ES</b>'dir.</li>\n                    <li><b>Yön Bayrağı (Direction Flag - DF):</b>\n                      <ul>\n                        <li><code>CLD (Clear Direction Flag):</code> DF = 0 yapar. Her bayt/kelime işleminden sonra SI ve DI <b>OTOMATİK ARTAR</b> (+1 veya +2).</li>\n                        <li><code>STD (Set Direction Flag):</code> DF = 1 yapar. Her işlemden sonra SI ve DI <b>OTOMATİK AZALIR</b> (-1 veya -2).</li>\n                      </ul>\n                    </li>\n                  </ul>\n                "
-      },
-      {
-        "title": "2. Komut Kılavuzu: 5 String Komutu, Tekrar Ön Ekleri ve XLAT",
-        "contentHtml": "\n                  <div class=\"instruction-box\">\n                    <h4>5 Temel String Komutu</h4>\n                    <table class=\"lecture-table\">\n                      <thead>\n                        <tr><th>Komut (Byte / Word)</th><th>Kaynak</th><th>Hedef</th><th>İşlem Özeti</th></tr>\n                      </thead>\n                      <tbody>\n                        <tr><td><code>MOVSB / MOVSW</code></td><td><code>[DS:SI]</code></td><td><code>[ES:DI]</code></td><td>Bellekten belleğe blok kopyalar.</td></tr>\n                        <tr><td><code>LODSB / LODSW</code></td><td><code>[DS:SI]</code></td><td><code>AL / AX</code></td><td>Bellekten yazmaca veri yükler (SI güncellenir).</td></tr>\n                        <tr><td><code>STOSB / STOSW</code></td><td><code>AL / AX</code></td><td><code>[ES:DI]</code></td><td>Yazmaçtaki veriyi belleğe depolar (Bellek sıfırlama/doldurma).</td></tr>\n                        <tr><td><code>CMPSB / CMPSW</code></td><td><code>[DS:SI]</code></td><td><code>[ES:DI]</code></td><td>İki bellek bloğunu karşılaştırır (bayrakları kurar).</td></tr>\n                        <tr><td><code>SCASB / SCASW</code></td><td><code>AL / AX</code></td><td><code>[ES:DI]</code></td><td>Bellekte belirli bir karakteri veya sayıyı arar (bayrakları kurar).</td></tr>\n                      </tbody>\n                    </table>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4>Tekrar Ön Ekleri (Repeat Prefixes)</h4>\n                    <ul>\n                      <li><code>REP (Repeat):</code> <code>CX != 0</code> olduğu sürece komutu tekrar eder. Her adımda <code>CX = CX - 1</code> yapar. (MOVS ve STOS ile kullanılır).</li>\n                      <li><code>REPE / REPZ (Repeat while Equal / Zero):</code> <code>CX != 0</code> VE <code>ZF == 1</code> olduğu sürece tekrar eder (CMPS ve SCAS ile kullanılır).</li>\n                      <li><code>REPNE / REPNZ (Repeat while Not Equal / Not Zero):</code> <code>CX != 0</code> VE <code>ZF == 0</code> olduğu sürece tekrar eder. Aranan karakter bulunduğunda (ZF=1 olduğunda) döngüyü kırar.</li>\n                    </ul>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4><code>XLAT / XLATB</code> — Tablo Çeviri Komutu</h4>\n                    <ul>\n                      <li><b>Çalışma Prensibi:</b> <code>AL = [DS:BX + AL]</code>. BX yazmacındaki taban adresine AL'deki indis eklenir ve o adresteki bayt AL içine yazılır.</li>\n                      <li><b>Kullanım Örneği (Slayt 33):</b> Küçük harfi büyük harfe veya BCD rakamı 7-segment LED koduna çevirme.</li>\n                    </ul>\n                  </div>\n                "
-      },
-      {
-        "title": "3. İnteraktif Laboratuvar İstasyonu (3 Seviyeli Uygulama)",
-        "contentHtml": "\n                  <p>Aşağıdaki editörde string komutlarını test edin. <b>Cevap hazır gelmez</b>; yönergeleri izleyin.</p>\n                ",
+        "title": "1. Modül: Direction Flag (CLD & STD) ve İndeks Yönü",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>CLD</code> (Clear Direction Flag) ve <code>STD</code> (Set Direction Flag)</h4>\n          <p>String komutlarının bellekte ileriye doğru mu (artan adresler) yoksa geriye doğru mu (azalan adresler) gideceğini kontrol eder.</p>\n          <ul>\n            <li><code>CLD</code> ➔ $DF = 0$. String komutları çalıştıkça SI ve DI <b>OTOMATİK ARTAR</b> ($+1$ veya $+2$).</li>\n            <li><code>STD</code> ➔ $DF = 1$. String komutları çalıştıkça SI ve DI <b>OTOMATİK AZALIR</b> ($-1$ veya $-2$).</li>\n          </ul>\n        </div>\n      ",
         "examples": [
           {
-            "id": "ex-m6-kolay",
+            "id": "ex-m7-cld",
             "difficulty": "kolay",
-            "difficultyLabel": "🟢 Kolay: Doğrudan & Birebir",
-            "title": "Alıştırma 6.1: REP MOVSB ile 10-Baytlık Blok Kopyalama (Hocanın Slayt 28 Örneği)",
-            "scenario": "Hocanın Week 4 Slayt 28'de sunduğu klasik REP MOVSB blok transfer algoritması uygulanacaktır. [0200h] adresindeki 10 baytlık veri [0300h] adresine tek komutta aktarılacaktır.",
-            "task": "CLD ile yönü artan yapın. CX içine 10 yükleyin. SI içine 0200h, DI içine 0300h yükleyin. REP MOVSB komutunu çalıştırarak blok kopyalamayı tamamlayın.",
-            "code": "; 🟢 Kolay: REP MOVSB ile Blok Kopyalama (Slayt 28)\nORG 100H\n\n; 1. Direction Flag'i sifirlayin (artan adres icin CLD):\n; TODO:\n\n\n; 2. Sayac yazmaci CX'e 10 yukleyin:\n; TODO:\n\n\n; 3. Kaynak adresini SI'ye yukleyin (0200h):\n; TODO:\n\n\n; 4. Hedef adresini DI'ye yukleyin (0300h):\n; TODO:\n\n\n; 5. REP MOVSB komutu ile blok kopyalamayi baslatin:\n; TODO:\n\n\nHLT",
-            "initialMemory": [
-              {
-                "segment": 0,
-                "offset": 512,
-                "bytes": [
-                  65,
-                  83,
-                  77,
-                  56,
-                  48,
-                  56,
-                  54,
-                  83,
-                  73,
-                  77
-                ]
-              }
-            ],
-            "solutionCode": "ORG 100H\nCLD\nMOV CX, 10\nMOV SI, 0200H\nMOV DI, 0300H\nREP MOVSB\nHLT",
+            "difficultyLabel": "🟢 1. Modül Labı: CLD Komutu",
+            "title": "Mini-Lab 7.1: İleri Yön Bayrağını Kurma (CLD)",
+            "scenario": "Dizi kopyalama işlemi öncesinde Direction Flag (DF) bayrağını sıfırlayarak indekslerin artan yönde çalışmasını güvence altına alın.",
+            "task": "CLD komutunu çalıştırın ve Flags panelinde DF bayrağının 0 olduğunu doğrulayın.",
+            "code": "; 🟢 Mini-Lab 7.1: CLD Komutu\nORG 100H\n\n; 1. Direction Flag'i sifirlayarak ileri yone ayarlayin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nCLD\nHLT",
             "solutionBreakdown": [
-              "1. Satır: CLD — DF=0 yapılarak SI ve DI'nin her aktarımda 1 artması sağlanır.",
-              "2. Satır: MOV CX, 10 — 10 bayt aktarılacağı belirtilir.",
-              "3-4. Satırlar: SI = 0200h (Kaynak) ve DI = 0300h (Hedef) hazırlanır.",
-              "5. Satır: REP MOVSB — Donanımsal döngüyle 10 bayt tek adımda [0300h] adresine aktarılır, CX=0 olur."
+              "1. Satır: CLD — Direction Flag (DF) 0 yapılır. İndeksler (SI/DI) komut yürütüldükçe ileri yönde artacaktır."
             ],
-            "examTips": "Sınavda string kopyalamada CLD komutunu yazmayı unutmak doğrudan puan kaybıdır."
-          },
+            "examTips": "String operasyonlarına başlarken CLD çalıştırmak profesyonel assembly programcılığının birinci kuralıdır."
+          }
+        ]
+      },
+      {
+        "title": "2. Modül: Blok Bellek Kopyalama (REP MOVSB)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>REP MOVSB</code> — Repeat Move String Byte</h4>\n          <p><code>DS:SI</code> kaynak adresinden <code>ES:DI</code> hedef adresine bayt bayt kopyalar.</p>\n          <ul>\n            <li><code>REP</code> ön eki sayesinde işlemci tek komutta $CX$ defa tekrar eder.</li>\n            <li>Her adımda: $[ES:DI] = [DS:SI]$, $SI = SI + 1$, $DI = DI + 1$, $CX = CX - 1$.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m6-orta",
+            "id": "ex-m7-movsb",
             "difficulty": "orta",
-            "difficultyLabel": "🟡 Orta: Anlamlı Senaryo",
-            "title": "Alıştırma 6.2: REPNE SCASB ile String İçinde Karakter Arama",
-            "scenario": "Bellekteki bir metin tamponunda ('HELLO WORLD') 'W' karakterinin (57h) konumu bulunacak ve DI göstergesinden indeks hesaplanacaktır.",
-            "task": "CLD uygulayın. AL içine 'W' (57h) yükleyin. DI içine metin adresi olan 0200h'ı, CX içine metin uzunluğu olan 11'i yükleyin. REPNE SCASB ile arama yapın. Eşleşme bulunduğunda döngü durur.",
-            "code": "; 🟡 Orta: REPNE SCASB ile Karakter Arama\nORG 100H\n\n; 1. CLD ile yonu belirleyin:\n; TODO:\n\n\n; 2. Aranan karakter olan 'W' (57h) sabitini AL'ye yukleyin:\n; TODO:\n\n\n; 3. Metin adresi olan 0200h'i DI'ye, tampon boyutu 11'i CX'e yukleyin:\n; TODO:\n\n\n; 4. REPNE SCASB komutunu calistirarak karakteri arayin:\n; TODO:\n\n\nHLT",
+            "difficultyLabel": "🟡 2. Modül Labı: REP MOVSB",
+            "title": "Mini-Lab 7.2: 4 Baytlık Bloğu Donanımsal Olarak Kopyalama",
+            "scenario": "Belleğin [0200H] adresindeki 4 baytlık veriyi [0210H] adresine REP MOVSB komutu ile tek seferde kopyalayın.",
+            "task": "SI=0200H, DI=0210H, CX=4 ayarlayın. CLD ardından REP MOVSB komutunu çalıştırın.",
+            "code": "; 🟡 Mini-Lab 7.2: REP MOVSB\nORG 100H\n\nMOV SI, 0200H\nMOV DI, 0210H\nMOV CX, 4\n\n; 1. CLD ile ileri yonu secin:\n; TODO:\n\n\n; 2. REP MOVSB komutu ile blogu kopyalayin:\n; TODO:\n\n\nHLT\n",
             "initialMemory": [
               {
                 "segment": 0,
                 "offset": 512,
                 "bytes": [
-                  72,
-                  69,
-                  76,
-                  76,
-                  79,
-                  32,
-                  87,
-                  79,
-                  82,
-                  76,
-                  68
+                  170,
+                  187,
+                  204,
+                  221
                 ]
               }
             ],
-            "solutionCode": "ORG 100H\nCLD\nMOV AL, 'W'\nMOV DI, 0200H\nMOV CX, 11\nREPNE SCASB\nHLT",
+            "solutionCode": "ORG 100H\nMOV SI, 0200H\nMOV DI, 0210H\nMOV CX, 4\nCLD\nREP MOVSB\nHLT",
             "solutionBreakdown": [
-              "1. Satır: CLD — Arama yönü ileri (artan) olarak kurulur.",
-              "2. Satır: AL = 'W' (57h) — Karşılaştırılacak değer belirlenir.",
-              "3. Satır: DI = 0200h ve CX = 11 hazırlanır.",
-              "4. Satır: REPNE SCASB — Her adımda [ES:DI] ile AL karşılaştırılır. 'W' bulunduğunda ZF=1 olur ve döngü derhal durur."
+              "1. Satır: CLD — Yön ileri.",
+              "2. Satır: REP MOVSB — 4 baytlık AA, BB, CC, DD bloğu doğrudan [0210H] adresine kopyalanır ve CX=0 olur."
             ],
-            "examTips": "REPNE SCASB aranan karakter bulunduğunda (ZF=1) veya CX=0 olduğunda durur. Durduğunda DI aranan elemanın bir sonraki adresini gösterir."
-          },
+            "examTips": "MOVSB bayt, MOVSW kelime (word / 2 bayt) kopyalar."
+          }
+        ]
+      },
+      {
+        "title": "3. Modül: Bellek Doldurma / Sıfırlama (REP STOSB)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>REP STOSB</code> (Store String Byte / Memset)</h4>\n          <p><code>AL</code> akümülatöründeki baytı <code>ES:DI</code> adresindeki bellek bloğuna $CX$ defa yazar.</p>\n          <ul>\n            <li>Bir bellek alanını hızlıca sıfırlamak veya sabit bir karakterle doldurmak için kullanılır.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m6-zor",
-            "difficulty": "zor",
-            "difficultyLabel": "🔴 Zor: Gerçek Hayat / Tablo Çevrimi",
-            "title": "Alıştırma 6.3: XLAT ile BCD-to-7 Segment Gösterge Kodlama (Slayt 33 Örneği)",
-            "scenario": "Hocanın Week 4 Slayt 33'te anlattığı XLAT komutu kullanılarak, 0-9 arası bir BCD rakamı (örn: 3) 7-segment LED göstergesi için gerekli hex koduna dönüştürülecektir.",
-            "task": "Belleğin [0200h] adresindeki 7-segment tablosunun taban adresini BX'e LEA ile alın. Çevrilecek rakamı AL içine 3 olarak yükleyin. XLAT komutunu çalıştırarak AL içine 3 rakamının 7-segment kodunu (4Fh) getirin.",
-            "code": "; 🔴 Zor: XLAT Tablo Cevrimi (Slayt 33)\nORG 100H\n\n; 1. Tablonun taban adresini (0200h) LEA ile BX'e yukleyin:\n; TODO:\n\n\n; 2. Indis olarak AL icine 3 rakamini yukleyin:\n; TODO:\n\n\n; 3. XLAT komutu ile tablodan degeri AL'ye donusturun:\n; TODO:\n\n\nHLT",
+            "id": "ex-m7-stosb",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 3. Modül Labı: REP STOSB",
+            "title": "Mini-Lab 7.3: 5 Baytlık Bellek Bloğunu Sıfırlama",
+            "scenario": "Belleğin [0200H] adresindeki 5 baytlık alanı AL = 00H ile doldurarak sıfırlayın.",
+            "task": "DI=0200H, CX=5, AL=0 yapın. CLD ardından REP STOSB çalıştırın.",
+            "code": "; 🟢 Mini-Lab 7.3: REP STOSB\nORG 100H\n\nMOV DI, 0200H\nMOV CX, 5\nMOV AL, 00H\n\n; 1. CLD ve REP STOSB ile bellek alanini sifirlayin:\n; TODO:\n\n\nHLT\n",
             "initialMemory": [
               {
                 "segment": 0,
                 "offset": 512,
                 "bytes": [
-                  63,
-                  6,
-                  91,
-                  79,
-                  102,
-                  109,
-                  125,
-                  7,
-                  127,
-                  111
+                  17,
+                  34,
+                  51,
+                  68,
+                  85
                 ]
               }
             ],
-            "solutionCode": "ORG 100H\nLEA BX, [0200H]\nMOV AL, 3\nXLAT\nHLT",
+            "solutionCode": "ORG 100H\nMOV DI, 0200H\nMOV CX, 5\nMOV AL, 00H\nCLD\nREP STOSB\nHLT",
             "solutionBreakdown": [
-              "1. Satır: LEA BX, [0200H] — Dönüşüm tablosunun başlangıç ofseti BX'e alınır.",
-              "2. Satır: MOV AL, 3 — Çevrilecek indis AL'ye atanır.",
-              "3. Satır: XLAT — Donanımsal olarak [BX + AL] adresi hesaplanır (0200h + 3 = 0203h). O adresteki 4Fh (3 rakamının 7-segment LED kodu) AL içine yazılır."
+              "1. Satır: CLD",
+              "2. Satır: REP STOSB — 0200H'dan itibaren 5 bayt sıfırlanır (00 00 00 00 00)."
             ],
-            "examTips": "XLAT komutu örtük olarak AL ve DS:BX yazmaçlarını kullanır. Komuta hiçbir operant verilmez (yalnızca XLAT yazılır)."
+            "examTips": "STOSB kaynak olarak daima AL akümülatörünü kullanır."
           }
         ]
       }
@@ -834,68 +978,72 @@ export const MILESTONE_LECTURES: Record<string, MilestoneLecture> = {
     "milestoneId": "milestone-9",
     "milestoneNumber": 9,
     "title": "Giriş / Çıkış (I/O) Sistemleri, Portlar ve Sistem Kesmeleri (IN, OUT, INT, IVT)",
-    "subtitle": "Kesme Vektör Tablosu (00000H–003FFH), İlk 5 Özel Kesme (INT 0–4), Donanımsal Kesme Döngüsü ve BIOS/DOS Servisleri",
-    "slideRef": "Hoca: Week 6 w6, Week 12 w12a PDF, Code Examples PDF | Kitap: Barry B. Brey Bölüm 12",
-    "overviewHtml": "\n          <div class=\"lecture-hero-card\">\n            <div class=\"lecture-hero-badge\">AŞAMA 9: KESME YÖNETİMİ & SİSTEM SERVİSLERİ</div>\n            <p class=\"lecture-hero-text\">\n              Kesme (Interrupt), işlemcinin normal akışını anlık olarak durdurup acil bir olaya veya donanım aygıtına yanıt vermesini sağlayan mekanizmadır. \n              8086 mimarisinde 256 adet kesme tanımlıdır ve her birinin servis rutini (ISR) adresi <b>Kesme Vektör Tablosu'nda (IVT)</b> saklanır.\n            </p>\n            <div class=\"lecture-golden-rule\">\n              💡 <strong>Hocanın Altın Kuralları & Sınav Kılavuzu:</strong><br>\n              1. <b>IVT Konumu & Formülü (Sınav Sorusudur):</b> IVT daima belleğin ilk 1024 baytında (<code>00000H – 003FFH</code>) yer alır. Her vektör 4 bayttır (2 bayt IP, 2 bayt CS). Kesme Numarası $N$ olan bir kesmenin adresi:<br>\n                 • $IP Adresi = N \\times 4$<br>\n                 • $CS Adresi = (N \\times 4) + 2$<br>\n              2. <b>İlk 5 Özel Kesme (Ayrılmış Kesmeler):</b><br>\n                 • <code>INT 0:</code> Divide Error (0'a bölme veya bölme aşımı)<br>\n                 • <code>INT 1:</code> Single Step / Trap (Adım adım hata ayıklama)<br>\n                 • <code>INT 2:</code> NMI (Non-Maskable Interrupt - CLI ile engellenemez)<br>\n                 • <code>INT 3:</code> Breakpoint (1-baytlık özel 0xCC makine kodu)<br>\n                 • <code>INT 4:</code> Overflow (INTO komutu ile taşma varsa)<br>\n              3. <b>IRET vs RET Farkı:</b> Normal <code>RET</code> yalnızca yığından dönüş adresini çekerken, <code>IRET</code> komutu yığından sırasıyla <strong>IP, CS ve FLAGS</strong> yazmaçlarını çekerek işlemcinin kesme öncesi durumunu eksiksiz geri yükler.\n            </div>\n          </div>\n        ",
+    "subtitle": "Port Tabanlı Donanım İletişimi, 256 Vektörlü IVT, BIOS ve DOS Sistem Servisleri",
+    "slideRef": "Hoca: Week 6 & 12 PDF, Code Examples PDF | Kitap: Barry B. Brey Bölüm 11 & 12",
+    "overviewHtml": "\n    <div class=\"lecture-hero-card\">\n      <div class=\"lecture-hero-badge\">AŞAMA 9: PORT I/O & SİSTEM KESMELERİ (INTERRUPTS)</div>\n      <p class=\"lecture-hero-text\">\n        Mikroişlemcinin klavye, ekran kartı ve seri port gibi çevre birimleriyle haberleşmesi <b>Port Giriş/Çıkışı (IN/OUT)</b> \n        ve <b>Donanımsal/Yazılımsal Kesmeler (INT)</b> ile gerçekleştirilir.\n      </p>\n      <div class=\"lecture-golden-rule\">\n        💡 <strong>Hocanın 3 Altın I/O & Kesme Kuralı:</strong><br>\n        1. <b>Port Adresi Kuralı (Sınav Klasiği):</b> Port numarası 0–255 (00H–0FFH) arasında ise sabit yazılabilir (<code>IN AL, 80H</code>). Eğer port numarası 255'ten büyükse port adresi <strong>MUTLAKA DX YAZMACINA</strong> yüklenmelidir: <code>MOV DX, 03F8H</code> ➔ <code>OUT DX, AL</code>.<br>\n        2. <b>IVT Konumu ve Formülü:</b> Kesme Vektör Tablosu daima belleğin ilk 1024 baytında (<code>00000H – 003FFH</code>) yer alır. Kesme $N$ adresi: $IP = N \\times 4$, $CS = (N \\times 4) + 2$.<br>\n        3. <b>IRET vs RET:</b> Normal RET sadece IP'yi çekerken, <code>IRET</code> yığından sırasıyla <strong>IP, CS ve FLAGS</strong> çekerek tam geri dönüş sağlar.\n      </div>\n    </div>\n  ",
     "sections": [
       {
-        "title": "1. Kesme Mekanizması & Kesme Vektör Tablosu (IVT)",
-        "contentHtml": "\n                  <p>8086 mikroişlemcisinde kesmeler 3 gruba ayrılır:</p>\n                  <ul>\n                    <li><b>Donanımsal Kesmeler (Hardware Interrupts):</b> INTR bacağı (Maskelenebilir, 8259 PIC denetleyicisi ile yönetilir) ve NMI bacağı (Maskelenemez).</li>\n                    <li><b>Yazılımsal Kesmeler (Software Interrupts):</b> Programcı tarafından çağrılan <code>INT n</code> komutları (örn: <code>INT 10h, INT 21h</code>).</li>\n                    <li><b>İstisnalar (Exceptions / Hatalar):</b> Sıfıra bölme gibi CPU'nun kendi ürettiği donanımsal hatalar (<code>INT 0</code>).</li>\n                  </ul>\n\n                  <h4>Kesme Vektör Tablosu (IVT) Haritası:</h4>\n                  <table class=\"lecture-table\">\n                    <thead>\n                      <tr><th>Kesme No</th><th>Vektör Bellek Adresi</th><th>Görevi / Tanımı</th></tr>\n                    </thead>\n                    <tbody>\n                      <tr><td><code>INT 0</code></td><td><code>00000H – 00003H</code></td><td>Bölme Hatası (Divide by Zero / Overflow)</td></tr>\n                      <tr><td><code>INT 1</code></td><td><code>00004H – 00007H</code></td><td>Tek Adım İnceleme (Trap Flag TF=1 ise her komuttan sonra)</td></tr>\n                      <tr><td><code>INT 2</code></td><td><code>00008H – 0000BH</code></td><td>Maskelenemez Kesme (NMI - Güç kesintisi, RAM parite hatası)</td></tr>\n                      <tr><td><code>INT 3</code></td><td><code>0000CH – 0000FH</code></td><td>Kesme Noktası (Breakpoint - Debugger'lar komutun ilk baytına 0CCh yazar)</td></tr>\n                      <tr><td><code>INT 4</code></td><td><code>00010H – 00013H</code></td><td>Taşma Kesmesi (INTO komutu ile OF=1 ise tetiklenir)</td></tr>\n                      <tr><td><code>INT 5–31</code></td><td><code>00014H – 0007FH</code></td><td>Intel tarafından gelecekteki işlemciler için ayrılmıştır</td></tr>\n                      <tr><td><code>INT 32–255</code></td><td><code>00080H – 003FFH</code></td><td>BIOS ve DOS servisleri ile kullanıcı donanım kesmeleri</td></tr>\n                    </tbody>\n                  </table>\n                "
-      },
-      {
-        "title": "2. Komut Kılavuzu: Kesme Yaşam Döngüsü & BIOS/DOS Fonksiyonları",
-        "contentHtml": "\n                  <div class=\"instruction-box\">\n                    <h4>Donanımın 7 Adımlı Kesme Tepkisi (Kesme Çevrimi)</h4>\n                    <ol>\n                      <li>Flags (Bayraklar) yazmacı yığına itilir (PUSH FLAGS).</li>\n                      <li>IF (Interrupt Flag) ve TF (Trap Flag) sıfırlanır (yeni maskelenebilir kesmeler engellenir).</li>\n                      <li>Mevcut CS yazmacı yığına itilir (PUSH CS).</li>\n                      <li>Mevcut IP yazmacı yığına itilir (PUSH IP).</li>\n                      <li>Kesme numarası $N$ için $N \\times 4$ adresinden yeni IP, $(N \\times 4) + 2$ adresinden yeni CS okunur.</li>\n                      <li>Kesme Servis Rutini (ISR) çalıştırılır.</li>\n                      <li>ISR sonundaki <code>IRET</code> komutu yığından sırasıyla <b>IP, CS ve FLAGS</b> değerlerini çekerek programı kaldığı yerden devam ettirir.</li>\n                    </ol>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4>BIOS & DOS Servis Komutları</h4>\n                    <ul>\n                      <li><code>INT 10h</code> (BIOS Video Servisleri):\n                        <ul>\n                          <li><code>AH = 0Eh:</code> Teletype Karakter Yazma. <code>AL = Karakter ASCII</code>, imleç otomatik ilerler.</li>\n                        </ul>\n                      </li>\n                      <li><code>INT 16h</code> (BIOS Klavye Servisleri):\n                        <ul>\n                          <li><code>AH = 00h:</code> Klavye Tuşu Bekleme. Basılan tuşun ASCII kodu <code>AL</code> içine, donanım tarama kodu (Scan Code) <code>AH</code> içine döner.</li>\n                        </ul>\n                      </li>\n                      <li><code>INT 21h</code> (DOS Servisleri):\n                        <ul>\n                          <li><code>AH = 01h:</code> Klavyeden karakter oku ve ekrana bas.</li>\n                          <li><code>AH = 02h:</code> DL'deki tek karakteri ekrana bas.</li>\n                          <li><code>AH = 09h:</code> DX ofsetindeki '$' ile biten metni ekrana bas.</li>\n                          <li><code>AH = 4Ch:</code> Programı sonlandır ve DOS'a dön.</li>\n                        </ul>\n                      </li>\n                    </ul>\n                  </div>\n                "
-      },
-      {
-        "title": "3. İnteraktif Laboratuvar İstasyonu (3 Seviyeli Uygulama)",
-        "contentHtml": "\n                  <p>Aşağıdaki editörde kesme komutlarını ve BIOS fonksiyonlarını test edin. <b>Cevap hazır gelmez</b>; yönergeleri izleyin.</p>\n                ",
+        "title": "1. Modül: Port Giriş/Çıkışı (IN ve OUT) — DX Kuralı",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>IN Akümülatör, Port</code> ve <code>OUT Port, Akümülatör</code></h4>\n          <p>İşlemci ile çevre birimleri (I/O Portları) arasında bayt veya kelime aktarır.</p>\n          <ul>\n            <li>Veri aktarımı <b>YALNIZCA AL VEYA AX</b> üzerinden yapılabilir!</li>\n            <li>🚨 <strong>DX Kuralı:</strong> 255'ten büyük port adresleri komutun içine yazılamaz; DX'e alınmak zorundadır:\n              <pre><code>MOV DX, 03F8H   ; Seri iletisim portu (COM1)\nOUT DX, AL      ; AL'deki bayti porta gonder</code></pre>\n            </li>\n          </ul>\n        </div>\n      ",
         "examples": [
           {
-            "id": "ex-m8-kolay",
+            "id": "ex-m9-in-out",
             "difficulty": "kolay",
-            "difficultyLabel": "🟢 Kolay: Doğrudan & Birebir",
-            "title": "Alıştırma 8.1: BIOS Teletype ile Ekrana Karakter Basma (Hocanın Örnek 11'i)",
-            "scenario": "Hocanın Week 12 Kesme Kod Örneği 11'de yer alan BIOS INT 10h servisi kullanılarak ekrana 'A' karakteri yazdırılacaktır.",
-            "task": "AH içine 0Eh (Teletype servisi), AL içine 'A' (41h) karakterini yükleyin. INT 10H komutunu çalıştırarak konsola karakteri basın ve HLT ile durun.",
-            "code": "; 🟢 Kolay: BIOS Teletype Karakter Basma (Hocanin Ornek 11'i)\nORG 100H\n\n; 1. BIOS Teletype fonksiyon kodunu AH'ye yukleyin (0Eh):\n; TODO:\n\n\n; 2. Ekrana basilacak karakter olan 'A' sabitini AL'ye yukleyin:\n; TODO:\n\n\n; 3. INT 10H yazilimsal kesmesini cagirarak ekrana basin:\n; TODO:\n\n\nHLT",
+            "difficultyLabel": "🟢 1. Modül Labı: IN ve OUT",
+            "title": "Mini-Lab 9.1: 80H Portuna Veri Gönderme ve DX ile Port Erişimi",
+            "scenario": "Port 80H donanım teşhis portudur. AL = 0AAH durum kodunu 80H portuna gönderin (OUT 80H, AL).",
+            "task": "MOV AL, 0AAH ardından OUT 80H, AL komutunu çalıştırın.",
+            "code": "; 🟢 Mini-Lab 9.1: OUT Komutu\nORG 100H\n\nMOV AL, 0AAH\n\n; 1. AL'deki degeri 80H portuna gonderin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AL, 0AAH\nOUT 80H, AL\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: MOV AL, 0AAH",
+              "2. Satır: OUT 80H, AL — Donanım portuna teşhis baytı yazılır."
+            ],
+            "examTips": "Port numarası 255'ten küçükse doğrudan port yazılabilir."
+          }
+        ]
+      },
+      {
+        "title": "2. Modül: BIOS Video Servisi ile Ekrana Karakter Yazma (INT 10H, AH=0Eh)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>INT 10H</code> (BIOS Video Servisleri) — AH = 0Eh Teletype</h4>\n          <p>Ekrana tek bir karakter basmak için kullanılır. İmleci otomatik bir adım ilerletir.</p>\n          <ul>\n            <li><code>AH = 0Eh</code> ➔ Teletype fonksiyonu seçilir.</li>\n            <li><code>AL = Karakter ASCII</code> ➔ Basılacak karakter (örn: <code>'A'</code> veya <code>41H</code>).</li>\n            <li><code>INT 10H</code> ➔ Kesme çağrılır.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m9-int10",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 2. Modül Labı: BIOS INT 10H",
+            "title": "Mini-Lab 9.2: Konsola 'A' Karakteri Yazdırma",
+            "scenario": "Hocanın Week 12 Kod Örneği 11'de yer alan BIOS teletype fonksiyonu ile ekrana 'A' karakteri yazdırılacaktır.",
+            "task": "AH=0Eh, AL='A' yükleyin ve INT 10H çağırarak konsolda 'A' karakterini görün.",
+            "code": "; 🟢 Mini-Lab 9.2: INT 10H\nORG 100H\n\n; 1. AH'ye 0Eh fonksiyon kodunu yukleyin:\n; TODO:\n\n\n; 2. AL'ye 'A' karakterini yukleyin:\n; TODO:\n\n\n; 3. INT 10H kesmesini cagirin:\n; TODO:\n\n\nHLT\n",
             "solutionCode": "ORG 100H\nMOV AH, 0EH\nMOV AL, 'A'\nINT 10H\nHLT",
             "solutionBreakdown": [
-              "1. Satır: MOV AH, 0Eh — Video teletype fonksiyonu seçilir.",
-              "2. Satır: MOV AL, 'A' — Basılacak karakter (41h) AL akümülatörüne yüklenir.",
-              "3. Satır: INT 10H — BIOS video rutini çağrılır ve konsola 'A' karakteri yazdırılır."
+              "1. Satır: MOV AH, 0EH — Teletype modu.",
+              "2. Satır: MOV AL, 'A' — Basılacak karakter.",
+              "3. Satır: INT 10H — Ekrana 'A' basılır."
             ],
-            "examTips": "BIOS video işlemlerinde fonksiyon numarası DAİMA AH yazmacına, parametreler ise AL veya diğer yazmaçlara yüklenir."
-          },
+            "examTips": "BIOS video kesmelerinde AH daima fonksiyon numarasını tutar."
+          }
+        ]
+      },
+      {
+        "title": "3. Modül: DOS Servis Kesmeleri (INT 21H, AH=02h ve AH=09h)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>INT 21H</code> (MS-DOS İşletim Sistemi Servisleri)</h4>\n          <p>DOS işletim sistemi üzerinden konsol ve dosya erişimi sağlar.</p>\n          <ul>\n            <li><code>AH = 02H:</code> DL'deki tek bir karakteri ekrana basar.</li>\n            <li><code>AH = 09H:</code> DX ofset adresindeki <b>'$' ile biten</b> metin dizgisini ekrana basar.</li>\n            <li><code>AH = 4CH:</code> Programı sonlandırıp DOS'a döner.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m8-orta",
+            "id": "ex-m9-int21",
             "difficulty": "orta",
-            "difficultyLabel": "🟡 Orta: Anlamlı Senaryo",
-            "title": "Alıştırma 8.2: BIOS Klavye Girdisi Okuma & Yankılama (Hocanın Örnek 10'u)",
-            "scenario": "Hocanın Week 12 Kod Örneği 10'da yer alan BIOS INT 16h ile kullanıcıdan tuş okuma ve okunan tuşu INT 10h ile ekrana basma (Echo) algoritması uygulanacaktır.",
-            "task": "AH=00h yapıp INT 16H çağırarak klavyeden tuş okuyun (ASCII AL'ye gelir). Ardından AH=0Eh yapıp INT 10H çağırarak bu karakteri ekrana yankılayın.",
-            "code": "; 🟡 Orta: Klavye Okuma ve Ekrana Yankilama (Hocanin Ornek 10'u)\nORG 100H\n\n; 1. Klavyeden tus okumak icin AH=00h yapip INT 16H cagirin:\n; TODO:\n\n\n; 2. Okunan tus AL icindedir; ekrana basmak icin AH=0Eh yapip INT 10H cagirin:\n; TODO:\n\n\nHLT",
-            "solutionCode": "ORG 100H\nMOV AH, 00H\nINT 16H\nMOV AH, 0EH\nINT 10H\nHLT",
+            "difficultyLabel": "🟡 3. Modül Labı: DOS INT 21H",
+            "title": "Mini-Lab 9.3: DOS Servisi ile Ekrana Karakter Basma",
+            "scenario": "DOS INT 21H fonksiyon 02h servisini kullanarak DL register'ındaki 'X' karakterini ekrana yazdırın.",
+            "task": "AH=02H, DL='X' yapın ve INT 21H kesmesini çalıştırın.",
+            "code": "; 🟡 Mini-Lab 9.3: INT 21H\nORG 100H\n\n; 1. AH'ye 02H (Karakter Basma) fonksiyonunu yukleyin:\n; TODO:\n\n\n; 2. DL'ye basilicak karakteri ('X') yukleyin:\n; TODO:\n\n\n; 3. INT 21H cagirin:\n; TODO:\n\n\nHLT\n",
+            "solutionCode": "ORG 100H\nMOV AH, 02H\nMOV DL, 'X'\nINT 21H\nHLT",
             "solutionBreakdown": [
-              "1. Satır: MOV AH, 00h ve INT 16H — İşlemci klavyeden bir tuşa basılmasını bekler. Tuş basıldığında ASCII kodu AL'ye yazılır.",
-              "2. Satır: MOV AH, 0Eh ve INT 10H — AL'deki okunan karakter ekrana basılır (Echo işlemi)."
+              "1. Satır: MOV AH, 02H — DOS Karakter Yazma servisi.",
+              "2. Satır: MOV DL, 'X' — DL'ye karakter atanır.",
+              "3. Satır: INT 21H — Ekrana 'X' basılır."
             ],
-            "examTips": "INT 16h fonksiyonu basılan tuşun ASCII kodunu AL'ye, donanım Scan Code'unu ise AH'ye döndürür."
-          },
-          {
-            "id": "ex-m8-zor",
-            "difficulty": "zor",
-            "difficultyLabel": "🔴 Zor: Gerçek Hayat / Hata Ayıklama",
-            "title": "Alıştırma 8.3: Yazılımsal Kesme Noktası & INT 3 (Hocanın Örnek 12'si)",
-            "scenario": "Hocanın Week 12 Kod Örneği 12'de yer alan yazılımsal kesme noktası (Breakpoint) simülasyonu uygulanacaktır.",
-            "task": "AX içine 1000h yükleyin. Araya INT 3 kesme komutu yerleştirin. INT 3 sonrasında BX içine 2000h yükleyin. Simülatörde kesme oluşumunu ve programın duruşunu izleyin.",
-            "code": "; 🔴 Zor: Breakpoint Simulation (Hocanin Ornek 12'si)\nORG 100H\n\n; 1. AX icine 1000h yukleyin:\n; TODO:\n\n\n; 2. Yazilimsal kesme noktasi olusturmak icin INT 3 komutunu calistirin:\n; TODO:\n\n\n; 3. Kesme sonrasi BX icine 2000h yukleyin:\n; TODO:\n\n\nHLT",
-            "solutionCode": "ORG 100H\nMOV AX, 1000H\nINT 3\nMOV BX, 2000H\nHLT",
-            "solutionBreakdown": [
-              "1. Satır: AX = 1000h yüklenir.",
-              "2. Satır: INT 3 komutu 1-baytlık '0CCh' makine koduna derlenir ve donanımsal kesme çağrısı tetikler.",
-              "3. Satır: Normal akışta debugger kontrolü devralır. Devam edildiğinde BX = 2000h atanır."
-            ],
-            "examTips": "INT 3 diğer iki baytlık INT n komutlarından farklı olarak tek bir bayttan (0CCh) oluşur. Bu sayede işlemcide herhangi bir tek baytlık komutun üzerine geçici olarak yazılarak breakpoint konabilir."
+            "examTips": "INT 21h AH=02h fonksiyonunda karakter AL'ye değil, DL YAZMACINA konur!"
           }
         ]
       }
@@ -905,84 +1053,50 @@ export const MILESTONE_LECTURES: Record<string, MilestoneLecture> = {
     "milestoneId": "milestone-10",
     "milestoneNumber": 10,
     "title": "İleri İşlemci Mimarisi, Boru Hattı (Pipelining) & 8086 LeetCode",
-    "subtitle": "5 Aşamalı Komut Boru Hattı, Hazards (Tehlikeler), Loop Unrolling, CISC vs RISC ve Intel 8085 Mimarisi",
-    "slideRef": "Hoca: Week 12, 13, 14 & 15 PDF'leri, Code Examples PDF | Kitap: Barry B. Brey Bölüm 14 & 16",
-    "overviewHtml": "\n          <div class=\"lecture-hero-card\">\n            <div class=\"lecture-hero-badge\">AŞAMA 10: İLERİ MİMARİLER, BORU HATTI & MİKROİŞLEMCİ EVRİMİ</div>\n            <p class=\"lecture-hero-text\">\n              Mikroişlemci performansını artırmanın temel yolu komutları ardışık değil, birbiriyle çakıştırarak (Pipelining) yürütmektir. \n              Ancak boru hattında ortaya çıkan <b>Tehlikeler (Hazards)</b> gecikmelere (stall) yol açar. Bu aşamada boru hattı optimizasyonu, Makro mimarisi ve Intel 8085 öncülü incelenir.\n            </p>\n            <div class=\"lecture-golden-rule\">\n              💡 <strong>Hocanın Altın Kuralları & Sınav Kılavuzu:</strong><br>\n              1. <b>3 Büyük Pipeline Tehlikesi (Hazards):</b><br>\n                 • <b>Structural Hazard:</b> Aynı anda iki komutun aynı donanım birimine (örn: tek bellek portu) erişmek istemesi.<br>\n                 • <b>Data Hazard (RAW - Read After Write):</b> Bir komutun henüz önceki komut tarafından yazılmamış sonucu okumaya çalışması.<br>\n                 • <b>Control Hazard:</b> Koşullu atlama (JMP/CALL) nedeniyle boru hattındaki komutların geçersiz kalıp temizlenmesi (Branch Penalty).<br>\n              2. <b>Yazılımsal Pipeline Çözümleri (Hocanın Kod Örnekleri 13 & 14):</b><br>\n                 • <b>Loop Unrolling (Döngü Açma):</b> LOOP atlama cezasını kaldırmak için döngü gövdesini ardışık yazmak.<br>\n                 • <b>Instruction Rescheduling:</b> Veri bağımlılığı olan komutların arasına bağımsız komutlar yerleştirerek bekleme çevrimlerini (NOP) ortadan kaldırmak.<br>\n              3. <b>Makro vs Prosedür (Sınav Karşılaştırması):</b> Makro derleme zamanında açılır, hızlıdır fakat kod boyutunu büyütür. Prosedür tek kopyadır, CALL/RET ile yığın kullanır, küçük boyutludur fakat daha yavaştır.\n            </div>\n          </div>\n        ",
+    "subtitle": "Boru Hattı Tehlikeleri (Hazards), Döngü Açma (Loop Unrolling) ve Rescheduling",
+    "slideRef": "Hoca: Week 12, 13, 14 & 15 PDF'leri | Kitap: Barry B. Brey Bölüm 14 & 16",
+    "overviewHtml": "\n    <div class=\"lecture-hero-card\">\n      <div class=\"lecture-hero-badge\">AŞAMA 10: PERFORMANS OPTİMİZASYONU & BORU HATTI</div>\n      <p class=\"lecture-hero-text\">\n        İşlemci performansını maksimize etmenin yolu komutları paralel yürütmekten geçer. \n        Ancak boru hattında ortaya çıkan <b>Tehlikeler (Hazards)</b> gecikmelere yol açar. Bu aşamada döngü açma ve komut yeniden sıralama teknikleri pratik edilir.\n      </p>\n      <div class=\"lecture-golden-rule\">\n        💡 <strong>Hocanın 3 Altın Mimari Kuralı:</strong><br>\n        1. <b>Loop Unrolling (Döngü Açma):</b> LOOP komutunun dallanma cezasını (Branch Penalty) kaldırmak için döngü gövdesini ardışık yazmak performansı katlar.<br>\n        2. <b>Instruction Rescheduling:</b> Veri bağımlılığı (RAW) olan komutların arasına bağımsız komutlar sokarak NOP gecikmelerini yok etmek.<br>\n        3. <b>8085 vs 8086:</b> 8085 saf akümülatör ve HL işaretçisi kullanırken, 8086 genel amaçlı yazmaç kümesi ve segmentli mimariye sahiptir.\n      </div>\n    </div>\n  ",
     "sections": [
       {
-        "title": "1. Komut Boru Hattı (Pipelining) ve 3 Büyük Tehlike (Hazards)",
-        "contentHtml": "\n                  <p>Klasik bir RISC/CISC boru hattı 5 aşamadan oluşur:</p>\n                  <ol>\n                    <li><b>IF (Instruction Fetch):</b> Komut bellekten getirilir.</li>\n                    <li><b>ID (Instruction Decode):</b> Komut çözülür ve kaynak yazmaçlar okunur.</li>\n                    <li><b>EX (Execute):</b> ALU işlemi yürütülür veya bellek adresi hesaplanır.</li>\n                    <li><b>MEM (Memory Access):</b> Bellekten okuma veya belleğe yazma yapılır.</li>\n                    <li><b>WB (Write Back):</b> Sonuç hedef yazmaca kaydedilir.</li>\n                  </ol>\n\n                  <h4>3 Büyük Pipeline Tehlikesi & Çözümleri:</h4>\n                  <table class=\"lecture-table\">\n                    <thead>\n                      <tr><th>Tehlike Türü</th><th>Oluşma Sebebi</th><th>Donanımsal Çözüm</th><th>Yazılımsal / Derleyici Çözümü</th></tr>\n                    </thead>\n                    <tbody>\n                      <tr><td><b>Structural Hazard</b></td><td>Aynı donanım kaynağına çakışan erişim</td><td>Ayrık Komut ve Veri Önbellekleri (Harvard Mimarisi)</td><td>Pipeline Stall (Bekletme çevrimi)</td></tr>\n                      <tr><td><b>Data Hazard (RAW)</b></td><td>Yazmaç henüz güncellenmeden okunması</td><td>Operand Forwarding (Baypas hattı)</td><td><b>Instruction Rescheduling</b> (Bağımsız komut araya sokma)</td></tr>\n                      <tr><td><b>Control Hazard</b></td><td>Koşullu atlamanın yönünün belirsizliği</td><td>Branch Prediction (Dallanma Tahmini)</td><td><b>Loop Unrolling</b> (Döngüyü açarak atlamaları azaltma)</td></tr>\n                    </tbody>\n                  </table>\n                "
-      },
-      {
-        "title": "2. Komut Kılavuzu: Makrolar vs Prosedürler & Intel 8085 Mimarisi",
-        "contentHtml": "\n                  <div class=\"instruction-box\">\n                    <h4>Makro (MACRO / ENDM) vs Prosedür (PROC / ENDP)</h4>\n                    <table class=\"lecture-table\">\n                      <thead>\n                        <tr><th>Özellik</th><th>Makro (MACRO)</th><th>Prosedür (PROC)</th></tr>\n                      </thead>\n                      <tbody>\n                        <tr><td><b>Genişleme Zamanı</b></td><td>Derleme Anında (Assembler Time - Metin Değişimi)</td><td>Çalışma Anında (Run Time - CALL/RET)</td></tr>\n                        <tr><td><b>Yürütme Hızı</b></td><td>Çok Hızlı (CALL, RET ve Stack maliyeti sıfır)</td><td>Daha Yavaş (Yığına IP/CS itme-çekme çevrimleri)</td></tr>\n                        <tr><td><b>Bellek / Kod Boyutu</b></td><td>Büyük (Her çağrıldığı yerde kod tekrar kopyalanır)</td><td>Küçük (Bellekte tek kopya olarak tutulur)</td></tr>\n                        <tr><td><b>Yığın (Stack) Kullanımı</b></td><td>Yığın kullanmaz</td><td>Yığın zorunludur</td></tr>\n                      </tbody>\n                    </table>\n                  </div>\n\n                  <div class=\"instruction-box\">\n                    <h4>Intel 8085 vs 8086 Karşılaştırması (Hocanın Week 14 Slaytları)</h4>\n                    <ul>\n                      <li><b>8085:</b> 8-bitlik saf akümülatör (A) mimarisi. 16-bit adres yolu ($2^{16} = 64$ KB bellek). Yazmaçlar: <code>A (Akümülatör)</code>, <code>B-C</code>, <code>D-E</code>, <code>H-L</code> (16-bit bellek işaretçisi çiftleri), <code>SP</code>, <code>PC</code>. Adres ve veri yolu <code>AD0–AD7</code> üzerinde zaman paylaşımlıdır (multiplexed).</li>\n                      <li><b>8086:</b> 16-bit veri yolu, 20-bit adres yolu (1 MB). Segmentli bellek mimarisi (CS, DS, SS, ES) ve genel amaçlı yazmaç kümesi (AX, BX, CX, DX).</li>\n                    </ul>\n                  </div>\n                "
-      },
-      {
-        "title": "3. İnteraktif Laboratuvar İstasyonu (3 Seviyeli Uygulama)",
-        "contentHtml": "\n                  <p>Aşağıdaki editörde boru hattı optimizasyonu ve ileri mimari simülasyonlarını test edin. <b>Cevap hazır gelmez</b>; yönergeleri izleyin.</p>\n                ",
+        "title": "1. Modül: Loop Unrolling (Döngü Açma) ile Pipeline Ceza Önleme",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4>Loop Unrolling (Döngü Açma Tekniği)</h4>\n          <p>Küçük sayıda dönen döngülerde her adımda LOOP komutunun harcadığı saat çevrimlerini ve dallanma cezasını (Branch Penalty) ortadan kaldırmak için döngü gövdesi düz satırlar halinde yazılır.</p>\n        </div>\n      ",
         "examples": [
           {
-            "id": "ex-m9-kolay",
+            "id": "ex-m10-unroll",
             "difficulty": "kolay",
-            "difficultyLabel": "🟢 Kolay: Doğrudan & Birebir",
-            "title": "Alıştırma 9.1: Loop Unrolling ile Pipeline Stall Engelleme (Hocanın Örnek 13'ü)",
-            "scenario": "Hocanın Week 13 Pipelining Kod Örneği 13'te sunduğu 'Loop Unrolling' tekniği uygulanacaktır. 4 kez dönen bir döngü yerine 4 ardışık toplama yazılarak dallanma cezası sıfırlanacaktır.",
-            "task": "AX içine 0 yükleyin. LOOP komutu yerine ardışık 4 adet ADD AX, 1 komutu yazarak AX'i 4 yapın ve HLT ile durun.",
-            "code": "; 🟢 Kolay: Loop Unrolling Simulation (Hocanin Ornek 13'u)\nORG 100H\n\n; 1. AX icine 0 yukleyin:\n; TODO:\n\n\n; 2. LOOP kullanmadan, 4 adet ardisik ADD AX, 1 komutu yazarak donguyu acin:\n; TODO:\n\n\nHLT",
+            "difficultyLabel": "🟢 1. Modül Labı: Loop Unrolling",
+            "title": "Mini-Lab 10.1: Loop Unrolling ile Hızlı Artırma",
+            "scenario": "Hocanın Week 13 Kod Örneği 13'te sunduğu gibi, 4 kez LOOP ile dönmek yerine 4 adet ardışık ADD AX, 1 yazarak boru hattı cezasını sıfırlayın.",
+            "task": "AX'i 0 yapın. 4 kez ardışık ADD AX, 1 yazarak AX=4 sonucuna döngüsüz ulaşın.",
+            "code": "; 🟢 Mini-Lab 10.1: Loop Unrolling\nORG 100H\n\nMOV AX, 0\n\n; 1. LOOP yerine ardisik 4 adet ADD AX, 1 komutu yazin:\n; TODO:\n\n\nHLT\n",
             "solutionCode": "ORG 100H\nMOV AX, 0\nADD AX, 1\nADD AX, 1\nADD AX, 1\nADD AX, 1\nHLT",
             "solutionBreakdown": [
-              "1. Satır: MOV AX, 0 — Akümülatör sıfırlanır.",
-              "2-5. Satırlar: 4 adet ardışık ADD AX, 1 komutu çalışır. İşlemci hiçbir JMP/LOOP cezası (branch stall) yaşamadan boru hattını tam verimle doldurur ve AX = 4 olur."
+              "1. Satır: MOV AX, 0",
+              "2-5. Satırlar: 4 adet ardışık toplama. Boru hattı hiçbir JMP/LOOP cezası yaşamadan tam hızla dolar (AX=4)."
             ],
-            "examTips": "Loop Unrolling yöntemi kod boyutunu bir miktar artırır ancak dallanma cezasını (Branch Penalty) ve sayaç azaltma çevrimlerini ortadan kaldırarak maksimum hız sağlar."
-          },
+            "examTips": "Loop Unrolling kod boyutunu biraz büyütür ama maksimum yürütme hızı sağlar."
+          }
+        ]
+      },
+      {
+        "title": "2. Modül: Instruction Rescheduling ile RAW Veri Bağımlılığı Önleme",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4>Instruction Rescheduling (Komut Yeniden Sıralama)</h4>\n          <p>Bir komutun sonucunu bekleyen diğer komutun arasına, o yazmaçla ilgisi olmayan bağımsız bir komut sokulur. Böylece işlemci boş beklemez (stall / bubble oluşmaz).</p>\n        </div>\n      ",
+        "examples": [
           {
-            "id": "ex-m9-orta",
+            "id": "ex-m10-resched",
             "difficulty": "orta",
-            "difficultyLabel": "🟡 Orta: Anlamlı Senaryo",
-            "title": "Alıştırma 9.2: Instruction Rescheduling ile RAW Data Hazard Önleme (Hocanın Örnek 14'ü)",
-            "scenario": "Hocanın Week 13 Pipelining Kod Örneği 14'te yer alan komut yeniden sıralama tekniği uygulanacaktır. AX'e bağımlı komutun bekleme yapmaması için araya CX ile ilgili bağımsız işlem serpiştirilecektir.",
-            "task": "MOV AX, 1 yazın. AX'in sonucunu beklemeden araya bağımsız MOV CX, 2 yazın. Ardından ADD AX, 10 ve ADD CX, 20 işlemlerini yürüterek boru hattı duraklamasını (stall) önleyin.",
-            "code": "; 🟡 Orta: Instruction Rescheduling (Hocanin Ornek 14'u)\nORG 100H\n\n; 1. AX icine 1 yukleyin:\n; TODO:\n\n\n; 2. RAW tehlikesini engellemek icin araya bagimsiz CX komutunu serpistirin (MOV CX, 2):\n; TODO:\n\n\n; 3. AX ile ilgili islemi yurutun (ADD AX, 10):\n; TODO:\n\n\n; 4. CX ile ilgili islemi yurutun (ADD CX, 20):\n; TODO:\n\n\nHLT",
+            "difficultyLabel": "🟡 2. Modül Labı: Rescheduling",
+            "title": "Mini-Lab 10.2: Komut Yeniden Sıralama",
+            "scenario": "Hocanın Week 13 Kod Örneği 14'te yer alan optimizasyon: AX'in güncellenmesini beklemeden araya CX ile ilgili bağımsız komut yerleştirin.",
+            "task": "MOV AX, 1 ardından MOV CX, 2 yazın. Sonra ADD AX, 10 ve ADD CX, 20 çalıştırın.",
+            "code": "; 🟡 Mini-Lab 10.2: Rescheduling\nORG 100H\n\n; 1. AX ve CX bagimsiz komutlarini pes pese baslatin:\n; TODO:\n\n\n; 2. Toplama islemlerini yurutun:\n; TODO:\n\n\nHLT\n",
             "solutionCode": "ORG 100H\nMOV AX, 1\nMOV CX, 2\nADD AX, 10\nADD CX, 20\nHLT",
             "solutionBreakdown": [
-              "1. Satır: MOV AX, 1 komutu yürütülmeye başlar.",
-              "2. Satır: AX'in yazmaç yazma (WB) aşaması beklenirken, AX ile hiçbir veri bağı olmayan MOV CX, 2 boru hattına alınır.",
-              "3-4. Satırlar: ADD AX, 10 ve ADD CX, 20 ile AX=11, CX=22 elde edilir; boru hattında tek bir çevrim dahi duraklama (bubble) yaşanmaz."
+              "1. Satır: MOV AX, 1",
+              "2. Satır: Araya bağımsız MOV CX, 2 konur.",
+              "3-4. Satırlar: ADD AX, 10 ve ADD CX, 20 ile boru hattında duraklama engellenir."
             ],
-            "examTips": "Instruction Rescheduling (Komut Yeniden Sıralama), modern derleyicilerin donanımsal NOP gecikmelerini önlemek için uyguladığı en temel optimizasyondur."
-          },
-          {
-            "id": "ex-m9-zor",
-            "difficulty": "zor",
-            "difficultyLabel": "🔴 Zor: Gerçek Hayat / Mimari Simülasyonu",
-            "title": "Alıştırma 9.3: Intel 8085 Bellek İşaretçisi (HL Çifti) Simülasyonu",
-            "scenario": "Intel 8085 mimarisinde belleğe erişim HL yazmaç çifti ('M' operantı) üzerinden yürütülürdü. 8086 üzerinde bu mimari BX/SI işaretçisi ve AL akümülatörü ile simüle edilecektir.",
-            "task": "BX içine [0200h] adresini yükleyin (HL çifti benzeri). [BX] adresindeki ilk veriyi AL'ye okuyun. BX'i 1 artırın. [BX] adresindeki veriyi AL ile toplayıp sonucu [0205h] adresine yazın.",
-            "code": "; 🔴 Zor: Intel 8085 HL Mimari Simülasyonu\nORG 100H\n\n; 1. HL cifti yerine BX'e tablo baslangicini yukleyin (0200h):\n; TODO:\n\n\n; 2. [BX] adresindeki bayti AL akumuletorune okuyun:\n; TODO:\n\n\n; 3. HL ciftini (BX) 1 artirin:\n; TODO:\n\n\n; 4. [BX] adresindeki ikinci bayti AL ile toplayin:\n; TODO:\n\n\n; 5. Sonucu [0205h] adresine kaydedin:\n; TODO:\n\n\nHLT",
-            "initialMemory": [
-              {
-                "segment": 0,
-                "offset": 512,
-                "bytes": [
-                  37,
-                  21,
-                  0,
-                  0,
-                  0,
-                  0
-                ]
-              }
-            ],
-            "solutionCode": "ORG 100H\nMOV BX, 0200H\nMOV AL, [BX]\nINC BX\nADD AL, [BX]\nMOV [0205H], AL\nHLT",
-            "solutionBreakdown": [
-              "1. Satır: MOV BX, 0200h — 8085'in LXI H, 0200h komutunun 8086 karşılığıdır.",
-              "2. Satır: MOV AL, [BX] — 8085'in MOV A, M (bellekten akümülatöre okuma) karşılığıdır (AL = 25h).",
-              "3. Satır: INC BX — HL işaretçisi bir sonraki bayta (0201h) ilerletilir.",
-              "4. Satır: ADD AL, [BX] — 8085'in ADD M komutudur: 25h + 15h = 3Ah elde edilir.",
-              "5. Satır: MOV [0205H], AL — Sonuç hafızaya yazılır."
-            ],
-            "examTips": "8085'te belleğe doğrudan adresleme dışında genel veri erişimi daima HL yazmaç çifti (M - Memory) üzerinden yapılırdı."
+            "examTips": "Derleyiciler pipeline verimini artırmak için komut sırasını bağımlılıklara göre otomatik olarak yeniden düzenler."
           }
         ]
       }
