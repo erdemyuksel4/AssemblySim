@@ -138,4 +138,30 @@ describe('Assembler Tests', () => {
     expect(res.errors).toHaveLength(0);
     expect(res.bytes.length).toBeGreaterThan(0);
   });
+
+  it('correctly executes full .DATA variable access with @DATA and MOV BX, [SAYI]', () => {
+    const code = `
+      .MODEL SMALL
+      .STACK 100H
+      .DATA
+        SAYI DW 1234H
+      .CODE
+      MAIN PROC
+        MOV AX, @DATA
+        MOV DS, AX
+        MOV BX, [SAYI]
+        HLT
+      MAIN ENDP
+      END MAIN
+    `;
+    const res = Assembler.assemble(code);
+    expect(res.errors).toHaveLength(0);
+
+    const cpu = new CPU();
+    cpu.loadCOM(res.bytes, res.origin);
+    while (!cpu.halted) {
+      cpu.step();
+    }
+    expect(cpu.regs.bx).toBe(0x1234);
+  });
 });

@@ -89,6 +89,16 @@ export interface ArchitectureGuide {
     resetVector: string;
   };
 
+  segmentDirectivesGuide?: {
+    title: string;
+    description: string;
+    models: Array<{ name: string; desc: string; usage: string }>;
+    dataLoadingRule: {
+      rule: string;
+      reason: string;
+      codeExample: string;
+    };
+  };
   nestedRegisters: {
     title: string;
     diagram: string;
@@ -1307,6 +1317,157 @@ export const INSTRUCTIONS: InstructionDetail[] = [
         note: 'Derleyicinin operand boyutu hatası (ambiguous operand size) vermesini engeller.'
       }
     ]
+  },
+  {
+    opcode: '.MODEL',
+    name: 'Memory Model Directive (Bellek Modeli)',
+    category: 'directives',
+    summary: 'Programın bellek organizasyonunu tanımlar (TINY, SMALL, MEDIUM, COMPACT, LARGE, FLAT). Kod ve veri segmenti sayılarını ve işaretçi tiplerini belirler.',
+    flags: 'Bayrakları etkilemez (Assembler yönergesidir).',
+    rules: '8086 mimarisinde standart DOS EXE programları için ".MODEL SMALL", tek segmentli COM programları için ".MODEL TINY" kullanılır.',
+    variations: [
+      {
+        syntax: '.MODEL SMALL',
+        description: 'Standart EXE modelidir: 1 adet 64KB kod segmenti ve 1 adet 64KB veri segmenti tanımlar. Tüm işaretçiler 16-bit NEAR\'dır.',
+        example: '.MODEL SMALL\n.STACK 100H\n.DATA\n.CODE',
+        note: 'Barry B. Brey kitabında ve üniversite müfredatında en çok kullanılan temel modeldir.'
+      },
+      {
+        syntax: '.MODEL TINY',
+        description: 'DOS .COM formatı için kullanılır. Kod, veri ve yığın tek bir 64KB segmenti paylaşır. ORG 100H ile birlikte çalışır.',
+        example: '.MODEL TINY\nORG 100H\nSTART: MOV AX, 5',
+        note: 'Tek segmentli olduğu için @DATA yüklemesine gerek yoktur.'
+      }
+    ]
+  },
+  {
+    opcode: '.DATA',
+    name: 'Data Segment Directive (Basitleştirilmiş Veri Segmenti)',
+    category: 'directives',
+    summary: 'Program değişkenlerinin tanımlandığı veri segmentini (Data Segment) başlatır. Geleneksel "DATA SEGMENT ... DATA ENDS" bloğunun modern MASM karşılığıdır.',
+    flags: 'Bayrakları etkilemez.',
+    rules: '.DATA içinde tanımlanan değişkenlere erişmek için kod segmenti başında "MOV AX, @DATA" ve "MOV DS, AX" ile DS yazmacı kurulmalıdır.',
+    variations: [
+      {
+        syntax: '.DATA',
+        description: 'Veri segmentini açar; ardından DB, DW ve DUP ile değişkenler bildirilir.',
+        example: '.DATA\nSAYI DW 1234H\nMETIN DB \'8086 Assembly$\'',
+        note: 'Değişkenler bellekte bildirim sırasına göre ardışık yerleştirilir.'
+      }
+    ]
+  },
+  {
+    opcode: '.CODE',
+    name: 'Code Segment Directive (Basitleştirilmiş Kod Segmenti)',
+    category: 'directives',
+    summary: 'İşlemcinin çalıştıracağı makine komutlarının yer aldığı kod segmentini (Code Segment) başlatır.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: '.CODE',
+        description: 'Kod segmentini açar. Yürütülecek prosedürler ve komutlar bu yönergeden sonra yazılır.',
+        example: '.CODE\nMAIN PROC\n  MOV AX, @DATA\n  MOV DS, AX\n  HLT\nMAIN ENDP',
+        note: 'Geleneksel "CODE SEGMENT ... CODE ENDS" ve "ASSUME CS:CODE" tanımlarını otomatikleştirir.'
+      }
+    ]
+  },
+  {
+    opcode: '.STACK',
+    name: 'Stack Segment Directive (Yığın Segmenti ve Boyutu)',
+    category: 'directives',
+    summary: 'Programın yığın (Stack) bellek alanını ve boyutunu belirler.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: '.STACK [boyut]',
+        description: 'Yığın için bayt cinsinden alan tahsis eder. Genellikle 100H (256 bayt) kullanılır.',
+        example: '.STACK 100H',
+        note: 'Program belleğe yüklenirken SS (Stack Segment) ve SP (Stack Pointer) yazmaçları bu boyuta göre otomatik kurulur.'
+      }
+    ]
+  },
+  {
+    opcode: '@DATA / @CODE',
+    name: 'Predefined Segment Symbols (Ön Tanımlı Segment Sabitleri)',
+    category: 'directives',
+    summary: '.DATA ve .CODE segmentlerinin 16-bitlik başlangıç segment adreslerini temsil eden derleyici sembolleridir.',
+    flags: 'Bayrakları etkilemez.',
+    rules: '⚡ 8086 ALTIN KURALI: Segment yazmaçlarına (DS, ES, SS) doğrudan sabit/immediate sayı yüklenemez (MOV DS, @DATA donanımsal olarak YASAKTIR)! Adres önce AX\'e alınıp ardından DS\'ye aktarılır: MOV AX, @DATA -> MOV DS, AX.',
+    variations: [
+      {
+        syntax: 'MOV AX, @DATA\nMOV DS, AX',
+        description: 'Veri segmentinin fiziksel başlangıç segment adresini DS yazmacına yüklemenin tek geçerli yoludur.',
+        example: 'MOV AX, @DATA   ; 1. Veri segment adresini AX\'e al\nMOV DS, AX      ; 2. AX\'i DS segment yazmacına aktar',
+        note: 'Sınavların en klasik sorusu: 8086 ISA\'sında "MOV segreg, imm" komutu bulunmadığı için AX gibi genel yazmaç köprü olarak kullanılır.'
+      },
+      {
+        syntax: 'MOV AX, @CODE',
+        description: 'Kod segmentinin başlangıç segment adresini temsil eder.',
+        example: 'MOV AX, @CODE',
+        note: 'Çalışan kod segmentinin (CS) taban adresini okumak için kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'SEGMENT / ENDS',
+    name: 'Traditional Segment Definition (Klasik Tam Segment Bloğu)',
+    category: 'directives',
+    summary: 'Barry B. Brey kitabında ve klasik 8086 yapısında kullanılan tam segment bildirim bloğudur.',
+    flags: 'Bayrakları etkilemez.',
+    rules: 'Her SEGMENT yönergesi aynı isimli bir ENDS yönergesiyle kapatılmalıdır. ASSUME direktifi ile CS ve DS eşleştirmesi yapılır.',
+    variations: [
+      {
+        syntax: 'seg_adi SEGMENT ... seg_adi ENDS',
+        description: 'Bağımsız bir mantıksal segment alanı tanımlar.',
+        example: 'DATA SEGMENT\n  X DW 5\nDATA ENDS\n\nCODE SEGMENT\n  ASSUME CS:CODE, DS:DATA\nSTART:\n  MOV AX, DATA\n  MOV DS, AX\n  HLT\nCODE ENDS\nEND START',
+        note: 'Klasik sözdiziminde segment adı doğrudan kullanılır (MOV AX, DATA); basitleştirilmiş sözdiziminde ise @DATA kullanılır.'
+      }
+    ]
+  },
+  {
+    opcode: 'ASSUME',
+    name: 'Segment Register Association (Segment Yazmacı Eşleme Yönergesi)',
+    category: 'directives',
+    summary: 'Derleyiciye hangi segment yazmacının (CS, DS, SS, ES) hangi mantıksal segment bloğuna işaret ettiğini bildirir.',
+    flags: 'Bayrakları etkilemez (Makine kodu üretmez).',
+    variations: [
+      {
+        syntax: 'ASSUME CS:code_seg, DS:data_seg',
+        description: 'Segment yazmaçlarını mantıksal segment etiketleriyle eşleştirir.',
+        example: 'ASSUME CS:CODE, DS:DATA, SS:STACK',
+        note: 'ASSUME işlemciye değer yüklemez; sadece derleyicinin segment prefix\'lerini (CS:, DS: vb.) doğru seçmesini sağlar.'
+      }
+    ]
+  },
+  {
+    opcode: 'PROC / ENDP',
+    name: 'Procedure Definition (Alt Program / Prosedür Tanımı)',
+    category: 'directives',
+    summary: 'CALL komutu ile çağrılabilen ve RET ile dönülen alt program (fonksiyon) bloklarını tanımlar.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'ad PROC [NEAR/FAR] ... ad ENDP',
+        description: 'Prosedür gövdesini açar ve kapatır.',
+        example: 'TOPLA PROC\n  ADD AX, BX\n  RET\nTOPLA ENDP',
+        note: 'Prosedür sonunda RET komutu unutulursa işlemci sonraki komutları kontrolsüzce çalıştırmaya devam eder!'
+      }
+    ]
+  },
+  {
+    opcode: 'END',
+    name: 'End of Program Directive (Program Bitişi ve Giriş Noktası)',
+    category: 'directives',
+    summary: 'Kaynak dosyanın bittiğini derleyiciye bildirir. İsteğe bağlı olarak ilk çalışacak komutun etiketini (Entry Point) belirler.',
+    flags: 'Bayrakları etkilemez.',
+    variations: [
+      {
+        syntax: 'END [etiket]',
+        description: 'Derlemeyi sonlandırır ve başlangıç etiketini bağlayıcıya (linker) CS:IP başlangıcı olarak aktarır.',
+        example: 'MAIN PROC\n  MOV AX, @DATA\n  MOV DS, AX\n  HLT\nMAIN ENDP\nEND MAIN',
+        note: 'Belirtilen etiket (örneğin MAIN veya START), işlemcinin program başladığında atlayacağı ilk adrestir.'
+      }
+    ]
   }
 ];
 
@@ -1412,6 +1573,22 @@ export const ARCHITECTURE_GUIDE: ArchitectureGuide = {
     org100h: 'DOS .COM Programlarında ORG 100H Kuralı: DOS işletim sistemi programın önüne 256 baytlık (100h) PSP (Program Segment Prefix) koyduğu için slaytlardaki kodlar genellikle ORG 100H yönergesiyle başlar ve giriş noktası CS:0100h olur.',
     resetVector: 'Donanımsal Reset Vektörü (FFFF:0000h): 8086 mikroişlemcisine elektrik ilk verildiğinde veya RESET pinine sinyal geldiğinde, donanımsal olarak CS=FFFFh ve IP=0000h kurulur. Bu adres (FFFF0h) ROM-BIOS başlangıç komutudur (Week 2, Slayt 36).'
   },
+  segmentDirectivesGuide: {
+    title: 'Segment Direktifleri, Bellek Modelleri (.MODEL) ve @DATA Kuralı (Barry Brey & Week 2-3)',
+    description: '8086 mimarisinde program kodları, veri alanları ve yığın segmentler halinde düzenlenir. Standart MASM/TASM sözdiziminde basitleştirilmiş segment direktifleri (.MODEL) veya klasik tam segment blokları (SEGMENT/ENDS) kullanılır.',
+    models: [
+      { name: 'TINY', desc: 'Kod + Veri + Yığın tek bir 64KB segmenti paylaşır. DOS .COM dosyalarının formatıdır (ORG 100H).', usage: '.MODEL TINY' },
+      { name: 'SMALL', desc: '1 Kod Segmenti (maks 64KB) + 1 Veri Segmenti (maks 64KB). Tüm işaretçiler 16-bit NEAR\'dır. Standart üniversite/DOS EXE formatıdır.', usage: '.MODEL SMALL' },
+      { name: 'MEDIUM', desc: 'Birden fazla Kod Segmenti (FAR call) + 1 Veri Segmenti (64KB NEAR).', usage: '.MODEL MEDIUM' },
+      { name: 'COMPACT', desc: '1 Kod Segmenti (64KB NEAR) + Birden fazla Veri Segmenti (FAR pointer).', usage: '.MODEL COMPACT' },
+      { name: 'LARGE', desc: 'Çoklu Kod ve çoklu Veri segmentleri. Hem kod hem veri FAR işaretçilerle erişilir.', usage: '.MODEL LARGE' }
+    ],
+    dataLoadingRule: {
+      rule: 'Segment Yazmaçlarına (DS, ES, SS) Doğrudan Sabit/Immediate Değer Yüklenemez!',
+      reason: 'Intel 8086 mikroişlemcisinin komut seti mimarisinde (ISA) segment yazmacına doğrudan sabit sayı yükleyen ("MOV segreg, imm") bir makine işlem kodu (opcode) donanımsal olarak YOKTUR. Bu yüzden "MOV DS, @DATA" veya "MOV DS, 1000H" geçersizdir; segment adresi önce AX gibi genel amaçlı bir yazmaca, ardından DS\'ye aktarılır.',
+      codeExample: '; 8086 Standart Veri Segmenti Başlatma Kalıbı:\nMOV AX, @DATA   ; 1. Veri segmentinin 16-bit adresini AX\'e al\nMOV DS, AX      ; 2. AX içeriğini Veri Segment Yazmacına (DS) aktar'
+    }
+  },
   nestedRegisters: {
     title: 'Yazmaç Evrimi ve İçiçe Geçmiş Genişlikler (Nested Widths - Week 2)',
     diagram: `+---------------------------------------------------------------+
@@ -1493,7 +1670,7 @@ export const COMMON_PITFALLS_GUIDE: CommonPitfallsGuide = {
     'Veri akışı sağdan sola (Kaynak → Hedef) okunur. MOV AX, BX ifadesinde BX kaynak, AX hedeftir.',
     'MOV Asla Taşımak Değildir, KOPYALAMAKTIR! Kaynak operandın içeriği ASLA değişmez, işlemden sonra da aynen kalır.',
     'Bellekten belleğe doğrudan transfer YASAKTIR! MOV [DI], [SI] geçersizdir (Tek istisna MOVS dizi komutudur).',
-    'Segment yazmaçlarına doğrudan sabit (immediate) sayı yüklenemez (MOV DS, 1000H geçersizdir; önce genel yazmaca yüklenir).',
+    'Segment yazmaçlarına (DS, ES, SS) doğrudan sabit/immediate sayı yüklenemez! MOV DS, 1000H ve MOV DS, @DATA donanımsal olarak YASAKTIR. Intel 8086 ISA mimarisinde "MOV segreg, imm" opcodu yoktur. Segment adresi daima önce genel bir yazmaca, ardından DS\'ye aktarılır: MOV AX, @DATA -> MOV DS, AX (Sınavların 1 numaralı tuzak sorusu).',
     'PUSH ve POP sayıları birebir eşleşmelidir! Eşleşmeyen her PUSH yığın işaretçisini (SP) kaydırır ve sonraki RET komutunun saçma bir adrese dönmesine yol açar.',
     'CS yazmacı asla POP veya MOV hedefi yapılamaz.'
   ],

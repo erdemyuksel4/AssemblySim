@@ -760,6 +760,35 @@ export class InstructionDoc {
         </div>
       </div>
 
+      <!-- Segment Directives, Memory Models & @DATA Rule -->
+      ${arch.segmentDirectivesGuide ? `
+      <div class="theory-card" style="margin-top: 14px; border-left: 4px solid #6366f1;">
+        <h4 class="theory-card-title">📦 ${arch.segmentDirectivesGuide.title}</h4>
+        <p class="theory-card-desc">${arch.segmentDirectivesGuide.description}</p>
+        
+        <div class="theory-grid-2col" style="margin-top: 10px;">
+          <div>
+            <h5 class="theory-subheading" style="margin-bottom: 6px;">8086 Bellek Modelleri (.MODEL)</h5>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              ${arch.segmentDirectivesGuide.models.map(m => `
+                <div class="memory-region-item">
+                  <span class="region-badge" style="background:#4f46e5; color:#fff; min-width:80px; text-align:center;">${m.name}</span>
+                  <span class="region-desc"><strong>${m.usage}:</strong> ${m.desc}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div>
+            <h5 class="theory-subheading" style="margin-bottom: 6px; color:#ef4444;">🚨 ${arch.segmentDirectivesGuide.dataLoadingRule.rule}</h5>
+            <p class="theory-card-desc" style="font-size:12px; margin-bottom: 8px;">
+              ${arch.segmentDirectivesGuide.dataLoadingRule.reason}
+            </p>
+            <pre class="calculation-pre" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;"><code>${arch.segmentDirectivesGuide.dataLoadingRule.codeExample}</code></pre>
+          </div>
+        </div>
+      </div>
+      ` : ''}
+
       <!-- Default Segment Pairs Table -->
       <div class="theory-card" style="margin-top: 14px;">
         <h4 class="theory-card-title">Varsayılan Segment ve Ofset Eşleşmeleri (Default Segment:Offset Pairs - Slayt 37)</h4>
