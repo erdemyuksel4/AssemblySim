@@ -47,12 +47,8 @@ export class InstructionDoc {
   private render(): void {
     this.container.innerHTML = `
       <div class="reference-doc-container">
-        <!-- Top Navigation Bar with Return to Editor Button & Breadcrumbs -->
+        <!-- Top Navigation Bar with Breadcrumbs -->
         <div class="reference-doc-topbar">
-          <button class="btn-return-editor" id="btn-ref-return-editor" title="Kod Editörüne Geri Dön">
-            <span class="btn-icon">❮</span>
-            <span class="btn-text">Editöre Dön</span>
-          </button>
           <div class="reference-doc-breadcrumb">
             <span class="bc-item">📚 Öğrenme & Referans</span>
             <span class="bc-sep">/</span>
@@ -306,17 +302,11 @@ export class InstructionDoc {
   }
 
   private attachEvents(): void {
-    const returnBtn = this.container.querySelector('#btn-ref-return-editor') as HTMLElement;
     const searchInput = this.container.querySelector('#docs-search-input') as HTMLInputElement;
     const clearBtn = this.container.querySelector('#docs-search-clear') as HTMLButtonElement;
     const catWrap = this.container.querySelector('#docs-categories-wrap') as HTMLElement;
     const tabsWrap = this.container.querySelector('#docs-main-tabs') as HTMLElement;
     const subtabsWrap = this.container.querySelector('#lecture-sub-tabs') as HTMLElement;
-
-    // Return to Editor Button
-    returnBtn?.addEventListener('click', () => {
-      this.callbacks?.onReturnToEditor?.();
-    });
 
     // Main 4 Tabs Switcher
     tabsWrap.addEventListener('click', (e: MouseEvent) => {
