@@ -596,11 +596,7 @@ export class App {
           this.toggleSplitView(false, undefined, true);
         },
         onSelectPair: (pairId, pane) => {
-          if (this.isSplitMode && this.activePairId === pairId) {
-            this.setActivePane(pane || 'primary');
-          } else {
-            this.openSplitPair(pairId, pane);
-          }
+          this.openSplitPair(pairId, pane);
         },
         onClosePair: (pairId) => {
           this.closeSplitPair(pairId);
@@ -1057,6 +1053,8 @@ export class App {
       mainContent.classList.add('split-active');
       paneSecondary.style.display = 'flex';
       splitResizer.style.display = 'flex';
+      panePrimary.style.width = '50%';
+      paneSecondary.style.width = '50%';
 
       if (targetDoc) {
         this.openDocumentInPane('secondary', targetDoc);
@@ -1163,6 +1161,31 @@ export class App {
     paneSecondary.addEventListener('pointerdown', () => this.setActivePane('secondary'));
   }
 
+  private isDocAlreadyOpenInPane(pane: 'primary' | 'secondary', dragInfo: any): boolean {
+    if (!dragInfo) return false;
+
+    if (pane === 'primary') {
+      if (dragInfo.kind === 'workspace-doc' && dragInfo.docId) {
+        return this.primaryDocId === dragInfo.docId;
+      }
+      if (dragInfo.kind === 'learning-doc' && dragInfo.tab) {
+        const primDoc = this.workspace.getAllDocuments().find(d => d.id === this.primaryDocId);
+        return primDoc?.type === 'reference' && primDoc.referenceTab === dragInfo.tab;
+      }
+    } else {
+      // secondary pane
+      if (!this.isSplitMode || !this.secondaryDocId) return false;
+      if (dragInfo.kind === 'workspace-doc' && dragInfo.docId) {
+        return this.secondaryDocId === dragInfo.docId;
+      }
+      if (dragInfo.kind === 'learning-doc' && dragInfo.tab) {
+        const secDoc = this.workspace.getAllDocuments().find(d => d.id === this.secondaryDocId);
+        return secDoc?.type === 'reference' && secDoc.referenceTab === dragInfo.tab;
+      }
+    }
+    return false;
+  }
+
   private initDragAndDrop(): void {
     const mainContent = document.getElementById('app-main-content');
     const dropOverlay = document.getElementById('workspace-drop-overlay');
@@ -1177,19 +1200,34 @@ export class App {
 
     const showOverlay = () => {
       dropOverlay.style.display = 'flex';
-      if (this.isSplitMode) {
-        if (leftText) leftText.textContent = 'Sol Panele Bırak';
-        if (rightText) rightText.textContent = 'Sağ Panele Bırak';
+      const dragInfo = (window as any).__assemblySimDraggedDoc;
+      const leftBlocked = this.isDocAlreadyOpenInPane('primary', dragInfo);
+      const rightBlocked = this.isDocAlreadyOpenInPane('secondary', dragInfo);
+
+      if (leftBlocked) {
+        leftZone.classList.add('drop-zone-blocked');
+        if (leftText) leftText.textContent = '⛔ Zaten Bu Pencerede Açık';
       } else {
-        if (leftText) leftText.textContent = 'Bu Pencerede Aç';
-        if (rightText) rightText.textContent = 'Sağa Böl (Yan Yana Çalış)';
+        leftZone.classList.remove('drop-zone-blocked');
+        if (leftText) leftText.textContent = this.isSplitMode ? 'Sol Panele Bırak' : 'Bu Pencerede Aç';
+      }
+
+      if (rightBlocked) {
+        rightZone.classList.add('drop-zone-blocked');
+        if (rightText) rightText.textContent = '⛔ Zaten Bu Pencerede Açık';
+      } else {
+        rightZone.classList.remove('drop-zone-blocked');
+        if (rightText) rightText.textContent = this.isSplitMode ? 'Sağ Panele Bırak' : 'Sağa Böl (Yan Yana Çalış)';
       }
     };
 
     const hideOverlay = () => {
       dropOverlay.style.display = 'none';
+      dropOverlay.style.cursor = '';
       leftZone.classList.remove('active');
       rightZone.classList.remove('active');
+      leftZone.classList.remove('drop-zone-blocked');
+      rightZone.classList.remove('drop-zone-blocked');
     };
 
     const isOurDrag = (e: DragEvent): boolean => {
@@ -1203,6 +1241,7 @@ export class App {
       const rect = mainContent.getBoundingClientRect();
       const x = clientX - rect.left;
       const width = rect.width;
+      const dragInfo = (window as any).__assemblySimDraggedDoc;
 
       if (this.isSplitMode) {
         const panePrimary = document.getElementById('pane-primary');
@@ -1223,6 +1262,11 @@ export class App {
           rightZone.classList.remove('active');
         }
       }
+
+      const isRight = rightZone.classList.contains('active');
+      const targetPane: 'primary' | 'secondary' = isRight ? 'secondary' : 'primary';
+      const isBlocked = this.isDocAlreadyOpenInPane(targetPane, dragInfo);
+      dropOverlay.style.cursor = isBlocked ? 'not-allowed' : '';
     };
 
     mainContent.addEventListener('dragenter', (e) => {
@@ -1243,7 +1287,13 @@ export class App {
     mainContent.addEventListener('dragover', (e) => {
       if (!isOurDrag(e)) return;
       e.preventDefault();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      const dragInfo = (window as any).__assemblySimDraggedDoc;
+      const isRight = rightZone.classList.contains('active');
+      const targetPane: 'primary' | 'secondary' = isRight ? 'secondary' : 'primary';
+      const isBlocked = this.isDocAlreadyOpenInPane(targetPane, dragInfo);
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = isBlocked ? 'none' : 'copy';
+      }
       showOverlay();
       updateZoneHover(e.clientX);
     });
@@ -1251,7 +1301,13 @@ export class App {
     dropOverlay.addEventListener('dragover', (e) => {
       if (!isOurDrag(e)) return;
       e.preventDefault();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      const dragInfo = (window as any).__assemblySimDraggedDoc;
+      const isRight = rightZone.classList.contains('active');
+      const targetPane: 'primary' | 'secondary' = isRight ? 'secondary' : 'primary';
+      const isBlocked = this.isDocAlreadyOpenInPane(targetPane, dragInfo);
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = isBlocked ? 'none' : 'copy';
+      }
       updateZoneHover(e.clientX);
     });
 
@@ -1264,23 +1320,30 @@ export class App {
 
       hideOverlay();
       document.body.classList.remove('is-dragging-doc');
+      (window as any).__assemblySimDraggedDoc = null;
 
-      if (rawData) {
-        try {
-          const parsed = JSON.parse(rawData);
-          if (parsed.kind === 'workspace-doc' && parsed.docId) {
-            const doc = this.workspace.getAllDocuments().find(d => d.id === parsed.docId);
-            if (doc) {
-              this.openDocumentInPane(targetPane, doc);
-              this.setActivePane(targetPane);
-            }
-          } else if (parsed.kind === 'learning-doc' && parsed.tab) {
-            this.openLearningDocInPane(targetPane, parsed.tab as ManualTab);
+      if (!rawData) return;
+
+      try {
+        const parsed = JSON.parse(rawData);
+
+        // Do not drop onto itself!
+        if (this.isDocAlreadyOpenInPane(targetPane, parsed)) {
+          return;
+        }
+
+        if (parsed.kind === 'workspace-doc' && parsed.docId) {
+          const doc = this.workspace.getAllDocuments().find(d => d.id === parsed.docId);
+          if (doc) {
+            this.openDocumentInPane(targetPane, doc);
             this.setActivePane(targetPane);
           }
-        } catch (err) {
-          console.warn('Drop payload parse error', err);
+        } else if (parsed.kind === 'learning-doc' && parsed.tab) {
+          this.openLearningDocInPane(targetPane, parsed.tab as ManualTab);
+          this.setActivePane(targetPane);
         }
+      } catch (err) {
+        console.warn('Drop payload parse error', err);
       }
     });
 
@@ -1294,9 +1357,11 @@ export class App {
         e.dataTransfer?.setData('text/plain', payload);
         if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
         document.body.classList.add('is-dragging-doc');
+        (window as any).__assemblySimDraggedDoc = { kind: 'workspace-doc', docId: this.primaryDocId };
       });
       primTitle.addEventListener('dragend', () => {
         document.body.classList.remove('is-dragging-doc');
+        (window as any).__assemblySimDraggedDoc = null;
         hideOverlay();
       });
     }
@@ -1311,9 +1376,11 @@ export class App {
         e.dataTransfer?.setData('text/plain', payload);
         if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
         document.body.classList.add('is-dragging-doc');
+        (window as any).__assemblySimDraggedDoc = { kind: 'workspace-doc', docId: this.secondaryDocId };
       });
       secTitle.addEventListener('dragend', () => {
         document.body.classList.remove('is-dragging-doc');
+        (window as any).__assemblySimDraggedDoc = null;
         hideOverlay();
       });
     }
@@ -1328,9 +1395,11 @@ export class App {
         e.dataTransfer?.setData('text/plain', payload);
         if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
         document.body.classList.add('is-dragging-doc');
+        (window as any).__assemblySimDraggedDoc = { kind: 'workspace-doc', docId: this.secondaryDocId };
       });
       secHeaderTitle.addEventListener('dragend', () => {
         document.body.classList.remove('is-dragging-doc');
+        (window as any).__assemblySimDraggedDoc = null;
         hideOverlay();
       });
     }

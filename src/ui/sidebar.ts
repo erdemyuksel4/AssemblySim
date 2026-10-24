@@ -145,14 +145,12 @@ export class WorkspaceSidebar {
                     <span class="doc-icon">${primIcon}</span>
                     <span class="doc-title">${this.escapeHtml(primDoc.title)}</span>
                   </div>
-                  <span class="pane-side-badge">Sol</span>
                 </div>
                 <div class="workspace-doc-item split-half ${isSecActive ? 'active' : ''}" data-pair-id="${pair.id}" data-pane="secondary" data-doc-id="${secDoc.id}" draggable="true" title="Sağ Pencere: ${this.escapeHtml(secDoc.title)}">
                   <div class="doc-item-main">
                     <span class="doc-icon">${secIcon}</span>
                     <span class="doc-title">${this.escapeHtml(secDoc.title)}</span>
                   </div>
-                  <span class="pane-side-badge">Sağ</span>
                   <button class="btn-doc-close btn-split-close btn-pair-close" data-pair-id="${pair.id}" title="Çift Pencereyi Kapat">×</button>
                 </div>
               </li>
@@ -254,11 +252,13 @@ export class WorkspaceSidebar {
         if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
         item.classList.add('is-dragging');
         document.body.classList.add('is-dragging-doc');
+        (window as any).__assemblySimDraggedDoc = { kind: 'workspace-doc', docId };
       });
 
       item.addEventListener('dragend', () => {
         item.classList.remove('is-dragging');
         document.body.classList.remove('is-dragging-doc');
+        (window as any).__assemblySimDraggedDoc = null;
       });
     });
 
@@ -273,11 +273,13 @@ export class WorkspaceSidebar {
         if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
         row.classList.add('is-dragging');
         document.body.classList.add('is-dragging-doc');
+        (window as any).__assemblySimDraggedDoc = { kind: 'learning-doc', tab: nav };
       });
 
       row.addEventListener('dragend', () => {
         row.classList.remove('is-dragging');
         document.body.classList.remove('is-dragging-doc');
+        (window as any).__assemblySimDraggedDoc = null;
       });
     });
 
