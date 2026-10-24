@@ -7,7 +7,6 @@ export interface LectureDocCallbacks {
   onNavigateToMilestoneLecture: (milestoneId: string) => void;
   onNavigateToLeetCodeMilestone: (milestoneId: string, challengeId?: string) => void;
   onNavigateToRoadmap?: () => void;
-  onSplitWithEditor?: () => void;
 }
 
 export class LectureDocumentView {
@@ -42,17 +41,11 @@ export class LectureDocumentView {
 
     this.container.innerHTML = `
       <div class="lecture-doc-container">
-        <!-- Top Navigation Breadcrumbs & Actions -->
+        <!-- Top Navigation Breadcrumbs -->
         <div class="lecture-doc-breadcrumb">
-          <div class="lecture-bc-left">
-            <span class="bc-item bc-roadmap-link" style="cursor: pointer;" title="Yol Haritasına Git">🗺️ Yol Haritası</span>
-            <span class="bc-sep">/</span>
-            <span class="bc-item highlight">Aşama ${lecture.milestoneNumber}: ${this.escapeHtml(lecture.title)}</span>
-          </div>
-          <button class="btn-split-editor" id="btn-lecture-split-editor" title="Kod Editörüyle Yan Yana Aç (Bölünmüş Ekran)">
-            <span class="btn-icon">◫</span>
-            <span class="btn-text">Editörle Yan Yana Çalış</span>
-          </button>
+          <span class="bc-item bc-roadmap-link" style="cursor: pointer;" title="Yol Haritasına Git">🗺️ Yol Haritası</span>
+          <span class="bc-sep">/</span>
+          <span class="bc-item highlight">Aşama ${lecture.milestoneNumber}: ${this.escapeHtml(lecture.title)}</span>
         </div>
 
         <!-- Lecture Header Banner -->
@@ -321,10 +314,6 @@ export class LectureDocumentView {
   private attachEvents(prevKey: string | null, nextKey: string | null): void {
     this.container.querySelector('.bc-roadmap-link')?.addEventListener('click', () => {
       this.callbacks.onNavigateToRoadmap?.();
-    });
-
-    this.container.querySelector('#btn-lecture-split-editor')?.addEventListener('click', () => {
-      this.callbacks.onSplitWithEditor?.();
     });
 
     if (prevKey) {

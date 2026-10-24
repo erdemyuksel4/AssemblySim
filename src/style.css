@@ -5888,37 +5888,6 @@ body {
   transform: translateX(-2px);
 }
 
-.btn-split-editor,
-.btn-split-with-editor {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  background: #f0fdf4;
-  border: 1px solid #86efac;
-  border-radius: 6px;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #15803d;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 2px rgba(22, 101, 52, 0.08);
-}
-
-.btn-split-editor:hover,
-.btn-split-with-editor:hover {
-  background: #dcfce7;
-  border-color: #4ade80;
-  color: #166534;
-  transform: translateY(-1px);
-}
-
-.lecture-bc-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .reference-doc-breadcrumb {
   display: flex;
   align-items: center;

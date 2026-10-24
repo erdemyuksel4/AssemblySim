@@ -24,7 +24,6 @@ export interface InstructionDocCallbacks extends LeetCodeCallbacks {
   onOpenLectureDocument?: (milestoneId: string) => void;
   onReturnToEditor?: () => void;
   onTabChange?: (tab: ManualTab) => void;
-  onSplitWithEditor?: () => void;
 }
 
 export class InstructionDoc {
@@ -50,16 +49,10 @@ export class InstructionDoc {
       <div class="reference-doc-container">
         <!-- Top Navigation Bar with Return to Editor Button & Breadcrumbs -->
         <div class="reference-doc-topbar">
-          <div class="ref-topbar-actions">
-            <button class="btn-return-editor" id="btn-ref-return-editor" title="Kod Editörüne Geri Dön">
-              <span class="btn-icon">❮</span>
-              <span class="btn-text">Editöre Dön</span>
-            </button>
-            <button class="btn-split-editor" id="btn-ref-split-editor" title="Kod Editörüyle Yan Yana Aç (Bölünmüş Ekran)">
-              <span class="btn-icon">◫</span>
-              <span class="btn-text">Editörle Yan Yana Çalış</span>
-            </button>
-          </div>
+          <button class="btn-return-editor" id="btn-ref-return-editor" title="Kod Editörüne Geri Dön">
+            <span class="btn-icon">❮</span>
+            <span class="btn-text">Editöre Dön</span>
+          </button>
           <div class="reference-doc-breadcrumb">
             <span class="bc-item">📚 Öğrenme & Referans</span>
             <span class="bc-sep">/</span>
@@ -323,12 +316,6 @@ export class InstructionDoc {
     // Return to Editor Button
     returnBtn?.addEventListener('click', () => {
       this.callbacks?.onReturnToEditor?.();
-    });
-
-    // Split with Editor Button
-    const splitBtn = this.container.querySelector('#btn-ref-split-editor') as HTMLElement;
-    splitBtn?.addEventListener('click', () => {
-      this.callbacks?.onSplitWithEditor?.();
     });
 
     // Main 4 Tabs Switcher

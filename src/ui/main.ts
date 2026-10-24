@@ -250,9 +250,6 @@ export class App {
       onTabChange: (tab) => {
         this.syncReferenceDocumentTab(tab);
       },
-      onSplitWithEditor: () => {
-        this.toggleSplitView(true, { type: 'reference', referenceTab: this.instructionDoc.getActiveTab() });
-      },
       getCurrentEditorCode: () => this.editor.getCode()
     });
 
@@ -280,9 +277,6 @@ export class App {
         } else {
           this.openLearningDocument('roadmap');
         }
-      },
-      onSplitWithEditor: () => {
-        this.toggleSplitView(true, { type: 'lecture', milestoneId: this.lectureDocView.getMilestoneId() });
       },
       onOpenInMainEditor: (title: string, code: string) => {
         const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
