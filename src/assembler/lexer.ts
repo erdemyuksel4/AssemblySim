@@ -102,20 +102,29 @@ export class Lexer {
         continue;
       }
 
-      // Identifier or number
+      // Identifier or number (supports @DATA, @CODE, labels starting with @ or ., etc.)
       const startCol = i + 1;
       let word = '';
-      while (i < len && /[a-zA-Z0-9_$.?]/.test(lineText[i])) {
+      while (i < len && /[a-zA-Z0-9_$.?@]/.test(lineText[i])) {
         word += lineText[i];
         i++;
       }
 
-      const numVal = parseNumber(word);
-      if (numVal !== null) {
-        tokens.push({ type: 'NUMBER', text: word, value: numVal, line: lineNum, col: startCol });
-      } else {
-        tokens.push({ type: 'IDENTIFIER', text: word, line: lineNum, col: startCol });
+      if (word.length > 0) {
+        const numVal = parseNumber(word);
+        if (numVal !== null) {
+          tokens.push({ type: 'NUMBER', text: word, value: numVal, line: lineNum, col: startCol });
+        } else {
+          tokens.push({ type: 'IDENTIFIER', text: word, line: lineNum, col: startCol });
+        }
+        continue;
       }
+
+      // If we reach here, an unhandled character was encountered.
+      // ALWAYS advance index so an infinite loop is mathematically impossible!
+      const unhandled = lineText[i];
+      i++;
+      throw new Error(`Geçersiz karakter '${unhandled}', satır: ${lineNum}, sütun: ${startCol}`);
     }
 
     return tokens;

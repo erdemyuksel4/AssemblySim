@@ -24,6 +24,10 @@ export class Assembler {
   static assemble(source: string): AsmResult {
     const lines = source.split(/\r?\n/);
     const symbols = new Map<string, number>();
+    // Pre-populate standard 8086 built-in segment symbols (MASM/TASM compatibility)
+    symbols.set('@DATA', 0x0000);
+    symbols.set('@CODE', 0x0000);
+    symbols.set('@STACK', 0x0000);
     const errors: AsmError[] = [];
     const listing: ListingItem[] = [];
 
@@ -110,8 +114,18 @@ export class Assembler {
             if (parsed.directive.orgValue !== undefined) {
               currentAddr = parsed.directive.orgValue;
             }
-          } else if (parsed.directive.type === 'EQU' || parsed.directive.type === 'PROC' || parsed.directive.type === 'ENDP') {
-            // EQU emits no machine code bytes
+          } else if (
+            parsed.directive.type === 'EQU' ||
+            parsed.directive.type === 'PROC' ||
+            parsed.directive.type === 'ENDP' ||
+            parsed.directive.type === 'MODEL' ||
+            parsed.directive.type === 'STACK' ||
+            parsed.directive.type === 'DATA' ||
+            parsed.directive.type === 'CODE' ||
+            parsed.directive.type === 'ASSUME' ||
+            parsed.directive.type === 'END'
+          ) {
+            // Emits no machine code bytes
           } else {
             const dataBytes = this.generateDirectiveBytes(parsed.directive, symbols, lineNum);
             lineBytes.push(...dataBytes);
@@ -153,7 +167,19 @@ export class Assembler {
 
   // Calculate size in bytes for DB and DW directives
   private static getDirectiveSize(directive: ParsedDirective): number {
-    if (directive.type === 'ORG' || directive.type === 'EQU' || directive.type === 'PROC' || directive.type === 'ENDP') return 0;
+    if (
+      directive.type === 'ORG' ||
+      directive.type === 'EQU' ||
+      directive.type === 'PROC' ||
+      directive.type === 'ENDP' ||
+      directive.type === 'MODEL' ||
+      directive.type === 'STACK' ||
+      directive.type === 'DATA' ||
+      directive.type === 'CODE' ||
+      directive.type === 'ASSUME' ||
+      directive.type === 'END'
+    ) return 0;
+
     const mult = directive.type === 'DW' ? 2 : 1;
     let size = 0;
 

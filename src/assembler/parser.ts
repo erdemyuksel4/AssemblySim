@@ -1,7 +1,7 @@
 import { Token, Lexer } from './lexer.js';
 import { Operand, OperandParser } from './operands.js';
 
-export type DirectiveType = 'ORG' | 'DB' | 'DW' | 'EQU' | 'PROC' | 'ENDP';
+export type DirectiveType = 'ORG' | 'DB' | 'DW' | 'EQU' | 'PROC' | 'ENDP' | 'MODEL' | 'STACK' | 'DATA' | 'CODE' | 'ASSUME' | 'END';
 
 export interface DupItem {
   count: number;
@@ -129,6 +129,19 @@ export class Parser {
         lineNumber,
         directive: {
           type: 'ENDP',
+          items: []
+        }
+      };
+    }
+
+    // Support common standard 8086 structural/segment directives (.MODEL, .STACK, .DATA, .CODE, ASSUME, END)
+    if (['.MODEL', '.STACK', '.DATA', '.CODE', 'ASSUME', 'END'].includes(keyword)) {
+      const dirType = (keyword.startsWith('.') ? keyword.slice(1) : keyword) as DirectiveType;
+      return {
+        lineNumber,
+        label,
+        directive: {
+          type: dirType,
           items: []
         }
       };

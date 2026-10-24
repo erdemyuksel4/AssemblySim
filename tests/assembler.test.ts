@@ -97,4 +97,45 @@ describe('Assembler Tests', () => {
     // Jumps to below -> MOV DL, 1, then falls through to notbelow: MOV DL, 2, then HLT
     expect(cpu.regs.dl).toBe(2);
   });
+
+  it('correctly assembles and executes MOV AX, @DATA and MOV DS, AX without hanging', () => {
+    const code = `
+      MOV AX, @DATA   ; 1. Veri bölgesinin adresini önce AX'e al
+      MOV DS, AX
+      MOV BX, 1234H
+      HLT
+    `;
+    const res = Assembler.assemble(code);
+    expect(res.errors).toHaveLength(0);
+    expect(res.bytes.length).toBeGreaterThan(0);
+
+    const cpu = new CPU();
+    cpu.loadCOM(res.bytes, res.origin);
+    while (!cpu.halted) {
+      cpu.step();
+    }
+    expect(cpu.regs.ax).toBe(0);
+    expect(cpu.regs.ds).toBe(0);
+    expect(cpu.regs.bx).toBe(0x1234);
+  });
+
+  it('supports standard MASM/TASM directives like .MODEL, .STACK, .DATA, .CODE, and END', () => {
+    const code = `
+      .MODEL SMALL
+      .STACK 100H
+      .DATA
+        MSG DB 'OK$'
+      .CODE
+      MAIN PROC
+        MOV AX, @DATA
+        MOV DS, AX
+        MOV DX, OFFSET MSG
+        HLT
+      MAIN ENDP
+      END MAIN
+    `;
+    const res = Assembler.assemble(code);
+    expect(res.errors).toHaveLength(0);
+    expect(res.bytes.length).toBeGreaterThan(0);
+  });
 });

@@ -424,7 +424,11 @@ export class Editor {
       'DAA', 'DAS', 'AAA', 'AAS', 'AAM', 'AAD', 'LDS', 'LES', 'IN', 'OUT'
     ]);
 
-    const directives = new Set(['ORG', 'DB', 'DW', 'DUP', 'OFFSET', 'BYTE', 'WORD', 'PTR']);
+    const directives = new Set([
+      'ORG', 'DB', 'DW', 'DUP', 'OFFSET', 'BYTE', 'WORD', 'PTR', 'EQU', 'PROC', 'ENDP',
+      '.MODEL', '.STACK', '.DATA', '.CODE', 'ASSUME', 'END',
+      '@DATA', '@CODE', '@STACK'
+    ]);
     const registers = new Set([
       'AX', 'BX', 'CX', 'DX', 'SI', 'DI', 'BP', 'SP', 'IP',
       'CS', 'DS', 'ES', 'SS',
@@ -458,9 +462,9 @@ export class Editor {
       }
 
       // Words / Identifiers / Numbers
-      if (/[a-zA-Z0-9_$.?]/.test(ch)) {
+      if (/[a-zA-Z0-9_$.?@]/.test(ch)) {
         let word = '';
-        while (i < len && /[a-zA-Z0-9_$.?]/.test(line[i])) {
+        while (i < len && /[a-zA-Z0-9_$.?@]/.test(line[i])) {
           word += line[i];
           i++;
         }
