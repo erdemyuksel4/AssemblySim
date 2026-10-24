@@ -39,13 +39,17 @@ export class InteractiveExampleWidget {
 
   private setDirty(dirty: boolean): void {
     this.isDirty = dirty;
-    const btn = this.container.querySelector('.btn-compile');
+    if (this.record) {
+      this.record.isDirty = dirty;
+    }
+    const btn = this.container.querySelector('.btn-compile') as HTMLButtonElement | null;
     const dot = btn?.querySelector('.compile-dirty-dot') as HTMLElement | null;
     if (dot) {
       dot.style.display = dirty ? 'inline-block' : 'none';
     }
     if (btn) {
-      (btn as HTMLElement).title = dirty ? 'Derlenmemiş değişiklikler var. Yeniden derlemek için tıklayın.' : 'Kodu derle';
+      btn.disabled = false;
+      btn.title = dirty ? 'Derlenmemiş değişiklikler var. Yeniden derlemek için tıklayın.' : 'Kodu derle';
     }
   }
 
@@ -81,7 +85,7 @@ export class InteractiveExampleWidget {
       if (this.record.editorScroll) {
         this.editor.setScroll(this.record.editorScroll);
       }
-      this.setDirty(false);
+      this.setDirty(Boolean(this.record.isDirty));
     } else {
       this.compile();
     }
@@ -109,7 +113,6 @@ export class InteractiveExampleWidget {
             <h3 class="embedded-title">${this.escapeHtml(this.example.title)}</h3>
           </div>
           <div class="embedded-header-actions">
-            <span class="embedded-save-pill" title="Yazdığınız kod tarayıcıda otomatik saklanır">💾 Kaydedildi</span>
             <button class="btn-reset-starter-code" title="İlk başlangıç koduna geri dön">↺ Kodu Sıfırla</button>
             <button class="btn-reveal-solution-toggle">
               ${this.showSolution ? '🙈 Çözümü Gizle' : '💡 Çözümü & Açıklamayı Göster'}
@@ -243,7 +246,6 @@ export class InteractiveExampleWidget {
         this.record.editorScroll = this.editor.getScroll();
         this.setDirty(true);
         LectureStorage.saveExampleCode(this.example.id, code);
-        this.showSavedIndicator();
       }
     });
 
@@ -313,7 +315,6 @@ export class InteractiveExampleWidget {
       const codeToLoad = this.example.solutionCode || this.example.code;
       this.editor.setCode(codeToLoad);
       LectureStorage.saveExampleCode(this.example.id, codeToLoad);
-      this.showSavedIndicator();
       this.compile();
       this.consoleView.log('💡 Referans çözüm kodu editöre aktarıldı ve derlendi.', 'success');
       this.container.querySelector('.editor-section')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -324,10 +325,10 @@ export class InteractiveExampleWidget {
     btnResetCode?.addEventListener('click', () => {
       const confirmed = window.confirm ? window.confirm('Yazdığınız kod sıfırlanıp ilk başlangıç şablonuna dönecektir. Devam edilsin mi?') : true;
       if (confirmed) {
-        LectureStorage.resetExampleCode(this.example.id);
+        this.record = MiniLabRegistry.reset(this.example);
+        this.cpu = this.record.cpu;
         this.editor.setCode(this.example.code);
         this.compile();
-        this.showSavedIndicator('Varsayılan kod yüklendi');
         this.consoleView.log('↺ Kod başlangıç şablonuna sıfırlandı.', 'info');
       }
     });
@@ -337,17 +338,6 @@ export class InteractiveExampleWidget {
     btnExport?.addEventListener('click', () => {
       this.callbacks.onOpenInMainEditor?.(this.example.title, this.editor.getCode());
     });
-  }
-
-  private showSavedIndicator(text: string = '💾 Kaydedildi'): void {
-    const pill = this.container.querySelector('.embedded-save-pill') as HTMLElement | null;
-    if (pill) {
-      pill.textContent = text;
-      pill.classList.add('flash');
-      window.setTimeout(() => {
-        pill.classList.remove('flash');
-      }, 1200);
-    }
   }
 
   private switchExample(newEx: LectureExample): void {
@@ -419,7 +409,7 @@ export class InteractiveExampleWidget {
       if (this.record.editorScroll) {
         this.editor.setScroll(this.record.editorScroll);
       }
-      this.setDirty(false);
+      this.setDirty(Boolean(this.record.isDirty));
     } else {
       this.compile();
       this.consoleView.clear();
@@ -462,20 +452,7 @@ export class InteractiveExampleWidget {
     this.cpu.loadCOM(result.bytes, result.origin);
 
     // Apply example initial preconditions
-    if (this.example.initialMemory) {
-      for (const m of this.example.initialMemory) {
-        this.cpu.mem.loadBytes(m.segment, m.offset, m.bytes, 'data');
-      }
-      this.consoleView.log(`📦 Ön tanımlı bellek verisi izole ortama aktarıldı.`, 'info');
-    }
-
-    if (this.example.initialRegisters) {
-      for (const [k, v] of Object.entries(this.example.initialRegisters)) {
-        if (k in this.cpu.regs) {
-          (this.cpu.regs as any)[k] = v;
-        }
-      }
-    }
+    this.applyExamplePreconditions(true);
 
     // Map IP to line numbers
     this.ipToLineMap.clear();
@@ -596,14 +573,50 @@ export class InteractiveExampleWidget {
     this.updateRunningButtons(false);
   }
 
+  private applyExamplePreconditions(logMemory: boolean = false): void {
+    if (this.example.initialMemory) {
+      for (const m of this.example.initialMemory) {
+        this.cpu.mem.loadBytes(m.segment, m.offset, m.bytes, 'data');
+      }
+      if (logMemory) {
+        this.consoleView.log(`📦 Ön tanımlı bellek verisi izole ortama aktarıldı.`, 'info');
+      }
+    }
+
+    if (this.example.initialRegisters) {
+      for (const [k, v] of Object.entries(this.example.initialRegisters)) {
+        if (k in this.cpu.regs) {
+          (this.cpu.regs as any)[k] = v;
+        }
+      }
+    }
+  }
+
   private reset(): void {
     this.stop();
-    this.record = MiniLabRegistry.reset(this.example);
-    this.cpu = this.record.cpu;
-    this.editor.setCode(this.example.code);
-    this.compile();
+    this.consoleView.setWaitingForInput(false);
     this.consoleView.clear();
-    this.consoleView.log('İşlemci ve bellek durumu sıfırlandı.', 'info');
+
+    if (this.currentAsmResult && this.currentAsmResult.errors.length === 0) {
+      this.cpu.loadCOM(this.currentAsmResult.bytes, this.currentAsmResult.origin);
+      this.applyExamplePreconditions(false);
+      this.syncActiveLine();
+      this.consoleView.log('Program başlangıç durumuna sıfırlandı.', 'info');
+    } else {
+      this.cpu.reset();
+      this.applyExamplePreconditions(false);
+      this.editor.setActiveLine(null);
+      this.consoleView.log('İşlemci ve bellek durumu sıfırlandı.', 'info');
+    }
+
+    this.record.consoleBuffer = this.cpu.consoleBuffer || '';
+
+    const btnRun = this.container.querySelector('.btn-run') as HTMLButtonElement;
+    const btnNext = this.container.querySelector('.btn-next') as HTMLButtonElement;
+    if (btnRun) btnRun.disabled = false;
+    if (btnNext) btnNext.disabled = false;
+
+    this.updateViews();
   }
 
   private stepBack(): void {
@@ -626,7 +639,7 @@ export class InteractiveExampleWidget {
     if (btnRun) btnRun.disabled = running;
     if (btnStop) btnStop.disabled = !running;
     if (btnNext) btnNext.disabled = running;
-    if (btnCompile) btnCompile.disabled = running;
+    if (btnCompile) btnCompile.disabled = false;
   }
 
   private updateViews(changedRegs: string[] = [], changedFlags: string[] = []): void {

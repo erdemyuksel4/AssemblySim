@@ -17,6 +17,7 @@ export interface MiniLabRecord {
   consoleBuffer: string;
   ipToLineMap: Map<number, number>;
   isInitialized: boolean;
+  isDirty?: boolean;
   activeDifficultyId?: string;
   editorScroll?: { top: number; left: number };
 }
@@ -54,6 +55,7 @@ export class MiniLabRegistry {
         consoleBuffer: '',
         ipToLineMap: new Map(),
         isInitialized: false,
+        isDirty: false,
         activeDifficultyId: example.id
       };
       this.records.set(example.id, rec);
@@ -81,6 +83,7 @@ export class MiniLabRegistry {
     rec.currentAsmResult = null;
     rec.consoleBuffer = '';
     rec.isInitialized = false;
+    rec.isDirty = false;
     return rec;
   }
 

@@ -104,6 +104,12 @@ export class App {
     if (btn) {
       btn.title = dirty ? 'Derlenmemiş değişiklikler var. Yeniden derlemek için tıklayın.' : 'Kodu derle';
     }
+    if (dirty && !this.isRunning) {
+      const btnRun = document.getElementById('btn-run') as HTMLButtonElement | null;
+      const btnNext = document.getElementById('btn-next') as HTMLButtonElement | null;
+      if (btnRun) btnRun.disabled = false;
+      if (btnNext) btnNext.disabled = false;
+    }
   }
 
   private setSecondaryDirty(dirty: boolean): void {
@@ -115,6 +121,12 @@ export class App {
     }
     if (btn) {
       btn.title = dirty ? 'Derlenmemiş değişiklikler var. Yeniden derlemek için tıklayın.' : 'Kodu derle';
+    }
+    if (dirty && !this.secIsRunning) {
+      const btnRun = document.getElementById('btn-sec-run') as HTMLButtonElement | null;
+      const btnNext = document.getElementById('btn-sec-next') as HTMLButtonElement | null;
+      if (btnRun) btnRun.disabled = false;
+      if (btnNext) btnNext.disabled = false;
     }
   }
 
@@ -1945,9 +1957,9 @@ export class App {
     const btnStop = document.getElementById('btn-stop') as HTMLButtonElement;
     const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
 
-    if (btnRun) btnRun.disabled = this.cpu.halted;
+    if (btnRun) btnRun.disabled = false;
     if (btnStop) btnStop.disabled = true;
-    if (btnNext) btnNext.disabled = this.cpu.halted;
+    if (btnNext) btnNext.disabled = this.cpu.halted && !this.isPrimaryDirty;
   }
 
   private stepBack(): void {
@@ -2218,9 +2230,9 @@ export class App {
     const btnStop = document.getElementById('btn-sec-stop') as HTMLButtonElement;
     const btnNext = document.getElementById('btn-sec-next') as HTMLButtonElement;
 
-    if (btnRun) btnRun.disabled = this.secCpu ? this.secCpu.halted : true;
+    if (btnRun) btnRun.disabled = !this.secCpu;
     if (btnStop) btnStop.disabled = true;
-    if (btnNext) btnNext.disabled = this.secCpu ? this.secCpu.halted : true;
+    if (btnNext) btnNext.disabled = this.secCpu ? (this.secCpu.halted && !this.isSecondaryDirty) : true;
   }
 
   private secStepBack(): void {
