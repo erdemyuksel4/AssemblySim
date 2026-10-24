@@ -7,8 +7,6 @@ export interface SidebarCallbacks {
   onNewDocument: () => void;
   onOpenCpuModal: () => void;
   onOpenLearningDoc?: (tab: 'manual' | 'lectures' | 'leetcode' | 'roadmap') => void;
-  onSplitDocument?: (doc: WorkspaceDocument) => void;
-  onSplitLearningDoc?: (tab: 'manual' | 'lectures' | 'leetcode' | 'roadmap') => void;
   onDocumentClosed?: (docId: string) => void;
   getActiveDocId?: () => string | null;
 }
@@ -100,8 +98,8 @@ export class WorkspaceSidebar {
                 doc.referenceTab === 'roadmap' ? '🗺️' : '📚'
               ) : '📄')));
             return `
-              <li class="workspace-doc-item ${isActive ? 'active' : ''}" data-doc-id="${doc.id}">
-                <div class="doc-item-main" title="${doc.title}">
+              <li class="workspace-doc-item ${isActive ? 'active' : ''}" data-doc-id="${doc.id}" draggable="true" title="${doc.title} (Sürükleyip istediğiniz panele bırakabilirsiniz)">
+                <div class="doc-item-main">
                   <span class="doc-icon">${icon}</span>
                   <span class="doc-title">${this.escapeHtml(doc.title)}</span>
                 </div>
@@ -109,7 +107,6 @@ export class WorkspaceSidebar {
                   <span class="cpu-badge" style="border-left-color: ${cpu.color};" title="Bağlı CPU: ${cpu.name}">
                     ${this.escapeHtml(cpu.name)}
                   </span>
-                  <button class="btn-doc-split" data-doc-id="${doc.id}" title="Yan Yana Aç (Sağ Panele Split)">◫</button>
                   ${doc.id !== 'doc-main' ? `<button class="btn-doc-close" data-doc-id="${doc.id}" title="Belgeyi Kapat">×</button>` : ''}
                 </div>
               </li>
@@ -124,33 +121,29 @@ export class WorkspaceSidebar {
           <span>Öğrenme & Referans</span>
         </div>
         <div class="sidebar-learning-list">
-          <div class="sidebar-learning-row">
-            <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'manual' ? 'active' : ''}" data-nav="manual" title="📖 Manuel (8086 Komut Seti Referansı)">
+          <div class="sidebar-learning-row" draggable="true" data-nav="manual" title="📖 Manuel (Sürükleyip istediğiniz panele bırakabilirsiniz)">
+            <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'manual' ? 'active' : ''}" data-nav="manual">
               <span class="learning-btn-icon">📖</span>
               <span class="learning-btn-text">Manuel</span>
             </button>
-            <button class="btn-learning-split" data-nav="manual" title="Sağ Panele Aç (Yan Yana Çalış)">◫</button>
           </div>
-          <div class="sidebar-learning-row">
-            <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'lectures' ? 'active' : ''}" data-nav="lectures" title="🎓 Dersler & Teori Kataloğu">
+          <div class="sidebar-learning-row" draggable="true" data-nav="lectures" title="🎓 Dersler (Sürükleyip istediğiniz panele bırakabilirsiniz)">
+            <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'lectures' ? 'active' : ''}" data-nav="lectures">
               <span class="learning-btn-icon">🎓</span>
               <span class="learning-btn-text">Dersler</span>
             </button>
-            <button class="btn-learning-split" data-nav="lectures" title="Sağ Panele Aç (Yan Yana Çalış)">◫</button>
           </div>
-          <div class="sidebar-learning-row">
-            <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'leetcode' ? 'active' : ''}" data-nav="leetcode" title="⚡ 8086 LeetCode Görev Arenası">
+          <div class="sidebar-learning-row" draggable="true" data-nav="leetcode" title="⚡ LeetCode (Sürükleyip istediğiniz panele bırakabilirsiniz)">
+            <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'leetcode' ? 'active' : ''}" data-nav="leetcode">
               <span class="learning-btn-icon">⚡</span>
               <span class="learning-btn-text">LeetCode</span>
             </button>
-            <button class="btn-learning-split" data-nav="leetcode" title="Sağ Panele Aç (Yan Yana Çalış)">◫</button>
           </div>
-          <div class="sidebar-learning-row">
-            <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'roadmap' ? 'active' : ''}" data-nav="roadmap" title="🗺️ Yol Haritası & Müfredat Ağacı">
+          <div class="sidebar-learning-row" draggable="true" data-nav="roadmap" title="🗺️ Yol Haritası (Sürükleyip istediğiniz panele bırakabilirsiniz)">
+            <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'roadmap' ? 'active' : ''}" data-nav="roadmap">
               <span class="learning-btn-icon">🗺️</span>
               <span class="learning-btn-text">Yol Haritası</span>
             </button>
-            <button class="btn-learning-split" data-nav="roadmap" title="Sağ Panele Aç (Yan Yana Çalış)">◫</button>
           </div>
         </div>
       </div>
@@ -203,27 +196,41 @@ export class WorkspaceSidebar {
       });
     });
 
-    // Learning item split buttons
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-learning-split').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const nav = btn.dataset.nav as 'manual' | 'lectures' | 'leetcode' | 'roadmap';
-        if (nav && this.callbacks.onSplitLearningDoc) {
-          this.callbacks.onSplitLearningDoc(nav);
-        }
+    // Drag and Drop from Sidebar Document Items
+    this.container.querySelectorAll<HTMLElement>('.workspace-doc-item').forEach(item => {
+      item.addEventListener('dragstart', (e) => {
+        const docId = item.dataset.docId;
+        if (!docId) return;
+        const payload = JSON.stringify({ kind: 'workspace-doc', docId });
+        e.dataTransfer?.setData('application/x-assemblysim-doc', payload);
+        e.dataTransfer?.setData('text/plain', payload);
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
+        item.classList.add('is-dragging');
+        document.body.classList.add('is-dragging-doc');
+      });
+
+      item.addEventListener('dragend', () => {
+        item.classList.remove('is-dragging');
+        document.body.classList.remove('is-dragging-doc');
       });
     });
 
-    // Document item split buttons
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-doc-split').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const docId = btn.dataset.docId;
-        if (!docId) return;
-        const doc = this.workspace.getAllDocuments().find(d => d.id === docId);
-        if (doc && this.callbacks.onSplitDocument) {
-          this.callbacks.onSplitDocument(doc);
-        }
+    // Drag and Drop from Sidebar Learning Rows
+    this.container.querySelectorAll<HTMLElement>('.sidebar-learning-row').forEach(row => {
+      row.addEventListener('dragstart', (e) => {
+        const nav = row.dataset.nav || row.querySelector('.sidebar-learning-btn')?.getAttribute('data-nav') || '';
+        if (!nav) return;
+        const payload = JSON.stringify({ kind: 'learning-doc', tab: nav });
+        e.dataTransfer?.setData('application/x-assemblysim-doc', payload);
+        e.dataTransfer?.setData('text/plain', payload);
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
+        row.classList.add('is-dragging');
+        document.body.classList.add('is-dragging-doc');
+      });
+
+      row.addEventListener('dragend', () => {
+        row.classList.remove('is-dragging');
+        document.body.classList.remove('is-dragging-doc');
       });
     });
 

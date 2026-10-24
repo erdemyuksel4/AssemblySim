@@ -101,13 +101,29 @@ export class App {
 
         <!-- Main Workspace Area -->
         <div class="app-main-content" id="app-main-content">
+          <!-- Drop Overlay for Drag & Drop Window Placement & Splitting -->
+          <div class="workspace-drop-overlay" id="workspace-drop-overlay" style="display: none;">
+            <div class="drop-zone-box left-zone" id="drop-zone-left">
+              <div class="drop-zone-indicator">
+                <span class="drop-zone-icon">📄</span>
+                <span class="drop-zone-text" id="drop-zone-left-text">Sol Panele Aç</span>
+              </div>
+            </div>
+            <div class="drop-zone-box right-zone" id="drop-zone-right">
+              <div class="drop-zone-indicator">
+                <span class="drop-zone-icon">◫</span>
+                <span class="drop-zone-text" id="drop-zone-right-text">Sağa Böl (Yeni Pencere)</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Primary Pane (Left in Split View, or Full in Single View) -->
           <div class="workspace-pane pane-primary pane-focused" id="pane-primary" tabindex="0">
             <main class="main-layout" id="main-ide-layout">
               <!-- Left Section: Code Editor -->
               <section class="editor-section">
                 <div class="editor-header-bar">
-                  <h2 class="editor-title">
+                  <h2 class="editor-title" id="primary-editor-title-wrap" title="Sürükleyip sağ panele bırakabilirsiniz">
                     <span id="primary-editor-title-text">Code Editor</span>
                     <span class="cpu-badge" id="primary-ide-cpu-badge" style="margin-left: 6px;">CPU-1</span>
                     <span class="info-btn" data-info-title="8086 Assembly Editörü" data-info-desc="DOS COM / EMU8086 sözdizimine uygun assembly kodu yazın. Satır numaralarına tıklayarak kesme noktası (Breakpoint) koyabilirsiniz. Kısayollar: Ctrl+Z (Geri Al), Ctrl+Y / Ctrl+Shift+Z (Yinele), Tab / Shift+Tab (4 boşluk girintile / geri çek), Enter (Oto-girinti), Ctrl+/ veya Ctrl+; (Yorum aç/kapa), Ctrl+D (Satır çoğalt), Alt+Yukarı/Aşağı (Satır taşı), Ctrl+Shift+K (Satır sil), F10 (Adım), F5 (Çalıştır)." tabindex="-1">i</span>
@@ -128,12 +144,6 @@ export class App {
                       <button class="btn-speed" data-speed="2" title="2x Hızlı (100ms)">2x</button>
                       <span class="info-btn" data-info-title="Çalışma Hızı" data-info-desc="RUN ile çalıştırma hızını ayarlar. 0.5x: Yavaş adım (600ms), 1x: Normal hız (300ms), 2x: Hızlı adım (100ms)." tabindex="-1">i</span>
                     </div>
-
-                    <!-- Split View Toggle Button (Tek / Çift Pencere Modu) -->
-                    <button id="btn-split-toggle" class="btn-ctrl btn-split-toggle" title="Çift Pencere Moduna Geç (Yan Yana Çalış)">
-                      <span class="split-icon">◫</span>
-                      <span class="split-text">Çift Pencere</span>
-                    </button>
 
                     <button id="btn-compile" class="btn-compile">COMPILE</button>
                     <button id="btn-run" class="btn-ctrl">RUN</button>
@@ -175,7 +185,7 @@ export class App {
           <div class="workspace-pane pane-secondary" id="pane-secondary" style="display: none;" tabindex="0">
             <!-- Secondary Header (Used when showing reference or lecture documents) -->
             <div class="secondary-pane-header" id="secondary-pane-header" style="display: none;">
-              <div class="secondary-pane-title-wrap">
+              <div class="secondary-pane-title-wrap" id="secondary-pane-title-wrap" draggable="true" title="Sürükleyip sol panele bırakabilirsiniz">
                 <span class="secondary-pane-icon" id="secondary-pane-icon">📖</span>
                 <span class="secondary-pane-title" id="secondary-pane-title">8086 Komut Manueli</span>
               </div>
@@ -186,7 +196,6 @@ export class App {
                 <button class="btn-sec-nav" data-sec-nav="roadmap" title="Müfredat Yol Haritası">🗺️ Yol Haritası</button>
               </div>
               <div class="secondary-pane-actions">
-                <button id="btn-secondary-fullscreen" class="btn-pane-action" title="Tam Ekrana Genişlet">⤢</button>
                 <button id="btn-secondary-close" class="btn-pane-action btn-close-pane" title="Bölünmüş Ekranı Kapat (Tek Ekrana Dön)">✕</button>
               </div>
             </div>
@@ -196,7 +205,7 @@ export class App {
               <!-- Left Section: Code Editor -->
               <section class="editor-section">
                 <div class="editor-header-bar">
-                  <h2 class="editor-title">
+                  <h2 class="editor-title" id="sec-editor-title-wrap" draggable="true" title="Sürükleyip sol panele bırakabilirsiniz">
                     <span id="sec-editor-title-text">Code Editor 2</span>
                     <span class="cpu-badge" id="sec-ide-cpu-badge" style="margin-left: 6px;">CPU-2</span>
                   </h2>
@@ -555,16 +564,6 @@ export class App {
         onOpenLearningDoc: (tab) => {
           this.openLearningDocInPane(this.activePane, tab);
         },
-        onSplitDocument: (doc) => {
-          const targetPane = this.activePane === 'primary' ? 'secondary' : 'primary';
-          this.openDocumentInPane(targetPane, doc);
-          this.setActivePane(targetPane);
-        },
-        onSplitLearningDoc: (tab) => {
-          const targetPane = this.activePane === 'primary' ? 'secondary' : 'primary';
-          this.openLearningDocInPane(targetPane, tab);
-          this.setActivePane(targetPane);
-        },
         onDocumentClosed: (docId) => {
           this.handleDocumentClosed(docId);
         },
@@ -607,6 +606,7 @@ export class App {
 
     this.attachButtonEvents();
     this.initSplitResizer();
+    this.initDragAndDrop();
   }
 
   // =========================================================================
@@ -888,7 +888,6 @@ export class App {
     const panePrimary = document.getElementById('pane-primary');
     const paneSecondary = document.getElementById('pane-secondary');
     const splitResizer = document.getElementById('split-resizer');
-    const btnSplit = document.getElementById('btn-split-toggle');
 
     if (!mainContent || !panePrimary || !paneSecondary || !splitResizer) return;
 
@@ -896,14 +895,6 @@ export class App {
       mainContent.classList.add('split-active');
       paneSecondary.style.display = 'flex';
       splitResizer.style.display = 'flex';
-      btnSplit?.classList.add('active');
-      if (btnSplit) {
-        btnSplit.innerHTML = `
-          <span class="split-icon">🗖</span>
-          <span class="split-text">Tek Pencere</span>
-        `;
-        btnSplit.title = 'Tek Pencere Moduna Geç (Ortala)';
-      }
 
       if (targetDoc) {
         this.openDocumentInPane('secondary', targetDoc);
@@ -934,14 +925,6 @@ export class App {
       splitResizer.style.display = 'none';
       panePrimary.style.width = '100%';
       paneSecondary.style.width = '50%';
-      btnSplit?.classList.remove('active');
-      if (btnSplit) {
-        btnSplit.innerHTML = `
-          <span class="split-icon">◫</span>
-          <span class="split-text">Çift Pencere</span>
-        `;
-        btnSplit.title = 'Çift Pencere Moduna Geç (Yan Yana Çalış)';
-      }
 
       this.secStop();
       this.secondaryDocId = null;
@@ -986,26 +969,12 @@ export class App {
       }
     });
 
-    // Toggle button in editor toolbar
-    document.getElementById('btn-split-toggle')?.addEventListener('click', () => {
-      this.toggleSplitView();
-    });
-
     // Close buttons on secondary pane
     document.getElementById('btn-secondary-close')?.addEventListener('click', () => {
       this.toggleSplitView(false);
     });
     document.getElementById('btn-sec-ide-close')?.addEventListener('click', () => {
       this.toggleSplitView(false);
-    });
-
-    // Fullscreen button on secondary pane
-    document.getElementById('btn-secondary-fullscreen')?.addEventListener('click', () => {
-      const secDoc = this.secondaryDocId ? this.workspace.getAllDocuments().find(d => d.id === this.secondaryDocId) : null;
-      this.toggleSplitView(false);
-      if (secDoc) {
-        this.openDocumentInPane('primary', secDoc);
-      }
     });
 
     // Quick nav buttons in secondary pane header
@@ -1021,6 +990,179 @@ export class App {
     // Pane focus listeners
     panePrimary.addEventListener('pointerdown', () => this.setActivePane('primary'));
     paneSecondary.addEventListener('pointerdown', () => this.setActivePane('secondary'));
+  }
+
+  private initDragAndDrop(): void {
+    const mainContent = document.getElementById('app-main-content');
+    const dropOverlay = document.getElementById('workspace-drop-overlay');
+    const leftZone = document.getElementById('drop-zone-left');
+    const rightZone = document.getElementById('drop-zone-right');
+    const leftText = document.getElementById('drop-zone-left-text');
+    const rightText = document.getElementById('drop-zone-right-text');
+
+    if (!mainContent || !dropOverlay || !leftZone || !rightZone) return;
+
+    let dragCounter = 0;
+
+    const showOverlay = () => {
+      dropOverlay.style.display = 'flex';
+      if (this.isSplitMode) {
+        if (leftText) leftText.textContent = 'Sol Panele Bırak';
+        if (rightText) rightText.textContent = 'Sağ Panele Bırak';
+      } else {
+        if (leftText) leftText.textContent = 'Bu Pencerede Aç';
+        if (rightText) rightText.textContent = 'Sağa Böl (Yan Yana Çalış)';
+      }
+    };
+
+    const hideOverlay = () => {
+      dropOverlay.style.display = 'none';
+      leftZone.classList.remove('active');
+      rightZone.classList.remove('active');
+    };
+
+    const isOurDrag = (e: DragEvent): boolean => {
+      if (!e.dataTransfer) return false;
+      return e.dataTransfer.types.includes('application/x-assemblysim-doc') || 
+             e.dataTransfer.types.includes('text/plain') ||
+             document.body.classList.contains('is-dragging-doc');
+    };
+
+    const updateZoneHover = (clientX: number) => {
+      const rect = mainContent.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const width = rect.width;
+
+      if (this.isSplitMode) {
+        const panePrimary = document.getElementById('pane-primary');
+        const primWidth = panePrimary ? panePrimary.getBoundingClientRect().width : width / 2;
+        if (x < primWidth) {
+          leftZone.classList.add('active');
+          rightZone.classList.remove('active');
+        } else {
+          rightZone.classList.add('active');
+          leftZone.classList.remove('active');
+        }
+      } else {
+        if (x > width * 0.65) {
+          rightZone.classList.add('active');
+          leftZone.classList.remove('active');
+        } else {
+          leftZone.classList.add('active');
+          rightZone.classList.remove('active');
+        }
+      }
+    };
+
+    mainContent.addEventListener('dragenter', (e) => {
+      if (!isOurDrag(e)) return;
+      dragCounter++;
+      showOverlay();
+      updateZoneHover(e.clientX);
+    });
+
+    mainContent.addEventListener('dragleave', (e) => {
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        hideOverlay();
+      }
+    });
+
+    mainContent.addEventListener('dragover', (e) => {
+      if (!isOurDrag(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      showOverlay();
+      updateZoneHover(e.clientX);
+    });
+
+    dropOverlay.addEventListener('dragover', (e) => {
+      if (!isOurDrag(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      updateZoneHover(e.clientX);
+    });
+
+    dropOverlay.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragCounter = 0;
+      const rawData = e.dataTransfer?.getData('application/x-assemblysim-doc') || e.dataTransfer?.getData('text/plain');
+      const isRight = rightZone.classList.contains('active');
+      const targetPane: 'primary' | 'secondary' = isRight ? 'secondary' : 'primary';
+
+      hideOverlay();
+      document.body.classList.remove('is-dragging-doc');
+
+      if (rawData) {
+        try {
+          const parsed = JSON.parse(rawData);
+          if (parsed.kind === 'workspace-doc' && parsed.docId) {
+            const doc = this.workspace.getAllDocuments().find(d => d.id === parsed.docId);
+            if (doc) {
+              this.openDocumentInPane(targetPane, doc);
+              this.setActivePane(targetPane);
+            }
+          } else if (parsed.kind === 'learning-doc' && parsed.tab) {
+            this.openLearningDocInPane(targetPane, parsed.tab as ManualTab);
+            this.setActivePane(targetPane);
+          }
+        } catch (err) {
+          console.warn('Drop payload parse error', err);
+        }
+      }
+    });
+
+    // Make editor title bars draggable between panes
+    const primTitle = document.getElementById('primary-editor-title-wrap');
+    if (primTitle) {
+      primTitle.setAttribute('draggable', 'true');
+      primTitle.addEventListener('dragstart', (e) => {
+        const payload = JSON.stringify({ kind: 'workspace-doc', docId: this.primaryDocId });
+        e.dataTransfer?.setData('application/x-assemblysim-doc', payload);
+        e.dataTransfer?.setData('text/plain', payload);
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
+        document.body.classList.add('is-dragging-doc');
+      });
+      primTitle.addEventListener('dragend', () => {
+        document.body.classList.remove('is-dragging-doc');
+        hideOverlay();
+      });
+    }
+
+    const secTitle = document.getElementById('sec-editor-title-wrap');
+    if (secTitle) {
+      secTitle.setAttribute('draggable', 'true');
+      secTitle.addEventListener('dragstart', (e) => {
+        if (!this.secondaryDocId) return;
+        const payload = JSON.stringify({ kind: 'workspace-doc', docId: this.secondaryDocId });
+        e.dataTransfer?.setData('application/x-assemblysim-doc', payload);
+        e.dataTransfer?.setData('text/plain', payload);
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
+        document.body.classList.add('is-dragging-doc');
+      });
+      secTitle.addEventListener('dragend', () => {
+        document.body.classList.remove('is-dragging-doc');
+        hideOverlay();
+      });
+    }
+
+    const secHeaderTitle = document.getElementById('secondary-pane-title-wrap');
+    if (secHeaderTitle) {
+      secHeaderTitle.setAttribute('draggable', 'true');
+      secHeaderTitle.addEventListener('dragstart', (e) => {
+        if (!this.secondaryDocId) return;
+        const payload = JSON.stringify({ kind: 'workspace-doc', docId: this.secondaryDocId });
+        e.dataTransfer?.setData('application/x-assemblysim-doc', payload);
+        e.dataTransfer?.setData('text/plain', payload);
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
+        document.body.classList.add('is-dragging-doc');
+      });
+      secHeaderTitle.addEventListener('dragend', () => {
+        document.body.classList.remove('is-dragging-doc');
+        hideOverlay();
+      });
+    }
   }
 
   // =========================================================================

@@ -2450,42 +2450,26 @@ body {
 
 .sidebar-learning-row .sidebar-learning-btn {
   flex: 1;
+  width: 100%;
 }
 
-.btn-learning-split,
-.btn-doc-split {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 700;
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.12s ease;
-  flex-shrink: 0;
-  opacity: 0.6;
+/* Draggable Items in Sidebar */
+.workspace-doc-item[draggable="true"],
+.sidebar-learning-row[draggable="true"] {
+  cursor: grab;
+  user-select: none;
 }
 
-.workspace-doc-item:hover .btn-doc-split,
-.sidebar-learning-row:hover .btn-learning-split {
-  opacity: 1;
+.workspace-doc-item[draggable="true"]:active,
+.sidebar-learning-row[draggable="true"]:active {
+  cursor: grabbing;
 }
 
-.btn-learning-split:hover,
-.btn-doc-split:hover {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
-}
-
-.workspace-sidebar.collapsed .btn-learning-split,
-.workspace-sidebar.collapsed .btn-doc-split {
-  display: none !important;
+.workspace-doc-item.is-dragging,
+.sidebar-learning-row.is-dragging {
+  opacity: 0.45;
+  transform: scale(0.98);
+  background: #eff6ff !important;
 }
 
 .sidebar-learning-btn {
@@ -6375,37 +6359,107 @@ body {
   gap: 8px;
 }
 
-/* Split view toggle button in editor toolbar */
-.btn-split-toggle {
-  display: inline-flex;
+/* ==========================================================================
+   DRAG AND DROP WORKSPACE OVERLAYS & ZONES
+   ========================================================================== */
+.app-main-content {
+  position: relative;
+}
+
+.workspace-drop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  pointer-events: all;
+  display: flex;
+  background: rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(2px);
+  padding: 16px;
+  box-sizing: border-box;
+  gap: 16px;
+  animation: fadeIn 0.12s ease-out;
+}
+
+.drop-zone-box {
+  flex: 1;
+  height: 100%;
+  display: flex;
   align-items: center;
-  gap: 5px;
-  background: #f1f5f9;
+  justify-content: center;
+  border-radius: 12px;
+  border: 2px dashed #94a3b8;
+  background: rgba(255, 255, 255, 0.7);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.drop-zone-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 32px;
+  background: #ffffff;
+  border-radius: 12px;
   border: 1px solid #cbd5e1;
-  color: #334155;
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+  pointer-events: none;
 }
 
-.btn-split-toggle:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+.drop-zone-icon {
+  font-size: 32px;
 }
 
-.btn-split-toggle.active {
-  background: #eff6ff;
-  border-color: #93c5fd;
-  color: #1d4ed8;
+.drop-zone-text {
+  font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.12);
+  color: #334155;
+  letter-spacing: 0.3px;
 }
 
-.split-icon {
-  font-size: 13px;
+/* Single-pane mode zone proportions */
+.app-main-content:not(.split-active) .drop-zone-box.left-zone {
+  flex: 0 0 calc(65% - 8px);
+}
+
+.app-main-content:not(.split-active) .drop-zone-box.right-zone {
+  flex: 0 0 calc(35% - 8px);
+}
+
+/* Active Hover Zone */
+.drop-zone-box.active {
+  border: 2.5px dashed #2563eb;
+  background: rgba(239, 246, 255, 0.95);
+  transform: scale(0.995);
+  box-shadow: inset 0 0 24px rgba(37, 99, 235, 0.15);
+}
+
+.drop-zone-box.active .drop-zone-indicator {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.25);
+  transform: scale(1.04);
+}
+
+.drop-zone-box.active .drop-zone-text {
+  color: #1d4ed8;
+}
+
+/* Draggable Titles */
+.editor-title[draggable="true"],
+.secondary-pane-title-wrap[draggable="true"] {
+  cursor: grab;
+  user-select: none;
+}
+
+.editor-title[draggable="true"]:active,
+.secondary-pane-title-wrap[draggable="true"]:active {
+  cursor: grabbing;
 }
 
 
