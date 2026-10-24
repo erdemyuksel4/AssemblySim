@@ -2,14 +2,25 @@ import { WorkspaceManager } from '../workspace/workspaceManager.js';
 import { WorkspaceDocument } from '../workspace/types.js';
 import { CpuInstanceManager } from '../cpu/instanceManager.js';
 
+export interface SplitPaneInfo {
+  isSplit: boolean;
+  primaryDoc: WorkspaceDocument | null;
+  secondaryDoc: WorkspaceDocument | null;
+  activePane: 'primary' | 'secondary';
+}
+
 export interface SidebarCallbacks {
   onDocumentSelect: (doc: WorkspaceDocument) => void;
   onNewDocument: () => void;
   onOpenCpuModal: () => void;
   onOpenLearningDoc?: (tab: 'manual' | 'lectures' | 'leetcode' | 'roadmap') => void;
   onDocumentClosed?: (docId: string) => void;
+  onSelectPane?: (pane: 'primary' | 'secondary') => void;
+  onCloseSplit?: () => void;
+  onDropOnPane?: (pane: 'primary' | 'secondary', rawData: string) => void;
   getActiveDocId?: () => string | null;
   getOpenDocIds?: () => string[];
+  getSplitInfo?: () => SplitPaneInfo;
 }
 
 export class WorkspaceSidebar {
@@ -68,6 +79,17 @@ export class WorkspaceSidebar {
     const activeCpu = this.cpuManager.getOrDefaultInstance(activeDoc?.cpuInstanceId);
     const openDocIds = this.callbacks.getOpenDocIds ? this.callbacks.getOpenDocIds() : (activeDocId ? [activeDocId] : []);
 
+    const splitInfo = this.callbacks.getSplitInfo?.() || {
+      isSplit: false,
+      primaryDoc: null,
+      secondaryDoc: null,
+      activePane: 'primary'
+    };
+    const primCpu = splitInfo.primaryDoc ? this.cpuManager.getOrDefaultInstance(splitInfo.primaryDoc.cpuInstanceId) : null;
+    const secCpu = splitInfo.secondaryDoc ? this.cpuManager.getOrDefaultInstance(splitInfo.secondaryDoc.cpuInstanceId) : null;
+    const primIcon = this.getDocIcon(splitInfo.primaryDoc);
+    const secIcon = this.getDocIcon(splitInfo.secondaryDoc);
+
     this.container.innerHTML = `
       <div class="sidebar-header">
         <button class="btn-sidebar-toggle" title="${this.isCollapsed ? 'Menüyü Genişlet' : 'Menüyü Daralt'}">
@@ -81,8 +103,45 @@ export class WorkspaceSidebar {
       </div>
 
       <div class="sidebar-content">
+        <!-- Clustered Side-by-Side Dual-Window Card (Shown when Split Mode is Active) -->
+        ${splitInfo.isSplit && splitInfo.primaryDoc && splitInfo.secondaryDoc ? `
+          <div class="sidebar-split-cluster">
+            <div class="split-cluster-header">
+              <span class="split-cluster-badge">◫ ÇİFT PENCERE (YAN YANA)</span>
+              <button class="btn-split-cluster-close" title="Çift Pencereyi Kapat">✕</button>
+            </div>
+            <div class="split-cluster-grid">
+              <!-- Left Card -->
+              <div class="split-pane-card left-card ${splitInfo.activePane === 'primary' ? 'focused' : ''}" data-pane="primary" title="Sol Pencereye Odaklan: ${this.escapeHtml(splitInfo.primaryDoc.title)}">
+                <div class="split-card-header">
+                  <span class="split-card-tag">SOL</span>
+                  ${primCpu ? `<span class="split-card-cpu" style="border-left-color: ${primCpu.color};">${this.escapeHtml(primCpu.name)}</span>` : ''}
+                </div>
+                <div class="split-card-body">
+                  <span class="split-card-icon">${primIcon}</span>
+                  <span class="split-card-title">${this.escapeHtml(splitInfo.primaryDoc.title)}</span>
+                </div>
+              </div>
+
+              <div class="split-cluster-arrow">⇄</div>
+
+              <!-- Right Card -->
+              <div class="split-pane-card right-card ${splitInfo.activePane === 'secondary' ? 'focused' : ''}" data-pane="secondary" title="Sağ Pencereye Odaklan: ${this.escapeHtml(splitInfo.secondaryDoc.title)}">
+                <div class="split-card-header">
+                  <span class="split-card-tag">SAĞ</span>
+                  ${secCpu ? `<span class="split-card-cpu" style="border-left-color: ${secCpu.color};">${this.escapeHtml(secCpu.name)}</span>` : ''}
+                </div>
+                <div class="split-card-body">
+                  <span class="split-card-icon">${secIcon}</span>
+                  <span class="split-card-title">${this.escapeHtml(splitInfo.secondaryDoc.title)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+
         <div class="sidebar-section-header">
-          <span>Açık Belgeler & Görevler</span>
+          <span>${splitInfo.isSplit ? 'Tüm Belgeler & Görevler' : 'Açık Belgeler & Görevler'}</span>
           <span class="sidebar-doc-count">${docs.length}</span>
         </div>
 
@@ -236,6 +295,45 @@ export class WorkspaceSidebar {
       });
     });
 
+    // Split cluster pane cards click to focus
+    this.container.querySelectorAll<HTMLElement>('.split-pane-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const pane = card.dataset.pane as 'primary' | 'secondary';
+        if (pane && this.callbacks.onSelectPane) {
+          this.callbacks.onSelectPane(pane);
+        }
+      });
+
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+        card.classList.add('drag-over');
+      });
+
+      card.addEventListener('dragleave', () => {
+        card.classList.remove('drag-over');
+      });
+
+      card.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        card.classList.remove('drag-over');
+        const pane = card.dataset.pane as 'primary' | 'secondary';
+        const rawData = e.dataTransfer?.getData('application/x-assemblysim-doc') || e.dataTransfer?.getData('text/plain');
+        if (rawData && pane && this.callbacks.onDropOnPane) {
+          this.callbacks.onDropOnPane(pane, rawData);
+        }
+      });
+    });
+
+    // Split cluster close button
+    const btnClusterClose = this.container.querySelector<HTMLButtonElement>('.btn-split-cluster-close');
+    btnClusterClose?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.callbacks.onCloseSplit?.();
+    });
+
     // Document item selection
     this.container.querySelectorAll<HTMLElement>('.workspace-doc-item').forEach(item => {
       item.addEventListener('click', (e) => {
@@ -279,6 +377,21 @@ export class WorkspaceSidebar {
         this.toggleCollapse(false);
       }
     });
+  }
+
+  private getDocIcon(doc: WorkspaceDocument | null): string {
+    if (!doc) return '📄';
+    if (doc.type === 'challenge') return '🎯';
+    if (doc.type === 'lecture') return '🎓';
+    if (doc.type === 'example') return '💡';
+    if (doc.type === 'reference') {
+      if (doc.referenceTab === 'manual') return '📖';
+      if (doc.referenceTab === 'lectures') return '🎓';
+      if (doc.referenceTab === 'leetcode') return '⚡';
+      if (doc.referenceTab === 'roadmap') return '🗺️';
+      return '📚';
+    }
+    return '📄';
   }
 
   private escapeHtml(str: string): string {

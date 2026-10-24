@@ -587,6 +587,29 @@ export class App {
         onDocumentClosed: (docId) => {
           this.handleDocumentClosed(docId);
         },
+        onSelectPane: (pane) => {
+          this.setActivePane(pane);
+        },
+        onCloseSplit: () => {
+          this.toggleSplitView(false);
+        },
+        onDropOnPane: (pane, rawData) => {
+          try {
+            const parsed = JSON.parse(rawData);
+            if (parsed.kind === 'workspace-doc' && parsed.docId) {
+              const doc = this.workspace.getAllDocuments().find(d => d.id === parsed.docId);
+              if (doc) {
+                this.openDocumentInPane(pane, doc);
+                this.setActivePane(pane);
+              }
+            } else if (parsed.kind === 'learning-doc' && parsed.tab) {
+              this.openLearningDocInPane(pane, parsed.tab as ManualTab);
+              this.setActivePane(pane);
+            }
+          } catch (err) {
+            console.warn('Sidebar card drop error', err);
+          }
+        },
         getActiveDocId: () => {
           return this.activePane === 'primary' ? this.primaryDocId : (this.secondaryDocId || this.primaryDocId);
         },
@@ -595,6 +618,17 @@ export class App {
             return [this.primaryDocId, this.secondaryDocId];
           }
           return [this.primaryDocId];
+        },
+        getSplitInfo: () => {
+          const primDoc = this.workspace.getAllDocuments().find(d => d.id === this.primaryDocId) || null;
+          const secDoc = (this.isSplitMode && this.secondaryDocId) ? 
+            (this.workspace.getAllDocuments().find(d => d.id === this.secondaryDocId) || null) : null;
+          return {
+            isSplit: this.isSplitMode,
+            primaryDoc: primDoc,
+            secondaryDoc: secDoc,
+            activePane: this.activePane
+          };
         }
       }
     );
