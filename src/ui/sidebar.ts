@@ -2,6 +2,12 @@ import { WorkspaceManager } from '../workspace/workspaceManager.js';
 import { WorkspaceDocument } from '../workspace/types.js';
 import { CpuInstanceManager } from '../cpu/instanceManager.js';
 
+export interface SplitPairInfo {
+  id: string;
+  primaryDocId: string;
+  secondaryDocId: string;
+}
+
 export interface SplitPaneInfo {
   isSplit: boolean;
   primaryDoc: WorkspaceDocument | null;
@@ -17,10 +23,14 @@ export interface SidebarCallbacks {
   onDocumentClosed?: (docId: string) => void;
   onSelectPane?: (pane: 'primary' | 'secondary') => void;
   onCloseSplit?: () => void;
+  onSelectPair?: (pairId: string, pane?: 'primary' | 'secondary') => void;
+  onClosePair?: (pairId: string) => void;
   onDropOnPane?: (pane: 'primary' | 'secondary', rawData: string) => void;
   getActiveDocId?: () => string | null;
   getOpenDocIds?: () => string[];
   getSplitInfo?: () => SplitPaneInfo;
+  getSplitPairs?: () => SplitPairInfo[];
+  getActivePairId?: () => string | null;
 }
 
 export class WorkspaceSidebar {
@@ -85,10 +95,18 @@ export class WorkspaceSidebar {
       secondaryDoc: null,
       activePane: 'primary'
     };
-    const primCpu = splitInfo.primaryDoc ? this.cpuManager.getOrDefaultInstance(splitInfo.primaryDoc.cpuInstanceId) : null;
-    const secCpu = splitInfo.secondaryDoc ? this.cpuManager.getOrDefaultInstance(splitInfo.secondaryDoc.cpuInstanceId) : null;
-    const primIcon = this.getDocIcon(splitInfo.primaryDoc);
-    const secIcon = this.getDocIcon(splitInfo.secondaryDoc);
+
+    const splitPairs = this.callbacks.getSplitPairs ? this.callbacks.getSplitPairs() : [];
+    const activePairId = this.callbacks.getActivePairId ? this.callbacks.getActivePairId() : null;
+
+    // Collect IDs of docs that belong to saved split pairs
+    const pairedDocIds = new Set<string>();
+    splitPairs.forEach(p => {
+      pairedDocIds.add(p.primaryDocId);
+      pairedDocIds.add(p.secondaryDocId);
+    });
+
+    const standaloneDocs = docs.filter(d => !pairedDocIds.has(d.id));
 
     this.container.innerHTML = `
       <div class="sidebar-header">
@@ -105,33 +123,42 @@ export class WorkspaceSidebar {
       <div class="sidebar-content">
         <div class="sidebar-section-header">
           <span>Açık Belgeler & Görevler</span>
-          <span class="sidebar-doc-count">${docs.length}</span>
+          <span class="sidebar-doc-count">${splitPairs.length + standaloneDocs.length}</span>
         </div>
 
         <ul class="workspace-doc-list">
-          ${splitInfo.isSplit && splitInfo.primaryDoc && splitInfo.secondaryDoc ? `
-            <!-- Open Windows Side-by-Side in One Row -->
-            <li class="workspace-split-pair-row">
-              <div class="workspace-doc-item split-half ${splitInfo.activePane === 'primary' ? 'active' : ''}" data-pane="primary" data-doc-id="${splitInfo.primaryDoc.id}" draggable="true" title="Sol Pencere: ${this.escapeHtml(splitInfo.primaryDoc.title)}">
-                <div class="doc-item-main">
-                  <span class="doc-icon">${primIcon}</span>
-                  <span class="doc-title">${this.escapeHtml(splitInfo.primaryDoc.title)}</span>
+          ${splitPairs.map(pair => {
+            const primDoc = docs.find(d => d.id === pair.primaryDocId);
+            const secDoc = docs.find(d => d.id === pair.secondaryDocId);
+            if (!primDoc || !secDoc) return '';
+            const isPairActive = splitInfo.isSplit && (activePairId === pair.id);
+            const primIcon = this.getDocIcon(primDoc);
+            const secIcon = this.getDocIcon(secDoc);
+
+            const isPrimActive = isPairActive ? (splitInfo.activePane === 'primary') : (!splitInfo.isSplit && activeDocId === primDoc.id);
+            const isSecActive = isPairActive ? (splitInfo.activePane === 'secondary') : (!splitInfo.isSplit && activeDocId === secDoc.id);
+
+            return `
+              <li class="workspace-split-pair-row ${isPairActive ? 'active-pair' : ''}" data-pair-id="${pair.id}">
+                <div class="workspace-doc-item split-half ${isPrimActive ? 'active' : ''}" data-pair-id="${pair.id}" data-pane="primary" data-doc-id="${primDoc.id}" draggable="true" title="Sol Pencere: ${this.escapeHtml(primDoc.title)}">
+                  <div class="doc-item-main">
+                    <span class="doc-icon">${primIcon}</span>
+                    <span class="doc-title">${this.escapeHtml(primDoc.title)}</span>
+                  </div>
+                  <span class="pane-side-badge">Sol</span>
                 </div>
-                <span class="pane-side-badge">Sol</span>
-              </div>
-              <div class="workspace-doc-item split-half ${splitInfo.activePane === 'secondary' ? 'active' : ''}" data-pane="secondary" data-doc-id="${splitInfo.secondaryDoc.id}" draggable="true" title="Sağ Pencere: ${this.escapeHtml(splitInfo.secondaryDoc.title)}">
-                <div class="doc-item-main">
-                  <span class="doc-icon">${secIcon}</span>
-                  <span class="doc-title">${this.escapeHtml(splitInfo.secondaryDoc.title)}</span>
+                <div class="workspace-doc-item split-half ${isSecActive ? 'active' : ''}" data-pair-id="${pair.id}" data-pane="secondary" data-doc-id="${secDoc.id}" draggable="true" title="Sağ Pencere: ${this.escapeHtml(secDoc.title)}">
+                  <div class="doc-item-main">
+                    <span class="doc-icon">${secIcon}</span>
+                    <span class="doc-title">${this.escapeHtml(secDoc.title)}</span>
+                  </div>
+                  <span class="pane-side-badge">Sağ</span>
+                  <button class="btn-doc-close btn-split-close btn-pair-close" data-pair-id="${pair.id}" title="Çift Pencereyi Kapat">×</button>
                 </div>
-                <span class="pane-side-badge">Sağ</span>
-                <button class="btn-doc-close btn-split-close" title="Pencereyi Kapat">×</button>
-              </div>
-            </li>
-            ${docs.filter(d => d.id !== splitInfo.primaryDoc?.id && d.id !== splitInfo.secondaryDoc?.id).map(doc => this.renderDocItem(doc, openDocIds)).join('')}
-          ` : `
-            ${docs.map(doc => this.renderDocItem(doc, openDocIds)).join('')}
-          `}
+              </li>
+            `;
+          }).join('')}
+          ${standaloneDocs.map(doc => this.renderDocItem(doc, openDocIds)).join('')}
         </ul>
       </div>
 
@@ -254,25 +281,45 @@ export class WorkspaceSidebar {
       });
     });
 
-    // Split pair close button
-    const btnSplitClose = this.container.querySelector<HTMLButtonElement>('.btn-split-close');
-    btnSplitClose?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.callbacks.onCloseSplit?.();
+    // Split pair click to open or switch focus
+    this.container.querySelectorAll<HTMLElement>('.workspace-split-pair-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        // If close button was clicked, don't select
+        if ((e.target as HTMLElement).closest('.btn-pair-close') || (e.target as HTMLElement).classList.contains('btn-doc-close')) {
+          return;
+        }
+        const pairId = row.dataset.pairId;
+        if (!pairId) return;
+
+        const half = (e.target as HTMLElement).closest<HTMLElement>('.split-half');
+        const pane = (half?.dataset.pane as 'primary' | 'secondary') || 'primary';
+
+        if (this.callbacks.onSelectPair) {
+          this.callbacks.onSelectPair(pairId, pane);
+        } else if (this.callbacks.onSelectPane) {
+          this.callbacks.onSelectPane(pane);
+        }
+      });
     });
 
-    // Document item selection
-    this.container.querySelectorAll<HTMLElement>('.workspace-doc-item').forEach(item => {
+    // Split pair close button
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-pair-close').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const pairId = btn.dataset.pairId;
+        if (pairId && this.callbacks.onClosePair) {
+          this.callbacks.onClosePair(pairId);
+        } else if (this.callbacks.onCloseSplit) {
+          this.callbacks.onCloseSplit();
+        }
+      });
+    });
+
+    // Document item selection (standalone items only)
+    this.container.querySelectorAll<HTMLElement>('.workspace-doc-item:not(.split-half)').forEach(item => {
       item.addEventListener('click', (e) => {
         // Don't switch if close button was clicked
         if ((e.target as HTMLElement).classList.contains('btn-doc-close')) return;
-
-        const pane = item.dataset.pane as 'primary' | 'secondary';
-        if (pane && this.callbacks.onSelectPane) {
-          this.callbacks.onSelectPane(pane);
-          this.render();
-          return;
-        }
 
         const docId = item.dataset.docId;
         if (!docId) return;
@@ -285,8 +332,8 @@ export class WorkspaceSidebar {
       });
     });
 
-    // Document close buttons
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-doc-close').forEach(btn => {
+    // Document close buttons (standalone items only)
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-doc-close:not(.btn-pair-close)').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const docId = btn.dataset.docId;

@@ -9,7 +9,7 @@ import { ConsoleView } from './console.js';
 import { CpuInstanceManager } from '../cpu/instanceManager.js';
 import { WorkspaceManager } from '../workspace/workspaceManager.js';
 import { WorkspaceDocument } from '../workspace/types.js';
-import { WorkspaceSidebar } from './sidebar.js';
+import { WorkspaceSidebar, SplitPairInfo } from './sidebar.js';
 import { CpuModal } from './cpuModal.js';
 import { CHALLENGES } from '../challenges/challengesData.js';
 import { ChallengeRunner } from '../challenges/runner.js';
@@ -57,6 +57,8 @@ export class App {
   private activePane: 'primary' | 'secondary' = 'primary';
   private primaryDocId: string = 'doc-main';
   private secondaryDocId: string | null = null;
+  private splitPairs: SplitPairInfo[] = [];
+  private activePairId: string | null = null;
 
   // Secondary Pane Components
   private secCpu: CPU | null = null;
@@ -558,14 +560,14 @@ export class App {
       {
         onDocumentSelect: (doc) => {
           if (this.isSplitMode) {
-            this.toggleSplitView(false);
+            this.toggleSplitView(false, undefined, false);
           }
           this.openDocumentInPane('primary', doc);
           this.setActivePane('primary');
         },
         onNewDocument: () => {
           if (this.isSplitMode) {
-            this.toggleSplitView(false);
+            this.toggleSplitView(false, undefined, false);
           }
           const count = this.workspace.getAllDocuments().length + 1;
           const newDoc = this.workspace.openDocument({
@@ -579,7 +581,7 @@ export class App {
         onOpenCpuModal: () => this.cpuModal.open(),
         onOpenLearningDoc: (tab) => {
           if (this.isSplitMode) {
-            this.toggleSplitView(false);
+            this.toggleSplitView(false, undefined, false);
           }
           this.openLearningDocInPane('primary', tab);
           this.setActivePane('primary');
@@ -591,7 +593,17 @@ export class App {
           this.setActivePane(pane);
         },
         onCloseSplit: () => {
-          this.toggleSplitView(false);
+          this.toggleSplitView(false, undefined, true);
+        },
+        onSelectPair: (pairId, pane) => {
+          if (this.isSplitMode && this.activePairId === pairId) {
+            this.setActivePane(pane || 'primary');
+          } else {
+            this.openSplitPair(pairId, pane);
+          }
+        },
+        onClosePair: (pairId) => {
+          this.closeSplitPair(pairId);
         },
         onDropOnPane: (pane, rawData) => {
           try {
@@ -629,7 +641,9 @@ export class App {
             secondaryDoc: secDoc,
             activePane: this.activePane
           };
-        }
+        },
+        getSplitPairs: () => this.splitPairs,
+        getActivePairId: () => this.activePairId
       }
     );
 
@@ -753,6 +767,10 @@ export class App {
           if (btnCompleteAndTest) btnCompleteAndTest.style.display = 'none';
         }
       }
+
+      if (this.isSplitMode && this.secondaryDocId) {
+        this.syncSplitPair(this.primaryDocId, this.secondaryDocId);
+      }
     } else {
       // Secondary Pane
       this.secondaryDocId = doc.id;
@@ -831,6 +849,10 @@ export class App {
           if (btnSecTest) btnSecTest.style.display = 'none';
         }
       }
+
+      if (this.isSplitMode) {
+        this.syncSplitPair(this.primaryDocId, this.secondaryDocId);
+      }
     }
 
     this.sidebar.render();
@@ -906,6 +928,15 @@ export class App {
   }
 
   private handleDocumentClosed(docId: string): void {
+    const affectedPairs = this.splitPairs.filter(p => p.primaryDocId === docId || p.secondaryDocId === docId);
+    if (affectedPairs.length > 0) {
+      const affectedIds = new Set(affectedPairs.map(p => p.id));
+      this.splitPairs = this.splitPairs.filter(p => !affectedIds.has(p.id));
+      if (this.activePairId && affectedIds.has(this.activePairId)) {
+        this.activePairId = null;
+      }
+    }
+
     const docs = this.workspace.getAllDocuments();
     const fallbackDoc = docs[0];
     if (this.primaryDocId === docId && fallbackDoc) {
@@ -917,7 +948,7 @@ export class App {
         if (otherDoc) {
           this.openDocumentInPane('secondary', otherDoc);
         } else {
-          this.toggleSplitView(false);
+          this.toggleSplitView(false, undefined, true);
         }
       }
     }
@@ -926,7 +957,7 @@ export class App {
   // Legacy compatibility helpers
   switchToDocument(doc: WorkspaceDocument): void {
     if (this.isSplitMode) {
-      this.toggleSplitView(false);
+      this.toggleSplitView(false, undefined, false);
     }
     this.openDocumentInPane('primary', doc);
     this.setActivePane('primary');
@@ -934,7 +965,7 @@ export class App {
 
   openLearningDocument(tab: ManualTab): void {
     if (this.isSplitMode) {
-      this.toggleSplitView(false);
+      this.toggleSplitView(false, undefined, false);
     }
     this.openLearningDocInPane('primary', tab);
     this.setActivePane('primary');
@@ -942,7 +973,7 @@ export class App {
 
   openMilestoneLecture(milestoneId: string): void {
     if (this.isSplitMode) {
-      this.toggleSplitView(false);
+      this.toggleSplitView(false, undefined, false);
     }
     this.openMilestoneLectureInPane('primary', milestoneId);
     this.setActivePane('primary');
@@ -950,13 +981,68 @@ export class App {
 
   returnToEditor(): void {
     if (this.isSplitMode) {
-      this.toggleSplitView(false);
+      this.toggleSplitView(false, undefined, false);
     }
     this.returnToEditorInPane('primary');
     this.setActivePane('primary');
   }
 
-  toggleSplitView(forceState?: boolean, targetDoc?: WorkspaceDocument): void {
+  private syncSplitPair(primaryId: string, secondaryId: string): void {
+    if (this.activePairId) {
+      const existing = this.splitPairs.find(p => p.id === this.activePairId);
+      if (existing) {
+        existing.primaryDocId = primaryId;
+        existing.secondaryDocId = secondaryId;
+        return;
+      }
+    }
+
+    const found = this.splitPairs.find(p => p.primaryDocId === primaryId && p.secondaryDocId === secondaryId);
+    if (found) {
+      this.activePairId = found.id;
+      return;
+    }
+
+    const newPair: SplitPairInfo = {
+      id: `pair-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      primaryDocId: primaryId,
+      secondaryDocId: secondaryId
+    };
+    this.splitPairs.push(newPair);
+    this.activePairId = newPair.id;
+  }
+
+  openSplitPair(pairId: string, pane?: 'primary' | 'secondary'): void {
+    const pair = this.splitPairs.find(p => p.id === pairId);
+    if (!pair) return;
+
+    const primDoc = this.workspace.getAllDocuments().find(d => d.id === pair.primaryDocId);
+    const secDoc = this.workspace.getAllDocuments().find(d => d.id === pair.secondaryDocId);
+
+    if (!primDoc || !secDoc) {
+      this.closeSplitPair(pairId);
+      return;
+    }
+
+    this.activePairId = pair.id;
+    this.openDocumentInPane('primary', primDoc);
+    this.toggleSplitView(true, secDoc);
+    this.setActivePane(pane || 'primary');
+    this.sidebar.render();
+  }
+
+  closeSplitPair(pairId: string): void {
+    const wasActive = this.activePairId === pairId;
+    this.splitPairs = this.splitPairs.filter(p => p.id !== pairId);
+    if (wasActive) {
+      this.activePairId = null;
+      this.toggleSplitView(false, undefined, true);
+    } else {
+      this.sidebar.render();
+    }
+  }
+
+  toggleSplitView(forceState?: boolean, targetDoc?: WorkspaceDocument, removeActivePair: boolean = false): void {
     const newState = forceState !== undefined ? forceState : !this.isSplitMode;
     this.isSplitMode = newState;
 
@@ -994,6 +1080,10 @@ export class App {
           this.openDocumentInPane('secondary', existingSecDoc);
         }
       }
+
+      if (this.secondaryDocId) {
+        this.syncSplitPair(this.primaryDocId, this.secondaryDocId);
+      }
       this.setActivePane('secondary');
     } else {
       mainContent.classList.remove('split-active');
@@ -1005,6 +1095,11 @@ export class App {
       this.secStop();
       this.secondaryDocId = null;
       this.setActivePane('primary');
+
+      if (removeActivePair && this.activePairId) {
+        this.splitPairs = this.splitPairs.filter(p => p.id !== this.activePairId);
+      }
+      this.activePairId = null;
     }
     this.sidebar.render();
   }
@@ -1047,10 +1142,10 @@ export class App {
 
     // Close buttons on secondary pane
     document.getElementById('btn-secondary-close')?.addEventListener('click', () => {
-      this.toggleSplitView(false);
+      this.toggleSplitView(false, undefined, true);
     });
     document.getElementById('btn-sec-ide-close')?.addEventListener('click', () => {
-      this.toggleSplitView(false);
+      this.toggleSplitView(false, undefined, true);
     });
 
     // Quick nav buttons in secondary pane header
