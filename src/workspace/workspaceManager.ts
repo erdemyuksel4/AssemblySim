@@ -117,6 +117,10 @@ export class WorkspaceManager {
     return Array.from(this.docs.values());
   }
 
+  getDocument(id: string): WorkspaceDocument | undefined {
+    return this.docs.get(id);
+  }
+
   getActiveDocument(): WorkspaceDocument {
     return this.docs.get(this.activeId) || this.getAllDocuments()[0];
   }
@@ -184,6 +188,15 @@ export class WorkspaceManager {
 
   updateActiveCode(code: string): void {
     const doc = this.getActiveDocument();
+    if (doc) {
+      doc.code = code;
+      doc.lastModified = Date.now();
+      this.saveToStorage();
+    }
+  }
+
+  updateDocumentCode(id: string, code: string): void {
+    const doc = this.docs.get(id);
     if (doc) {
       doc.code = code;
       doc.lastModified = Date.now();

@@ -6237,6 +6237,41 @@ body {
   overflow: hidden !important;
 }
 
+.workspace-pane {
+  outline: none;
+  transition: box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.workspace-pane.pane-focused {
+  box-shadow: inset 0 3px 0 0 #2563eb !important;
+}
+
+.workspace-pane:not(.pane-focused) {
+  opacity: 0.95;
+}
+
+.btn-close-pane {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.btn-close-pane:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+
 .app-main-content.split-active .pane-primary {
   width: 50%;
   padding: 12px 18px 40px 18px !important;
@@ -6245,7 +6280,13 @@ body {
   box-sizing: border-box;
 }
 
-.app-main-content.split-active .pane-primary > .main-layout {
+.app-main-content.split-active .pane-primary:has(> .lecture-doc-mount[style*="display: block"]),
+.app-main-content.split-active .pane-primary:has(> .reference-doc-mount[style*="display: block"]) {
+  padding: 0 !important;
+}
+
+.app-main-content.split-active .pane-primary > .main-layout,
+.app-main-content.split-active .pane-secondary > .sec-main-layout {
   width: 100% !important;
   max-width: 100% !important;
   margin: 0 !important;
@@ -6255,7 +6296,9 @@ body {
 }
 
 .app-main-content.split-active .pane-primary .editor-section,
-.app-main-content.split-active .pane-primary .cpu-section {
+.app-main-content.split-active .pane-primary .cpu-section,
+.app-main-content.split-active .pane-secondary .editor-section,
+.app-main-content.split-active .pane-secondary .cpu-section {
   width: 100% !important;
   max-width: 100% !important;
 }
@@ -6267,9 +6310,36 @@ body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-y: auto;
   border-left: 1px solid #cbd5e1;
   background: #f8fafc;
+  padding: 12px 18px 40px 18px;
+}
+
+.app-main-content.split-active .pane-secondary:has(.secondary-pane-header[style*="display: flex"]),
+.app-main-content.split-active .pane-secondary:has(> .lecture-doc-mount[style*="display: block"]),
+.app-main-content.split-active .pane-secondary:has(> .reference-doc-mount[style*="display: block"]) {
+  padding: 0 !important;
+}
+
+.app-main-content.split-active .pane-secondary > .lecture-doc-mount,
+.app-main-content.split-active .pane-secondary > .reference-doc-mount,
+.app-main-content.split-active .pane-primary > .lecture-doc-mount,
+.app-main-content.split-active .pane-primary > .reference-doc-mount {
+  width: 100% !important;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.app-main-content.split-active .pane-secondary > .lecture-doc-mount .lecture-doc-container,
+.app-main-content.split-active .pane-secondary > .reference-doc-mount .reference-doc-container,
+.app-main-content.split-active .pane-primary > .lecture-doc-mount .lecture-doc-container,
+.app-main-content.split-active .pane-primary > .reference-doc-mount .reference-doc-container {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 18px 24px 90px 24px !important;
+  box-sizing: border-box;
 }
 
 .app-main-content.split-active .secondary-pane-content {

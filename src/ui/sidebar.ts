@@ -9,6 +9,8 @@ export interface SidebarCallbacks {
   onOpenLearningDoc?: (tab: 'manual' | 'lectures' | 'leetcode' | 'roadmap') => void;
   onSplitDocument?: (doc: WorkspaceDocument) => void;
   onSplitLearningDoc?: (tab: 'manual' | 'lectures' | 'leetcode' | 'roadmap') => void;
+  onDocumentClosed?: (docId: string) => void;
+  getActiveDocId?: () => string | null;
 }
 
 export class WorkspaceSidebar {
@@ -62,7 +64,8 @@ export class WorkspaceSidebar {
 
   render(): void {
     const docs = this.workspace.getAllDocuments();
-    const activeDoc = this.workspace.getActiveDocument();
+    const activeDocId = this.callbacks.getActiveDocId ? this.callbacks.getActiveDocId() : this.workspace.getActiveDocument()?.id;
+    const activeDoc = (activeDocId ? docs.find(d => d.id === activeDocId) : null) || this.workspace.getActiveDocument();
     const activeCpu = this.cpuManager.getOrDefaultInstance(activeDoc?.cpuInstanceId);
 
     this.container.innerHTML = `
@@ -233,10 +236,10 @@ export class WorkspaceSidebar {
         // Don't switch if close button was clicked
         if ((e.target as HTMLElement).classList.contains('btn-doc-close')) return;
 
-        const doc = this.workspace.setActiveDocument(docId);
+        const doc = this.workspace.getAllDocuments().find(d => d.id === docId);
         if (doc) {
-          this.render();
           this.callbacks.onDocumentSelect(doc);
+          this.render();
         }
       });
     });
@@ -249,8 +252,11 @@ export class WorkspaceSidebar {
         if (!docId) return;
 
         const newActive = this.workspace.closeDocument(docId);
+        if (this.callbacks.onDocumentClosed) {
+          this.callbacks.onDocumentClosed(docId);
+        }
         this.render();
-        if (newActive) {
+        if (newActive && !this.callbacks.onDocumentClosed) {
           this.callbacks.onDocumentSelect(newActive);
         }
       });
