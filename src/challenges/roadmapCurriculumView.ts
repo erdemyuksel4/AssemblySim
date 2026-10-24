@@ -1,4 +1,6 @@
 import { ROADMAP_MILESTONES, CHALLENGES } from './challengesData.js';
+import { MILESTONE_LECTURES } from '../lectures/lectureData.js';
+import { LectureStorage } from '../lectures/lectureStorage.js';
 
 const STORAGE_SOLVED_KEY = 'assemblysim_solved_challenges_v1';
 
@@ -83,6 +85,12 @@ export class RoadmapCurriculumView {
         <!-- Milestones Timeline Grid -->
         <div class="timeline-container">
           ${milestonesData.map(({ milestone, totalInMilestone, solvedInMilestone, isCompleted, percent }, idx) => {
+            const lecture = MILESTONE_LECTURES[milestone.id];
+            const completedLectureSteps = LectureStorage.getCompletedSteps(milestone.id);
+            const totalModules = lecture ? lecture.sections.length : 0;
+            const lastActiveStep = LectureStorage.getLastActiveStep(milestone.id);
+            const hasStarted = completedLectureSteps.length > 0 || (lastActiveStep && lastActiveStep !== 'overview');
+
             return `
               <div class="timeline-step ${isCompleted ? 'step-completed' : ''}">
                 <div class="timeline-step-indicator">
@@ -99,8 +107,9 @@ export class RoadmapCurriculumView {
                       <h3 class="step-title">${this.escapeHtml(milestone.title)}</h3>
                     </div>
 
-                    <div class="step-progress-badge ${isCompleted || totalInMilestone === 0 ? 'badge-completed' : ''}">
-                      ${totalInMilestone === 0 ? '🎓 Teori & İnteraktif Keşif' : `${solvedInMilestone} / ${totalInMilestone} Görev (%${percent})`}
+                    <div class="step-progress-badge ${isCompleted || (totalInMilestone === 0 && completedLectureSteps.length >= totalModules) ? 'badge-completed' : ''}">
+                      ${totalModules > 0 ? `📚 ${completedLectureSteps.length}/${totalModules} Modül • ` : ''}
+                      ${totalInMilestone === 0 ? '🎓 Teori & İnteraktif Donanım' : `${solvedInMilestone} / ${totalInMilestone} Görev (%${percent})`}
                     </div>
                   </div>
 
@@ -126,8 +135,8 @@ export class RoadmapCurriculumView {
                       <div class="step-card-progress-fill" style="width: ${totalInMilestone === 0 ? 100 : percent}%;"></div>
                     </div>
                     <div class="step-actions-group">
-                      <button class="btn-open-lecture-doc" data-milestone-id="${milestone.id}" title="Bu aşamanın zengin konu anlatımı ve interaktif ders dokümanını aç">
-                        📖 Aşama ${milestone.number} Konu Anlatımını Aç (Ders)
+                      <button class="btn-open-lecture-doc" data-milestone-id="${milestone.id}" title="Bu aşamanın zengin konu anlatımı ve modül laboratuvarlarını aç">
+                        ${hasStarted ? '▶️ Aşama Dersine Devam Et' : `📖 Aşama ${milestone.number} Konu Anlatımını Aç`}
                       </button>
                       ${totalInMilestone === 0 ? `
                         <button class="btn-open-lecture-doc btn-theory-explore" data-milestone-id="${milestone.id}" title="İnteraktif 20-bit adres hesaplayıcı ve mimari keşif araçlarını aç">

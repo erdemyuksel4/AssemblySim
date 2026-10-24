@@ -11,4 +11,6 @@ export interface WorkspaceDocument {
   referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap';
   createdAt: number;
   lastModified: number;
+  scrollTop?: number;
+  editorScroll?: { top: number; left: number };
 }

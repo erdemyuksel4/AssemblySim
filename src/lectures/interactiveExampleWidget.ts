@@ -5,9 +5,12 @@ import { RegisterPanel, NumberFormat } from '../ui/registerPanel.js';
 import { MemoryView } from '../ui/memoryView.js';
 import { ConsoleView } from '../ui/console.js';
 import { LectureExample } from './lectureData.js';
+import { LectureStorage } from './lectureStorage.js';
+import { MiniLabRegistry, MiniLabRecord } from './miniLabRegistry.js';
 
 export interface ExampleWidgetCallbacks {
   onOpenInMainEditor?: (title: string, code: string) => void;
+  onStepCompleted?: () => void;
 }
 
 export type WidgetSpeed = '0.5' | '1' | '2';
@@ -18,6 +21,7 @@ export class InteractiveExampleWidget {
   private allExamples: LectureExample[];
   private callbacks: ExampleWidgetCallbacks;
   private cpu: CPU;
+  private record!: MiniLabRecord;
 
   private editor!: Editor;
   private registerPanel!: RegisterPanel;
@@ -42,11 +46,31 @@ export class InteractiveExampleWidget {
     this.example = example;
     this.callbacks = callbacks;
     this.allExamples = allExamples && allExamples.length > 0 ? allExamples : [example];
-    this.cpu = new CPU();
+    
+    // Bind dedicated isolated CPU instance from MiniLabRegistry
+    this.record = MiniLabRegistry.getOrCreate(this.example);
+    this.cpu = this.record.cpu;
+    this.currentSpeed = this.record.speed;
+    this.showSolution = this.record.showSolution;
 
     this.render();
     this.initSubModules();
-    this.compile();
+
+    if (this.record.isInitialized && this.record.currentAsmResult && this.record.currentAsmResult.errors.length === 0) {
+      // Restore existing execution and CPU state
+      this.currentAsmResult = this.record.currentAsmResult;
+      this.ipToLineMap = this.record.ipToLineMap;
+      if (this.record.consoleBuffer) {
+        this.consoleView.appendStdout(this.record.consoleBuffer);
+      }
+      this.syncActiveLine();
+      this.updateViews();
+      if (this.record.editorScroll) {
+        this.editor.setScroll(this.record.editorScroll);
+      }
+    } else {
+      this.compile();
+    }
   }
 
   private render(): void {
@@ -71,6 +95,8 @@ export class InteractiveExampleWidget {
             <h3 class="embedded-title">${this.escapeHtml(this.example.title)}</h3>
           </div>
           <div class="embedded-header-actions">
+            <span class="embedded-save-pill" title="Yazdığınız kod tarayıcıda otomatik saklanır">💾 Kaydedildi</span>
+            <button class="btn-reset-starter-code" title="İlk başlangıç koduna geri dön">↺ Kodu Sıfırla</button>
             <button class="btn-reveal-solution-toggle">
               ${this.showSolution ? '🙈 Çözümü Gizle' : '💡 Çözümü & Açıklamayı Göster'}
             </button>
@@ -191,13 +217,20 @@ export class InteractiveExampleWidget {
       }
     });
 
+    const initialCode = this.record.userCode || (LectureStorage.loadExampleCode(this.example.id) ?? this.example.code);
+
     this.editor = new Editor({
       container: editorContainer,
-      initialCode: this.example.code,
+      initialCode,
       onCodeChange: () => {
         this.editor.clearErrors();
+        const code = this.editor.getCode();
+        this.record.userCode = code;
+        this.record.editorScroll = this.editor.getScroll();
         const btnCompile = this.container.querySelector('.btn-compile') as HTMLButtonElement;
         if (btnCompile) btnCompile.disabled = false;
+        LectureStorage.saveExampleCode(this.example.id, code);
+        this.showSavedIndicator();
       }
     });
 
@@ -266,9 +299,24 @@ export class InteractiveExampleWidget {
     btnLoadSol?.addEventListener('click', () => {
       const codeToLoad = this.example.solutionCode || this.example.code;
       this.editor.setCode(codeToLoad);
+      LectureStorage.saveExampleCode(this.example.id, codeToLoad);
+      this.showSavedIndicator();
       this.compile();
       this.consoleView.log('💡 Referans çözüm kodu editöre aktarıldı ve derlendi.', 'success');
       this.container.querySelector('.editor-section')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    // Reset code to starter code
+    const btnResetCode = this.container.querySelector('.btn-reset-starter-code') as HTMLButtonElement;
+    btnResetCode?.addEventListener('click', () => {
+      const confirmed = window.confirm ? window.confirm('Yazdığınız kod sıfırlanıp ilk başlangıç şablonuna dönecektir. Devam edilsin mi?') : true;
+      if (confirmed) {
+        LectureStorage.resetExampleCode(this.example.id);
+        this.editor.setCode(this.example.code);
+        this.compile();
+        this.showSavedIndicator('Varsayılan kod yüklendi');
+        this.consoleView.log('↺ Kod başlangıç şablonuna sıfırlandı.', 'info');
+      }
     });
 
     // Export to main IDE
@@ -278,9 +326,32 @@ export class InteractiveExampleWidget {
     });
   }
 
+  private showSavedIndicator(text: string = '💾 Kaydedildi'): void {
+    const pill = this.container.querySelector('.embedded-save-pill') as HTMLElement | null;
+    if (pill) {
+      pill.textContent = text;
+      pill.classList.add('flash');
+      window.setTimeout(() => {
+        pill.classList.remove('flash');
+      }, 1200);
+    }
+  }
+
   private switchExample(newEx: LectureExample): void {
     this.stop();
+    // Save current active state before switching
+    const currentCode = this.editor.getCode();
+    this.record.userCode = currentCode;
+    this.record.editorScroll = this.editor.getScroll();
+    this.record.speed = this.currentSpeed;
+    this.record.showSolution = this.showSolution;
+    LectureStorage.saveExampleCode(this.example.id, currentCode);
+
     this.example = newEx;
+    this.record = MiniLabRegistry.getOrCreate(newEx);
+    this.cpu = this.record.cpu;
+    this.currentSpeed = this.record.speed;
+    this.showSolution = this.record.showSolution;
 
     // Update Header Title
     const titleEl = this.container.querySelector('.embedded-title') as HTMLElement;
@@ -319,12 +390,27 @@ export class InteractiveExampleWidget {
       examTip.textContent = newEx.examTips || '';
     }
 
-    // Set code in editor and compile
-    this.editor.setCode(newEx.code);
-    this.cpu = new CPU();
-    this.compile();
-    this.consoleView.clear();
-    this.consoleView.log(`Alıştırma seviyesi değiştirildi: ${newEx.difficultyLabel || newEx.title}`, 'info');
+    // Set code in editor and compile or restore
+    const codeToSet = this.record.userCode || (LectureStorage.loadExampleCode(newEx.id) ?? newEx.code);
+    this.editor.setCode(codeToSet);
+
+    if (this.record.isInitialized && this.record.currentAsmResult && this.record.currentAsmResult.errors.length === 0) {
+      this.currentAsmResult = this.record.currentAsmResult;
+      this.ipToLineMap = this.record.ipToLineMap;
+      this.consoleView.clear();
+      if (this.record.consoleBuffer) {
+        this.consoleView.appendStdout(this.record.consoleBuffer);
+      }
+      this.syncActiveLine();
+      this.updateViews();
+      if (this.record.editorScroll) {
+        this.editor.setScroll(this.record.editorScroll);
+      }
+    } else {
+      this.compile();
+      this.consoleView.clear();
+      this.consoleView.log(`Alıştırma seviyesi değiştirildi: ${newEx.difficultyLabel || newEx.title}`, 'info');
+    }
   }
 
   private compile(): boolean {
@@ -382,6 +468,12 @@ export class InteractiveExampleWidget {
     for (const item of result.listing) {
       this.ipToLineMap.set(item.addr, item.line);
     }
+
+    this.record.userCode = code;
+    this.record.currentAsmResult = result;
+    this.record.ipToLineMap = new Map(this.ipToLineMap);
+    this.record.isInitialized = true;
+    this.record.consoleBuffer = this.cpu.consoleBuffer || '';
 
     // Set memory view to origin
     const viewAddr = result.origin === 0x0100 ? 0x0000 : result.origin;
@@ -446,10 +538,12 @@ export class InteractiveExampleWidget {
 
     this.syncActiveLine();
     this.updateViews(info.changedRegs, info.changedFlags);
+    this.record.consoleBuffer = this.cpu.consoleBuffer || '';
 
     if (this.cpu.halted) {
       this.stop();
       this.consoleView.log('Program HLT komutu ile başarıyla tamamlandı.', 'success');
+      this.callbacks.onStepCompleted?.();
     }
   }
 
@@ -492,6 +586,9 @@ export class InteractiveExampleWidget {
 
   private reset(): void {
     this.stop();
+    this.record = MiniLabRegistry.reset(this.example);
+    this.cpu = this.record.cpu;
+    this.editor.setCode(this.example.code);
     this.compile();
     this.consoleView.clear();
     this.consoleView.log('İşlemci ve bellek durumu sıfırlandı.', 'info');

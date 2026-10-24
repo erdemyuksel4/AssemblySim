@@ -350,6 +350,19 @@ export class Editor {
     this.updateHighlighting();
   }
 
+  getScroll(): { top: number; left: number } {
+    return {
+      top: this.textarea.scrollTop,
+      left: this.textarea.scrollLeft
+    };
+  }
+
+  setScroll(scroll: { top?: number; left?: number }): void {
+    if (scroll.top !== undefined) this.textarea.scrollTop = scroll.top;
+    if (scroll.left !== undefined) this.textarea.scrollLeft = scroll.left;
+    this.syncScroll();
+  }
+
   private scrollToLine(line: number): void {
     const lineHeight = 22;
     const targetScroll = (line - 1) * lineHeight - 60;

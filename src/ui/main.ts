@@ -78,6 +78,19 @@ export class App {
   private secSpeed: ExecutionSpeed = '1';
   private secWasRunningBeforeInput: boolean = false;
 
+  // Per-document execution caches to preserve CPU state (registers, memory, flags, IP) on document switch
+  private docExecCache: Map<string, {
+    code: string;
+    asmResult: AsmResult | null;
+    ipToLineMap: Map<number, number>;
+  }> = new Map();
+
+  private secDocExecCache: Map<string, {
+    code: string;
+    asmResult: AsmResult | null;
+    ipToLineMap: Map<number, number>;
+  }> = new Map();
+
   constructor() {
     this.cpuManager = new CpuInstanceManager();
     this.workspace = new WorkspaceManager(this.cpuManager);
@@ -295,6 +308,8 @@ export class App {
       onCodeChange: () => {
         this.editor.clearErrors();
         this.workspace.updateDocumentCode(this.primaryDocId, this.editor.getCode());
+        const doc = this.workspace.getDocument(this.primaryDocId);
+        if (doc) doc.editorScroll = this.editor.getScroll();
         const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
         if (btnCompile) btnCompile.disabled = false;
       }
@@ -450,6 +465,8 @@ export class App {
         this.secEditor.clearErrors();
         if (this.secondaryDocId) {
           this.workspace.updateDocumentCode(this.secondaryDocId, this.secEditor.getCode());
+          const doc = this.workspace.getDocument(this.secondaryDocId);
+          if (doc) doc.editorScroll = this.secEditor.getScroll();
         }
         const btnCompile = document.getElementById('btn-sec-compile') as HTMLButtonElement;
         if (btnCompile) btnCompile.disabled = false;
@@ -677,6 +694,51 @@ export class App {
     this.attachButtonEvents();
     this.initSplitResizer();
     this.initDragAndDrop();
+    this.initScrollTracking();
+  }
+
+  private initScrollTracking(): void {
+    const panePrimary = document.getElementById('pane-primary');
+    const paneSecondary = document.getElementById('pane-secondary');
+    const lectureMount = document.getElementById('lecture-doc-mount');
+    const refMount = document.getElementById('reference-doc-mount');
+    const secLectureMount = document.getElementById('sec-lecture-doc-mount');
+    const secRefMount = document.getElementById('sec-reference-doc-mount');
+
+    const updatePrimaryScroll = () => {
+      const doc = this.workspace.getDocument(this.primaryDocId);
+      if (doc) {
+        if (doc.type === 'lecture') {
+          doc.scrollTop = lectureMount?.scrollTop || panePrimary?.scrollTop || 0;
+        } else if (doc.type === 'reference') {
+          doc.scrollTop = refMount?.scrollTop || panePrimary?.scrollTop || 0;
+        } else {
+          doc.scrollTop = panePrimary?.scrollTop || 0;
+        }
+      }
+    };
+
+    const updateSecondaryScroll = () => {
+      if (!this.secondaryDocId) return;
+      const doc = this.workspace.getDocument(this.secondaryDocId);
+      if (doc) {
+        if (doc.type === 'lecture') {
+          doc.scrollTop = secLectureMount?.scrollTop || paneSecondary?.scrollTop || 0;
+        } else if (doc.type === 'reference') {
+          doc.scrollTop = secRefMount?.scrollTop || paneSecondary?.scrollTop || 0;
+        } else {
+          doc.scrollTop = paneSecondary?.scrollTop || 0;
+        }
+      }
+    };
+
+    panePrimary?.addEventListener('scroll', updatePrimaryScroll, { passive: true });
+    lectureMount?.addEventListener('scroll', updatePrimaryScroll, { passive: true });
+    refMount?.addEventListener('scroll', updatePrimaryScroll, { passive: true });
+
+    paneSecondary?.addEventListener('scroll', updateSecondaryScroll, { passive: true });
+    secLectureMount?.addEventListener('scroll', updateSecondaryScroll, { passive: true });
+    secRefMount?.addEventListener('scroll', updateSecondaryScroll, { passive: true });
   }
 
   // =========================================================================
@@ -704,10 +766,62 @@ export class App {
     this.sidebar.render();
   }
 
+  private savePaneScrollAndState(pane: 'primary' | 'secondary', doc: WorkspaceDocument): void {
+    const paneEl = document.getElementById(pane === 'primary' ? 'pane-primary' : 'pane-secondary');
+    const lectureMount = document.getElementById(pane === 'primary' ? 'lecture-doc-mount' : 'sec-lecture-doc-mount');
+    const refMount = document.getElementById(pane === 'primary' ? 'reference-doc-mount' : 'sec-reference-doc-mount');
+
+    let scroll = 0;
+    if (doc.type === 'lecture') {
+      scroll = lectureMount?.scrollTop || paneEl?.scrollTop || 0;
+    } else if (doc.type === 'reference') {
+      scroll = refMount?.scrollTop || paneEl?.scrollTop || 0;
+    } else {
+      scroll = paneEl?.scrollTop || 0;
+      const ed = pane === 'primary' ? this.editor : this.secEditor;
+      doc.editorScroll = ed.getScroll();
+      doc.code = ed.getCode();
+    }
+    doc.scrollTop = scroll;
+  }
+
+  private restorePaneScroll(pane: 'primary' | 'secondary', doc: WorkspaceDocument): void {
+    const paneEl = document.getElementById(pane === 'primary' ? 'pane-primary' : 'pane-secondary');
+    const lectureMount = document.getElementById(pane === 'primary' ? 'lecture-doc-mount' : 'sec-lecture-doc-mount');
+    const refMount = document.getElementById(pane === 'primary' ? 'reference-doc-mount' : 'sec-reference-doc-mount');
+    const targetScroll = doc.scrollTop || 0;
+
+    const applyScroll = () => {
+      if (doc.type === 'lecture') {
+        if (lectureMount) lectureMount.scrollTop = targetScroll;
+      } else if (doc.type === 'reference') {
+        if (refMount) refMount.scrollTop = targetScroll;
+      }
+      if (paneEl) paneEl.scrollTop = targetScroll;
+
+      if (doc.editorScroll) {
+        const ed = pane === 'primary' ? this.editor : this.secEditor;
+        ed.setScroll(doc.editorScroll);
+      }
+    };
+
+    requestAnimationFrame(applyScroll);
+    setTimeout(applyScroll, 40);
+  }
+
   openDocumentInPane(pane: 'primary' | 'secondary', doc: WorkspaceDocument): void {
     if (pane === 'secondary' && !this.isSplitMode) {
       this.toggleSplitView(true, doc);
       return;
+    }
+
+    // 1. Save previous document in this pane before switching!
+    const prevDocId = pane === 'primary' ? this.primaryDocId : this.secondaryDocId;
+    if (prevDocId && prevDocId !== doc.id) {
+      const prevDoc = this.workspace.getDocument(prevDocId);
+      if (prevDoc) {
+        this.savePaneScrollAndState(pane, prevDoc);
+      }
     }
 
     if (pane === 'primary') {
@@ -749,8 +863,27 @@ export class App {
         if (this.cpu.consoleBuffer) {
           this.consoleView.appendStdout(this.cpu.consoleBuffer);
         }
-        this.compile();
-        this.updateViews();
+
+        // Reuse compiled state if code hasn't changed; avoid resetting CPU registers and memory!
+        const cached = this.docExecCache.get(doc.id);
+        const canReuse = cached && cached.code === doc.code && cached.asmResult && cached.asmResult.errors.length === 0;
+
+        if (canReuse) {
+          this.currentAsmResult = cached.asmResult;
+          this.ipToLineMap = cached.ipToLineMap;
+          this.editor.clearErrors();
+          const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
+          if (btnCompile) btnCompile.disabled = true;
+          const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
+          const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
+          if (btnRun) btnRun.disabled = false;
+          if (btnNext) btnNext.disabled = false;
+          this.syncActiveLine();
+          this.updateViews();
+        } else {
+          this.compile();
+          this.updateViews();
+        }
 
         // Sync challenge panel if challenge doc
         const btnCompleteAndTest = document.getElementById('btn-complete-and-test') as HTMLButtonElement;
@@ -763,6 +896,8 @@ export class App {
           if (btnCompleteAndTest) btnCompleteAndTest.style.display = 'none';
         }
       }
+
+      this.restorePaneScroll('primary', doc);
 
       if (this.isSplitMode && this.secondaryDocId) {
         this.syncSplitPair(this.primaryDocId, this.secondaryDocId);
@@ -831,8 +966,26 @@ export class App {
         if (this.secCpu.consoleBuffer) {
           this.secConsoleView.appendStdout(this.secCpu.consoleBuffer);
         }
-        this.secCompile();
-        this.secUpdateViews();
+
+        const secCached = this.secDocExecCache.get(doc.id);
+        const canReuse = secCached && secCached.code === doc.code && secCached.asmResult && secCached.asmResult.errors.length === 0;
+
+        if (canReuse) {
+          this.secCurrentAsmResult = secCached.asmResult;
+          this.secIpToLineMap = secCached.ipToLineMap;
+          this.secEditor.clearErrors();
+          const btnCompile = document.getElementById('btn-sec-compile') as HTMLButtonElement;
+          if (btnCompile) btnCompile.disabled = true;
+          const btnRun = document.getElementById('btn-sec-run') as HTMLButtonElement;
+          const btnNext = document.getElementById('btn-sec-next') as HTMLButtonElement;
+          if (btnRun) btnRun.disabled = false;
+          if (btnNext) btnNext.disabled = false;
+          this.secSyncActiveLine();
+          this.secUpdateViews();
+        } else {
+          this.secCompile();
+          this.secUpdateViews();
+        }
 
         // Sync secondary challenge panel if challenge doc
         const btnSecTest = document.getElementById('btn-sec-complete-and-test') as HTMLButtonElement;
@@ -845,6 +998,8 @@ export class App {
           if (btnSecTest) btnSecTest.style.display = 'none';
         }
       }
+
+      this.restorePaneScroll('secondary', doc);
 
       if (this.isSplitMode) {
         this.syncSplitPair(this.primaryDocId, this.secondaryDocId);
@@ -1555,6 +1710,12 @@ export class App {
       this.ipToLineMap.set(item.addr, item.line);
     }
 
+    this.docExecCache.set(this.primaryDocId, {
+      code,
+      asmResult: result,
+      ipToLineMap: new Map(this.ipToLineMap)
+    });
+
     const viewAddr = result.origin === 0x0100 ? 0x0000 : result.origin;
     this.memoryView.jumpToPhys(viewAddr);
 
@@ -1822,6 +1983,14 @@ export class App {
     this.secIpToLineMap.clear();
     for (const item of result.listing) {
       this.secIpToLineMap.set(item.addr, item.line);
+    }
+
+    if (this.secondaryDocId) {
+      this.secDocExecCache.set(this.secondaryDocId, {
+        code,
+        asmResult: result,
+        ipToLineMap: new Map(this.secIpToLineMap)
+      });
     }
 
     const viewAddr = result.origin === 0x0100 ? 0x0000 : result.origin;
