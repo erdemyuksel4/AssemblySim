@@ -2437,6 +2437,53 @@ body {
   margin-top: 4px;
 }
 
+.sidebar-learning-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.sidebar-learning-row .sidebar-learning-btn {
+  flex: 1;
+}
+
+.btn-learning-split,
+.btn-doc-split {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.12s ease;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.workspace-doc-item:hover .btn-doc-split,
+.sidebar-learning-row:hover .btn-learning-split {
+  opacity: 1;
+}
+
+.btn-learning-split:hover,
+.btn-doc-split:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.workspace-sidebar.collapsed .btn-learning-split,
+.workspace-sidebar.collapsed .btn-doc-split {
+  display: none !important;
+}
+
 .sidebar-learning-btn {
   display: flex;
   align-items: center;
@@ -5807,6 +5854,13 @@ body {
   gap: 12px;
 }
 
+.ref-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .btn-return-editor {
   display: inline-flex;
   align-items: center;
@@ -5828,6 +5882,37 @@ body {
   border-color: #93c5fd;
   color: #1d4ed8;
   transform: translateX(-2px);
+}
+
+.btn-split-editor,
+.btn-split-with-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #15803d;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(22, 101, 52, 0.08);
+}
+
+.btn-split-editor:hover,
+.btn-split-with-editor:hover {
+  background: #dcfce7;
+  border-color: #4ade80;
+  color: #166534;
+  transform: translateY(-1px);
+}
+
+.lecture-bc-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .reference-doc-breadcrumb {
@@ -5948,6 +6033,243 @@ body {
   min-height: 600px;
   height: 680px;
 }
+
+/* ==========================================================================
+   SPLIT VIEW (YAN YANA BÖLÜNMÜŞ EKRAN / MULTI-WINDOW WORKSPACE)
+   ========================================================================== */
+.app-main-content {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.workspace-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.pane-primary {
+  width: 100%;
+  flex-shrink: 0;
+  transition: width 0.05s linear;
+}
+
+.app-main-content.split-active .pane-primary {
+  width: 50%;
+  border-right: none;
+}
+
+/* Draggable Split Resizer Divider */
+.split-resizer {
+  width: 8px;
+  background: #e2e8f0;
+  cursor: col-resize;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 40;
+  transition: background 0.15s ease;
+  user-select: none;
+}
+
+.split-resizer:hover,
+.split-resizer:active {
+  background: #3b82f6;
+}
+
+.resizer-handle {
+  width: 3px;
+  height: 32px;
+  background: #94a3b8;
+  border-radius: 2px;
+  transition: background 0.15s ease;
+}
+
+.split-resizer:hover .resizer-handle,
+.split-resizer:active .resizer-handle {
+  background: #ffffff;
+}
+
+/* Secondary Pane */
+.pane-secondary {
+  width: 50%;
+  flex-shrink: 0;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #cbd5e1;
+  box-shadow: -4px 0 16px rgba(15, 23, 42, 0.07);
+}
+
+.secondary-pane-header {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  gap: 8px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.secondary-pane-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  min-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.secondary-pane-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.secondary-pane-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.secondary-pane-quick-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.btn-sec-nav {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s ease;
+}
+
+.btn-sec-nav:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.btn-sec-nav.active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.secondary-pane-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.btn-pane-action {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+
+.btn-pane-action:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.btn-close-pane:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+.secondary-pane-content {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+}
+
+.secondary-pane-content .lecture-doc-container,
+.secondary-pane-content .reference-doc-container {
+  padding: 16px 18px 60px 18px;
+}
+
+/* In split mode, the editor and CPU section adjust cleanly */
+.app-main-content.split-active .main-layout {
+  grid-template-columns: 1fr;
+  padding: 14px 16px;
+  gap: 14px;
+}
+
+.app-main-content.split-active .editor-header-bar {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Split view toggle button in editor toolbar */
+.btn-split-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-split-toggle:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.btn-split-toggle.active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.12);
+}
+
+.split-icon {
+  font-size: 13px;
+}
+
 
 
 

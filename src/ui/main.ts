@@ -49,6 +49,10 @@ export class App {
   private runTimer: number | null = null;
   private currentSpeed: ExecutionSpeed = '1';
   private wasRunningBeforeInput: boolean = false;
+  private isSplitMode: boolean = false;
+  private secondaryDocType: 'lecture' | 'reference' = 'reference';
+  private secondaryRefTab: ManualTab = 'manual';
+  private secondaryMilestoneId: string = 'milestone-1';
 
   constructor() {
     this.cpuManager = new CpuInstanceManager();
@@ -74,61 +78,97 @@ export class App {
         <div id="sidebar-mount"></div>
 
         <!-- Main Workspace Area -->
-        <div class="app-main-content">
-          <main class="main-layout" id="main-ide-layout">
-            <!-- Left Section: Code Editor -->
-            <section class="editor-section">
-              <div class="editor-header-bar">
-                <h2 class="editor-title">
-                  Code Editor
-                  <span class="info-btn" data-info-title="8086 Assembly Editörü" data-info-desc="DOS COM / EMU8086 sözdizimine uygun assembly kodu yazın. Satır numaralarına tıklayarak kesme noktası (Breakpoint) koyabilirsiniz. Kısayollar: Ctrl+Z (Geri Al), Ctrl+Y / Ctrl+Shift+Z (Yinele), Tab / Shift+Tab (4 boşluk girintile / geri çek), Enter (Oto-girinti), Ctrl+/ veya Ctrl+; (Yorum aç/kapa), Ctrl+D (Satır çoğalt), Alt+Yukarı/Aşağı (Satır taşı), Ctrl+Shift+K (Satır sil), F10 (Adım), F5 (Çalıştır)." tabindex="-1">i</span>
-                </h2>
-                <div class="editor-toolbar-right">
-                  <!-- Format Switch (HEX / DEC / BIN) -->
-                  <div class="format-switch-group">
-                    <button class="btn-fmt active" data-fmt="hex">HEX</button>
-                    <button class="btn-fmt" data-fmt="dec">DEC</button>
-                    <button class="btn-fmt" data-fmt="bin">BIN</button>
-                    <span class="info-btn" data-info-title="Sayı Formatı Seçici" data-info-desc="Yazmaç değerlerini Onaltılık (HEX), Onluk (DEC) veya İkilik (BIN) tabanda görüntüler." tabindex="-1">i</span>
-                  </div>
+        <div class="app-main-content" id="app-main-content">
+          <!-- Primary Pane (Left in Split View, or Full in Single View) -->
+          <div class="workspace-pane pane-primary" id="pane-primary">
+            <main class="main-layout" id="main-ide-layout">
+              <!-- Left Section: Code Editor -->
+              <section class="editor-section">
+                <div class="editor-header-bar">
+                  <h2 class="editor-title">
+                    Code Editor
+                    <span class="info-btn" data-info-title="8086 Assembly Editörü" data-info-desc="DOS COM / EMU8086 sözdizimine uygun assembly kodu yazın. Satır numaralarına tıklayarak kesme noktası (Breakpoint) koyabilirsiniz. Kısayollar: Ctrl+Z (Geri Al), Ctrl+Y / Ctrl+Shift+Z (Yinele), Tab / Shift+Tab (4 boşluk girintile / geri çek), Enter (Oto-girinti), Ctrl+/ veya Ctrl+; (Yorum aç/kapa), Ctrl+D (Satır çoğalt), Alt+Yukarı/Aşağı (Satır taşı), Ctrl+Shift+K (Satır sil), F10 (Adım), F5 (Çalıştır)." tabindex="-1">i</span>
+                  </h2>
+                  <div class="editor-toolbar-right">
+                    <!-- Format Switch (HEX / DEC / BIN) -->
+                    <div class="format-switch-group">
+                      <button class="btn-fmt active" data-fmt="hex">HEX</button>
+                      <button class="btn-fmt" data-fmt="dec">DEC</button>
+                      <button class="btn-fmt" data-fmt="bin">BIN</button>
+                      <span class="info-btn" data-info-title="Sayı Formatı Seçici" data-info-desc="Yazmaç değerlerini Onaltılık (HEX), Onluk (DEC) veya İkilik (BIN) tabanda görüntüler." tabindex="-1">i</span>
+                    </div>
 
-                  <!-- Speed Switch (0.5x / 1x / 2x) -->
-                  <div class="speed-switch-group">
-                    <button class="btn-speed" data-speed="0.5" title="0.5x Yavaş (600ms)">0.5x</button>
-                    <button class="btn-speed active" data-speed="1" title="1x Normal Hız (300ms)">1x</button>
-                    <button class="btn-speed" data-speed="2" title="2x Hızlı (100ms)">2x</button>
-                    <span class="info-btn" data-info-title="Çalışma Hızı" data-info-desc="RUN ile çalıştırma hızını ayarlar. 0.5x: Yavaş adım (600ms), 1x: Normal hız (300ms), 2x: Hızlı adım (100ms)." tabindex="-1">i</span>
-                  </div>
+                    <!-- Speed Switch (0.5x / 1x / 2x) -->
+                    <div class="speed-switch-group">
+                      <button class="btn-speed" data-speed="0.5" title="0.5x Yavaş (600ms)">0.5x</button>
+                      <button class="btn-speed active" data-speed="1" title="1x Normal Hız (300ms)">1x</button>
+                      <button class="btn-speed" data-speed="2" title="2x Hızlı (100ms)">2x</button>
+                      <span class="info-btn" data-info-title="Çalışma Hızı" data-info-desc="RUN ile çalıştırma hızını ayarlar. 0.5x: Yavaş adım (600ms), 1x: Normal hız (300ms), 2x: Hızlı adım (100ms)." tabindex="-1">i</span>
+                    </div>
 
-                  <button id="btn-compile" class="btn-compile">COMPILE</button>
-                  <button id="btn-run" class="btn-ctrl">RUN</button>
-                  <button id="btn-next" class="btn-ctrl">NEXT</button>
-                  <button id="btn-stop" class="btn-ctrl" disabled>STOP</button>
-                  <button id="btn-reset" class="btn-ctrl">RESET</button>
-                  <button id="btn-step-back" class="btn-ctrl btn-step-back" title="Geri Adım Al (Step Back)" disabled>↶</button>
-                  <button id="btn-complete-and-test" class="btn-complete-and-test" style="display: none;" title="Görevi Doğrula ve Tamamla">
-                    <span class="btn-icon">⚡</span> Tamamla ve Test Et
-                  </button>
+                    <!-- Split View Toggle Button -->
+                    <button id="btn-split-toggle" class="btn-ctrl btn-split-toggle" title="Yan Yana Bölünmüş Ekranı Aç / Kapat (Split View)">
+                      <span class="split-icon">◫</span>
+                      <span class="split-text">Bölünmüş Ekran</span>
+                    </button>
+
+                    <button id="btn-compile" class="btn-compile">COMPILE</button>
+                    <button id="btn-run" class="btn-ctrl">RUN</button>
+                    <button id="btn-next" class="btn-ctrl">NEXT</button>
+                    <button id="btn-stop" class="btn-ctrl" disabled>STOP</button>
+                    <button id="btn-reset" class="btn-ctrl">RESET</button>
+                    <button id="btn-step-back" class="btn-ctrl btn-step-back" title="Geri Adım Al (Step Back)" disabled>↶</button>
+                    <button id="btn-complete-and-test" class="btn-complete-and-test" style="display: none;" title="Görevi Doğrula ve Tamamla">
+                      <span class="btn-icon">⚡</span> Tamamla ve Test Et
+                    </button>
+                  </div>
                 </div>
+
+                <div id="editor-container"></div>
+                <div id="console-container" class="console-section-wrapper"></div>
+              </section>
+
+              <!-- Right Section: Registers, Segments, Pointers, Flags, Memory, and Challenge Box -->
+              <section class="cpu-section">
+                <div id="registers-container"></div>
+                <div id="memory-container"></div>
+                <div id="challenge-box-container" class="challenge-box-container"></div>
+              </section>
+            </main>
+
+            <!-- Full Lecture Document View Mount (shown when active doc is a lecture) -->
+            <div id="lecture-doc-mount" class="lecture-doc-mount" style="display: none;"></div>
+
+            <!-- Full Reference & Learning Document View Mount (shown when active doc is a reference doc) -->
+            <div id="reference-doc-mount" class="reference-doc-mount" style="display: none;"></div>
+          </div>
+
+          <!-- Draggable Split Resizer Divider -->
+          <div class="split-resizer" id="split-resizer" style="display: none;" title="Genişliği Ayarla (Sürükleyin)">
+            <div class="resizer-handle"></div>
+          </div>
+
+          <!-- Secondary Pane (Right in Split View) -->
+          <div class="workspace-pane pane-secondary" id="pane-secondary" style="display: none;">
+            <div class="secondary-pane-header" id="secondary-pane-header">
+              <div class="secondary-pane-title-wrap">
+                <span class="secondary-pane-icon" id="secondary-pane-icon">📖</span>
+                <span class="secondary-pane-title" id="secondary-pane-title">8086 Komut Manueli</span>
               </div>
+              <div class="secondary-pane-quick-nav">
+                <button class="btn-sec-nav active" data-sec-nav="manual" title="8086 Komut Seti Manueli">📖 Manuel</button>
+                <button class="btn-sec-nav" data-sec-nav="lectures" title="Dersler & Teori Kataloğu">🎓 Dersler</button>
+                <button class="btn-sec-nav" data-sec-nav="leetcode" title="8086 LeetCode Arenası">⚡ LeetCode</button>
+                <button class="btn-sec-nav" data-sec-nav="roadmap" title="Müfredat Yol Haritası">🗺️ Yol Haritası</button>
+              </div>
+              <div class="secondary-pane-actions">
+                <button id="btn-secondary-fullscreen" class="btn-pane-action" title="Tam Ekrana Genişlet">⤢</button>
+                <button id="btn-secondary-close" class="btn-pane-action btn-close-pane" title="Bölünmüş Ekranı Kapat (Tek Ekrana Dön)">✕</button>
+              </div>
+            </div>
 
-              <div id="editor-container"></div>
-              <div id="console-container" class="console-section-wrapper"></div>
-            </section>
-
-            <!-- Right Section: Registers, Segments, Pointers, Flags, Memory, and Challenge Box -->
-            <section class="cpu-section">
-              <div id="registers-container"></div>
-              <div id="memory-container"></div>
-              <div id="challenge-box-container" class="challenge-box-container"></div>
-            </section>
-          </main>
-
-          <!-- Full Lecture Document View Mount (shown when active doc is a lecture) -->
-          <div id="lecture-doc-mount" class="lecture-doc-mount" style="display: none;"></div>
-
-          <!-- Full Reference & Learning Document View Mount (shown when active doc is a reference doc) -->
-          <div id="reference-doc-mount" class="reference-doc-mount" style="display: none;"></div>
+            <div class="secondary-pane-content" id="secondary-pane-content"></div>
+          </div>
         </div>
       </div>
     `;
@@ -161,7 +201,9 @@ export class App {
           this.switchToDocument(newDoc);
         },
         onOpenCpuModal: () => this.cpuModal.open(),
-        onOpenLearningDoc: (tab) => this.openLearningDocument(tab)
+        onOpenLearningDoc: (tab) => this.openLearningDocument(tab),
+        onSplitDocument: (doc) => this.splitWithDocument(doc),
+        onSplitLearningDoc: (tab) => this.openInSecondaryPane('reference', tab)
       }
     );
 
@@ -196,7 +238,11 @@ export class App {
         document.querySelector('.editor-section')?.scrollIntoView({ behavior: 'smooth' });
       },
       onOpenLectureDocument: (milestoneId) => {
-        this.openMilestoneLecture(milestoneId);
+        if (this.isSplitMode) {
+          this.openInSecondaryPane('lecture', milestoneId);
+        } else {
+          this.openMilestoneLecture(milestoneId);
+        }
       },
       onReturnToEditor: () => {
         this.returnToEditor();
@@ -204,20 +250,39 @@ export class App {
       onTabChange: (tab) => {
         this.syncReferenceDocumentTab(tab);
       },
+      onSplitWithEditor: () => {
+        this.toggleSplitView(true, { type: 'reference', referenceTab: this.instructionDoc.getActiveTab() });
+      },
       getCurrentEditorCode: () => this.editor.getCode()
     });
 
     const lectureMount = document.getElementById('lecture-doc-mount')!;
     this.lectureDocView = new LectureDocumentView(lectureMount, {
       onNavigateToMilestoneLecture: (milestoneId: string) => {
-        this.openMilestoneLecture(milestoneId);
+        if (this.isSplitMode) {
+          this.openInSecondaryPane('lecture', milestoneId);
+        } else {
+          this.openMilestoneLecture(milestoneId);
+        }
       },
       onNavigateToLeetCodeMilestone: (milestoneId: string, challengeId?: string) => {
-        this.openLearningDocument('leetcode');
-        this.instructionDoc.filterLeetCodeByMilestone(milestoneId, challengeId);
+        if (this.isSplitMode) {
+          this.openInSecondaryPane('reference', 'leetcode');
+          this.instructionDoc.filterLeetCodeByMilestone(milestoneId, challengeId);
+        } else {
+          this.openLearningDocument('leetcode');
+          this.instructionDoc.filterLeetCodeByMilestone(milestoneId, challengeId);
+        }
       },
       onNavigateToRoadmap: () => {
-        this.openLearningDocument('roadmap');
+        if (this.isSplitMode) {
+          this.openInSecondaryPane('reference', 'roadmap');
+        } else {
+          this.openLearningDocument('roadmap');
+        }
+      },
+      onSplitWithEditor: () => {
+        this.toggleSplitView(true, { type: 'lecture', milestoneId: this.lectureDocView.getMilestoneId() });
       },
       onOpenInMainEditor: (title: string, code: string) => {
         const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -319,6 +384,7 @@ export class App {
     });
 
     this.attachButtonEvents();
+    this.initSplitResizer();
     this.updateViews();
 
     // Initial check for active document challenge status
@@ -330,7 +396,216 @@ export class App {
     }
   }
 
+  toggleSplitView(forceState?: boolean, targetDoc?: { type: 'lecture' | 'reference'; milestoneId?: string; referenceTab?: ManualTab }): void {
+    const newState = forceState !== undefined ? forceState : !this.isSplitMode;
+    this.isSplitMode = newState;
+
+    const mainContent = document.getElementById('app-main-content');
+    const panePrimary = document.getElementById('pane-primary');
+    const paneSecondary = document.getElementById('pane-secondary');
+    const splitResizer = document.getElementById('split-resizer');
+    const btnSplit = document.getElementById('btn-split-toggle');
+    const refDocMount = document.getElementById('reference-doc-mount');
+    const lectureDocMount = document.getElementById('lecture-doc-mount');
+    const secContent = document.getElementById('secondary-pane-content');
+
+    if (!mainContent || !panePrimary || !paneSecondary || !splitResizer || !refDocMount || !lectureDocMount || !secContent) return;
+
+    if (this.isSplitMode) {
+      mainContent.classList.add('split-active');
+      paneSecondary.style.display = 'flex';
+      splitResizer.style.display = 'flex';
+      btnSplit?.classList.add('active');
+      if (btnSplit) btnSplit.title = 'Bölünmüş Ekranı Kapat (Tek Ekrana Dön)';
+
+      // Move doc mounts to secondary pane content
+      secContent.appendChild(refDocMount);
+      secContent.appendChild(lectureDocMount);
+
+      // Ensure code editor is active on primary left pane
+      const allDocs = this.workspace.getAllDocuments();
+      const currentActive = this.workspace.getActiveDocument();
+      if (!currentActive || currentActive.type === 'lecture' || currentActive.type === 'reference') {
+        const codeDoc = allDocs.find(d => d.type === 'custom' || d.type === 'challenge' || d.type === 'example') || allDocs[0];
+        if (codeDoc) {
+          this.switchToDocument(codeDoc);
+        }
+      } else {
+        const mainIdeLayout = document.getElementById('main-ide-layout');
+        if (mainIdeLayout) mainIdeLayout.style.display = 'grid';
+      }
+
+      // Configure secondary right pane
+      if (targetDoc) {
+        if (targetDoc.type === 'lecture' && targetDoc.milestoneId) {
+          this.openInSecondaryPane('lecture', targetDoc.milestoneId);
+        } else if (targetDoc.type === 'reference' && targetDoc.referenceTab) {
+          this.openInSecondaryPane('reference', targetDoc.referenceTab);
+        }
+      } else {
+        this.openInSecondaryPane(this.secondaryDocType, this.secondaryDocType === 'lecture' ? this.secondaryMilestoneId : this.secondaryRefTab);
+      }
+    } else {
+      mainContent.classList.remove('split-active');
+      paneSecondary.style.display = 'none';
+      splitResizer.style.display = 'none';
+      panePrimary.style.width = '100%';
+      paneSecondary.style.width = '50%';
+      btnSplit?.classList.remove('active');
+      if (btnSplit) btnSplit.title = 'Yan Yana Bölünmüş Ekranı Aç (Split View)';
+
+      // Move doc mounts back to primary pane
+      panePrimary.appendChild(lectureDocMount);
+      panePrimary.appendChild(refDocMount);
+
+      // Re-sync current active document view
+      const active = this.workspace.getActiveDocument();
+      if (active) {
+        this.switchToDocument(active);
+      }
+    }
+    this.sidebar.render();
+  }
+
+  openInSecondaryPane(type: 'lecture' | 'reference', idOrTab?: string): void {
+    if (!this.isSplitMode) {
+      this.toggleSplitView(true, {
+        type,
+        milestoneId: type === 'lecture' ? (idOrTab || 'milestone-1') : undefined,
+        referenceTab: type === 'reference' ? ((idOrTab as ManualTab) || 'manual') : undefined
+      });
+      return;
+    }
+
+    this.secondaryDocType = type;
+    const refDocMount = document.getElementById('reference-doc-mount');
+    const lectureDocMount = document.getElementById('lecture-doc-mount');
+    const iconEl = document.getElementById('secondary-pane-icon');
+    const titleEl = document.getElementById('secondary-pane-title');
+    const secNavBtns = document.querySelectorAll('.btn-sec-nav');
+
+    secNavBtns.forEach(b => b.classList.remove('active'));
+
+    if (type === 'lecture') {
+      const milestoneId = idOrTab || this.secondaryMilestoneId || 'milestone-1';
+      this.secondaryMilestoneId = milestoneId;
+      if (refDocMount) refDocMount.style.display = 'none';
+      if (lectureDocMount) lectureDocMount.style.display = 'block';
+
+      this.lectureDocView.setMilestone(milestoneId);
+      const lecture = MILESTONE_LECTURES[milestoneId];
+      if (iconEl) iconEl.textContent = '🎓';
+      if (titleEl) titleEl.textContent = lecture ? `Aşama ${lecture.milestoneNumber}: ${lecture.title}` : 'Ders Anlatımı';
+      document.querySelector('.btn-sec-nav[data-sec-nav="lectures"]')?.classList.add('active');
+    } else {
+      const tab = (idOrTab as ManualTab) || this.secondaryRefTab || 'manual';
+      this.secondaryRefTab = tab;
+      if (lectureDocMount) lectureDocMount.style.display = 'none';
+      if (refDocMount) refDocMount.style.display = 'block';
+
+      this.instructionDoc.openTab(tab);
+      const tabTitles: Record<ManualTab, { icon: string; title: string }> = {
+        manual: { icon: '📖', title: '8086 Komut Manueli' },
+        lectures: { icon: '🎓', title: 'Dersler & Teori Kataloğu' },
+        leetcode: { icon: '⚡', title: '8086 LeetCode Arenası' },
+        roadmap: { icon: '🗺️', title: 'Müfredat Yol Haritası' }
+      };
+      const info = tabTitles[tab] || { icon: '📚', title: 'Öğrenme Merkezi' };
+      if (iconEl) iconEl.textContent = info.icon;
+      if (titleEl) titleEl.textContent = info.title;
+      document.querySelector(`.btn-sec-nav[data-sec-nav="${tab}"]`)?.classList.add('active');
+    }
+  }
+
+  splitWithDocument(doc: WorkspaceDocument): void {
+    if (doc.type === 'lecture' && doc.milestoneId) {
+      this.openInSecondaryPane('lecture', doc.milestoneId);
+    } else if (doc.type === 'reference' && doc.referenceTab) {
+      this.openInSecondaryPane('reference', doc.referenceTab);
+    } else {
+      this.switchToDocument(doc);
+      if (!this.isSplitMode) {
+        this.toggleSplitView(true);
+      }
+    }
+  }
+
+  private initSplitResizer(): void {
+    const resizer = document.getElementById('split-resizer');
+    const panePrimary = document.getElementById('pane-primary');
+    const paneSecondary = document.getElementById('pane-secondary');
+    const mainContent = document.getElementById('app-main-content');
+    if (!resizer || !panePrimary || !paneSecondary || !mainContent) return;
+
+    let isDragging = false;
+
+    resizer.addEventListener('mousedown', () => {
+      isDragging = true;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const rect = mainContent.getBoundingClientRect();
+      const offset = e.clientX - rect.left;
+      const totalWidth = rect.width;
+      let percentage = (offset / totalWidth) * 100;
+      if (percentage < 25) percentage = 25;
+      if (percentage > 75) percentage = 75;
+
+      panePrimary.style.width = `${percentage}%`;
+      paneSecondary.style.width = `${100 - percentage}%`;
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    });
+
+    // Toggle button in editor toolbar
+    document.getElementById('btn-split-toggle')?.addEventListener('click', () => {
+      this.toggleSplitView();
+    });
+
+    // Close button on secondary pane
+    document.getElementById('btn-secondary-close')?.addEventListener('click', () => {
+      this.toggleSplitView(false);
+    });
+
+    // Fullscreen button on secondary pane
+    document.getElementById('btn-secondary-fullscreen')?.addEventListener('click', () => {
+      const docType = this.secondaryDocType;
+      const milestoneId = this.secondaryMilestoneId;
+      const refTab = this.secondaryRefTab;
+      this.toggleSplitView(false);
+      if (docType === 'lecture') {
+        this.openMilestoneLecture(milestoneId);
+      } else {
+        this.openLearningDocument(refTab);
+      }
+    });
+
+    // Quick nav buttons in secondary pane header
+    document.querySelectorAll('.btn-sec-nav').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const secNav = btn.getAttribute('data-sec-nav') as ManualTab;
+        if (secNav) {
+          this.openInSecondaryPane('reference', secNav);
+        }
+      });
+    });
+  }
+
   openLearningDocument(tab: ManualTab): void {
+    if (this.isSplitMode) {
+      this.openInSecondaryPane('reference', tab);
+      return;
+    }
+
     const existingDoc = this.workspace.getAllDocuments().find(
       (d) => d.type === 'reference' && d.referenceTab === tab
     );
@@ -382,6 +657,11 @@ export class App {
   }
 
   openMilestoneLecture(milestoneId: string): void {
+    if (this.isSplitMode) {
+      this.openInSecondaryPane('lecture', milestoneId);
+      return;
+    }
+
     // Check if already open in workspace
     const existingDoc = this.workspace.getAllDocuments().find(
       (d) => d.type === 'lecture' && d.milestoneId === milestoneId
@@ -405,6 +685,19 @@ export class App {
   }
 
   switchToDocument(doc: WorkspaceDocument): void {
+    if (this.isSplitMode) {
+      if (doc.type === 'lecture' && doc.milestoneId) {
+        this.openInSecondaryPane('lecture', doc.milestoneId);
+        this.sidebar.render();
+        return;
+      }
+      if (doc.type === 'reference' && doc.referenceTab) {
+        this.openInSecondaryPane('reference', doc.referenceTab);
+        this.sidebar.render();
+        return;
+      }
+    }
+
     this.stop();
     const currentActive = this.workspace.getActiveDocument();
     if (currentActive && currentActive.id !== doc.id) {
