@@ -51,4 +51,16 @@ describe('All Lecture Examples Verification', () => {
     // AX was -25, after NEG AX it should be 25 (0x19)
     expect(cpu.regs.ax).toBe(25);
   });
+
+  it('verifies no raw LaTeX expressions ($...$, \\rightarrow, etc.) exist in lecture HTML content', () => {
+    for (const [milestoneKey, milestone] of Object.entries(MILESTONE_LECTURES)) {
+      expect(milestone.overviewHtml, `${milestoneKey} overviewHtml`).not.toMatch(/\\(rightarrow|times|neq|land|lor|oplus)/);
+      expect(milestone.overviewHtml, `${milestoneKey} overviewHtml`).not.toMatch(/\$[^$'"]+?\$/);
+
+      for (const section of milestone.sections) {
+        expect(section.contentHtml, `${milestoneKey} - ${section.title}`).not.toMatch(/\\(rightarrow|times|neq|land|lor|oplus)/);
+        expect(section.contentHtml, `${milestoneKey} - ${section.title}`).not.toMatch(/\$[^$'"]+?\$/);
+      }
+    }
+  });
 });
