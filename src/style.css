@@ -2145,11 +2145,15 @@ body {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
+  flex-direction: row;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  position: relative;
 }
 
 .workspace-sidebar {
@@ -6057,13 +6061,25 @@ body {
 
 .pane-primary {
   width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 20px 24px;
   flex-shrink: 0;
   transition: width 0.05s linear;
 }
 
-.app-main-content.split-active .pane-primary {
-  width: 50%;
-  border-right: none;
+.pane-primary > .main-layout {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+}
+
+.pane-primary > .lecture-doc-mount .lecture-doc-container,
+.pane-primary > .reference-doc-mount .reference-doc-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 28px 90px 28px;
 }
 
 /* Draggable Split Resizer Divider */
@@ -6220,16 +6236,80 @@ body {
   position: relative;
 }
 
-.secondary-pane-content .lecture-doc-container,
-.secondary-pane-content .reference-doc-container {
-  padding: 16px 18px 60px 18px;
+/* ==========================================================================
+   SPLIT ACTIVE: FULL-SCREEN SPREAD (TAM EKRANA YAYILMA)
+   ========================================================================== */
+.app-main-content.split-active {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
 }
 
-/* In split mode, the editor and CPU section adjust cleanly */
-.app-main-content.split-active .main-layout {
-  grid-template-columns: 1fr;
-  padding: 14px 16px;
-  gap: 14px;
+.app-main-content.split-active .pane-primary {
+  width: 50%;
+  padding: 12px 18px 40px 18px !important;
+  border-right: none;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.app-main-content.split-active .pane-primary > .main-layout {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  grid-template-columns: 1fr !important;
+  gap: 16px !important;
+}
+
+.app-main-content.split-active .pane-primary .editor-section,
+.app-main-content.split-active .pane-primary .cpu-section {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.app-main-content.split-active .pane-secondary {
+  width: 50%;
+  height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-left: 1px solid #cbd5e1;
+  background: #f8fafc;
+}
+
+.app-main-content.split-active .secondary-pane-content {
+  flex: 1;
+  overflow-y: auto;
+  height: calc(100vh - 44px);
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.app-main-content.split-active .secondary-pane-content .lecture-doc-container,
+.app-main-content.split-active .secondary-pane-content .reference-doc-container {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 18px 24px 90px 24px !important;
+  box-sizing: border-box;
+}
+
+.app-main-content.split-active .secondary-pane-content .lecture-doc-header,
+.app-main-content.split-active .secondary-pane-content .reference-doc-header {
+  width: 100% !important;
+  box-sizing: border-box;
+}
+
+.app-main-content.split-active .secondary-pane-content .docs-body-drawer {
+  width: 100% !important;
+  box-sizing: border-box;
 }
 
 .app-main-content.split-active .editor-header-bar {
