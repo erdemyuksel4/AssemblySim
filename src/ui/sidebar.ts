@@ -9,6 +9,7 @@ export interface SidebarCallbacks {
   onOpenLearningDoc?: (tab: 'manual' | 'lectures' | 'leetcode' | 'roadmap') => void;
   onDocumentClosed?: (docId: string) => void;
   getActiveDocId?: () => string | null;
+  getOpenDocIds?: () => string[];
 }
 
 export class WorkspaceSidebar {
@@ -65,6 +66,7 @@ export class WorkspaceSidebar {
     const activeDocId = this.callbacks.getActiveDocId ? this.callbacks.getActiveDocId() : this.workspace.getActiveDocument()?.id;
     const activeDoc = (activeDocId ? docs.find(d => d.id === activeDocId) : null) || this.workspace.getActiveDocument();
     const activeCpu = this.cpuManager.getOrDefaultInstance(activeDoc?.cpuInstanceId);
+    const openDocIds = this.callbacks.getOpenDocIds ? this.callbacks.getOpenDocIds() : (activeDocId ? [activeDocId] : []);
 
     this.container.innerHTML = `
       <div class="sidebar-header">
@@ -87,7 +89,7 @@ export class WorkspaceSidebar {
         <ul class="workspace-doc-list">
           ${docs.map(doc => {
             const cpu = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
-            const isActive = doc.id === activeDoc?.id;
+            const isActive = openDocIds.includes(doc.id);
             const icon = doc.type === 'challenge' ? '🎯' : 
               (doc.type === 'lecture' ? '🎓' : 
               (doc.type === 'example' ? '💡' : 
@@ -122,25 +124,25 @@ export class WorkspaceSidebar {
         </div>
         <div class="sidebar-learning-list">
           <div class="sidebar-learning-row" draggable="true" data-nav="manual" title="📖 Manuel (Sürükleyip istediğiniz panele bırakabilirsiniz)">
-            <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'manual' ? 'active' : ''}" data-nav="manual">
+            <button class="sidebar-learning-btn ${docs.some(d => openDocIds.includes(d.id) && d.type === 'reference' && d.referenceTab === 'manual') ? 'active' : ''}" data-nav="manual">
               <span class="learning-btn-icon">📖</span>
               <span class="learning-btn-text">Manuel</span>
             </button>
           </div>
           <div class="sidebar-learning-row" draggable="true" data-nav="lectures" title="🎓 Dersler (Sürükleyip istediğiniz panele bırakabilirsiniz)">
-            <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'lectures' ? 'active' : ''}" data-nav="lectures">
+            <button class="sidebar-learning-btn ${docs.some(d => openDocIds.includes(d.id) && (d.type === 'reference' && d.referenceTab === 'lectures' || d.type === 'lecture')) ? 'active' : ''}" data-nav="lectures">
               <span class="learning-btn-icon">🎓</span>
               <span class="learning-btn-text">Dersler</span>
             </button>
           </div>
           <div class="sidebar-learning-row" draggable="true" data-nav="leetcode" title="⚡ LeetCode (Sürükleyip istediğiniz panele bırakabilirsiniz)">
-            <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'leetcode' ? 'active' : ''}" data-nav="leetcode">
+            <button class="sidebar-learning-btn ${docs.some(d => openDocIds.includes(d.id) && d.type === 'reference' && d.referenceTab === 'leetcode') ? 'active' : ''}" data-nav="leetcode">
               <span class="learning-btn-icon">⚡</span>
               <span class="learning-btn-text">LeetCode</span>
             </button>
           </div>
           <div class="sidebar-learning-row" draggable="true" data-nav="roadmap" title="🗺️ Yol Haritası (Sürükleyip istediğiniz panele bırakabilirsiniz)">
-            <button class="sidebar-learning-btn ${activeDoc?.type === 'reference' && activeDoc?.referenceTab === 'roadmap' ? 'active' : ''}" data-nav="roadmap">
+            <button class="sidebar-learning-btn ${docs.some(d => openDocIds.includes(d.id) && d.type === 'reference' && d.referenceTab === 'roadmap') ? 'active' : ''}" data-nav="roadmap">
               <span class="learning-btn-icon">🗺️</span>
               <span class="learning-btn-text">Yol Haritası</span>
             </button>

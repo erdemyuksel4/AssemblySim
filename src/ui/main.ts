@@ -386,16 +386,23 @@ export class App {
 
     this.lectureDocView = new LectureDocumentView(lectureMount, {
       onNavigateToMilestoneLecture: (milestoneId: string) => {
+        if (this.isSplitMode) this.toggleSplitView(false);
         this.openMilestoneLectureInPane('primary', milestoneId);
+        this.setActivePane('primary');
       },
       onNavigateToLeetCodeMilestone: (milestoneId: string, challengeId?: string) => {
+        if (this.isSplitMode) this.toggleSplitView(false);
         this.openLearningDocInPane('primary', 'leetcode');
         this.instructionDoc.filterLeetCodeByMilestone(milestoneId, challengeId);
+        this.setActivePane('primary');
       },
       onNavigateToRoadmap: () => {
+        if (this.isSplitMode) this.toggleSplitView(false);
         this.openLearningDocInPane('primary', 'roadmap');
+        this.setActivePane('primary');
       },
       onOpenInMainEditor: (title: string, code: string) => {
+        if (this.isSplitMode) this.toggleSplitView(false);
         const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
         const newDoc = this.workspace.openDocument({
           title: `ornek-${cleanTitle}.asm`,
@@ -403,6 +410,7 @@ export class App {
           code
         });
         this.openDocumentInPane('primary', newDoc);
+        this.setActivePane('primary');
         this.sidebar.render();
       }
     });
@@ -549,26 +557,44 @@ export class App {
       this.cpuManager,
       {
         onDocumentSelect: (doc) => {
-          this.openDocumentInPane(this.activePane, doc);
+          if (this.isSplitMode) {
+            this.toggleSplitView(false);
+          }
+          this.openDocumentInPane('primary', doc);
+          this.setActivePane('primary');
         },
         onNewDocument: () => {
+          if (this.isSplitMode) {
+            this.toggleSplitView(false);
+          }
           const count = this.workspace.getAllDocuments().length + 1;
           const newDoc = this.workspace.openDocument({
             title: `program${count}.asm`,
             type: 'custom',
             code: DEFAULT_CODE
           });
-          this.openDocumentInPane(this.activePane, newDoc);
+          this.openDocumentInPane('primary', newDoc);
+          this.setActivePane('primary');
         },
         onOpenCpuModal: () => this.cpuModal.open(),
         onOpenLearningDoc: (tab) => {
-          this.openLearningDocInPane(this.activePane, tab);
+          if (this.isSplitMode) {
+            this.toggleSplitView(false);
+          }
+          this.openLearningDocInPane('primary', tab);
+          this.setActivePane('primary');
         },
         onDocumentClosed: (docId) => {
           this.handleDocumentClosed(docId);
         },
         getActiveDocId: () => {
           return this.activePane === 'primary' ? this.primaryDocId : (this.secondaryDocId || this.primaryDocId);
+        },
+        getOpenDocIds: () => {
+          if (this.isSplitMode && this.secondaryDocId) {
+            return [this.primaryDocId, this.secondaryDocId];
+          }
+          return [this.primaryDocId];
         }
       }
     );
@@ -865,19 +891,35 @@ export class App {
 
   // Legacy compatibility helpers
   switchToDocument(doc: WorkspaceDocument): void {
-    this.openDocumentInPane(this.activePane, doc);
+    if (this.isSplitMode) {
+      this.toggleSplitView(false);
+    }
+    this.openDocumentInPane('primary', doc);
+    this.setActivePane('primary');
   }
 
   openLearningDocument(tab: ManualTab): void {
-    this.openLearningDocInPane(this.activePane, tab);
+    if (this.isSplitMode) {
+      this.toggleSplitView(false);
+    }
+    this.openLearningDocInPane('primary', tab);
+    this.setActivePane('primary');
   }
 
   openMilestoneLecture(milestoneId: string): void {
-    this.openMilestoneLectureInPane(this.activePane, milestoneId);
+    if (this.isSplitMode) {
+      this.toggleSplitView(false);
+    }
+    this.openMilestoneLectureInPane('primary', milestoneId);
+    this.setActivePane('primary');
   }
 
   returnToEditor(): void {
-    this.returnToEditorInPane(this.activePane);
+    if (this.isSplitMode) {
+      this.toggleSplitView(false);
+    }
+    this.returnToEditorInPane('primary');
+    this.setActivePane('primary');
   }
 
   toggleSplitView(forceState?: boolean, targetDoc?: WorkspaceDocument): void {
