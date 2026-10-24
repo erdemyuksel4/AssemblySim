@@ -106,10 +106,10 @@ export class App {
                       <span class="info-btn" data-info-title="Çalışma Hızı" data-info-desc="RUN ile çalıştırma hızını ayarlar. 0.5x: Yavaş adım (600ms), 1x: Normal hız (300ms), 2x: Hızlı adım (100ms)." tabindex="-1">i</span>
                     </div>
 
-                    <!-- Split View Toggle Button -->
-                    <button id="btn-split-toggle" class="btn-ctrl btn-split-toggle" title="Yan Yana Bölünmüş Ekranı Aç / Kapat (Split View)">
+                    <!-- Split View Toggle Button (Tek / Çift Pencere Modu) -->
+                    <button id="btn-split-toggle" class="btn-ctrl btn-split-toggle" title="Çift Pencere Moduna Geç (Yan Yana Çalış)">
                       <span class="split-icon">◫</span>
-                      <span class="split-text">Bölünmüş Ekran</span>
+                      <span class="split-text">Çift Pencere</span>
                     </button>
 
                     <button id="btn-compile" class="btn-compile">COMPILE</button>
@@ -416,7 +416,13 @@ export class App {
       paneSecondary.style.display = 'flex';
       splitResizer.style.display = 'flex';
       btnSplit?.classList.add('active');
-      if (btnSplit) btnSplit.title = 'Bölünmüş Ekranı Kapat (Tek Ekrana Dön)';
+      if (btnSplit) {
+        btnSplit.innerHTML = `
+          <span class="split-icon">🗖</span>
+          <span class="split-text">Tek Pencere</span>
+        `;
+        btnSplit.title = 'Tek Pencere Moduna Geç (Ortala)';
+      }
 
       // Move doc mounts to secondary pane content
       secContent.appendChild(refDocMount);
@@ -452,7 +458,13 @@ export class App {
       panePrimary.style.width = '100%';
       paneSecondary.style.width = '50%';
       btnSplit?.classList.remove('active');
-      if (btnSplit) btnSplit.title = 'Yan Yana Bölünmüş Ekranı Aç (Split View)';
+      if (btnSplit) {
+        btnSplit.innerHTML = `
+          <span class="split-icon">◫</span>
+          <span class="split-text">Çift Pencere</span>
+        `;
+        btnSplit.title = 'Çift Pencere Moduna Geç (Yan Yana Çalış)';
+      }
 
       // Move doc mounts back to primary pane
       panePrimary.appendChild(lectureDocMount);

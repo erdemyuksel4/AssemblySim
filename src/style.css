@@ -6064,22 +6064,41 @@ body {
   height: 100%;
   overflow-y: auto;
   box-sizing: border-box;
-  padding: 20px 24px;
   flex-shrink: 0;
   transition: width 0.05s linear;
 }
 
-.pane-primary > .main-layout {
+/* ==========================================================================
+   TEK PENCERE MODU (SINGLE WINDOW MODE) - ORTALI DÜZEN
+   ========================================================================== */
+.app-main-content:not(.split-active) .pane-primary {
   width: 100%;
-  max-width: 1680px;
-  margin: 0 auto;
+  padding: 24px 32px 50px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
 }
 
-.pane-primary > .lecture-doc-mount .lecture-doc-container,
-.pane-primary > .reference-doc-mount .reference-doc-container {
-  max-width: 1400px;
+.app-main-content:not(.split-active) .pane-primary > .main-layout {
+  width: 100%;
+  max-width: 1380px;
   margin: 0 auto;
-  padding: 24px 28px 90px 28px;
+  display: grid;
+  grid-template-columns: 1.08fr 0.92fr;
+  gap: 24px;
+}
+
+.app-main-content:not(.split-active) .pane-primary > .lecture-doc-mount,
+.app-main-content:not(.split-active) .pane-primary > .reference-doc-mount {
+  width: 100%;
+}
+
+.app-main-content:not(.split-active) .pane-primary > .lecture-doc-mount .lecture-doc-container,
+.app-main-content:not(.split-active) .pane-primary > .reference-doc-mount .reference-doc-container {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 16px 20px 90px 20px;
 }
 
 /* Draggable Split Resizer Divider */
