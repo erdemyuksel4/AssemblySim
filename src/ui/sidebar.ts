@@ -103,76 +103,35 @@ export class WorkspaceSidebar {
       </div>
 
       <div class="sidebar-content">
-        <!-- Clustered Side-by-Side Dual-Window Card (Shown when Split Mode is Active) -->
-        ${splitInfo.isSplit && splitInfo.primaryDoc && splitInfo.secondaryDoc ? `
-          <div class="sidebar-split-cluster">
-            <div class="split-cluster-header">
-              <span class="split-cluster-badge">◫ ÇİFT PENCERE (YAN YANA)</span>
-              <button class="btn-split-cluster-close" title="Çift Pencereyi Kapat">✕</button>
-            </div>
-            <div class="split-cluster-grid">
-              <!-- Left Card -->
-              <div class="split-pane-card left-card ${splitInfo.activePane === 'primary' ? 'focused' : ''}" data-pane="primary" title="Sol Pencereye Odaklan: ${this.escapeHtml(splitInfo.primaryDoc.title)}">
-                <div class="split-card-header">
-                  <span class="split-card-tag">SOL</span>
-                  ${primCpu ? `<span class="split-card-cpu" style="border-left-color: ${primCpu.color};">${this.escapeHtml(primCpu.name)}</span>` : ''}
-                </div>
-                <div class="split-card-body">
-                  <span class="split-card-icon">${primIcon}</span>
-                  <span class="split-card-title">${this.escapeHtml(splitInfo.primaryDoc.title)}</span>
-                </div>
-              </div>
-
-              <div class="split-cluster-arrow">⇄</div>
-
-              <!-- Right Card -->
-              <div class="split-pane-card right-card ${splitInfo.activePane === 'secondary' ? 'focused' : ''}" data-pane="secondary" title="Sağ Pencereye Odaklan: ${this.escapeHtml(splitInfo.secondaryDoc.title)}">
-                <div class="split-card-header">
-                  <span class="split-card-tag">SAĞ</span>
-                  ${secCpu ? `<span class="split-card-cpu" style="border-left-color: ${secCpu.color};">${this.escapeHtml(secCpu.name)}</span>` : ''}
-                </div>
-                <div class="split-card-body">
-                  <span class="split-card-icon">${secIcon}</span>
-                  <span class="split-card-title">${this.escapeHtml(splitInfo.secondaryDoc.title)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ` : ''}
-
         <div class="sidebar-section-header">
-          <span>${splitInfo.isSplit ? 'Tüm Belgeler & Görevler' : 'Açık Belgeler & Görevler'}</span>
+          <span>Açık Belgeler & Görevler</span>
           <span class="sidebar-doc-count">${docs.length}</span>
         </div>
 
         <ul class="workspace-doc-list">
-          ${docs.map(doc => {
-            const cpu = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
-            const isActive = openDocIds.includes(doc.id);
-            const icon = doc.type === 'challenge' ? '🎯' : 
-              (doc.type === 'lecture' ? '🎓' : 
-              (doc.type === 'example' ? '💡' : 
-              (doc.type === 'reference' ? (
-                doc.referenceTab === 'manual' ? '📖' :
-                doc.referenceTab === 'lectures' ? '🎓' :
-                doc.referenceTab === 'leetcode' ? '⚡' :
-                doc.referenceTab === 'roadmap' ? '🗺️' : '📚'
-              ) : '📄')));
-            return `
-              <li class="workspace-doc-item ${isActive ? 'active' : ''}" data-doc-id="${doc.id}" draggable="true" title="${doc.title} (Sürükleyip istediğiniz panele bırakabilirsiniz)">
+          ${splitInfo.isSplit && splitInfo.primaryDoc && splitInfo.secondaryDoc ? `
+            <!-- Open Windows Side-by-Side in One Row -->
+            <li class="workspace-split-pair-row">
+              <div class="workspace-doc-item split-half ${splitInfo.activePane === 'primary' ? 'active' : ''}" data-pane="primary" data-doc-id="${splitInfo.primaryDoc.id}" draggable="true" title="Sol Pencere: ${this.escapeHtml(splitInfo.primaryDoc.title)}">
                 <div class="doc-item-main">
-                  <span class="doc-icon">${icon}</span>
-                  <span class="doc-title">${this.escapeHtml(doc.title)}</span>
+                  <span class="doc-icon">${primIcon}</span>
+                  <span class="doc-title">${this.escapeHtml(splitInfo.primaryDoc.title)}</span>
                 </div>
-                <div class="doc-item-meta">
-                  <span class="cpu-badge" style="border-left-color: ${cpu.color};" title="Bağlı CPU: ${cpu.name}">
-                    ${this.escapeHtml(cpu.name)}
-                  </span>
-                  ${doc.id !== 'doc-main' ? `<button class="btn-doc-close" data-doc-id="${doc.id}" title="Belgeyi Kapat">×</button>` : ''}
+                <span class="pane-side-badge">Sol</span>
+              </div>
+              <div class="workspace-doc-item split-half ${splitInfo.activePane === 'secondary' ? 'active' : ''}" data-pane="secondary" data-doc-id="${splitInfo.secondaryDoc.id}" draggable="true" title="Sağ Pencere: ${this.escapeHtml(splitInfo.secondaryDoc.title)}">
+                <div class="doc-item-main">
+                  <span class="doc-icon">${secIcon}</span>
+                  <span class="doc-title">${this.escapeHtml(splitInfo.secondaryDoc.title)}</span>
                 </div>
-              </li>
-            `;
-          }).join('')}
+                <span class="pane-side-badge">Sağ</span>
+                <button class="btn-doc-close btn-split-close" title="Pencereyi Kapat">×</button>
+              </div>
+            </li>
+            ${docs.filter(d => d.id !== splitInfo.primaryDoc?.id && d.id !== splitInfo.secondaryDoc?.id).map(doc => this.renderDocItem(doc, openDocIds)).join('')}
+          ` : `
+            ${docs.map(doc => this.renderDocItem(doc, openDocIds)).join('')}
+          `}
         </ul>
       </div>
 
@@ -295,41 +254,9 @@ export class WorkspaceSidebar {
       });
     });
 
-    // Split cluster pane cards click to focus
-    this.container.querySelectorAll<HTMLElement>('.split-pane-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const pane = card.dataset.pane as 'primary' | 'secondary';
-        if (pane && this.callbacks.onSelectPane) {
-          this.callbacks.onSelectPane(pane);
-        }
-      });
-
-      card.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-        card.classList.add('drag-over');
-      });
-
-      card.addEventListener('dragleave', () => {
-        card.classList.remove('drag-over');
-      });
-
-      card.addEventListener('drop', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        card.classList.remove('drag-over');
-        const pane = card.dataset.pane as 'primary' | 'secondary';
-        const rawData = e.dataTransfer?.getData('application/x-assemblysim-doc') || e.dataTransfer?.getData('text/plain');
-        if (rawData && pane && this.callbacks.onDropOnPane) {
-          this.callbacks.onDropOnPane(pane, rawData);
-        }
-      });
-    });
-
-    // Split cluster close button
-    const btnClusterClose = this.container.querySelector<HTMLButtonElement>('.btn-split-cluster-close');
-    btnClusterClose?.addEventListener('click', (e) => {
+    // Split pair close button
+    const btnSplitClose = this.container.querySelector<HTMLButtonElement>('.btn-split-close');
+    btnSplitClose?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.callbacks.onCloseSplit?.();
     });
@@ -337,11 +264,18 @@ export class WorkspaceSidebar {
     // Document item selection
     this.container.querySelectorAll<HTMLElement>('.workspace-doc-item').forEach(item => {
       item.addEventListener('click', (e) => {
-        const docId = item.dataset.docId;
-        if (!docId) return;
-        
         // Don't switch if close button was clicked
         if ((e.target as HTMLElement).classList.contains('btn-doc-close')) return;
+
+        const pane = item.dataset.pane as 'primary' | 'secondary';
+        if (pane && this.callbacks.onSelectPane) {
+          this.callbacks.onSelectPane(pane);
+          this.render();
+          return;
+        }
+
+        const docId = item.dataset.docId;
+        if (!docId) return;
 
         const doc = this.workspace.getAllDocuments().find(d => d.id === docId);
         if (doc) {
@@ -377,6 +311,26 @@ export class WorkspaceSidebar {
         this.toggleCollapse(false);
       }
     });
+  }
+
+  private renderDocItem(doc: WorkspaceDocument, openDocIds: string[]): string {
+    const cpu = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
+    const isActive = openDocIds.includes(doc.id);
+    const icon = this.getDocIcon(doc);
+    return `
+      <li class="workspace-doc-item ${isActive ? 'active' : ''}" data-doc-id="${doc.id}" draggable="true" title="${doc.title} (Sürükleyip istediğiniz panele bırakabilirsiniz)">
+        <div class="doc-item-main">
+          <span class="doc-icon">${icon}</span>
+          <span class="doc-title">${this.escapeHtml(doc.title)}</span>
+        </div>
+        <div class="doc-item-meta">
+          <span class="cpu-badge" style="border-left-color: ${cpu.color};" title="Bağlı CPU: ${cpu.name}">
+            ${this.escapeHtml(cpu.name)}
+          </span>
+          ${doc.id !== 'doc-main' ? `<button class="btn-doc-close" data-doc-id="${doc.id}" title="Belgeyi Kapat">×</button>` : ''}
+        </div>
+      </li>
+    `;
   }
 
   private getDocIcon(doc: WorkspaceDocument | null): string {

@@ -2427,179 +2427,73 @@ body {
 }
 
 /* ==========================================================================
-   SIDEBAR SPLIT PAIR CLUSTER (ÇİFT PENCERE YAN YANA KÜMELEME)
+   SIDEBAR SPLIT PAIR ROW (AÇILAN PENCERELERİ YAN YANA KOY)
    ========================================================================== */
-.sidebar-split-cluster {
-  margin: 6px 8px 12px 8px;
-  background: #ffffff;
-  border: 1.5px solid #93c5fd;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
-  overflow: hidden;
-  animation: fadeIn 0.15s ease-out;
-}
-
-.split-cluster-header {
+.workspace-split-pair-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 5px 8px;
-  background: #eff6ff;
-  border-bottom: 1px solid #dbeafe;
-}
-
-.split-cluster-badge {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.4px;
-  color: #1d4ed8;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-split-cluster-close {
-  background: transparent;
-  border: none;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 1px 5px;
-  border-radius: 3px;
-  transition: all 0.1s ease;
-  line-height: 1;
-}
-
-.btn-split-cluster-close:hover {
-  background: #fee2e2;
-  color: #ef4444;
-}
-
-.split-cluster-grid {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  padding: 6px;
   gap: 5px;
-  background: #f8fafc;
+  width: 100%;
+  margin-bottom: 4px;
 }
 
-.split-pane-card {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 6px 7px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  user-select: none;
+.workspace-split-pair-row .workspace-doc-item.split-half {
+  flex: 1;
   min-width: 0;
-}
-
-.split-pane-card:hover {
-  border-color: #3b82f6;
-  background: #f0fdf4;
-}
-
-.split-pane-card.focused {
-  border-color: #2563eb;
-  background: #eff6ff;
-  box-shadow: 0 0 0 1.5px #2563eb;
-}
-
-.split-pane-card.drag-over {
-  border-color: #10b981 !important;
-  background: #ecfdf5 !important;
-  box-shadow: 0 0 0 2px #10b981 !important;
-}
-
-.split-card-header {
+  margin-bottom: 0;
+  padding: 6px 7px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 3px;
+  gap: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  transition: all 0.15s ease;
 }
 
-.split-card-tag {
+.workspace-split-pair-row .workspace-doc-item.split-half:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.workspace-split-pair-row .workspace-doc-item.split-half.active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
+}
+
+.pane-side-badge {
   font-size: 8.5px;
   font-weight: 800;
   padding: 1px 4px;
   border-radius: 3px;
   background: #e2e8f0;
   color: #475569;
+  flex-shrink: 0;
+  text-transform: uppercase;
 }
 
-.split-pane-card.focused .split-card-tag {
+.workspace-doc-item.split-half.active .pane-side-badge {
   background: #bfdbfe;
   color: #1e40af;
 }
 
-.split-card-cpu {
-  font-size: 8.5px;
-  font-weight: 700;
-  color: #64748b;
-  padding-left: 3px;
-  border-left: 2px solid #3b82f6;
-  max-width: 45px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.split-card-body {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-
-.split-card-icon {
-  font-size: 12px;
+.btn-split-close {
   flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  font-size: 13px;
 }
 
-.split-card-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: #1e293b;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-
-.split-cluster-arrow {
-  font-size: 11px;
-  color: #94a3b8;
-  font-weight: 700;
-  user-select: none;
-}
-
-.workspace-sidebar.collapsed .sidebar-split-cluster {
-  margin: 6px 3px;
-  border-radius: 5px;
-}
-
-.workspace-sidebar.collapsed .split-cluster-header,
-.workspace-sidebar.collapsed .split-card-header,
-.workspace-sidebar.collapsed .split-card-title,
-.workspace-sidebar.collapsed .split-cluster-arrow {
-  display: none !important;
-}
-
-.workspace-sidebar.collapsed .split-cluster-grid {
-  grid-template-columns: 1fr;
-  padding: 3px;
+.workspace-sidebar.collapsed .workspace-split-pair-row {
+  flex-direction: column;
   gap: 3px;
 }
 
-.workspace-sidebar.collapsed .split-pane-card {
-  padding: 4px;
-  align-items: center;
-  justify-content: center;
+.workspace-sidebar.collapsed .workspace-split-pair-row .pane-side-badge,
+.workspace-sidebar.collapsed .workspace-split-pair-row .btn-split-close {
+  display: none !important;
 }
 
 /* Sidebar Learning & Reference Section (Bottom of Sidebar, Stacked) */
