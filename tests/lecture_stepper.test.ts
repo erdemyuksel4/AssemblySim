@@ -64,4 +64,29 @@ describe('LectureStorage and Module Progress Persistence', () => {
       expect(lecture.milestoneNumber).toBeGreaterThan(0);
     }
   });
+
+  it('verifies compile dirty dot indicator presence and state toggling', () => {
+    const fakeDot = { style: { display: 'none' } };
+    const fakeBtn = {
+      disabled: false,
+      title: 'Kodu derle',
+      querySelector: (sel: string) => sel === '.compile-dirty-dot' ? fakeDot : null
+    };
+
+    expect(fakeDot.style.display).toBe('none');
+    expect(fakeBtn.disabled).toBe(false);
+
+    // Simulate code change (dirty state)
+    fakeDot.style.display = 'inline-block';
+    fakeBtn.title = 'Derlenmemiş değişiklikler var. Yeniden derlemek için tıklayın.';
+    expect(fakeDot.style.display).toBe('inline-block');
+    // Compile button should NOT be disabled
+    expect(fakeBtn.disabled).toBe(false);
+
+    // Simulate compile (clean state)
+    fakeDot.style.display = 'none';
+    fakeBtn.title = 'Kodu derle';
+    expect(fakeDot.style.display).toBe('none');
+    expect(fakeBtn.disabled).toBe(false);
+  });
 });

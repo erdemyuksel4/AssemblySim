@@ -276,6 +276,53 @@ describe('ChallengeRunner', () => {
         expect(res.success).toBe(true);
       }
     });
+
+    it('should allow flexible/alternative algorithms without penalizing scratch registers', async () => {
+      const { CHALLENGES } = await import('../src/challenges/challengesData.js');
+
+      // 1. ch-loop-sum-n: User computes 1..5 sum using unrolled additions or keeping CX unchanged
+      const loopCh = CHALLENGES['ch-loop-sum-n'];
+      expect(loopCh).toBeDefined();
+      const unrolledCode = `
+        ORG 100H
+        ; User does not use LOOP and leaves CX intact!
+        MOV AX, 15
+        HLT
+      `;
+      const resLoop = ChallengeRunner.grade(loopCh, unrolledCode);
+      expect(resLoop.status).toBe('PASSED');
+      expect(resLoop.success).toBe(true);
+
+      // 2. ch-capstone-stage2: User uses SI and DI with different scratch registers
+      const capstone2 = CHALLENGES['ch-capstone-stage2'];
+      expect(capstone2).toBeDefined();
+      const altSwapCode = `
+        ORG 100H
+        ; Swap [0200h] and [0210h] using BP and DX instead of AX/CX/DI
+        MOV BP, [0200H]
+        MOV DX, [0210H]
+        MOV [0200H], DX
+        MOV [0210H], BP
+        HLT
+      `;
+      const resSwap = ChallengeRunner.grade(capstone2, altSwapCode);
+      expect(resSwap.status).toBe('PASSED');
+      expect(resSwap.success).toBe(true);
+
+      // 3. ch-capstone-stage5: User accumulates with BX and stores to memory directly
+      const capstone5 = CHALLENGES['ch-capstone-stage5'];
+      expect(capstone5).toBeDefined();
+      const altFilterCode = `
+        ORG 100H
+        ; Total = 20 + 15 = 35, Count = 2
+        MOV WORD PTR [0510H], 35
+        MOV WORD PTR [0512H], 2
+        HLT
+      `;
+      const resFilter = ChallengeRunner.grade(capstone5, altFilterCode);
+      expect(resFilter.status).toBe('PASSED');
+      expect(resFilter.success).toBe(true);
+    });
   });
 });
 

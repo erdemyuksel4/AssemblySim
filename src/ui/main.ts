@@ -78,6 +78,9 @@ export class App {
   private secSpeed: ExecutionSpeed = '1';
   private secWasRunningBeforeInput: boolean = false;
 
+  private isPrimaryDirty: boolean = false;
+  private isSecondaryDirty: boolean = false;
+
   // Per-document execution caches to preserve CPU state (registers, memory, flags, IP) on document switch
   private docExecCache: Map<string, {
     code: string;
@@ -90,6 +93,30 @@ export class App {
     asmResult: AsmResult | null;
     ipToLineMap: Map<number, number>;
   }> = new Map();
+
+  private setPrimaryDirty(dirty: boolean): void {
+    this.isPrimaryDirty = dirty;
+    const btn = document.getElementById('btn-compile');
+    const dot = btn?.querySelector('.compile-dirty-dot') as HTMLElement | null;
+    if (dot) {
+      dot.style.display = dirty ? 'inline-block' : 'none';
+    }
+    if (btn) {
+      btn.title = dirty ? 'Derlenmemiş değişiklikler var. Yeniden derlemek için tıklayın.' : 'Kodu derle';
+    }
+  }
+
+  private setSecondaryDirty(dirty: boolean): void {
+    this.isSecondaryDirty = dirty;
+    const btn = document.getElementById('btn-sec-compile');
+    const dot = btn?.querySelector('.compile-dirty-dot') as HTMLElement | null;
+    if (dot) {
+      dot.style.display = dirty ? 'inline-block' : 'none';
+    }
+    if (btn) {
+      btn.title = dirty ? 'Derlenmemiş değişiklikler var. Yeniden derlemek için tıklayın.' : 'Kodu derle';
+    }
+  }
 
   constructor() {
     this.cpuManager = new CpuInstanceManager();
@@ -160,7 +187,7 @@ export class App {
                       <span class="info-btn" data-info-title="Çalışma Hızı" data-info-desc="RUN ile çalıştırma hızını ayarlar. 0.5x: Yavaş adım (600ms), 1x: Normal hız (300ms), 2x: Hızlı adım (100ms)." tabindex="-1">i</span>
                     </div>
 
-                    <button id="btn-compile" class="btn-compile">COMPILE</button>
+                    <button id="btn-compile" class="btn-compile" title="Kodu derle">COMPILE<span class="compile-dirty-dot" style="display: none;" title="Derlenmemiş değişiklikler var"></span></button>
                     <button id="btn-run" class="btn-ctrl">RUN</button>
                     <button id="btn-next" class="btn-ctrl">NEXT</button>
                     <button id="btn-stop" class="btn-ctrl" disabled>STOP</button>
@@ -239,7 +266,7 @@ export class App {
                       <button class="btn-speed" data-sec-speed="2" title="2x Hızlı (100ms)">2x</button>
                     </div>
 
-                    <button id="btn-sec-compile" class="btn-compile">COMPILE</button>
+                    <button id="btn-sec-compile" class="btn-compile" title="Kodu derle">COMPILE<span class="compile-dirty-dot" style="display: none;" title="Derlenmemiş değişiklikler var"></span></button>
                     <button id="btn-sec-run" class="btn-ctrl">RUN</button>
                     <button id="btn-sec-next" class="btn-ctrl">NEXT</button>
                     <button id="btn-sec-stop" class="btn-ctrl" disabled>STOP</button>
@@ -310,8 +337,7 @@ export class App {
         this.workspace.updateDocumentCode(this.primaryDocId, this.editor.getCode());
         const doc = this.workspace.getDocument(this.primaryDocId);
         if (doc) doc.editorScroll = this.editor.getScroll();
-        const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
-        if (btnCompile) btnCompile.disabled = false;
+        this.setPrimaryDirty(true);
       }
     });
 
@@ -468,8 +494,7 @@ export class App {
           const doc = this.workspace.getDocument(this.secondaryDocId);
           if (doc) doc.editorScroll = this.secEditor.getScroll();
         }
-        const btnCompile = document.getElementById('btn-sec-compile') as HTMLButtonElement;
-        if (btnCompile) btnCompile.disabled = false;
+        this.setSecondaryDirty(true);
       }
     });
 
@@ -872,8 +897,7 @@ export class App {
           this.currentAsmResult = cached.asmResult;
           this.ipToLineMap = cached.ipToLineMap;
           this.editor.clearErrors();
-          const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
-          if (btnCompile) btnCompile.disabled = true;
+          this.setPrimaryDirty(false);
           const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
           const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
           if (btnRun) btnRun.disabled = false;
@@ -974,8 +998,7 @@ export class App {
           this.secCurrentAsmResult = secCached.asmResult;
           this.secIpToLineMap = secCached.ipToLineMap;
           this.secEditor.clearErrors();
-          const btnCompile = document.getElementById('btn-sec-compile') as HTMLButtonElement;
-          if (btnCompile) btnCompile.disabled = true;
+          this.setSecondaryDirty(false);
           const btnRun = document.getElementById('btn-sec-run') as HTMLButtonElement;
           const btnNext = document.getElementById('btn-sec-next') as HTMLButtonElement;
           if (btnRun) btnRun.disabled = false;
@@ -1688,7 +1711,7 @@ export class App {
         statusBadge.className = 'console-status-badge error';
       }
       result.errors.forEach(err => this.consoleView.log(`❌ [Derleme Hatası] Satır ${err.line}: ${err.message}`, 'error'));
-      if (btnCompile) btnCompile.disabled = false;
+      this.setPrimaryDirty(true);
       return false;
     }
 
@@ -1700,7 +1723,7 @@ export class App {
     this.editor.clearErrors();
     this.consoleView.log(`✓ Program başarıyla derlendi (${result.bytes.length} bayt). Giriş noktası: CS:${result.origin.toString(16).toUpperCase().padStart(4, '0')}h`, 'success');
 
-    if (btnCompile) btnCompile.disabled = true;
+    this.setPrimaryDirty(false);
 
     this.cpu.loadCOM(result.bytes, result.origin);
     this.applyChallengeEnvironmentIfAny();
@@ -1774,8 +1797,7 @@ export class App {
   }
 
   private step(): void {
-    const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
-    if (btnCompile && !btnCompile.disabled) {
+    if (this.isPrimaryDirty) {
       if (!this.compile()) return;
     }
     if (this.currentAsmResult && this.currentAsmResult.errors.length > 0) {
@@ -1832,8 +1854,7 @@ export class App {
   private run(): void {
     if (this.isRunning) return;
 
-    const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
-    if (btnCompile && !btnCompile.disabled) {
+    if (this.isPrimaryDirty) {
       if (!this.compile()) return;
     }
     if (this.currentAsmResult && this.currentAsmResult.errors.length > 0) {
@@ -1969,13 +1990,13 @@ export class App {
     if (result.errors.length > 0) {
       this.secEditor.setErrors(result.errors);
       result.errors.forEach(err => this.secConsoleView.log(`❌ [Derleme Hatası] Satır ${err.line}: ${err.message}`, 'error'));
-      if (btnCompile) btnCompile.disabled = false;
+      this.setSecondaryDirty(true);
       return false;
     }
 
     this.secEditor.clearErrors();
     this.secConsoleView.log(`✓ Program başarıyla derlendi (${result.bytes.length} bayt). Giriş noktası: CS:${result.origin.toString(16).toUpperCase().padStart(4, '0')}h`, 'success');
-    if (btnCompile) btnCompile.disabled = true;
+    this.setSecondaryDirty(false);
 
     this.secCpu.loadCOM(result.bytes, result.origin);
     this.applySecChallengeEnvironmentIfAny();
@@ -2054,8 +2075,7 @@ export class App {
 
   private secStep(): void {
     if (!this.secCpu) return;
-    const btnCompile = document.getElementById('btn-sec-compile') as HTMLButtonElement;
-    if (btnCompile && !btnCompile.disabled) {
+    if (this.isSecondaryDirty) {
       if (!this.secCompile()) return;
     }
     if (this.secCurrentAsmResult && this.secCurrentAsmResult.errors.length > 0) {
@@ -2107,8 +2127,7 @@ export class App {
   private secRun(): void {
     if (this.secIsRunning || !this.secCpu) return;
 
-    const btnCompile = document.getElementById('btn-sec-compile') as HTMLButtonElement;
-    if (btnCompile && !btnCompile.disabled) {
+    if (this.isSecondaryDirty) {
       if (!this.secCompile()) return;
     }
     if (this.secCurrentAsmResult && this.secCurrentAsmResult.errors.length > 0) {

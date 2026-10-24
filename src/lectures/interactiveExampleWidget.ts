@@ -35,6 +35,19 @@ export class InteractiveExampleWidget {
   private currentSpeed: WidgetSpeed = '1';
   private wasRunningBeforeInput: boolean = false;
   private showSolution: boolean = false;
+  private isDirty: boolean = false;
+
+  private setDirty(dirty: boolean): void {
+    this.isDirty = dirty;
+    const btn = this.container.querySelector('.btn-compile');
+    const dot = btn?.querySelector('.compile-dirty-dot') as HTMLElement | null;
+    if (dot) {
+      dot.style.display = dirty ? 'inline-block' : 'none';
+    }
+    if (btn) {
+      (btn as HTMLElement).title = dirty ? 'Derlenmemiş değişiklikler var. Yeniden derlemek için tıklayın.' : 'Kodu derle';
+    }
+  }
 
   constructor(
     container: HTMLElement,
@@ -68,6 +81,7 @@ export class InteractiveExampleWidget {
       if (this.record.editorScroll) {
         this.editor.setScroll(this.record.editorScroll);
       }
+      this.setDirty(false);
     } else {
       this.compile();
     }
@@ -172,7 +186,7 @@ export class InteractiveExampleWidget {
                   <span class="info-btn" data-info-title="Çalışma Hızı" data-info-desc="RUN ile çalıştırma hızını ayarlar." tabindex="-1">i</span>
                 </div>
 
-                <button class="btn-compile">COMPILE</button>
+                <button class="btn-compile" title="Kodu derle">COMPILE<span class="compile-dirty-dot" style="display: none;" title="Derlenmemiş değişiklikler var"></span></button>
                 <button class="btn-run btn-ctrl">RUN</button>
                 <button class="btn-next btn-ctrl">NEXT</button>
                 <button class="btn-stop btn-ctrl" disabled>STOP</button>
@@ -227,8 +241,7 @@ export class InteractiveExampleWidget {
         const code = this.editor.getCode();
         this.record.userCode = code;
         this.record.editorScroll = this.editor.getScroll();
-        const btnCompile = this.container.querySelector('.btn-compile') as HTMLButtonElement;
-        if (btnCompile) btnCompile.disabled = false;
+        this.setDirty(true);
         LectureStorage.saveExampleCode(this.example.id, code);
         this.showSavedIndicator();
       }
@@ -406,6 +419,7 @@ export class InteractiveExampleWidget {
       if (this.record.editorScroll) {
         this.editor.setScroll(this.record.editorScroll);
       }
+      this.setDirty(false);
     } else {
       this.compile();
       this.consoleView.clear();
@@ -430,7 +444,7 @@ export class InteractiveExampleWidget {
         statusBadge.className = 'console-status-badge error';
       }
       result.errors.forEach(err => this.consoleView.log(`❌ Derleme Hatası (Satır ${err.line}): ${err.message}`, 'error'));
-      if (btnCompile) btnCompile.disabled = false;
+      this.setDirty(true);
       return false;
     }
 
@@ -442,7 +456,7 @@ export class InteractiveExampleWidget {
     this.editor.clearErrors();
     this.consoleView.log(`Program başarıyla derlendi (${result.bytes.length} bayt). Giriş noktası: CS:${result.origin.toString(16).toUpperCase().padStart(4, '0')}h`, 'success');
 
-    if (btnCompile) btnCompile.disabled = true;
+    this.setDirty(false);
 
     // Load COM bytes
     this.cpu.loadCOM(result.bytes, result.origin);
@@ -491,8 +505,7 @@ export class InteractiveExampleWidget {
   }
 
   private step(): void {
-    const btnCompile = this.container.querySelector('.btn-compile') as HTMLButtonElement;
-    if (btnCompile && !btnCompile.disabled) {
+    if (this.isDirty) {
       if (!this.compile()) return;
     }
     if (this.currentAsmResult && this.currentAsmResult.errors.length > 0) {
@@ -550,8 +563,7 @@ export class InteractiveExampleWidget {
   private run(): void {
     if (this.isRunning) return;
 
-    const btnCompile = this.container.querySelector('.btn-compile') as HTMLButtonElement;
-    if (btnCompile && !btnCompile.disabled) {
+    if (this.isDirty) {
       if (!this.compile()) return;
     }
     if (this.currentAsmResult && this.currentAsmResult.errors.length > 0) {

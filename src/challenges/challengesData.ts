@@ -911,8 +911,7 @@ HLT`,
     },
     assertions: {
       expectedRegisters: {
-        ax: 15,
-        cx: 0
+        ax: 15
       },
       maxSteps: 50
     }
@@ -1102,11 +1101,6 @@ HLT`,
       ]
     },
     assertions: {
-      expectedRegisters: {
-        cx: 0,
-        si: 0x0204,
-        di: 0x0304
-      },
       expectedMemory: [
         { segment: 0x0000, offset: 0x0300, expectedBytes: [0xDE, 0xAD, 0xBE, 0xEF], label: 'Hedef [0300H]' }
       ],
@@ -1145,10 +1139,6 @@ REP STOSB
 HLT`,
     testSetup: {},
     assertions: {
-      expectedRegisters: {
-        cx: 0,
-        di: 0x0255
-      },
       expectedMemory: [
         { segment: 0x0000, offset: 0x0250, expectedBytes: [0xAA, 0xAA, 0xAA, 0xAA, 0xAA], label: 'Doldurulan Alan [0250H]' }
       ],
@@ -1697,8 +1687,7 @@ HLT`,
     testSetup: {},
     assertions: {
       expectedRegisters: {
-        ax: 0x0000,
-        cx: 0x0000
+        ax: 0x0000
       },
       maxSteps: 15
     }
@@ -1755,12 +1744,6 @@ HLT`,
       ]
     },
     assertions: {
-      expectedRegisters: {
-        ax: 0x5678,
-        cx: 0x1234,
-        di: 0x0210,
-        dx: 0x5634
-      },
       expectedMemory: [
         { segment: 0x0000, offset: 0x0200, expectedBytes: [0x78, 0x56], label: 'Bellek [0200H] (0x5678)' },
         { segment: 0x0000, offset: 0x0210, expectedBytes: [0x34, 0x12], label: 'Bellek [0210H] (0x1234)' }
@@ -1813,10 +1796,6 @@ HLT`,
       ]
     },
     assertions: {
-      expectedRegisters: {
-        ax: 37,
-        dx: 4
-      },
       expectedMemory: [
         { segment: 0x0000, offset: 0x0304, expectedBytes: [37, 0], label: 'Bölüm [0304H]' },
         { segment: 0x0000, offset: 0x0306, expectedBytes: [4, 0], label: 'Kalan [0306H]' }
@@ -1866,9 +1845,6 @@ HLT`,
       ]
     },
     assertions: {
-      expectedRegisters: {
-        ax: 60
-      },
       expectedMemory: [
         { segment: 0x0000, offset: 0x0402, expectedBytes: [60, 0], label: 'Ölçekli Değer [0402H] (60)' }
       ],
@@ -1928,10 +1904,6 @@ HLT`,
       ]
     },
     assertions: {
-      expectedRegisters: {
-        ax: 35,
-        dx: 2
-      },
       expectedMemory: [
         { segment: 0x0000, offset: 0x0510, expectedBytes: [35, 0], label: 'Toplam [0510H] (35)' },
         { segment: 0x0000, offset: 0x0512, expectedBytes: [2, 0], label: 'Adet [0512H] (2)' }
@@ -1991,9 +1963,6 @@ ADD AX, CX
 RET`,
     testSetup: {},
     assertions: {
-      expectedRegisters: {
-        ax: 25
-      },
       expectedMemory: [
         { segment: 0x0000, offset: 0x0600, expectedBytes: [25, 0], label: 'Kareler Toplamı [0600H] (25)' }
       ],
@@ -2045,9 +2014,6 @@ HLT`,
       ]
     },
     assertions: {
-      expectedRegisters: {
-        cx: 0
-      },
       expectedMemory: [
         { segment: 0x0000, offset: 0x0710, expectedBytes: [0x11 ^ 0x5A, 0x22 ^ 0x5A, 0x33 ^ 0x5A, 0x44 ^ 0x5A, 0x55 ^ 0x5A], label: 'Şifreli Blok [0710H]' }
       ],
@@ -2103,9 +2069,6 @@ HLT`,
       ]
     },
     assertions: {
-      expectedRegisters: {
-        cx: 0
-      },
       expectedMemory: [
         { segment: 0x0000, offset: 0x0820, expectedBytes: [0x23, 0x80, 0x36], label: 'Sonuç BCD [0820H]' }
       ],
@@ -2225,10 +2188,6 @@ HLT`,
       ]
     },
     assertions: {
-      expectedRegisters: {
-        ax: 125,
-        dx: 40
-      },
       expectedMemory: [
         { segment: 0x0000, offset: 0x1020, expectedBytes: [125, 0], label: 'Toplam [1020H] (125)' },
         { segment: 0x0000, offset: 0x1022, expectedBytes: [40, 0], label: 'Maksimum [1022H] (40)' }
@@ -2293,9 +2252,6 @@ HLT`,
       ]
     },
     assertions: {
-      expectedRegisters: {
-        cx: 0
-      },
       expectedFlags: {
         cf: 1
       },
