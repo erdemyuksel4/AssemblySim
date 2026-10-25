@@ -130,6 +130,23 @@ export class ChallengeRunner {
       }
     }
 
+    // Evaluate I/O Ports
+    if (assertions.expectedPorts) {
+      for (const [portStr, expVal] of Object.entries(assertions.expectedPorts)) {
+        const portNum = Number(portStr) & 0xFFFF;
+        const actVal = sandboxCpu.io.readByte(portNum);
+        const passed = (actVal & 0xFF) === (expVal & 0xFF);
+        const fmtHex = (n: number) => n.toString(16).toUpperCase().padStart(2, '0') + 'h (' + n + ')';
+        diffs.push({
+          target: `I/O Port [${portNum.toString(16).toUpperCase().padStart(2, '0')}h]`,
+          expected: fmtHex(expVal & 0xFF),
+          actual: fmtHex(actVal & 0xFF),
+          passed,
+          message: passed ? undefined : `Port ${portNum.toString(16).toUpperCase()}h değeri beklenen bayt ile uyuşmuyor.`
+        });
+      }
+    }
+
     // Evaluate Console Output
     if (assertions.expectedConsole) {
       const actualConsole = sandboxCpu.consoleBuffer;
@@ -181,6 +198,13 @@ export class ChallengeRunner {
     // Set initial flags (after loadCOM)
     if (setup.initialFlags) {
       this.applyFlagExpectations(cpu, setup.initialFlags);
+    }
+
+    // Set initial I/O ports (after loadCOM)
+    if (setup.initialPorts) {
+      for (const [portStr, val] of Object.entries(setup.initialPorts)) {
+        cpu.io.writeByte(Number(portStr) & 0xFFFF, val & 0xFF);
+      }
     }
 
     // Feed simulated input queue (after loadCOM)

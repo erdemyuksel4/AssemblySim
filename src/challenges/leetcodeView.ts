@@ -197,11 +197,11 @@ export class LeetCodeView {
                 </div>
 
                 <div class="card-scenario">
-                  <strong>Senaryo:</strong> ${this.escapeHtml(ch.scenario)}
+                  <strong>Senaryo:</strong><br/>${this.escapeHtml(ch.scenario).replace(/\n/g, '<br/>')}
                 </div>
 
                 <div class="card-task">
-                  <strong>Görev:</strong> ${this.escapeHtml(ch.task)}
+                  <strong>Görev:</strong><br/>${this.escapeHtml(ch.task).replace(/\n/g, '<br/>')}
                 </div>
 
                 <div class="card-actions">
@@ -390,7 +390,7 @@ export class LeetCodeView {
               <div class="challenge-hints-box">
                 <strong>💡 İpuçları:</strong>
                 <ul>
-                  ${challenge.hints.map(h => `<li>${this.escapeHtml(h)}</li>`).join('')}
+                  ${challenge.hints.map(h => `<li>${this.escapeHtml(h).replace(/\n/g, '<br/>')}</li>`).join('')}
                 </ul>
               </div>
             ` : ''}

@@ -301,7 +301,7 @@ export class LectureDocumentView {
                   </div>
 
                   <h3 class="capstone-title">${this.escapeHtml(capstone.title)}</h3>
-                  <p class="capstone-desc">${this.escapeHtml(capstone.scenario)}</p>
+                  <p class="capstone-desc">${this.escapeHtml(capstone.scenario).replace(/\n/g, '<br/>')}</p>
 
                   <div class="capstone-task-box">
                     <div class="capstone-task-title">🎯 Sınav Görevi:</div>

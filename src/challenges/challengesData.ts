@@ -61,7 +61,7 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
         id: 'topic-capstone-m2',
         title: '🎯 Aşama 1-2 Kapsayıcı Sentez Görevi',
         opcodes: ['MOV', 'XCHG', 'LEA'],
-        description: 'Aşama 1 (14 Yazmaç, 20-Bit Adres Hesabı, Little-Endian) ve Aşama 2 (MOV, XCHG, LEA, 7 Adresleme Modu) konularını harmanlayan pratik LeetCode sınavı.',
+        description: 'İndeksli bellek adresleme ([BX] ve [BX + SI]) kullanarak bellekteki iki 16-bitlik sayının (1234h ve 5678h) yerlerini birbiriyle değiştirme (Swap) görevi.',
         challengeIds: ['ch-capstone-stage2']
       }
     ]
@@ -96,8 +96,8 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
       {
         id: 'topic-capstone-m3',
         title: '🎯 Aşama 1-3 Kapsayıcı Sentez Görevi',
-        opcodes: ['MOV', 'ADD', 'DIV', 'LEA'],
-        description: 'Aşama 1-2 (Bellek Tabanlı İndeksleme) ile Aşama 3 (Aritmetik, Bölme/Kalan, Bayraklar) konularını birleştiren sensör kalibrasyon sınavı.',
+        opcodes: ['MOV', 'ADD', 'DIV'],
+        description: 'Bellekteki iki 16-bitlik puanı (250 + 50 = 300) toplayıp 8\'e bölerek bölüm (37) ve kalan (4) değerlerini belleğe kaydetme görevi.',
         challengeIds: ['ch-capstone-stage3']
       }
     ]
@@ -126,7 +126,7 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
         id: 'topic-capstone-m4',
         title: '🎯 Aşama 1-4 Kapsayıcı Sentez Görevi',
         opcodes: ['MOV', 'AND', 'SHR', 'MUL'],
-        description: 'Aşama 1-2 (Bellek Erişimi) + Aşama 3 (Aritmetik Çarpma) + Aşama 4 (Bit Maskeleme AND, Bit Kaydırma SHR) telemetri ayrıştırma sınavı.',
+        description: 'Tek bir bayt (0C5h) içine sıkıştırılmış iki adet 4-bitlik veriyi (Üst 4 bit: Fiyat = 12, Alt 4 bit: Adet = 5) SHR ve AND ile ayıklayıp toplam tutarı (12 × 5 = 60) hesaplama görevi.',
         challengeIds: ['ch-capstone-stage4']
       }
     ]
@@ -155,7 +155,7 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
         id: 'topic-capstone-m5',
         title: '🎯 Aşama 1-5 Kapsayıcı Sentez Görevi',
         opcodes: ['MOV', 'CMP', 'LOOP', 'ADD'],
-        description: 'Aşama 1-4 konularını Aşama 5 döngüleri (LOOP, CMP, JLE) ile birleştiren dinamik dizi filtreleme ve istatistik sınavı.',
+        description: '4 elemanlı bir sayı dizisini ([5, 20, 8, 15]) döngü ile tarayarak yalnızca 10\'dan büyük olan sayıların toplamını (35) ve adedini (2) hesaplama görevi.',
         challengeIds: ['ch-capstone-stage5']
       }
     ]
@@ -184,7 +184,7 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
         id: 'topic-capstone-m6',
         title: '🎯 Aşama 1-6 Kapsayıcı Sentez Görevi',
         opcodes: ['PUSH', 'POP', 'CALL', 'RET', 'MUL', 'ADD'],
-        description: 'Aşama 1-5 algoritmalarını Aşama 6 modüler prosedür (CALL/RET) ve yığın yazmaç korumasıyla paketleyen sınav.',
+        description: 'Ana programdaki CX sayacını yığında (PUSH/POP) koruyarak AX² + BX² (3² + 4² = 25) hesabını yapan modüler bir alt program (CALL/RET) görevi.',
         challengeIds: ['ch-capstone-stage6']
       }
     ]
@@ -213,7 +213,7 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
         id: 'topic-capstone-m7',
         title: '🎯 Aşama 1-7 Kapsayıcı Sentez Görevi',
         opcodes: ['CLD', 'LODSB', 'STOSB', 'XOR', 'LOOP'],
-        description: 'Aşama 1-6 mantığını donanımsal string akış komutları (LODSB, STOSB) ve XOR şifreleme ile harmanlayan blok dönüştürme sınavı.',
+        description: 'Bellekteki 5 harfli "METIN" kelimesini LODSB ile okuyup, XOR 20h ile küçük harfe ("metin") dönüştürerek STOSB ile hedef belleğe yazma görevi.',
         challengeIds: ['ch-capstone-stage7']
       }
     ]
@@ -234,8 +234,8 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
       {
         id: 'topic-capstone-m8',
         title: '🎯 Aşama 1-8 Kapsayıcı Sentez Görevi',
-        opcodes: ['MOV', 'ADC', 'DAA', 'LOOP', 'INC'],
-        description: 'Aşama 1-7 bellek dizisi ve döngülerini Aşama 8 paketlenmiş BCD aritmetiği (DAA, ADC) ile birleştiren çok baytlı muhasebe toplayıcısı.',
+        opcodes: ['MOV', 'ADD', 'DAA', 'LOOP', 'INC'],
+        description: 'Yazar kasa sepetindeki 3 ürünün Paketlenmiş BCD fiyatlarını (25 TL + 38 TL + 19 TL = 82 TL) döngü ve DAA onluk düzeltmesi ile toplama görevi.',
         challengeIds: ['ch-capstone-stage8']
       }
     ]
@@ -264,7 +264,7 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
         id: 'topic-capstone-m9',
         title: '🎯 Aşama 1-9 Kapsayıcı Sentez Görevi',
         opcodes: ['IN', 'OUT', 'AND', 'ADD', 'INT'],
-        description: 'Donanım portundan (IN) telemetri baytını alıp, bit maskesiyle ayrıştırıp, ASCII\'ye çevirip INT 21H ile konsola raporlayan entegre sınav.',
+        description: '20h giriş portundaki sensör verisini (85h) okuyup alt 4 bitini (5) ayıklayarak 21h çıkış portuna gönderme ve ASCII rakama çevirip INT 21h ile ekrana "DURUM: 5" yazdırma görevi.',
         challengeIds: ['ch-capstone-stage9']
       }
     ]
@@ -285,8 +285,8 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
       {
         id: 'topic-capstone-m10',
         title: '🎯 Aşama 1-10 Kapsayıcı Sentez Görevi',
-        opcodes: ['MOV', 'ADD', 'CMP', 'LOOP'],
-        description: 'Aşama 1-9 birikimini 2x döngü açma (Loop Unrolling) ve mimari optimizasyon teknikleriyle harmanlayan çift elemanlı arama sınavı.',
+        opcodes: ['MOV', 'CMP', 'SUB', 'LOOP'],
+        description: '6 elemanlı bir sayı dizisindeki En Küçük (Min = 8) ve En Büyük (Max = 60) değerleri bulup aralarındaki açıklığı (Max - Min = 52) hesaplama algoritması.',
         challengeIds: ['ch-capstone-stage10']
       }
     ]
@@ -322,8 +322,8 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
       {
         id: 'topic-capstone-m11',
         title: '🏆 Aşama 1-11 Büyük Usta Sentezi (Grand Capstone)',
-        opcodes: ['XLAT', 'JCXZ', 'LAHF', 'STC', 'LOOP', 'MOV'],
-        description: '8086 mimarisinin tüm 11 aşamasını (Donanımsal tablo çevirisi, sayaç taşma koruması, bayrak manipülasyonu ve bellek döngüleri) birleştiren nihai bitirme sınavı.',
+        opcodes: ['CLC', 'JCXZ', 'XLAT', 'LOOP', 'STC', 'MOV'],
+        description: 'JCXZ sıfır sayaç koruması, XLAT donanımsal tablo çevirisi ([2, 0, 1] → [CCh, AAh, BBh]) ve STC işlem başarı bayrağını birleştiren bitirme görevi.',
         challengeIds: ['ch-capstone-stage11']
       }
     ]
@@ -1699,29 +1699,37 @@ HLT`,
 
   'ch-capstone-stage2': {
     id: 'ch-capstone-stage2',
-    title: 'Aşama 1-2 Kapsayıcı: Sensör Veri Takası ve Little-Endian Bellek Düzenleme',
+    title: 'Aşama 1-2 Kapsayıcı: İndeksli Bellek Adresleme ile İki 16-Bit Sayıyı Takas Etme (Swap)',
     milestoneId: 'milestone-2',
     difficulty: 'Orta',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-2 Kapsayıcı Sentez',
     opcodes: ['MOV', 'XCHG', 'LEA'],
-    scenario: 'İki harici telemetri sensöründen gelen 16-bit word verileri bellekte [0200h] ve [0210h] adreslerinde Little-Endian formatında tutulmaktadır. BX=0200h, SI=0010h olarak ayarlanmıştır.',
-    task: 'Bellekteki iki sensör verisinin yerlerini takas edin (swap). Sensör 1 verisi [0200h] adresinde, Sensör 2 verisi ise taban (BX=0200h) ve indis (SI=0010h) değerlerinin işaret ettiği efektif adrestedir. Takas edilen yeni değerleri belleğe geri yazın. Son olarak birinci sensörün yüksek baytını DH yazmacına, ikinci sensörün düşük baytını ise DL yazmacına kaydederek durumu güncelleyin.',
-    starterCode: `; Görev: Aşama 1-2 Kapsayıcı Sentez
-; Sensör 1: [0200H], Sensör 2: [BX + SI]
+    scenario: `Bellekte iki farklı adreste 16-bitlik (2 baytlık word) iki sayı saklanmaktadır:
+• 1. Sayı: [0200h] adresinde 1234h (Little-Endian olarak bellekte: [0200h]=34h, [0201h]=12h)
+• 2. Sayı: [0210h] adresinde 5678h (Little-Endian olarak bellekte: [0210h]=78h, [0211h]=56h)
+Başlangıçta BX = 0200h (taban adres) ve SI = 0010h (indis) olarak hazır verilmiştir. Dolayısıyla [BX] ifadesi [0200h] adresini, [BX + SI] ifadesi ise [0210h] adresini işaret eder.`,
+    task: `Bellekteki bu iki 16-bitlik sayının yerlerini birbiriyle değiştirin (swap):
+1. [0200h] ([BX]) adresindeki 1234h değerini ve [0210h] ([BX + SI]) adresindeki 5678h değerini yazmaçlara okuyun.
+2. Değerlerin yerini değiştirerek [0200h] adresine 5678h, [0210h] adresine ise 1234h değerini geri yazın.
+3. İşlem sonunda [0200h] adresinde [78h, 56h] (5678h), [0210h] adresinde ise [34h, 12h] (1234h) bulunmalıdır. Programı HLT ile bitirin.`,
+    starterCode: `; Görev: Aşama 1-2 Kapsayıcı Sentez (Bellekteki İki 16-Bit Sayıyı Takas Etme)
+; Başlangıç: BX = 0200H, SI = 0010H
+; [0200H] ([BX])      = 1234H
+; [0210H] ([BX + SI]) = 5678H
 ORG 100H
 
-; Kodunuzu buraya yazın:
+; 1. [BX] ve [BX + SI] adreslerindeki 16-bit sayıları yazmaçlara okuyun
+; 2. Değerleri takas ederek [BX] adresine 5678H, [BX + SI] adresine 1234H yazın
 ; TODO:
 
 
 HLT
 `,
     hints: [
-      'Sensör 2 ofset adresini hesaplayıp bir yazmaca almak için LEA komutunu kullanabilirsiniz (Örn: LEA DI, [BX + SI]).',
-      'İki 16-bit veriyi yazmaçlara okuduktan sonra atomik takas için XCHG komutundan yararlanabilirsiniz.',
-      'Aşama 1 kuralı: DH ve DL yazmaçları DX\'in 8-bit bağımsız parçalarıdır.',
-      'Detaylı Adım Adım Rehber:\n1. LEA DI, [BX + SI]\n2. MOV AX, [BX] ve MOV CX, [DI]\n3. XCHG AX, CX\n4. MOV [BX], AX ve MOV [DI], CX\n5. MOV DH, AH ve MOV DL, CL'
+      '8086\'da bellekten belleğe doğrudan MOV veya XCHG yapılamaz (Örn: MOV [0200H], [0210H] geçersizdir). Önce değerleri AX, CX veya DX gibi yazmaçlara okumalısınız.',
+      'İkinci sayının adresini doğrudan [BX + SI] ile okuyabileceğiniz gibi, LEA DI, [BX + SI] komutuyla DI yazmacına yükleyip [DI] üzerinden de erişebilirsiniz.',
+      'Adım Adım Çözüm Örneği:\n1. MOV AX, [BX]        ; AX = 1234h\n2. MOV CX, [BX + SI]   ; CX = 5678h\n3. XCHG AX, CX         ; AX = 5678h, CX = 1234h\n4. MOV [BX], AX        ; [0200h] = 5678h\n5. MOV [BX + SI], CX   ; [0210h] = 1234h\n6. HLT'
     ],
     solutionCode: `ORG 100H
 LEA DI, [BX + SI]
@@ -1730,8 +1738,6 @@ MOV CX, [DI]
 XCHG AX, CX
 MOV [BX], AX
 MOV [DI], CX
-MOV DH, AH
-MOV DL, CL
 HLT`,
     testSetup: {
       initialRegisters: {
@@ -1745,8 +1751,8 @@ HLT`,
     },
     assertions: {
       expectedMemory: [
-        { segment: 0x0000, offset: 0x0200, expectedBytes: [0x78, 0x56], label: 'Bellek [0200H] (0x5678)' },
-        { segment: 0x0000, offset: 0x0210, expectedBytes: [0x34, 0x12], label: 'Bellek [0210H] (0x1234)' }
+        { segment: 0x0000, offset: 0x0200, expectedBytes: [0x78, 0x56], label: 'Bellek [0200H] (Yeni Değer: 5678h)' },
+        { segment: 0x0000, offset: 0x0210, expectedBytes: [0x34, 0x12], label: 'Bellek [0210H] (Yeni Değer: 1234h)' }
       ],
       maxSteps: 20
     }
@@ -1754,28 +1760,37 @@ HLT`,
 
   'ch-capstone-stage3': {
     id: 'ch-capstone-stage3',
-    title: 'Aşama 1-3 Kapsayıcı: Bellek Sensör Kalibrasyonu ve Bölme/Kalan Analizi',
+    title: 'Aşama 1-3 Kapsayıcı: Toplam Puan Hesaplama ve Bölüm/Kalan Analizi',
     milestoneId: 'milestone-3',
     difficulty: 'Orta',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-3 Kapsayıcı Sentez',
     opcodes: ['MOV', 'ADD', 'DIV'],
-    scenario: 'Kalibrasyon birimi, bellekte [0300h] adresindeki 16-bit ham sensör verisini (250) okuyup [0302h] adresindeki kalibrasyon ofsetini (50) ekleyecek, ardından 8\'e bölüp bölümü [0304h] adresine, kalanı ise [0306h] adresine yazacaktır.',
-    task: 'Bellekte [0300h] adresinde bulunan 16-bit ham veriyi okuyun ve [0302h] adresindeki kalibrasyon ofsetini ekleyin. Düzeltilmiş toplam değeri 8\'e bölerek tam bölümü [0304h] adresine, kalanı ise [0306h] adresine kaydedin.',
-    starterCode: `; Görev: Aşama 1-3 Kapsayıcı Sentez
-; Ham Veri: [0300H], Ofset: [0302H], Bölen: 8
+    scenario: `Bir öğrencinin ana sınav puanı ve ek ödev puanı bellekte 16-bit (2 baytlık word) olarak saklanmaktadır:
+• [0300h] adresinde Ana Puan = 250 (00FAh -> bellekte [FAh, 00h])
+• [0302h] adresinde Ek Puan  = 50  (0032h -> bellekte [32h, 00h])
+Başlangıçta BX = 0300h olarak hazır verilmiştir. Bu iki puanı toplayıp (250 + 50 = 300), toplam puanı 8 değerlendirme dilimine bölmeniz (300 ÷ 8 = Bölüm: 37, Kalan: 4) istenmektedir.`,
+    task: `1. [0300h] ([BX]) adresindeki 16-bit ana puan (250) ile [0302h] ([BX + 2]) adresindeki 16-bit ek puanı (50) AX yazmacında toplayın (Toplam = 300 / 012Ch).
+2. Toplam değeri (300), 16-bit bölme işlemi (DIV) kullanarak 8 sayısına bölün. (Not: 16-bit DIV komutu DX:AX çiftini böldüğü için bölmeden önce DX = 0 yapmayı unutmayın!)
+3. Bölme sonucunda AX'te oluşan Bölüm değerini (37 / 0025h) 16-bit word olarak [0304h] adresine, DX'te oluşan Kalan değerini (4 / 0004h) ise 16-bit word olarak [0306h] adresine kaydedin.`,
+    starterCode: `; Görev: Aşama 1-3 Kapsayıcı Sentez (Toplama ve 16-Bit Bölme/Kalan)
+; Başlangıç: BX = 0300H
+; [0300H] = 250 (Ana Puan), [0302H] = 50 (Ek Puan)
+; Beklenen: [0304H] = 37 (Bölüm), [0306H] = 4 (Kalan)
 ORG 100H
 
-; Kodunuzu buraya yazın:
+; 1. [0300H] ve [0302H] adreslerindeki 16-bit sayıları AX'te toplayın (250 + 50 = 300)
+; 2. DX = 0 yapıp toplamı 16-bitlik bir yazmaçla 8'e bölün (DIV)
+; 3. Bölümü (AX) [0304H] adresine, Kalanı (DX) [0306H] adresine yazın
 ; TODO:
 
 
 HLT
 `,
     hints: [
-      'Taban adres BX=0300h olarak ayarlanmıştır; [BX] ve [BX + 2] indekslerini kullanabilirsiniz.',
-      '16-bit bölme (DIV) yaparken işlemci bölünen sayıyı DX:AX çifti olarak kabul eder. Bu nedenle bölme öncesi DX yazmacı mutlaka 0 yapılmalıdır.',
-      'Detaylı Adım Adım Rehber:\n1. MOV AX, [BX]\n2. ADD AX, [BX + 2]\n3. MOV DX, 0 ve MOV CX, 8\n4. DIV CX (Bölüm AX, Kalan DX)\n5. MOV [BX + 4], AX ve MOV [BX + 6], DX'
+      'Taban adres BX = 0300h olarak verildiği için [BX] ile [0300h] adresine, [BX + 2] ile [0302h] adresine erişebilirsiniz.',
+      '16-bit bölme (Örn: MOV CX, 8 ardından DIV CX) işlemi DX:AX 32-bit çiftini CX\'e böler; Bölüm AX yazmacına, Kalan ise DX yazmacına yazılır.',
+      'Adım Adım Çözüm Örneği:\n1. MOV AX, [BX]        ; AX = 250\n2. ADD AX, [BX + 2]    ; AX = 250 + 50 = 300\n3. MOV DX, 0           ; 16-bit bölme öncesi DX sıfırlanır\n4. MOV CX, 8           ; Bölen = 8\n5. DIV CX              ; AX = 37 (Bölüm), DX = 4 (Kalan)\n6. MOV [BX + 4], AX    ; [0304h] = 37\n7. MOV [BX + 6], DX    ; [0306h] = 4\n8. HLT'
     ],
     solutionCode: `ORG 100H
 MOV AX, [BX]
@@ -1797,8 +1812,8 @@ HLT`,
     },
     assertions: {
       expectedMemory: [
-        { segment: 0x0000, offset: 0x0304, expectedBytes: [37, 0], label: 'Bölüm [0304H]' },
-        { segment: 0x0000, offset: 0x0306, expectedBytes: [4, 0], label: 'Kalan [0306H]' }
+        { segment: 0x0000, offset: 0x0304, expectedBytes: [37, 0], label: 'Bölüm [0304H] (37)' },
+        { segment: 0x0000, offset: 0x0306, expectedBytes: [4, 0], label: 'Kalan [0306H] (4)' }
       ],
       maxSteps: 25
     }
@@ -1806,64 +1821,88 @@ HLT`,
 
   'ch-capstone-stage4': {
     id: 'ch-capstone-stage4',
-    title: 'Aşama 1-4 Kapsayıcı: Telemetri Bit Paketi Ayrıştırıcı ve Aritmetik Ölçekleyici',
+    title: 'Aşama 1-4 Kapsayıcı: Sıkıştırılmış Bayt (Nibble) Çözümleme ve Tutar Hesaplama',
     milestoneId: 'milestone-4',
     difficulty: 'Orta',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-4 Kapsayıcı Sentez',
     opcodes: ['MOV', 'AND', 'SHR', 'MUL'],
-    scenario: '16-bit paketlenmiş bir telemetri kelimesi [0400h] adresindedir. Bu paketin yüksek baytı (High Byte, bit 8-15) baz sensör değerini (12), düşük baytının alt 4 biti (bit 0-3) çarpan katsayısını (5) içerir.',
-    task: '[0400h] adresinde saklanan 16-bit paketlenmiş telemetri kelimesini ayrıştırın: Düşük baytın alt 4 bitindeki çarpan katsayısı ile yüksek bayttaki baz sensör değerini çarpın ve nihai ölçekli değeri [0402h] adresine yazın.',
-    starterCode: `; Görev: Aşama 1-4 Kapsayıcı Sentez
-; Telemetri Paketi: [0400H], Hedef: [0402H]
+    scenario: `Bellek tasarrufu sağlamak amacıyla bir ürünün Birim Fiyatı ve Sipariş Adedi tek bir baytın (8-bit) içine iki adet 4-bitlik parça (Nibble) halinde sıkıştırılarak [0400h] adresine kaydedilmiştir:
+• [0400h] adresindeki bayt: C5h (İkili tabanda: 1100 0101b)
+  - Üst 4 Bit (Bit 4..7): Birim Fiyat = 1100b = 12 (0Ch)
+  - Alt 4 Bit (Bit 0..3): Sipariş Adedi = 0101b = 5 (05h)
+Bu iki 4-bitlik değeri bit kaydırma (SHR) ve bit maskeleme (AND) komutlarıyla birbirinden ayırıp toplam tutarı (12 × 5 = 60) hesaplamanız istenmektedir.`,
+    task: `1. [0400h] adresindeki sıkıştırılmış baytı (C5h) okuyun.
+2. Alt 4 bitteki Sipariş Adedini (5) elde etmek için 0Fh (0000 1111b) maskesiyle AND işlemi uygulayın.
+3. Üst 4 bitteki Birim Fiyatı (12) elde etmek için baytı 4 bit sağa kaydırın (SHR).
+4. Ayıkladığınız Birim Fiyat (12) ile Sipariş Adedini (5) MUL komutuyla çarpın (12 × 5 = 60 / 003Ch) ve 16-bitlik sonucu [0402h] adresine kaydedin.`,
+    starterCode: `; Görev: Aşama 1-4 Kapsayıcı Sentez (Sıkıştırılmış Bayt Çözümleme)
+; [0400H] = 0C5H (Üst 4 bit: 0CH = 12 Fiyat, Alt 4 bit: 05H = 5 Adet)
+; Beklenen: [0402H] = 12 * 5 = 60 (003CH)
 ORG 100H
 
-; Kodunuzu buraya yazın:
+; 1. [0400H] adresindeki baytı AL ve BL yazmaçlarına okuyun
+; 2. BL'nin alt 4 bitini maskeleyin (AND BL, 0FH -> BL = 5)
+; 3. AL'yi 4 bit sağa kaydırın (CL = 4, SHR AL, CL -> AL = 12)
+; 4. MUL BL ile çarpıp AX'teki 16-bit sonucu [0402H] adresine yazın
 ; TODO:
 
 
 HLT
 `,
     hints: [
-      'Alt 4 biti izole etmek için AND BL, 0FH bit maskesi uygulayabilirsiniz.',
-      '8086 mimarisinde 1 bitten fazla kaydırma yaparken adet mutlaka CL yazmacında olmalıdır (MOV CL, 8 ardından SHR AX, CL).',
-      'MUL BL işlemi AL ile BL\'yi çarpar ve 16-bit sonucu AX içine yerleştirir.',
-      'Detaylı Adım Adım Rehber:\n1. MOV AX, [0400H]\n2. MOV BX, AX\n3. AND BL, 0FH\n4. MOV CL, 8 ardından SHR AX, CL\n5. MUL BL\n6. MOV [0402H], AX'
+      'Bir baytın sadece alt 4 bitini (Bit 0..3) bırakıp üst 4 bitini sıfırlamak için AND reg, 0FH kullanılır (0C5h AND 0Fh = 05h).',
+      'Bir baytın üst 4 bitini (Bit 4..7) sağa çekerek 0..15 arası bir sayıya dönüştürmek için 4 bit sağa kaydırılır: MOV CL, 4 ardından SHR AL, CL (0C5h >> 4 = 0Ch = 12).',
+      'MUL BL komutu AL ile BL\'yi çarpar (12 × 5 = 60) ve 16-bit sonucu AX yazmacına yazar.',
+      'Adım Adım Çözüm Örneği:\n1. MOV AL, [0400H]     ; AL = C5h\n2. MOV BL, AL          ; BL = C5h\n3. AND BL, 0FH         ; BL = 05h (Adet = 5)\n4. MOV CL, 4\n5. SHR AL, CL          ; AL = 0Ch (Fiyat = 12)\n6. MUL BL              ; AX = 12 * 5 = 60 (003Ch)\n7. MOV [0402H], AX     ; [0402h] = 60\n8. HLT'
     ],
     solutionCode: `ORG 100H
-MOV AX, [0400H]
-MOV BX, AX
+MOV AL, [0400H]
+MOV BL, AL
 AND BL, 0FH
-MOV CL, 8
-SHR AX, CL
+MOV CL, 4
+SHR AL, CL
 MUL BL
 MOV [0402H], AX
 HLT`,
     testSetup: {
       initialMemory: [
-        { segment: 0x0000, offset: 0x0400, bytes: [0x05, 0x0C] } // High byte 12 (0x0C), Low byte 5 (0x05)
+        { segment: 0x0000, offset: 0x0400, bytes: [0xC5] } // High nibble: 12 (0xC), Low nibble: 5 (0x5)
       ]
     },
     assertions: {
       expectedMemory: [
-        { segment: 0x0000, offset: 0x0402, expectedBytes: [60, 0], label: 'Ölçekli Değer [0402H] (60)' }
+        { segment: 0x0000, offset: 0x0402, expectedBytes: [60, 0], label: 'Toplam Tutar [0402H] (60)' }
       ],
-      maxSteps: 20
+      maxSteps: 25
     }
   },
 
   'ch-capstone-stage5': {
     id: 'ch-capstone-stage5',
-    title: 'Aşama 1-5 Kapsayıcı: Dinamik Dizi Filtreleme ve Koşullu İstatistik Motoru',
+    title: 'Aşama 1-5 Kapsayıcı: Dizideki Eşik Değerini Aşan Sayıların Toplamı ve Adedi',
     milestoneId: 'milestone-5',
     difficulty: 'Orta',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-5 Kapsayıcı Sentez',
     opcodes: ['MOV', 'CMP', 'LOOP', 'ADD'],
-    scenario: 'Bellekte [0500h] adresinde 4 adet 16-bit tam sayı yer almaktadır. Sadece eşik değerinden (10) büyük olan sayıları toplayıp sonucu [0510h] adresine, bu şarta uyan sayı adedini ise [0512h] adresine yazmanız gerekmektedir.',
-    task: 'Bellekte [0500h] adresinden başlayan 4 elemanlı 16-bit sayı dizisini döngü ile tarayın. Eşik değerinden (10) büyük olan sayıları toplayarak sonucu [0510h] adresine, bu şarta uyan sayı adedini ise [0512h] adresine kaydedin.',
-    starterCode: `; Görev: Aşama 1-5 Kapsayıcı Sentez
-; Dizi: [0500H] (4 kelime), Eşik: 10
+    scenario: `Bellekte [0500h] adresinden başlayarak 4 adet 16-bitlik (2 baytlık word) tam sayıdan oluşan bir dizi bulunmaktadır:
+• [0500h] = 5   (0005h)
+• [0502h] = 20  (0014h)  --> 10'dan büyük!
+• [0504h] = 8   (0008h)
+• [0506h] = 15  (000Fh)  --> 10'dan büyük!
+Bu diziyi döngü ile tarayarak sadece eşik değeri olan 10'dan büyük (> 10) sayıları seçmeniz, bu sayıların toplamını (20 + 15 = 35) ve kaç adet olduklarını (2 adet) belleğe kaydetmeniz istenmektedir.`,
+    task: `1. [0500h] adresinden başlayan 4 elemanlı 16-bit (word) diziyi LOOP komutuyla tarayın (her eleman 2 bayt olduğu için dizi indisini her adımda 2 artırın).
+2. Her elemanı 10 sayısıyla karşılaştırın (CMP):
+   • Eğer sayı 10 veya daha küçükse (<= 10) toplama işlemine dahil etmeden sonraki elemana geçin.
+   • Eğer sayı 10'dan büyükse (> 10) toplam yazmacına ekleyin ve adet sayacını 1 artırın.
+3. Döngü bittiğinde:
+   • 10'dan büyük sayıların Toplamını (35 / 0023h) 16-bit word olarak [0510h] adresine yazın.
+   • 10'dan büyük sayıların Adedini (2 / 0002h) 16-bit word olarak [0512h] adresine yazın.`,
+    starterCode: `; Görev: Aşama 1-5 Kapsayıcı Sentez (Koşullu Dizi Filtreleme)
+; Dizi ([0500H]..[0506H]): 5, 20, 8, 15 (4 adet 16-bit word)
+; Filtre Şartı: Sayı > 10
+; Beklenen: [0510H] = 35 (20 + 15), [0512H] = 2 (Adet)
 ORG 100H
 
 ; Kodunuzu buraya yazın:
@@ -1873,10 +1912,10 @@ ORG 100H
 HLT
 `,
     hints: [
-      'Döngü sayacı için CX=4 yükleyip LOOP komutunu kullanabilirsiniz.',
-      '10 veya daha küçük sayıları atlamak için CMP BX, 10 ardından JLE ATLA koşullu atlamasını tercih edin.',
-      'Her kelime 2 bayt yer kapladığı için dizi indisini her turda 2 artırmalısınız (ADD SI, 2).',
-      'Detaylı Adım Adım Rehber:\n1. SI=0, AX=0 (toplam), DX=0 (adet), CX=4\n2. DONGU: MOV BX, [0500H + SI]\n3. CMP BX, 10 -> JLE ATLA\n4. ADD AX, BX -> INC DX\n5. ATLA: ADD SI, 2 -> LOOP DONGU\n6. MOV [0510H], AX ve MOV [0512H], DX'
+      '4 elemanlı dizi için CX = 4 ayarlayıp LOOP komutunu kullanabilirsiniz.',
+      'Her eleman 16-bit (2 bayt) olduğu için SI indisini her turda ADD SI, 2 ile ilerletin.',
+      'CMP BX, 10 yaptıktan sonra JLE ATLA (veya JBE ATLA) ile 10 ve altındaki sayıları atlayabilirsiniz.',
+      'Adım Adım Çözüm Örneği:\n1. MOV SI, 0 / MOV AX, 0 (Toplam) / MOV DX, 0 (Adet) / MOV CX, 4\n2. DONGU: MOV BX, [0500H + SI]\n3. CMP BX, 10 -> JLE ATLA\n4. ADD AX, BX -> INC DX\n5. ATLA: ADD SI, 2 -> LOOP DONGU\n6. MOV [0510H], AX ve MOV [0512H], DX\n7. HLT'
     ],
     solutionCode: `ORG 100H
 MOV SI, 0
@@ -1905,8 +1944,8 @@ HLT`,
     },
     assertions: {
       expectedMemory: [
-        { segment: 0x0000, offset: 0x0510, expectedBytes: [35, 0], label: 'Toplam [0510H] (35)' },
-        { segment: 0x0000, offset: 0x0512, expectedBytes: [2, 0], label: 'Adet [0512H] (2)' }
+        { segment: 0x0000, offset: 0x0510, expectedBytes: [35, 0], label: 'Filtrelenen Toplam [0510H] (35)' },
+        { segment: 0x0000, offset: 0x0512, expectedBytes: [2, 0], label: 'Filtrelenen Adet [0512H] (2)' }
       ],
       maxSteps: 50
     }
@@ -1914,86 +1953,110 @@ HLT`,
 
   'ch-capstone-stage6': {
     id: 'ch-capstone-stage6',
-    title: 'Aşama 1-6 Kapsayıcı: Modüler Yığın Çerçevesi ve Güvenli Prosedür Çağrımı',
+    title: 'Aşama 1-6 Kapsayıcı: Alt Program (CALL/RET) ve Yığın Koruması ile Kareler Toplamı (a² + b²)',
     milestoneId: 'milestone-6',
     difficulty: 'Orta',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-6 Kapsayıcı Sentez',
     opcodes: ['PUSH', 'POP', 'CALL', 'RET', 'MUL', 'ADD'],
-    scenario: 'Profesyonel bir matematik alt yordamı (HESAPLA), çağrılmadan önce AX ve BX register\'larındaki sayıların karesini alıp toplamını hesaplamalı, içeride kullandığı yazmaçları yığında saklayıp geri yüklemelidir.',
-    task: 'AX ve BX yazmaçlarındaki sayıların karelerinin toplamını (AX² + BX²) hesaplayıp sonucu [0600h] adresine kaydeden modüler bir HESAPLA altprogramı yazın ve ana programdan çağırın.',
-    starterCode: `; Görev: Aşama 1-6 Kapsayıcı Sentez
+    scenario: `Bir dik üçgen hesaplamasında kullanılan a² + b² (kareler toplamı) işlemini yerine getiren HESAPLA isimli bir alt program (prosedür) yazmanız istenmektedir:
+• Başlangıçta AX = 3 (a kenarı), BX = 4 (b kenarı) ve CX = 0099h (ana programa ait korunması gereken veri) olarak verilmiştir.
+• HESAPLA alt programı AX² + BX² = 3² + 4² = 9 + 16 = 25 (0019h) değerini hesaplamalı, içeride CX yazmacını geçici olarak kullanırsa yığında (PUSH CX / POP CX) koruyarak CX = 0099h değerinin bozulmamasını sağlamalıdır.`,
+    task: `1. Ana programda CALL HESAPLA komutu ile alt programı çağırın.
+2. HESAPLA alt programı içinde:
+   • Eğer CX (veya diğer yazmaçları) geçici olarak kullanacaksanız PUSH ile yığına kaydedip RET öncesinde POP ile geri yükleyin (CX = 0099h kalmalıdır).
+   • AX (3) ve BX (4) değerlerinin karelerini alıp toplayarak (3² + 4² = 25) sonucu AX yazmacında ana programa döndürün (RET).
+3. Alt programdan döndükten sonra AX içindeki sonucu (25 / 0019h) 16-bit word olarak [0600h] bellek adresine yazın ve HLT ile durun.`,
+    starterCode: `; Görev: Aşama 1-6 Kapsayıcı Sentez (Prosedür ve Yığın Koruması)
+; Başlangıç: AX = 3, BX = 4, CX = 0099H (CX değeri bozulmamalıdır!)
+; Beklenen: [0600H] = 25 (3^2 + 4^2 = 9 + 16), CX = 0099H
 ORG 100H
 
-MOV AX, 3
-MOV BX, 4
-
-; Altprogramı çağırıp sonucu [0600H]'ye kaydedin:
+; Ana Program: HESAPLA alt programını çağırın ve dönen AX sonucunu [0600H] adresine yazın
 ; TODO:
 
 
 HLT
 
 HESAPLA:
-; Prosedür gövdesi:
+; Alt Program Gövdesi:
+; CX'i yığında koruyarak AX^2 + BX^2 hesaplayın ve sonucu AX'te bırakıp RET ile dönün
 ; TODO:
 
 
 RET
 `,
     hints: [
-      'Altprogram çağırmak için CALL HESAPLA, altprogramdan dönmek için RET komutunu kullanın.',
-      'Altprogram içinde kullanılan yazmaçları korumak veya parametre takası yapmak için PUSH ve POP yığın komutlarından yararlanın.',
-      'Detaylı Adım Adım Rehber:\n- Ana Program: MOV AX, 3 -> MOV BX, 4 -> CALL HESAPLA -> MOV [0600H], AX -> HLT\n- HESAPLA Yordamı: PUSH BX -> MUL AL -> MOV CX, AX -> POP AX -> MUL AL -> ADD AX, CX -> RET'
+      'Alt program içinde CX yazmacını ara toplam için kullanmadan önce PUSH CX yapıp, RET komutundan hemen önce POP CX yaparsanız ana programın CX = 0099h değeri korunmuş olur.',
+      'AL = 3 iken MUL AL komutu AX = 3 * 3 = 9 yapar. Benzer şekilde AL = 4 iken MUL AL komutu AX = 4 * 4 = 16 yapar.',
+      'Adım Adım Çözüm Örneği:\nAna Program:\n  CALL HESAPLA\n  MOV [0600H], AX\n  HLT\nHESAPLA:\n  PUSH CX          ; Ana programın CX değerini koru\n  MUL AL           ; AX = 3 * 3 = 9\n  MOV CX, AX       ; CX = 9 (ara toplam)\n  MOV AX, BX       ; AX = 4\n  MUL AL           ; AX = 4 * 4 = 16\n  ADD AX, CX       ; AX = 16 + 9 = 25\n  POP CX           ; CX = 0099h geri yükle\n  RET'
     ],
     solutionCode: `ORG 100H
-MOV AX, 3
-MOV BX, 4
 CALL HESAPLA
 MOV [0600H], AX
 HLT
 
 HESAPLA:
-PUSH BX
+PUSH CX
 MUL AL
 MOV CX, AX
-POP AX
+MOV AX, BX
 MUL AL
 ADD AX, CX
+POP CX
 RET`,
-    testSetup: {},
+    testSetup: {
+      initialRegisters: {
+        ax: 3,
+        bx: 4,
+        cx: 0x0099
+      }
+    },
     assertions: {
+      expectedRegisters: {
+        cx: 0x0099
+      },
       expectedMemory: [
         { segment: 0x0000, offset: 0x0600, expectedBytes: [25, 0], label: 'Kareler Toplamı [0600H] (25)' }
       ],
-      maxSteps: 30
+      maxSteps: 35
     }
   },
 
   'ch-capstone-stage7': {
     id: 'ch-capstone-stage7',
-    title: 'Aşama 1-7 Kapsayıcı: Donanımsal Blok Şifreleme ve String Tarama Motoru',
+    title: 'Aşama 1-7 Kapsayıcı: String Komutları (LODSB / STOSB) ile Büyük Harfi Küçük Harfe Dönüştürme',
     milestoneId: 'milestone-7',
     difficulty: 'Orta',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-7 Kapsayıcı Sentez',
     opcodes: ['CLD', 'LODSB', 'STOSB', 'XOR', 'LOOP'],
-    scenario: 'Bellekte [0700h] adresinde bulunan 5 baytlık ham veri bloğu, donanımsal string komutları (LODSB, STOSB) kullanılarak 5Ah anahtarıyla XOR şifrelemeden geçirilecek ve [0710h] adresine yazılacaktır.',
-    task: '[0700h] adresinde bulunan 5 baytlık veri bloğunu donanımsal string komutlarını kullanarak 5Ah anahtarıyla XOR şifrelemeden geçirin ve [0710h] adresine yazın.',
-    starterCode: `; Görev: Aşama 1-7 Kapsayıcı Sentez
-; Kaynak: [0700H], Hedef: [0710H], Boyut: 5 bayt, Anahtar: 5AH
+    scenario: `Bellekte [0700h] adresinde 5 karakterlik büyük harfli "METIN" kelimesi (ASCII baytları: 4Dh, 45h, 54h, 49h, 4Eh) bulunmaktadır.
+ASCII tablosunda büyük harfler ile küçük harfler arasında yalnızca 5. bit (20h = 32) farkı vardır (Örn: 'M' = 4Dh, 'm' = 6Dh).
+Donanımsal string okuma (LODSB) ve yazma (STOSB) komutlarını kullanarak [0700h] adresindeki "METIN" kelimesini karakter karakter okuyup, her karakteri 20h ile XOR'layarak küçük harfli "metin" (6Dh, 65h, 74h, 69h, 6Eh) haline getirmeniz ve [0710h] adresine yazmanız istenmektedir.`,
+    task: `1. String komutlarının adresleri ileri yönde (+1) artırması için CLD komutunu çalıştırın.
+2. Kaynak indeks yazmacına SI = 0700h, hedef indeks yazmacına DI = 0710h ve döngü sayacına CX = 5 yükleyin.
+3. 5 adımlık bir döngü (LOOP) içinde:
+   • LODSB komutu ile [SI] adresindeki ASCII karakteri AL'ye okuyun (SI otomatik 1 artar).
+   • XOR AL, 20h (veya OR AL, 20h) komutu ile karakteri küçük harfe dönüştürün.
+   • STOSB komutu ile dönüştürülen karakteri [DI] hedef adresine yazın (DI otomatik 1 artar).
+4. İşlem sonunda [0710h..0714h] adreslerinde "metin" (6Dh, 65h, 74h, 69h, 6Eh) yer almalıdır.`,
+    starterCode: `; Görev: Aşama 1-7 Kapsayıcı Sentez (LODSB / STOSB ile "METIN" -> "metin")
+; Kaynak [0700H]: "METIN" (4DH, 45H, 54H, 49H, 4EH)
+; Hedef  [0710H]: "metin" (6DH, 65H, 74H, 69H, 6EH)
 ORG 100H
 
-; Kodunuzu buraya yazın:
+; 1. CLD ile yön bayrağını temizleyin, SI=0700H, DI=0710H, CX=5 ayarlayın
+; 2. Döngü içinde: LODSB -> XOR AL, 20H -> STOSB -> LOOP
 ; TODO:
 
 
 HLT
 `,
     hints: [
-      'String komutlarının SI ve DI yazmaçlarını ileri yönde otomatik artırması için önce CLD yönergesini çalıştırın.',
-      'LODSB komutu [SI] adresinden okuyup SI\'yi artırır; STOSB komutu AL\'yi [DI] adresine yazıp DI\'yi artırır.',
-      'Detaylı Adım Adım Rehber:\n1. CLD\n2. MOV SI, 0700H, MOV DI, 0710H, MOV CX, 5\n3. SIFRELE: LODSB -> XOR AL, 5AH -> STOSB -> LOOP SIFRELE\n4. HLT'
+      'CLD komutu Direction Flag (DF) bayrağını 0 yapar; böylece her LODSB ve STOSB sonrasında SI ve DI otomatik olarak 1 artar (INC SI / INC DI yazmanıza gerek kalmaz!).',
+      'LODSB komutu AL = [DS:SI] yapar; STOSB komutu ise [ES:DI] = AL yapar.',
+      'Adım Adım Çözüm Örneği:\n1. CLD\n2. MOV SI, 0700H\n3. MOV DI, 0710H\n4. MOV CX, 5\n5. DONUSTUR:\n     LODSB\n     XOR AL, 20H\n     STOSB\n     LOOP DONUSTUR\n6. HLT'
     ],
     solutionCode: `ORG 100H
 CLD
@@ -2001,21 +2064,21 @@ MOV SI, 0700H
 MOV DI, 0710H
 MOV CX, 5
 
-SIFRELE:
+DONUSTUR:
 LODSB
-XOR AL, 5AH
+XOR AL, 20H
 STOSB
-LOOP SIFRELE
+LOOP DONUSTUR
 
 HLT`,
     testSetup: {
       initialMemory: [
-        { segment: 0x0000, offset: 0x0700, bytes: [0x11, 0x22, 0x33, 0x44, 0x55] }
+        { segment: 0x0000, offset: 0x0700, bytes: [0x4D, 0x45, 0x54, 0x49, 0x4E] } // "METIN"
       ]
     },
     assertions: {
       expectedMemory: [
-        { segment: 0x0000, offset: 0x0710, expectedBytes: [0x11 ^ 0x5A, 0x22 ^ 0x5A, 0x33 ^ 0x5A, 0x44 ^ 0x5A, 0x55 ^ 0x5A], label: 'Şifreli Blok [0710H]' }
+        { segment: 0x0000, offset: 0x0710, expectedBytes: [0x6D, 0x65, 0x74, 0x69, 0x6E], label: 'Hedef Metin [0710H] ("metin")' }
       ],
       maxSteps: 40
     }
@@ -2023,90 +2086,116 @@ HLT`,
 
   'ch-capstone-stage8': {
     id: 'ch-capstone-stage8',
-    title: 'Aşama 1-8 Kapsayıcı: 3-Baytlık Paketlenmiş BCD Muhasebe Toplayıcısı',
+    title: 'Aşama 1-8 Kapsayıcı: Yazar Kasa Sepetindeki 3 BCD Fiyatı Toplama (DAA)',
     milestoneId: 'milestone-8',
-    difficulty: 'Zor',
+    difficulty: 'Orta',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-8 Kapsayıcı Sentez',
-    opcodes: ['MOV', 'ADC', 'DAA', 'LOOP', 'INC'],
-    scenario: 'Finansal bir POS terminalinde iki adet 3-baytlık (6 basamaklı) paketlenmiş BCD sayısı [0800h] ve [0810h] adreslerindedir. Sayı 1: 12 34 56 (bellekte: 56h, 34h, 12h), Sayı 2: 24 45 67 (bellekte: 67h, 45h, 24h).',
-    task: 'Bellekte [0800h] ve [0810h] adreslerinde tutulan 3-baytlık (6 basamaklı) iki paketlenmiş BCD sayısını toplayarak elde edilen BCD sonucunu [0820h] adresine yazın.',
-    starterCode: `; Görev: Aşama 1-8 Kapsayıcı Sentez
-; BCD 1: [0800H], BCD 2: [0810H], Sonuç: [0820H] (3 bayt)
+    opcodes: ['MOV', 'ADD', 'DAA', 'LOOP', 'INC'],
+    scenario: `Bir market yazar kasasında sepetteki 3 ürünün fiyatları Paketlenmiş BCD (Binary Coded Decimal) formatında bellekte [0800h], [0801h] ve [0802h] adreslerinde tutulmaktadır:
+• 1. Ürün ([0800h]): 25 TL  (BCD olarak: 25h)
+• 2. Ürün ([0801h]): 38 TL  (BCD olarak: 38h)
+• 3. Ürün ([0802h]): 19 TL  (BCD olarak: 19h)
+Normal onaltılık (ikili) toplamada 25h + 38h + 19h = 76h çıkar (yanlış!). Ancak her ADD işleminden hemen sonra DAA (Decimal Adjust after Addition) komutu kullanıldığında:
+• 25h + 38h = 5Dh --(DAA)--> 63h (63 TL)
+• 63h + 19h = 7Ch --(DAA)--> 82h (82 TL)
+elde edilir. Sepet toplamını BCD formatında (82h) hesaplayıp [0810h] adresine yazmanız istenmektedir.`,
+    task: `1. Toplamı tutacak olan AL yazmacını sıfırlayın (MOV AL, 0), dizi indisi için SI = 0800h ve ürün sayısı için CX = 3 ayarlayın.
+2. 3 adımlık bir döngü (LOOP) içinde:
+   • [SI] adresindeki BCD ürün fiyatını AL ile toplayın (ADD AL, [SI]).
+   • Toplamadan hemen sonra DAA komutunu çalıştırarak sonucu geçerli BCD (onluk) formatına düzeltin.
+   • SI adresini bir sonraki ürüne ilerletin (INC SI).
+3. Döngü sonunda AL yazmacında oluşan 82h (82 TL) BCD toplamını [0810h] bellek adresine kaydedin.`,
+    starterCode: `; Görev: Aşama 1-8 Kapsayıcı Sentez (3 Ürünlük BCD Sepet Toplamı)
+; Ürün Fiyatları: [0800H] = 25H (25 TL), [0801H] = 38H (38 TL), [0802H] = 19H (19 TL)
+; Beklenen BCD Toplam: [0810H] = 82H (25 + 38 + 19 = 82 TL)
 ORG 100H
 
-; Kodunuzu buraya yazın:
+; 1. AL = 0, SI = 0800H, CX = 3 ayarlayın
+; 2. Döngüde her ürünü AL'ye ekleyip (ADD) hemen ardından DAA çalıştırın
+; 3. Sonucu [0810H] adresine kaydedin
 ; TODO:
 
 
 HLT
 `,
     hints: [
-      'İkili toplama sonrasında onluk basamak düzeltmesi yapmak için DAA komutunu kullanın.',
-      'Önceki basamaktan gelen eldeyi kaybetmemek için toplama işlemini ADC komutuyla yapın.',
-      'INC SI komutu Carry bayrağını (CF) bozmaz, bu sayede basamaklar arası elde korunur.',
-      'Detaylı Adım Adım Rehber:\n1. SI=0, CX=3, Carry\'yi temizleyin (MOV BL, 0 / ADD BL, 0)\n2. TOPLA: MOV AL, [0800H + SI] -> ADC AL, [0810H + SI] -> DAA -> MOV [0820H + SI], AL -> INC SI -> LOOP TOPLA\n3. HLT'
+      'DAA komutu yalnızca AL yazmacı üzerinde çalışır ve kendisinden hemen önce yapılan ADD/ADC işleminin sonucunu onluk (BCD) tabana göre düzeltir.',
+      'Döngünün her adımında ADD AL, [SI] yaptıktan hemen sonra DAA komutunu çağırmalısınız (tüm sayıları toplayıp en sonda tek bir DAA yapmak yanlış sonuç verir).',
+      'Adım Adım Çözüm Örneği:\n1. MOV AL, 0\n2. MOV SI, 0800H\n3. MOV CX, 3\n4. SEPET_TOPLA:\n     ADD AL, [SI]\n     DAA\n     INC SI\n     LOOP SEPET_TOPLA\n5. MOV [0810H], AL\n6. HLT'
     ],
     solutionCode: `ORG 100H
-MOV SI, 0
+MOV AL, 0
+MOV SI, 0800H
 MOV CX, 3
-MOV BL, 0
-ADD BL, 0
 
-TOPLA_BCD:
-MOV AL, [0800H + SI]
-ADC AL, [0810H + SI]
+SEPET_TOPLA:
+ADD AL, [SI]
 DAA
-MOV [0820H + SI], AL
 INC SI
-LOOP TOPLA_BCD
+LOOP SEPET_TOPLA
 
+MOV [0810H], AL
 HLT`,
     testSetup: {
       initialMemory: [
-        { segment: 0x0000, offset: 0x0800, bytes: [0x56, 0x34, 0x12] },
-        { segment: 0x0000, offset: 0x0810, bytes: [0x67, 0x45, 0x24] }
+        { segment: 0x0000, offset: 0x0800, bytes: [0x25, 0x38, 0x19] } // 25 TL + 38 TL + 19 TL = 82 TL (0x82)
       ]
     },
     assertions: {
       expectedMemory: [
-        { segment: 0x0000, offset: 0x0820, expectedBytes: [0x23, 0x80, 0x36], label: 'Sonuç BCD [0820H]' }
+        { segment: 0x0000, offset: 0x0810, expectedBytes: [0x82], label: 'BCD Sepet Toplamı [0810H] (82h = 82 TL)' }
       ],
-      maxSteps: 40
+      maxSteps: 35
     }
   },
 
   'ch-capstone-stage9': {
     id: 'ch-capstone-stage9',
-    title: 'Aşama 1-9 Kapsayıcı: G/Ç Sensör Telemetrisi ve INT 21h Konsol Raporlama',
+    title: 'Aşama 1-9 Kapsayıcı: Donanım Portundan Sensör Okuma ve INT 21h ile Ekrana Yazdırma',
     milestoneId: 'milestone-9',
     difficulty: 'Orta',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-9 Kapsayıcı Sentez',
     opcodes: ['IN', 'OUT', 'AND', 'ADD', 'INT'],
-    scenario: 'Donanım portu 20H üzerinden gönderilen telemetri durumunu okuyacak, durum kodunu ASCII rakam karakterine dönüştürüp bellekteki mesaj şablonuna yerleştirecek ve INT 21h ile konsola raporlayacaksınız.',
-    task: '20H donanım portuna 05H durum baytını gönderin ve porttan geri okuyun. Okunan değerin alt 4 bitindeki durum kodunu ASCII rakamına çevirerek [0900h] adresindeki "DURUM:  $" mesaj şablonuna yerleştirin ve INT 21H (AH=09H) ile konsola yazdırın.',
-    starterCode: `; Görev: Aşama 1-9 Kapsayıcı Sentez
-; Port: 20H, Mesaj: [0900H]
+    scenario: `Harici bir sensör, 20h numaralı giriş portuna (Input Port) 85h (1000 0101b) durum baytını göndermiştir:
+• Bit 7 (1): Sensör aktif bayrağı (kontrol biti)
+• Alt 4 Bit (Bit 0..3 = 0101b = 5): Sensör kademe değeri (0..9 arası rakam)
+Bellekte [0900h] adresinde ise ekrana yazdırılacak olan "DURUM: ?$" metin şablonu hazır bulunmaktadır:
+• [0900h..0906h] = "DURUM: " (7 karakter)
+• [0907h]        = '?' (3Fh -> Buraya sensörün ASCII rakam karşılığı olan '5' = 35h yazılacaktır!)
+• [0908h]        = '$' (24h -> INT 21h metin sonlandırıcı karakter)
+Port 20h'tan veriyi okuyup alt 4 bitini ayıklamanız, temiz değeri (05h) 21h numaralı çıkış portuna (Output Port) göndermeniz ve ASCII rakama ('5' = 35h) çevirip [0907h] adresine yazarak INT 21h ile konsola "DURUM: 5" yazdırmanız istenmektedir.`,
+    task: `1. IN AL, 20h komutu ile 20h numaralı giriş portundaki ham sensör verisini (85h) AL yazmacına okuyun.
+2. AND AL, 0Fh komutu ile üst bitleri sıfırlayarak yalnızca alt 4 bitteki kademe sayısını (05h) bırakın.
+3. Bu ayıklanmış sayısal değeri (05h) OUT 21h, AL komutu ile 21h numaralı çıkış portuna gönderin.
+4. ADD AL, 30h komutu ile 05h sayısını ASCII '5' (35h) karakterine dönüştürün ve [0907h] adresindeki '?' karakterinin üzerine yazın (MOV [0907h], AL).
+5. DX = 0900h (metin başlangıç adresi) ve AH = 09h ayarlayıp INT 21h kesmesini çağırarak konsola "DURUM: 5" metnini yazdırın.`,
+    starterCode: `; Görev: Aşama 1-9 Kapsayıcı Sentez (Port G/Ç ve INT 21h Konsol Raporlama)
+; Başlangıç: Port [20H] = 85H (Alt 4 bit = 5)
+; Bellek [0900H..0908H] = "DURUM: ?$" ('?' karakteri [0907H] adresindedir)
 ORG 100H
 
-; Kodunuzu buraya yazın:
+; 1. Port 20H'tan AL'ye okuyun (IN AL, 20H)
+; 2. Alt 4 biti maskeleyin (AND AL, 0FH -> AL = 05H)
+; 3. Temiz değeri Port 21H'a gönderin (OUT 21H, AL)
+; 4. ASCII rakama çevirin (ADD AL, 30H -> '5') ve [0907H] adresine yazın
+; 5. DX = 0900H, AH = 09H ile INT 21H çağırarak konsola yazdırın
 ; TODO:
 
 
 HLT
 `,
     hints: [
-      'Porta veri yazmak için OUT 20H, AL; okumak için IN AL, 20H komutlarını kullanın.',
-      'Rakamı ASCII karaktere çevirmek için alt 4 biti izole edip (AND AL, 0FH) 30H ekleyin.',
-      'INT 21H servis 09H, DS:DX ile gösterilen \'$\' sonlu metni ekrana basar.',
-      'Detaylı Adım Adım Rehber:\n1. MOV AL, 05H -> OUT 20H, AL\n2. IN AL, 20H -> AND AL, 0FH -> ADD AL, 30H\n3. MOV [0907H], AL\n4. MOV DX, 0900H -> MOV AH, 09H -> INT 21H\n5. HLT'
+      'Giriş portundan okumak için IN AL, 20H; çıkış portuna yazmak için OUT 21H, AL kullanılır.',
+      '0..9 arasındaki bir sayıyı ASCII rakam karakterine (\'0\'..\'9\') dönüştürmek için 30h (\'0\' karakterinin ASCII kodu) eklenir: 05h + 30h = 35h (\'5\').',
+      'INT 21h (AH = 09h) fonksiyonu, DS:DX adresinden başlayarak \'$\' (24h) karakterini görene kadar tüm karakterleri konsola basar.',
+      'Adım Adım Çözüm Örneği:\n1. IN AL, 20H\n2. AND AL, 0FH\n3. OUT 21H, AL\n4. ADD AL, 30H\n5. MOV [0907H], AL\n6. MOV DX, 0900H\n7. MOV AH, 09H\n8. INT 21H\n9. HLT'
     ],
     solutionCode: `ORG 100H
-MOV AL, 05H
-OUT 20H, AL
 IN AL, 20H
 AND AL, 0FH
+OUT 21H, AL
 ADD AL, 30H
 MOV [0907H], AL
 MOV DX, 0900H
@@ -2114,13 +2203,19 @@ MOV AH, 09H
 INT 21H
 HLT`,
     testSetup: {
+      initialPorts: {
+        0x20: 0x85
+      },
       initialMemory: [
-        { segment: 0x0000, offset: 0x0900, bytes: [0x44, 0x55, 0x52, 0x55, 0x4D, 0x3A, 0x20, 0x20, 0x24] }
+        { segment: 0x0000, offset: 0x0900, bytes: [0x44, 0x55, 0x52, 0x55, 0x4D, 0x3A, 0x20, 0x3F, 0x24] } // "DURUM: ?$"
       ]
     },
     assertions: {
+      expectedPorts: {
+        0x21: 0x05
+      },
       expectedMemory: [
-        { segment: 0x0000, offset: 0x0907, expectedBytes: [0x35], label: 'ASCII Değer [0907H] (\'5\')' }
+        { segment: 0x0000, offset: 0x0907, expectedBytes: [0x35], label: 'Mesaj İçi ASCII Rakam [0907H] (\'5\' = 35h)' }
       ],
       expectedConsole: {
         contains: 'DURUM: 5'
@@ -2131,16 +2226,31 @@ HLT`,
 
   'ch-capstone-stage10': {
     id: 'ch-capstone-stage10',
-    title: 'Aşama 1-10 Kapsayıcı: Pipeline Dostu 2x Döngü Açma ve Çift Elemanlı Dizi Arama',
+    title: 'Aşama 1-10 Kapsayıcı: Dizideki En Küçük (Min), En Büyük (Max) ve Açıklık (Max - Min) Hesabı',
     milestoneId: 'milestone-10',
     difficulty: 'Zor',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-10 Kapsayıcı Sentez',
-    opcodes: ['MOV', 'ADD', 'CMP', 'LOOP'],
-    scenario: 'Aşama 10\'da öğrendiğimiz döngü açma (Loop Unrolling) tekniğini uygulayarak, 6 elemanlı bir 16-bit tam sayı dizisinde çift elemanları aynı iterasyonda işleyip (2x unrolling) toplamı ve en büyük sayıyı bulun.',
-    task: 'Bellekte [1000h] adresindeki 6 elemanlı 16-bit tam sayı dizisini 2x döngü açma (Loop Unrolling) yöntemiyle tarayın (her iterasyonda 2 eleman işleyin). Sayıların toplamını [1020h] adresine, en büyük sayıyı ise [1022h] adresine kaydedin.',
-    starterCode: `; Görev: Aşama 1-10 Kapsayıcı Sentez
-; Dizi: [1000H] (6 kelime), 2x Loop Unrolling (CX=3 iterasyon)
+    opcodes: ['MOV', 'CMP', 'SUB', 'LOOP'],
+    scenario: `Bellekte [1000h] adresinden başlayarak 6 elemanlı bir 16-bit (2 baytlık word) tam sayı dizisi bulunmaktadır:
+• Dizi Elemanları: [15, 42, 8, 60, 23, 12]
+  ([1000h]=15, [1002h]=42, [1004h]=8, [1006h]=60, [1008h]=23, [100Ah]=12)
+Veri analizi algoritması kapsamında bu diziyi tarayarak:
+• Dizideki En Küçük Sayıyı (Min = 8)
+• Dizideki En Büyük Sayıyı (Max = 60)
+• En büyük ile en küçük sayı arasındaki farkı / açıklığı (Range = Max - Min = 60 - 8 = 52)
+bulup bellekteki hedef adreslere kaydetmeniz istenmektedir.`,
+    task: `1. [1000h] adresinden başlayan 6 elemanlı 16-bit (word) diziyi döngü ile tarayın. (İpucu: İlk eleman olan [1000h] = 15 değerini başlangıçta hem Min hem de Max kabul edip kalan 5 elemanı döngüyle karşılaştırabilirsiniz.)
+2. Tarama sonucunda bulduğunuz:
+   • En Küçük (Min) değeri (8 / 0008h) 16-bit word olarak [1020h] adresine yazın.
+   • En Büyük (Max) değeri (60 / 003Ch) 16-bit word olarak [1022h] adresine yazın.
+   • Açıklık (Max - Min) değerini (60 - 8 = 52 / 0034h) 16-bit word olarak [1024h] adresine yazın.`,
+    starterCode: `; Görev: Aşama 1-10 Kapsayıcı Sentez (Min, Max ve Max-Min Açıklık Algoritması)
+; Dizi ([1000H]..[100AH]): 15, 42, 8, 60, 23, 12 (6 adet 16-bit word)
+; Beklenen:
+;   [1020H] = 8  (Min)
+;   [1022H] = 60 (Max)
+;   [1024H] = 52 (Max - Min = 60 - 8)
 ORG 100H
 
 ; Kodunuzu buraya yazın:
@@ -2150,47 +2260,46 @@ ORG 100H
 HLT
 `,
     hints: [
-      '6 eleman 2\'şerli işlendiğinde döngü 3 kez döner (CX=3) ve her turda SI indisi 4 bayt artırılır (ADD SI, 4).',
-      'Aynı iterasyon içinde iki komut ile iki kelimeyi birden yükleyin: MOV BX, [1000H + SI] ve MOV BP, [1000H + SI + 2].',
-      'Detaylı Adım Adım Rehber:\n1. SI=0, AX=0 (toplam), DX=0 (max), CX=3\n2. DONGU: İki sayıyı oku, AX\'e ekle, DX ile karşılaştırıp büyüğü güncelle\n3. ADD SI, 4 -> LOOP DONGU\n4. MOV [1020H], AX ve MOV [1022H], DX\n5. HLT'
+      'Dizinin ilk elemanını ([1000h] = 15) başlangıçta hem Min (AX) hem de Max (DX) yazmacına yükleyebilirsiniz. Böylece kalan 5 eleman için CX = 5 ve SI = 2 ile döngüyü başlatabilirsiniz.',
+      'Her adımda okunan elemanı (BX) önce AX (Min) ile karşılaştırın: eğer BX < AX ise AX = BX yapın. Ardından DX (Max) ile karşılaştırın: eğer BX > DX ise DX = BX yapın.',
+      'Adım Adım Çözüm Örneği:\n1. MOV AX, [1000H] (Min) / MOV DX, AX (Max)\n2. MOV SI, 2 / MOV CX, 5\n3. DONGU:\n     MOV BX, [1000H + SI]\n     CMP BX, AX -> JAE KONTROL_MAX -> MOV AX, BX\n   KONTROL_MAX:\n     CMP BX, DX -> JBE SONRAKI -> MOV DX, BX\n   SONRAKI:\n     ADD SI, 2 -> LOOP DONGU\n4. MOV [1020H], AX (Min) ve MOV [1022H], DX (Max)\n5. SUB DX, AX -> MOV [1024H], DX (Max - Min)\n6. HLT'
     ],
     solutionCode: `ORG 100H
-MOV SI, 0
-MOV AX, 0
-MOV DX, 0
-MOV CX, 3
+MOV AX, [1000H]
+MOV DX, AX
+MOV SI, 2
+MOV CX, 5
 
 DONGU:
 MOV BX, [1000H + SI]
-MOV BP, [1000H + SI + 2]
-ADD AX, BX
-ADD AX, BP
+CMP BX, AX
+JAE KONTROL_MAX
+MOV AX, BX
 
+KONTROL_MAX:
 CMP BX, DX
-JLE S1
+JBE SONRAKI
 MOV DX, BX
 
-S1:
-CMP BP, DX
-JLE S2
-MOV DX, BP
-
-S2:
-ADD SI, 4
+SONRAKI:
+ADD SI, 2
 LOOP DONGU
 
 MOV [1020H], AX
 MOV [1022H], DX
+SUB DX, AX
+MOV [1024H], DX
 HLT`,
     testSetup: {
       initialMemory: [
-        { segment: 0x0000, offset: 0x1000, bytes: [10, 0, 25, 0, 5, 0, 40, 0, 15, 0, 30, 0] }
+        { segment: 0x0000, offset: 0x1000, bytes: [15, 0, 42, 0, 8, 0, 60, 0, 23, 0, 12, 0] } // 15, 42, 8, 60, 23, 12
       ]
     },
     assertions: {
       expectedMemory: [
-        { segment: 0x0000, offset: 0x1020, expectedBytes: [125, 0], label: 'Toplam [1020H] (125)' },
-        { segment: 0x0000, offset: 0x1022, expectedBytes: [40, 0], label: 'Maksimum [1022H] (40)' }
+        { segment: 0x0000, offset: 0x1020, expectedBytes: [8, 0], label: 'En Küçük (Min) [1020H] (8)' },
+        { segment: 0x0000, offset: 0x1022, expectedBytes: [60, 0], label: 'En Büyük (Max) [1022H] (60)' },
+        { segment: 0x0000, offset: 0x1024, expectedBytes: [52, 0], label: 'Açıklık (Max - Min) [1024H] (52)' }
       ],
       maxSteps: 60
     }
@@ -2198,19 +2307,37 @@ HLT`,
 
   'ch-capstone-stage11': {
     id: 'ch-capstone-stage11',
-    title: 'Aşama 1-11 Büyük Usta Sentezi (Grand Capstone): Güvenli XLAT Kripto Çevirici ve Sistem Bayrak Koruyucusu',
+    title: 'Aşama 1-11 Büyük Usta Sentezi (Grand Capstone): Güvenli XLAT Tablo Çevirici ve Durum Bayrağı',
     milestoneId: 'milestone-11',
     difficulty: 'Zor',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-11 Tüm Müfredat Grand Capstone',
-    opcodes: ['XLAT', 'JCXZ', 'LAHF', 'STC', 'LOOP', 'MOV'],
-    scenario: '8086 mimarisinin tüm 11 aşamasını birleştiren nihai sınav! CX ile belirtilen uzunluktaki şifreli veri dizisini JCXZ ile sıfır sayaç taşmasına karşı koruyacak, bayrak durumunu LAHF ile yedekleyecek, XLAT donanımsal arama tablosu ile dönüştürüp hedef belleğe yazacak ve işlemi başarıyla bitirince STC ile Carry bayrağını 1 yapacaksınız.',
-    task: 'CX yazmacında uzunluğu verilen şifreli veri dizisini [1150h] adresindeki XLAT donanımsal arama tablosunu kullanarak dönüştürün ve [1120h] adresine kaydedin. CX=0 olduğunda döngüye girmeden güvenli çıkış yapın, işlem öncesinde bayrakları saklayın ve işlem başarıyla bittiğinde Carry bayrağını 1 yapın.',
+    opcodes: ['CLC', 'JCXZ', 'XLAT', 'LOOP', 'STC', 'MOV'],
+    scenario: `Bir donanım sürücüsü, [1100h] adresindeki ham indeks dizisini [1150h] adresindeki donanımsal arama tablosunu (Lookup Table / XLAT) kullanarak dönüştürmekte ve sonuçları [1120h] adresine yazmaktadır:
+• Kaynak İndeks Dizisi ([1100h..1102h], 3 bayt): [2, 0, 1]
+• XLAT Dönüşüm Tablosu ([1150h..1152h], 3 bayt):
+  - Tablo[0] ([1150h]) = 0AAh
+  - Tablo[1] ([1151h]) = 0BBh
+  - Tablo[2] ([1152h]) = 0CCh
+• Dolayısıyla [2, 0, 1] indeksleri XLAT ile çevrildiğinde hedef dizi [1120h..1122h] içinde sırasıyla [0CCh, 0AAh, 0BBh] oluşmalıdır.
+• Ayrıca sürücü; başlangıçta Carry bayrağını sıfırlamalı (CLC), eğer eleman sayısı CX = 0 ise döngü taşmasını önlemek için JCXZ ile doğrudan çıkışa atlamalı, çevrim başarıyla tamamlandığında ise STC ile Carry bayrağını 1 (CF = 1) yapmalıdır.`,
+    task: `1. Önce CLC ile Carry bayrağını temizleyin (CF = 0) ve JCXZ BITIR komutu ile CX = 0 olma durumuna karşı güvenlik kontrolü koyun (Başlangıçta CX = 3 verilmiştir).
+2. XLAT komutunun kullanacağı tablo başlangıç adresini BX = 1150h olarak, dizi indisini ise SI = 0 olarak yükleyin.
+3. CX (3) kez dönen bir döngü (LOOP) içinde:
+   • [1100h + SI] adresindeki indeks baytını AL yazmacına okuyun.
+   • XLAT komutunu çalıştırarak AL'deki indeksi tablodaki karşılığına (AL = [BX + AL]) dönüştürün.
+   • Dönüştürülmüş AL baytını [1120h + SI] hedef adresine yazın ve SI'yi 1 artırın (INC SI).
+4. Döngü bittikten sonra işlemin başarıyla tamamlandığını belirtmek için STC komutu ile Carry bayrağını 1 yapın (CF = 1) ve BITIR: HLT ile programı sonlandırın.`,
     starterCode: `; Görev: Aşama 1-11 Büyük Usta Sentezi (Grand Capstone)
-; Şifreli: [1100H], XLAT Tablosu: [1150H], Hedef: [1120H], Uzunluk: CX
+; Kaynak İndeksler [1100H]: 2, 0, 1 (Uzunluk: CX = 3)
+; XLAT Tablosu     [1150H]: 0AAH (indis 0), 0BBH (indis 1), 0CCH (indis 2)
+; Beklenen Hedef   [1120H]: 0CCH, 0AAH, 0BBH ve CF = 1
 ORG 100H
 
-; Kodunuzu buraya yazın:
+; 1. CLC ve JCXZ BITIR ile sıfır sayaç güvenliğini kurun
+; 2. BX = 1150H (tablo adresi) ve SI = 0 ayarlayın
+; 3. Döngüde [1100H + SI] baytını AL'ye okuyup XLAT ile çevirin ve [1120H + SI] adresine yazın
+; 4. Döngü sonunda STC ile CF = 1 yapın
 ; TODO:
 
 
@@ -2218,16 +2345,13 @@ BITIR:
 HLT
 `,
     hints: [
-      'CX=0 iken LOOP\'un 65535 kez dönmesini engellemek için en başta JCXZ BITIR güvenlik kontrolü yapın.',
-      'Bayrak durumunu AH yazmacına kopyalamak için LAHF komutunu kullanın.',
-      'XLAT komutu AL = [BX + AL] donanımsal çevrimini yapar. Taban adres için BX=1150H yükleyin.',
-      'Carry bayrağını 1 yapmak için STC komutundan yararlanın.',
-      'Detaylı Adım Adım Rehber:\n1. JCXZ BITIR\n2. LAHF -> MOV DH, AH\n3. BX=1150H, SI=0\n4. CEVIR: MOV AL, [1100H + SI] -> XLAT -> MOV [1120H + SI], AL -> INC SI -> LOOP CEVIR\n5. STC\n6. BITIR: HLT'
+      'JCXZ BITIR komutu, eğer CX == 0 ise döngüye hiç girmeden BITIR etiketine atlar; böylece LOOP komutunun CX\'i 1 azaltıp FFFFh (65535) kez dönmesi engellenir.',
+      'XLAT komutu tek başına yazılır (operand almaz): BX tablo başlangıç adresini (1150h), AL ise tablodaki sıra numarasını (indisi) tutarken XLAT çalıştırıldığında AL = [BX + AL] olur.',
+      'Adım Adım Çözüm Örneği:\n1. CLC\n2. JCXZ BITIR\n3. MOV BX, 1150H\n4. MOV SI, 0\n5. CEVIR:\n     MOV AL, [1100H + SI]\n     XLAT\n     MOV [1120H + SI], AL\n     INC SI\n     LOOP CEVIR\n6. STC\n7. BITIR: HLT'
     ],
     solutionCode: `ORG 100H
+CLC
 JCXZ BITIR
-LAHF
-MOV DH, AH
 MOV BX, 1150H
 MOV SI, 0
 
@@ -2247,8 +2371,8 @@ HLT`,
         cx: 3
       },
       initialMemory: [
-        { segment: 0x0000, offset: 0x1100, bytes: [2, 0, 1] }, // İndeksler
-        { segment: 0x0000, offset: 0x1150, bytes: [0xAA, 0xBB, 0xCC] } // 0->AA, 1->BB, 2->CC
+        { segment: 0x0000, offset: 0x1100, bytes: [2, 0, 1] }, // İndeksler: 2, 0, 1
+        { segment: 0x0000, offset: 0x1150, bytes: [0xAA, 0xBB, 0xCC] } // Tablo: 0->AAh, 1->BBh, 2->CCh
       ]
     },
     assertions: {
@@ -2256,7 +2380,7 @@ HLT`,
         cf: 1
       },
       expectedMemory: [
-        { segment: 0x0000, offset: 0x1120, expectedBytes: [0xCC, 0xAA, 0xBB], label: 'Dönüştürülmüş Blok [1120H]' }
+        { segment: 0x0000, offset: 0x1120, expectedBytes: [0xCC, 0xAA, 0xBB], label: 'Dönüştürülmüş Hedef Dizi [1120H] (CCh, AAh, BBh)' }
       ],
       maxSteps: 40
     }

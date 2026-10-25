@@ -83,31 +83,12 @@ export class ChallengePanel {
 
   render(): void {
     if (!this.activeChallenge) {
-      this.renderEmptyState();
+      this.container.style.display = 'none';
+      this.container.innerHTML = '';
       return;
     }
+    this.container.style.display = 'block';
     this.renderChallengeDock();
-  }
-
-  private renderEmptyState(): void {
-    this.container.innerHTML = `
-      <div class="challenge-box-card challenge-box-empty">
-        <div class="challenge-box-empty-header">
-          <span class="challenge-box-empty-icon">🎯</span>
-          <span class="challenge-box-empty-title">LeetCode Görev & Test Paneli</span>
-        </div>
-        <p class="challenge-box-empty-desc">
-          Şu anda serbest çalışma dosyasındasınız. 8086 Assembly sınav görevlerini ve algoritmik meydan okumaları çözmek için görev kütüphanesini açabilirsiniz.
-        </p>
-        <button id="btn-dock-goto-leetcode" class="btn-dock-goto-leetcode">
-          ⚡ LeetCode Görevlerini Keşfet
-        </button>
-      </div>
-    `;
-
-    this.container.querySelector('#btn-dock-goto-leetcode')?.addEventListener('click', () => {
-      this.callbacks.onNavigateToLeetCode();
-    });
   }
 
   private renderChallengeDock(): void {
@@ -126,7 +107,7 @@ export class ChallengePanel {
         const off = m.offset.toString(16).toUpperCase().padStart(4, '0');
         const bytesHex = m.bytes.map(b => b.toString(16).toUpperCase().padStart(2, '0') + 'h').join(', ');
         return `<code>[${seg}:${off}h] = [${bytesHex}]</code>`;
-      }).join('<br>');
+      }).join(' ');
     }
 
     // Format Initial Registers
@@ -139,6 +120,18 @@ export class ChallengePanel {
         }
       }
       if (parts.length > 0) initialRegsHtml = parts.join(' ');
+    }
+
+    // Format Initial I/O Ports
+    let initialPortsHtml = '';
+    if (ch.testSetup?.initialPorts) {
+      const parts: string[] = [];
+      for (const [portStr, val] of Object.entries(ch.testSetup.initialPorts)) {
+        const portHex = Number(portStr).toString(16).toUpperCase().padStart(2, '0');
+        const valHex = (val & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+        parts.push(`<code>Port [${portHex}h] = ${valHex}h (${val})</code>`);
+      }
+      if (parts.length > 0) initialPortsHtml = parts.join(' ');
     }
 
     // Format Expected Target Outcome
@@ -158,6 +151,13 @@ export class ChallengePanel {
         expectedParts.push(`<code>[${seg}:${off}h] = [${bytesHex}]</code>`);
       }
     }
+    if (ch.assertions?.expectedPorts) {
+      for (const [portStr, val] of Object.entries(ch.assertions.expectedPorts)) {
+        const portHex = Number(portStr).toString(16).toUpperCase().padStart(2, '0');
+        const valHex = (val & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+        expectedParts.push(`<code>Port [${portHex}h] = ${valHex}h</code>`);
+      }
+    }
     if (ch.assertions?.expectedFlags) {
       for (const [k, v] of Object.entries(ch.assertions.expectedFlags)) {
         if (v !== undefined) {
@@ -171,16 +171,10 @@ export class ChallengePanel {
       }
     }
 
-    // Result section HTML
+    // Result section HTML (only shown after test execution)
     let resultSectionHtml = '';
     if (this.lastResult) {
       resultSectionHtml = this.generateResultHtml(this.lastResult, ch);
-    } else {
-      resultSectionHtml = `
-        <div class="challenge-dock-result-idle">
-          <span>💡 Kodu yazdıktan sonra <b>"Tamamla ve Test Et"</b> butonuna basarak sonucu test edebilirsiniz.</span>
-        </div>
-      `;
     }
 
     // Next challenge resolver
@@ -191,39 +185,61 @@ export class ChallengePanel {
 
     this.container.innerHTML = `
       <div class="challenge-box-card challenge-dock-active">
-        <!-- Header -->
+        <!-- Top Row: Title & Badges on Left, Actions on Right -->
         <div class="challenge-dock-header">
-          <div class="challenge-dock-tags">
-            <span class="challenge-dock-badge-milestone">${milestoneTitle}</span>
-            <span class="challenge-dock-badge-diff ${ch.difficulty.toLowerCase()}">${diffBadge}</span>
-            ${isSolved 
-              ? '<span class="challenge-dock-badge-status solved">✅ Çözüldü</span>' 
-              : '<span class="challenge-dock-badge-status pending">⏳ Çözülüyor</span>'}
+          <div class="challenge-dock-header-left">
+            <h3 class="challenge-dock-title">${ch.title}</h3>
+            <div class="challenge-dock-tags">
+              <span class="challenge-dock-badge-milestone">${milestoneTitle}</span>
+              <span class="challenge-dock-badge-diff ${ch.difficulty.toLowerCase()}">${diffBadge}</span>
+              ${isSolved 
+                ? '<span class="challenge-dock-badge-status solved">✅ Çözüldü</span>' 
+                : '<span class="challenge-dock-badge-status pending">⏳ Çözülüyor</span>'}
+            </div>
           </div>
-          <button id="btn-dock-close-to-manual" class="btn-dock-subtle" title="LeetCode Listesine Dön">
-            📋 Liste
-          </button>
+
+          <div class="challenge-dock-actions-row">
+            <button id="btn-dock-complete-test" class="btn-dock-primary-test">
+              <span class="btn-icon">⚡</span> Tamamla ve Test Et
+            </button>
+            <button id="btn-dock-reset-env" class="btn-dock-secondary" title="Bellek ve yazmaçları başlangıç testSetup durumuna sıfırlar">
+              🔄 Ortamı Sıfırla
+            </button>
+            <button id="btn-dock-toggle-hints" class="btn-dock-secondary">
+              💡 İpuçları (${ch.hints.length})
+            </button>
+            <button id="btn-dock-close-to-manual" class="btn-dock-subtle" title="LeetCode Listesine Dön">
+              📋 Liste
+            </button>
+            ${this.lastResult?.success && nextChallenge ? `
+              <button id="btn-dock-next-challenge" class="btn-dock-next" title="Sıradaki Görev: ${nextChallenge.title}">
+                Sonraki Göreve Geç ➡️
+              </button>
+            ` : ''}
+          </div>
         </div>
 
-        <!-- Title -->
-        <h3 class="challenge-dock-title">${ch.title}</h3>
+        <!-- Horizontal Content Row: Goal + Preconditions + Expected Output -->
+        <div class="challenge-dock-row-body">
+          <!-- Goal Callout -->
+          <div class="challenge-dock-goal-box">
+            ${ch.scenario ? `<div style="margin-bottom: 6px; color: #334155; font-size: 12px; line-height: 1.45;"><b>📋 PROBLEM SENARYOSU:</b><br/>${ch.scenario.replace(/\n/g, '<br/>')}</div>` : ''}
+            <div class="challenge-dock-goal-label">🎯 İSTENEN ADIMLAR (GÖREV):</div>
+            <div class="challenge-dock-goal-text">${ch.task.replace(/\n/g, '<br/>')}</div>
+          </div>
 
-        <!-- Goal Callout -->
-        <div class="challenge-dock-goal-box">
-          <div class="challenge-dock-goal-label">🎯 GÖREV HEDEFİ:</div>
-          <div class="challenge-dock-goal-text">${ch.task}</div>
-        </div>
-
-        <!-- Context & Pre-conditions Matrix -->
-        <div class="challenge-dock-matrix">
+          <!-- Pre-conditions -->
           <div class="challenge-dock-matrix-col">
             <span class="matrix-col-title">📦 Hazır Ön Ortam:</span>
             <div class="matrix-col-content">
               ${initialMemHtml ? `<div><b>Bellek:</b> ${initialMemHtml}</div>` : ''}
               ${initialRegsHtml ? `<div><b>Yazmaç:</b> ${initialRegsHtml}</div>` : ''}
-              ${!initialMemHtml && !initialRegsHtml ? '<span>Standart Temiz CPU</span>' : ''}
+              ${initialPortsHtml ? `<div><b>Port:</b> ${initialPortsHtml}</div>` : ''}
+              ${!initialMemHtml && !initialRegsHtml && !initialPortsHtml ? '<span>Standart Temiz CPU</span>' : ''}
             </div>
           </div>
+
+          <!-- Expected Outcome -->
           <div class="challenge-dock-matrix-col">
             <span class="matrix-col-title">🎯 Beklenen Çıktı:</span>
             <div class="matrix-col-content">
@@ -232,42 +248,18 @@ export class ChallengePanel {
           </div>
         </div>
 
-        <!-- Main Action Buttons -->
-        <div class="challenge-dock-actions-row">
-          <button id="btn-dock-complete-test" class="btn-dock-primary-test">
-            <span class="btn-icon">⚡</span> Tamamla ve Test Et
-          </button>
-          <button id="btn-dock-reset-env" class="btn-dock-secondary" title="Bellek ve yazmaçları başlangıç testSetup durumuna sıfırlar">
-            🔄 Ortamı Sıfırla
-          </button>
-          <button id="btn-dock-toggle-hints" class="btn-dock-secondary">
-            💡 İpuçları (${ch.hints.length})
-          </button>
-        </div>
-
         <!-- Collapsible Hints -->
         <div id="challenge-dock-hints-panel" class="challenge-dock-hints-panel" style="display: ${this.showHints ? 'block' : 'none'};">
           <div class="hints-panel-header">💡 İpuçları ve Yönergeler:</div>
           <ul class="hints-list">
-            ${ch.hints.map(h => `<li>${h}</li>`).join('')}
+            ${ch.hints.map(h => `<li>${h.replace(/\n/g, '<br/>')}</li>`).join('')}
           </ul>
         </div>
 
         <!-- Results / Live Diffs Area -->
-        <div class="challenge-dock-results-mount">
-          ${resultSectionHtml}
-        </div>
-
-        <!-- Next Challenge Banner if passed -->
-        ${this.lastResult?.success && nextChallenge ? `
-          <div class="challenge-dock-next-card">
-            <div class="next-card-info">
-              <span class="next-label">Sıradaki Görev:</span>
-              <span class="next-title">${nextChallenge.title}</span>
-            </div>
-            <button id="btn-dock-next-challenge" class="btn-dock-next">
-              Sonraki Göreve Geç ➡️
-            </button>
+        ${resultSectionHtml ? `
+          <div class="challenge-dock-results-mount">
+            ${resultSectionHtml}
           </div>
         ` : ''}
       </div>

@@ -123,12 +123,14 @@ export class InteractiveExampleWidget {
           </div>
         </div>
 
-        <div class="embedded-scenario-bar">
-          <strong>📋 Senaryo:</strong> ${this.escapeHtml(this.example.scenario || '')}
-        </div>
+        <div class="embedded-info-row">
+          <div class="embedded-scenario-bar">
+            <strong>📋 Senaryo:</strong> ${this.escapeHtml(this.example.scenario || '')}
+          </div>
 
-        <div class="embedded-desc-bar">
-          <strong>🎯 Görev:</strong> ${this.escapeHtml(this.example.task || '')}
+          <div class="embedded-desc-bar">
+            <strong>🎯 Görev:</strong> ${this.escapeHtml(this.example.task || '')}
+          </div>
         </div>
 
         <!-- Solution Drawer (collapsible) -->

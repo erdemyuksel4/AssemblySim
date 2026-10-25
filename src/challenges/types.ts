@@ -56,6 +56,7 @@ export interface ChallengeTestSetup {
   initialRegisters?: RegisterExpectations;
   initialMemory?: Array<{ segment: number; offset: number; bytes: number[] }>;
   initialFlags?: FlagExpectations;
+  initialPorts?: Record<number, number>;
   inputQueue?: string;
 }
 
@@ -63,6 +64,7 @@ export interface ChallengeAssertion {
   expectedRegisters?: RegisterExpectations;
   expectedFlags?: FlagExpectations;
   expectedMemory?: MemoryExpectation[];
+  expectedPorts?: Record<number, number>;
   expectedConsole?: ConsoleExpectation;
   maxSteps?: number;
 }

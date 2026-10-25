@@ -174,6 +174,9 @@ export class App {
           <!-- Primary Pane (Left in Split View, or Full in Single View) -->
           <div class="workspace-pane pane-primary pane-focused" id="pane-primary" tabindex="0">
             <main class="main-layout" id="main-ide-layout">
+              <!-- Top Full-Width Row: Challenge Goal & Test Bar -->
+              <div id="challenge-box-container" class="challenge-box-container" style="display: none;"></div>
+
               <!-- Left Section: Code Editor -->
               <section class="editor-section">
                 <div class="editor-header-bar">
@@ -215,11 +218,10 @@ export class App {
                 <div id="console-container" class="console-section-wrapper"></div>
               </section>
 
-              <!-- Right Section: Registers, Segments, Pointers, Flags, Memory, and Challenge Box -->
+              <!-- Right Section: Registers, Segments, Pointers, Flags, Memory -->
               <section class="cpu-section">
                 <div id="registers-container"></div>
                 <div id="memory-container"></div>
-                <div id="challenge-box-container" class="challenge-box-container"></div>
               </section>
             </main>
 
@@ -256,6 +258,9 @@ export class App {
 
             <!-- Secondary IDE Layout (Shown when secondary pane has a code doc) -->
             <main class="main-layout sec-main-layout" id="sec-ide-layout" style="display: none;">
+              <!-- Top Full-Width Row: Secondary Challenge Goal & Test Bar -->
+              <div id="sec-challenge-box-container" class="challenge-box-container" style="display: none;"></div>
+
               <!-- Left Section: Code Editor -->
               <section class="editor-section">
                 <div class="editor-header-bar">
@@ -299,7 +304,6 @@ export class App {
               <section class="cpu-section" id="sec-cpu-section">
                 <div id="sec-registers-container"></div>
                 <div id="sec-memory-container"></div>
-                <div id="sec-challenge-box-container" class="challenge-box-container"></div>
               </section>
             </main>
 
