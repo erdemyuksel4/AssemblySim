@@ -10476,6 +10476,21 @@ body {
   border-radius: 3px;
 }
 
+.os-role-badge.role-ref {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  font-style: normal;
+}
+
+.os-file-item.is-ref-doc {
+  opacity: 0.9;
+}
+
+.os-file-item.is-ref-doc:hover {
+  opacity: 1;
+}
+
 .sidebar-empty-prompt {
   padding: 4px;
 }

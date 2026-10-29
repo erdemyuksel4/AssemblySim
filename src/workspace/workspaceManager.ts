@@ -8,6 +8,11 @@ import {
   KEYBOARD_ASM_TEMPLATE, 
   SHELL_ASM_TEMPLATE 
 } from '../os/starterTemplates.js';
+import {
+  REF_BIOS_ROM_TEMPLATE,
+  REF_IVT_TABLE_TEMPLATE,
+  REF_BDA_MAP_TEMPLATE
+} from '../os/hardwareRefTemplates.js';
 
 const STORAGE_DOCS_KEY = 'assemblysim_workspace_docs_v1';
 const STORAGE_ACTIVE_ID_KEY = 'assemblysim_active_doc_id_v1';
@@ -91,12 +96,27 @@ export class WorkspaceManager {
             this.docs.set(d.id, d);
           }
 
-          // Ensure all OS projects have the architecture guide file
+          // Ensure all OS projects have the architecture guide and hardware reference files
           for (const proj of this.osProjects.values()) {
             const hasGuide = proj.fileDocIds.some(id => this.docs.get(id)?.osRole === 'guide');
             if (!hasGuide) {
               const guideDoc = this.createOSFileInternal(proj.id, '00_REHBER.asm', 'guide', OS_GUIDE_TEMPLATE);
-              proj.fileDocIds.unshift(guideDoc.id);
+              proj.fileDocIds.push(guideDoc.id);
+            }
+            const hasBios = proj.fileDocIds.some(id => this.docs.get(id)?.title === 'ref_bios_rom.asm');
+            if (!hasBios) {
+              const biosDoc = this.createOSFileInternal(proj.id, 'ref_bios_rom.asm', 'hardware_ref', REF_BIOS_ROM_TEMPLATE);
+              proj.fileDocIds.push(biosDoc.id);
+            }
+            const hasIvt = proj.fileDocIds.some(id => this.docs.get(id)?.title === 'ref_ivt_tablosu.asm');
+            if (!hasIvt) {
+              const ivtDoc = this.createOSFileInternal(proj.id, 'ref_ivt_tablosu.asm', 'hardware_ref', REF_IVT_TABLE_TEMPLATE);
+              proj.fileDocIds.push(ivtDoc.id);
+            }
+            const hasBda = proj.fileDocIds.some(id => this.docs.get(id)?.title === 'ref_bda_donanim.asm');
+            if (!hasBda) {
+              const bdaDoc = this.createOSFileInternal(proj.id, 'ref_bda_donanim.asm', 'hardware_ref', REF_BDA_MAP_TEMPLATE);
+              proj.fileDocIds.push(bdaDoc.id);
             }
           }
 
@@ -303,13 +323,18 @@ export class WorkspaceManager {
     const projId = `os-proj-${Date.now()}`;
     const projName = (name && name.trim()) ? name.trim() : 'BenimOS';
 
-    // 6 Temel Başlangıç Modül ve Rehber Dosyasını Oluştur
-    const guideDoc = this.createOSFileInternal(projId, '00_REHBER.asm', 'guide', OS_GUIDE_TEMPLATE);
+    // 1. Kullanıcının Yazacağı 5 Temel OS Modülü
     const bootDoc = this.createOSFileInternal(projId, 'boot.asm', 'boot', BOOT_ASM_TEMPLATE);
     const kernelDoc = this.createOSFileInternal(projId, 'kernel.asm', 'kernel', KERNEL_ASM_TEMPLATE);
     const screenDoc = this.createOSFileInternal(projId, 'screen.asm', 'screen', SCREEN_ASM_TEMPLATE);
     const keyboardDoc = this.createOSFileInternal(projId, 'keyboard.asm', 'keyboard', KEYBOARD_ASM_TEMPLATE);
     const shellDoc = this.createOSFileInternal(projId, 'shell.asm', 'shell', SHELL_ASM_TEMPLATE);
+
+    // 2. Mimari Rehberi ve Donanım/BIOS Referans Belgeleri (İnceleme & Gözlem için Salt Okunur)
+    const guideDoc = this.createOSFileInternal(projId, '00_REHBER.asm', 'guide', OS_GUIDE_TEMPLATE);
+    const biosDoc = this.createOSFileInternal(projId, 'ref_bios_rom.asm', 'hardware_ref', REF_BIOS_ROM_TEMPLATE);
+    const ivtDoc = this.createOSFileInternal(projId, 'ref_ivt_tablosu.asm', 'hardware_ref', REF_IVT_TABLE_TEMPLATE);
+    const bdaDoc = this.createOSFileInternal(projId, 'ref_bda_donanim.asm', 'hardware_ref', REF_BDA_MAP_TEMPLATE);
 
     const project: OSProject = {
       id: projId,
@@ -317,8 +342,18 @@ export class WorkspaceManager {
       createdAt: Date.now(),
       lastModified: Date.now(),
       isCollapsed: false,
-      activeFileId: guideDoc.id,
-      fileDocIds: [guideDoc.id, bootDoc.id, kernelDoc.id, screenDoc.id, keyboardDoc.id, shellDoc.id]
+      activeFileId: bootDoc.id,
+      fileDocIds: [
+        bootDoc.id, 
+        kernelDoc.id, 
+        screenDoc.id, 
+        keyboardDoc.id, 
+        shellDoc.id,
+        guideDoc.id,
+        biosDoc.id, 
+        ivtDoc.id, 
+        bdaDoc.id
+      ]
     };
 
     this.osProjects.set(projId, project);

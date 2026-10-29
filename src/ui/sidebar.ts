@@ -282,20 +282,22 @@ export class WorkspaceSidebar {
   ): string {
     const isActive = openDocIds.includes(doc.id);
     const icon = this.getDocIcon(doc);
+    const isRef = doc.osRole === 'hardware_ref' || doc.osRole === 'guide';
+    const badgeLabel = doc.osRole === 'hardware_ref' ? 'donanım' : doc.osRole === 'guide' ? 'rehber' : (doc.osRole || 'asm');
 
     return `
-      <li class="workspace-doc-item os-file-item ${isActive ? 'active' : ''}" 
+      <li class="workspace-doc-item os-file-item ${isActive ? 'active' : ''} ${isRef ? 'is-ref-doc' : ''}" 
           data-doc-id="${doc.id}" 
           data-proj-id="${projId}" 
           draggable="true" 
-          title="${doc.title} (Sağ tık: Yeniden Adlandır, Sil)">
+          title="${doc.title} ${isRef ? '(Donanım & Mimari Referans Belgesi)' : '(Sağ tık: Yeniden Adlandır, Sil)'}">
         <div class="doc-item-main">
           <span class="doc-icon">${icon}</span>
           <span class="doc-title" data-doc-id="${doc.id}">${this.escapeHtml(doc.title)}</span>
         </div>
         <div class="doc-item-meta">
-          <span class="os-role-badge">${doc.osRole || 'asm'}</span>
-          <button class="btn-doc-close btn-os-file-close" data-doc-id="${doc.id}" title="Modülü Sil">×</button>
+          <span class="os-role-badge ${isRef ? 'role-ref' : ''}">${badgeLabel}</span>
+          ${!isRef ? `<button class="btn-doc-close btn-os-file-close" data-doc-id="${doc.id}" title="Modülü Sil">×</button>` : ''}
         </div>
       </li>
     `;
@@ -326,6 +328,7 @@ export class WorkspaceSidebar {
     if (doc.type === 'os_file') {
       switch (doc.osRole) {
         case 'guide': return '📘';
+        case 'hardware_ref': return '🏛️';
         case 'boot': return '🚀';
         case 'kernel': return '⚙️';
         case 'screen': return '🖥️';
