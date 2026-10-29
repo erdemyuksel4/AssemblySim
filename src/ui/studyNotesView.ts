@@ -197,7 +197,7 @@ export class StudyNotesView {
                       <label><code>${r.name}</code> =</label>
                       <input type="text" class="pdf-text-input" 
                         data-q-id="${q.id}" data-field="reg_${r.name}" 
-                        value="${this.escapeHtml(val)}" placeholder="${r.expected}" 
+                        value="${this.escapeHtml(val)}" placeholder="örn: 00H" 
                         autocomplete="off" spellcheck="false" />
                       ${feedback ? `<span class="feedback-mark">${feedback.passed ? '✓' : '✗'}</span>` : ''}
                     </div>
@@ -241,7 +241,7 @@ export class StudyNotesView {
                       <label><code>${m.address}</code> =</label>
                       <input type="text" class="pdf-text-input" 
                         data-q-id="${q.id}" data-field="mem_${m.address}" 
-                        value="${this.escapeHtml(val)}" placeholder="${m.expected}" 
+                        value="${this.escapeHtml(val)}" placeholder="örn: 00H" 
                         autocomplete="off" spellcheck="false" />
                       ${feedback ? `<span class="feedback-mark">${feedback.passed ? '✓' : '✗'}</span>` : ''}
                     </div>
@@ -329,12 +329,12 @@ export class StudyNotesView {
                 <td><code>4</code></td>
                 <td>
                   <input type="text" class="pdf-table-input" data-trace-key="r1_ax" 
-                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r1_ax'))}" placeholder="2" />
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r1_ax'))}" placeholder="?" />
                   ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r1_ax ? '✓' : '✗ (2)'}</span>` : ''}
                 </td>
                 <td>
                   <input type="text" class="pdf-table-input" data-trace-key="r1_bx" 
-                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r1_bx'))}" placeholder="4" />
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r1_bx'))}" placeholder="?" />
                   ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r1_bx ? '✓' : '✗ (4)'}</span>` : ''}
                 </td>
                 <td><code>3</code></td>
@@ -347,12 +347,12 @@ export class StudyNotesView {
                 <td><code>3</code></td>
                 <td>
                   <input type="text" class="pdf-table-input" data-trace-key="r2_ax" 
-                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r2_ax'))}" placeholder="6" />
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r2_ax'))}" placeholder="?" />
                   ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r2_ax ? '✓' : '✗ (6)'}</span>` : ''}
                 </td>
                 <td>
                   <input type="text" class="pdf-table-input" data-trace-key="r2_bx" 
-                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r2_bx'))}" placeholder="6" />
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r2_bx'))}" placeholder="?" />
                   ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r2_bx ? '✓' : '✗ (6)'}</span>` : ''}
                 </td>
                 <td><code>2</code></td>
@@ -365,12 +365,12 @@ export class StudyNotesView {
                 <td><code>2</code></td>
                 <td>
                   <input type="text" class="pdf-table-input" data-trace-key="r3_ax" 
-                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r3_ax'))}" placeholder="12" />
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r3_ax'))}" placeholder="?" />
                   ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r3_ax ? '✓' : '✗ (12)'}</span>` : ''}
                 </td>
                 <td>
                   <input type="text" class="pdf-table-input" data-trace-key="r3_bx" 
-                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r3_bx'))}" placeholder="8" />
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r3_bx'))}" placeholder="?" />
                   ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r3_bx ? '✓' : '✗ (8)'}</span>` : ''}
                 </td>
                 <td><code>1</code></td>
@@ -383,12 +383,12 @@ export class StudyNotesView {
                 <td><code>1</code></td>
                 <td>
                   <input type="text" class="pdf-table-input" data-trace-key="r4_ax" 
-                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r4_ax'))}" placeholder="20 veya 14H" />
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r4_ax'))}" placeholder="?" />
                   ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r4_ax ? '✓' : '✗ (20 / 14H)'}</span>` : ''}
                 </td>
                 <td>
                   <input type="text" class="pdf-table-input" data-trace-key="r4_bx" 
-                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r4_bx'))}" placeholder="10 veya 0AH" />
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r4_bx'))}" placeholder="?" />
                   ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r4_bx ? '✓' : '✗ (10 / 0AH)'}</span>` : ''}
                 </td>
                 <td><code>0</code></td>

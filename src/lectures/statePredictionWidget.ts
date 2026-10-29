@@ -112,7 +112,7 @@ export class StatePredictionWidget {
                       <input type="text" class="pred-text-input" 
                         data-ex-id="${ex.id}" 
                         data-field="reg_${r.name}" 
-                        placeholder="${r.expected}" 
+                        placeholder="örn: 00H" 
                         value="${this.escapeHtml(val)}"
                         autocomplete="off" spellcheck="false" />
                       ${feedback ? `
@@ -164,7 +164,7 @@ export class StatePredictionWidget {
                       <input type="text" class="pred-text-input" 
                         data-ex-id="${ex.id}" 
                         data-field="mem_${m.address}" 
-                        placeholder="${m.expected}" 
+                        placeholder="örn: 00H" 
                         value="${this.escapeHtml(val)}"
                         autocomplete="off" spellcheck="false" />
                       ${feedback ? `
