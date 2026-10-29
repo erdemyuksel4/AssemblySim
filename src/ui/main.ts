@@ -16,6 +16,7 @@ import { ChallengeRunner } from '../challenges/runner.js';
 import { ChallengePanel } from './challengePanel.js';
 import { LectureDocumentView } from '../lectures/lectureDocumentView.js';
 import { MILESTONE_LECTURES } from '../lectures/lectureData.js';
+import { getTopicById } from '../lectures/topicStudyData.js';
 
 export type ExecutionSpeed = '0.5' | '1' | '2';
 
@@ -1010,9 +1011,9 @@ export class App {
         if (secLectureDocMount) secLectureDocMount.style.display = 'block';
 
         this.secLectureDocView.setMilestone(doc.milestoneId);
-        const lecture = MILESTONE_LECTURES[doc.milestoneId];
-        if (secHeaderIcon) secHeaderIcon.textContent = '🎓';
-        if (secHeaderTitle) secHeaderTitle.textContent = lecture ? `Aşama ${lecture.milestoneNumber}: ${lecture.title}` : 'Ders Anlatımı';
+        const topic = getTopicById(doc.milestoneId);
+        if (secHeaderIcon) secHeaderIcon.textContent = topic ? topic.icon : '🎓';
+        if (secHeaderTitle) secHeaderTitle.textContent = topic ? `Konu ${topic.number}: ${topic.shortTitle}` : 'Konu Anlatımı';
         document.querySelectorAll('.btn-sec-nav').forEach(b => b.classList.remove('active'));
         document.querySelector('.btn-sec-nav[data-sec-nav="lectures"]')?.classList.add('active');
       } else if (doc.type === 'reference' && doc.referenceTab) {
@@ -1134,13 +1135,13 @@ export class App {
       return;
     }
 
-    const lecture = MILESTONE_LECTURES[milestoneId];
-    const title = lecture ? `Ders: ${lecture.title}` : `Aşama ${milestoneId} Dersi`;
+    const topic = getTopicById(milestoneId);
+    const title = topic ? `Konu ${topic.number}: ${topic.shortTitle}` : (MILESTONE_LECTURES[milestoneId]?.title || `Konu: ${milestoneId}`);
     const newDoc = this.workspace.openDocument({
       title,
       type: 'lecture',
       milestoneId,
-      code: `; 🎓 ${title}\n; Bu ders için interaktif örnekler dokümanın içinde yer almaktadır.\n`
+      code: `; 🎓 ${title}\n; Bu konu için adım adım anlatım ve her kullanım örneği dokümanın içinde yer almaktadır.\n`
     });
     this.openDocumentInPane(pane, newDoc);
   }

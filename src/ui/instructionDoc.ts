@@ -126,26 +126,24 @@ export class InstructionDoc {
             <!-- Full Interactive Curriculum Direct Launch Grid -->
             <div class="theory-curriculum-banner">
               <div class="banner-top-row">
-                <span class="theory-badge">🎓 10 AŞAMALI TAM DERS MÜFREDATI</span>
-                <span class="theory-sources">Kaynak Sıralaması: 1. Doç. Dr. Mehmet Akif Çifci Slaytları | 2. Barry B. Brey Kitabı</span>
+                <span class="theory-badge">🎓 10 ANA KONU BAŞLIĞI & TAM DERS MÜFREDATI</span>
+                <span class="theory-sources">Kaynak: Doç. Dr. Mehmet Akif Çifci Slaytları & Barry B. Brey Kitabı</span>
               </div>
-              <h3 class="curriculum-main-title">8086 İnteraktif Ders Dokümanları ve Konu Anlatımları</h3>
+              <h3 class="curriculum-main-title">8086 Adım Adım Konu Anlatımları, Kullanım Örnekleri & Sorular</h3>
               <p class="curriculum-desc">
-                Her aşamanın zengin konu anlatımını, hoca slaytlarındaki formülleri, sınav tuzaklarını ve 
-                <strong>20-Bit Adres Hesaplayıcı</strong>, <strong>Little-Endian Simülatörü</strong> gibi interaktif keşif araçlarını açmak için bir aşamaya tıklayın:
+                Her konunun adım adım teorisini, donanım mekanizmasını, her kullanım varyasyonunu gösteren örnekleri ve sınav sorularını açmak için bir konu seçin:
               </p>
               <div class="curriculum-pills-grid">
-                <button class="btn-lecture-pill" data-milestone="milestone-1">📖 Aşama 1: Mimari, Bus & 20-Bit Adresleme</button>
-                <button class="btn-lecture-pill" data-milestone="milestone-2">📖 Aşama 2: MOV, XCHG, LEA & 7 Mod</button>
-                <button class="btn-lecture-pill" data-milestone="milestone-3">📖 Aşama 3: Aritmetik & Bayraklar</button>
-                <button class="btn-lecture-pill" data-milestone="milestone-4">📖 Aşama 4: Mantıksal & Bit Kaydırma</button>
-                <button class="btn-lecture-pill" data-milestone="milestone-5">📖 Aşama 5: Akış & Döngüler</button>
-                <button class="btn-lecture-pill" data-milestone="milestone-6">📖 Aşama 6: Yığın & Prosedürler</button>
-                <button class="btn-lecture-pill" data-milestone="milestone-7">📖 Aşama 7: Dizi & String</button>
-                <button class="btn-lecture-pill" data-milestone="milestone-8">📖 Aşama 8: BCD & ASCII</button>
-                <button class="btn-lecture-pill" data-milestone="milestone-9">📖 Aşama 9: I/O & Kesmeler (IVT)</button>
-                <button class="btn-lecture-pill" data-milestone="milestone-10">📖 Aşama 10: Pipelining & LeetCode</button>
-                <button class="btn-lecture-pill" data-milestone="milestone-11">📖 Aşama 11: Sistem & Tablo Komutları (XLAT, LDS, Flags)</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-1">🏛️ 1. Mimari, Donanım & 20-Bit Bellek</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-2">🎯 2. Adresleme Modları & MOV, XCHG, LEA</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-3">➕ 3. Aritmetik İşlemler & Bayraklar (FLAGS)</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-4">🔀 4. Mantıksal İşlemler & Bit Kaydırma/Döndürme</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-5">🔄 5. Akış Kontrolü, Dallanmalar & Döngüler</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-6">📚 6. Yığın Mimarisi (Stack) & Prosedürler</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-7">🧵 7. Dizi & String İşlemleri (MOVSB, REP)</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-9">🔌 8. Giriş/Çıkış (I/O Portları) & Kesmeler (IVT)</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-11">⚙️ 9. Tablo Çevirisi (XLAT) & Özel Komutlar</button>
+                <button class="btn-lecture-pill" data-milestone="milestone-10">💡 10. Klasik Sınav Algoritmaları & Kodlama</button>
               </div>
             </div>
 

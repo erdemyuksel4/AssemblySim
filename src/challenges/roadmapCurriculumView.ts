@@ -1,154 +1,124 @@
-import { ROADMAP_MILESTONES, CHALLENGES } from './challengesData.js';
-import { MILESTONE_LECTURES } from '../lectures/lectureData.js';
-import { LectureStorage } from '../lectures/lectureStorage.js';
+/**
+ * roadmapCurriculumView.ts
+ * 
+ * 8086 Assembly Temiz ve Modern Konu Kataloğu & Müfredat Haritası.
+ * Karmaşık aşamalar ve engeller yerine doğrudan konu başlıklarına hızlı erişim sağlar.
+ */
 
-const STORAGE_SOLVED_KEY = 'assemblysim_solved_challenges_v1';
+import { TOPIC_CURRICULUM, TopicItem } from '../lectures/topicStudyData.js';
 
 export interface RoadmapCurriculumCallbacks {
-  onOpenLecture: (milestoneId: string) => void;
+  onOpenLecture: (milestoneIdOrTopicId: string, subTab?: string) => void;
   onNavigateToLeetCode?: (milestoneId?: string) => void;
 }
 
 export class RoadmapCurriculumView {
   private container: HTMLElement;
   private callbacks: RoadmapCurriculumCallbacks;
-  private solvedIds: Set<string> = new Set();
+  private searchQuery: string = '';
 
   constructor(container: HTMLElement, callbacks: RoadmapCurriculumCallbacks) {
     this.container = container;
     this.callbacks = callbacks;
-    this.loadSolvedFromStorage();
     this.render();
   }
 
-  private loadSolvedFromStorage(): void {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = window.localStorage.getItem(STORAGE_SOLVED_KEY);
-        if (raw) {
-          const arr = JSON.parse(raw);
-          if (Array.isArray(arr)) {
-            this.solvedIds = new Set(arr);
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Could not load solved challenges in roadmap', e);
-    }
-  }
-
   render(): void {
-    const totalMilestones = ROADMAP_MILESTONES.length;
-    let completedMilestonesCount = 0;
-
-    const milestonesData = ROADMAP_MILESTONES.map(m => {
-      const allChallengeIds = m.topics.flatMap(t => t.challengeIds);
-      const totalInMilestone = allChallengeIds.length;
-      const solvedInMilestone = allChallengeIds.filter(id => this.solvedIds.has(id)).length;
-      const isCompleted = totalInMilestone > 0 && solvedInMilestone === totalInMilestone;
-      if (isCompleted) completedMilestonesCount++;
-
-      const percent = totalInMilestone > 0 ? Math.round((solvedInMilestone / totalInMilestone) * 100) : 0;
-      return {
-        milestone: m,
-        totalInMilestone,
-        solvedInMilestone,
-        isCompleted,
-        percent
-      };
+    const filteredTopics = TOPIC_CURRICULUM.filter(t => {
+      if (!this.searchQuery) return true;
+      const q = this.searchQuery.toLowerCase();
+      return (
+        t.title.toLowerCase().includes(q) ||
+        t.summary.toLowerCase().includes(q) ||
+        t.opcodes.some(op => op.toLowerCase().includes(q))
+      );
     });
 
-    const globalPercent = totalMilestones > 0 ? Math.round((completedMilestonesCount / totalMilestones) * 100) : 0;
-
     this.container.innerHTML = `
-      <div class="roadmap-tree-root">
+      <div class="roadmap-tree-root topic-catalog-root">
         <!-- Header Banner -->
-        <div class="roadmap-tree-header">
+        <div class="roadmap-tree-header topic-catalog-header">
           <div class="tree-header-info">
-            <span class="tree-badge">🗺️ MÜFREDAT GELİŞİM AĞACI</span>
-            <h2 class="tree-main-title">8086 Assembly Tam Yol Haritası</h2>
-            <p class="tree-lead-text">9 Temel aşamadan oluşan müfredatı adım adım takip edin. Her aşamada hedeflenen donanım ve yazılım kavramlarını kavrayıp pratik görevlerle pekiştirin.</p>
+            <span class="tree-badge">🗺️ 8086 KONU MÜFREDAT KATALOĞU</span>
+            <h2 class="tree-main-title">8086 Assembly Tam Konu Haritası</h2>
+            <p class="tree-lead-text">
+              Karmaşık aşamalar veya kilitler olmadan doğrudan dilediğiniz konuyu seçin. Her konuda adım adım teoriyi, 
+              her kullanım varyasyonunu gösteren örnekleri ve sınav sorularını eksiksiz çalışın.
+            </p>
           </div>
 
-          <div class="tree-progress-summary">
-            <div class="summary-metric">
-              <span class="metric-big">${completedMilestonesCount} / ${totalMilestones}</span>
-              <span class="metric-label">Aşama Tamamlandı</span>
+          <div class="catalog-summary-metrics">
+            <div class="catalog-metric-pill">
+              <span class="metric-big">10</span>
+              <span class="metric-label">Ana Konu Başlığı</span>
             </div>
-            <div class="tree-progress-track">
-              <div class="tree-progress-fill" style="width: ${globalPercent}%;"></div>
+            <div class="catalog-metric-pill">
+              <span class="metric-big">100+</span>
+              <span class="metric-label">Kullanım Örneği</span>
             </div>
-            <span class="tree-percent-text">%${globalPercent} Müfredat Bitti</span>
+            <div class="catalog-metric-pill">
+              <span class="metric-big">30+</span>
+              <span class="metric-label">Sınav Sorusu & Görev</span>
+            </div>
           </div>
         </div>
 
-        <!-- Milestones Timeline Grid -->
-        <div class="timeline-container">
-          ${milestonesData.map(({ milestone, totalInMilestone, solvedInMilestone, isCompleted, percent }, idx) => {
-            const lecture = MILESTONE_LECTURES[milestone.id];
-            const completedLectureSteps = LectureStorage.getCompletedSteps(milestone.id);
-            const totalModules = lecture ? lecture.sections.length : 0;
-            const lastActiveStep = LectureStorage.getLastActiveStep(milestone.id);
-            const hasStarted = completedLectureSteps.length > 0 || (lastActiveStep && lastActiveStep !== 'overview');
+        <!-- Filter & Search Toolbar -->
+        <div class="catalog-toolbar">
+          <div class="catalog-search-wrap">
+            <span class="catalog-search-icon">🔍</span>
+            <input 
+              type="text" 
+              id="catalog-search-input" 
+              class="catalog-search-input" 
+              placeholder="Konu, opcode veya kavram ara (MOV, XCHG, Stack, CMP, Döngü, String, IVT...)" 
+              value="${this.escapeHtml(this.searchQuery)}"
+            />
+            ${this.searchQuery ? '<button id="btn-catalog-clear-search" class="btn-clear-search">✕</button>' : ''}
+          </div>
+          <span class="catalog-results-count">${filteredTopics.length} Konu Listeleniyor</span>
+        </div>
 
+        <!-- Topics Grid -->
+        <div class="topic-cards-grid">
+          ${filteredTopics.map(topic => {
+            const usageCount = topic.usageGroups.reduce((acc, g) => acc + g.items.length, 0);
             return `
-              <div class="timeline-step ${isCompleted ? 'step-completed' : ''}">
-                <div class="timeline-step-indicator">
-                  <div class="step-circle ${isCompleted ? 'circle-done' : ''}">
-                    ${isCompleted ? '✓' : milestone.number}
+              <div class="topic-catalog-card" data-topic-id="${topic.id}">
+                <div class="topic-card-top">
+                  <div class="topic-card-icon-num">
+                    <span class="card-icon">${topic.icon}</span>
+                    <span class="card-num-badge">Konu ${topic.number}</span>
                   </div>
-                  ${idx < totalMilestones - 1 ? '<div class="step-connector"></div>' : ''}
+                  <span class="card-badge">${topic.badge}</span>
                 </div>
 
-                <div class="timeline-step-content">
-                  <div class="step-card-header">
-                    <div class="step-title-group">
-                      <span class="step-num-pill">AŞAMA ${milestone.number}</span>
-                      <h3 class="step-title">${this.escapeHtml(milestone.title)}</h3>
-                    </div>
+                <h3 class="topic-card-title">${this.escapeHtml(topic.title)}</h3>
+                <p class="topic-card-summary">${this.escapeHtml(topic.summary)}</p>
 
-                    <div class="step-progress-badge ${isCompleted || (totalInMilestone === 0 && completedLectureSteps.length >= totalModules) ? 'badge-completed' : ''}">
-                      ${totalModules > 0 ? `📚 ${completedLectureSteps.length}/${totalModules} Modül • ` : ''}
-                      ${totalInMilestone === 0 ? '🎓 Teori & İnteraktif Donanım' : `${solvedInMilestone} / ${totalInMilestone} Görev (%${percent})`}
-                    </div>
-                  </div>
+                <!-- Opcodes Tag Cloud -->
+                <div class="topic-card-opcodes">
+                  ${topic.opcodes.slice(0, 7).map(op => `<span class="card-opcode-tag">${this.escapeHtml(op)}</span>`).join('')}
+                  ${topic.opcodes.length > 7 ? `<span class="card-opcode-more">+${topic.opcodes.length - 7}</span>` : ''}
+                </div>
 
-                  <p class="step-description">${this.escapeHtml(milestone.description)}</p>
+                <div class="topic-card-metrics">
+                  <span>📖 ${topic.theorySteps.length} Adım Anlatım</span>
+                  <span>⚡ ${usageCount} Kullanım Şekli</span>
+                  <span>❓ ${topic.questions.length} Soru</span>
+                </div>
 
-                  <div class="step-topics-list">
-                    ${milestone.topics.map(topic => `
-                      <div class="step-topic-item">
-                        <div class="topic-row-title">
-                          <span class="bullet-dot">▪</span>
-                          <strong>${this.escapeHtml(topic.title)}:</strong>
-                          <span class="topic-brief">${this.escapeHtml(topic.description)}</span>
-                        </div>
-                        <div class="topic-opcodes-strip">
-                          ${topic.opcodes.length > 0 ? topic.opcodes.map(op => `<span class="opcode-pill">${op}</span>`).join('') : '<span class="opcode-pill pill-concept">Kavram & Mimari</span>'}
-                        </div>
-                      </div>
-                    `).join('')}
-                  </div>
-
-                  <div class="step-footer">
-                    <div class="step-card-progress-bar">
-                      <div class="step-card-progress-fill" style="width: ${totalInMilestone === 0 ? 100 : percent}%;"></div>
-                    </div>
-                    <div class="step-actions-group">
-                      <button class="btn-open-lecture-doc" data-milestone-id="${milestone.id}" title="Bu aşamanın zengin konu anlatımı ve modül laboratuvarlarını aç">
-                        ${hasStarted ? '▶️ Aşama Dersine Devam Et' : `📖 Aşama ${milestone.number} Konu Anlatımını Aç`}
-                      </button>
-                      ${totalInMilestone === 0 ? `
-                        <button class="btn-open-lecture-doc btn-theory-explore" data-milestone-id="${milestone.id}" title="İnteraktif 20-bit adres hesaplayıcı ve mimari keşif araçlarını aç">
-                          ⚡ İnteraktif Araçları Aç →
-                        </button>
-                      ` : `
-                        <button class="btn-jump-to-leetcode" data-milestone-id="${milestone.id}" title="Bu aşamadaki tüm görevleri LeetCode sekmesinde listele">
-                          ⚡ LeetCode (${totalInMilestone}) →
-                        </button>
-                      `}
-                    </div>
-                  </div>
+                <!-- Action Buttons -->
+                <div class="topic-card-actions">
+                  <button class="btn-card-action primary btn-open-topic" data-topic-id="${topic.id}" data-subtab="theory">
+                    📖 Konuyu Çalış (Adım Adım)
+                  </button>
+                  <button class="btn-card-action secondary btn-open-topic" data-topic-id="${topic.id}" data-subtab="usage">
+                    ⚡ Kullanım Örnekleri
+                  </button>
+                  <button class="btn-card-action tertiary btn-open-topic" data-topic-id="${topic.id}" data-subtab="questions">
+                    ❓ Sorular
+                  </button>
                 </div>
               </div>
             `;
@@ -157,28 +127,50 @@ export class RoadmapCurriculumView {
       </div>
     `;
 
-    this.bindEvents();
+    this.attachEvents();
   }
 
-  private bindEvents(): void {
-    // Open lecture document
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-open-lecture-doc').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const milestoneId = btn.dataset.milestoneId;
-        if (milestoneId) {
-          this.callbacks.onOpenLecture(milestoneId);
+  private attachEvents(): void {
+    // Open topic buttons
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-open-topic').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const topicId = btn.getAttribute('data-topic-id');
+        const subtab = btn.getAttribute('data-subtab') || 'theory';
+        if (topicId) {
+          this.callbacks.onOpenLecture(topicId, subtab);
         }
       });
     });
 
-    // Jump to LeetCode tasks
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-jump-to-leetcode').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const milestoneId = btn.dataset.milestoneId;
-        if (this.callbacks.onNavigateToLeetCode) {
-          this.callbacks.onNavigateToLeetCode(milestoneId);
+    // Whole card click
+    this.container.querySelectorAll<HTMLElement>('.topic-catalog-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('button')) return; // ignore if button clicked
+        const topicId = card.getAttribute('data-topic-id');
+        if (topicId) {
+          this.callbacks.onOpenLecture(topicId, 'theory');
         }
       });
+    });
+
+    // Search input
+    const searchInput = this.container.querySelector('#catalog-search-input') as HTMLInputElement | null;
+    searchInput?.addEventListener('input', () => {
+      this.searchQuery = searchInput.value.trim();
+      this.render();
+      const newSearchInput = this.container.querySelector('#catalog-search-input') as HTMLInputElement | null;
+      if (newSearchInput) {
+        newSearchInput.focus();
+        newSearchInput.selectionStart = newSearchInput.selectionEnd = newSearchInput.value.length;
+      }
+    });
+
+    // Clear search
+    this.container.querySelector('#btn-catalog-clear-search')?.addEventListener('click', () => {
+      this.searchQuery = '';
+      this.render();
     });
   }
 
@@ -186,8 +178,6 @@ export class RoadmapCurriculumView {
     return str
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+      .replace(/>/g, '&gt;');
   }
 }

@@ -1,9 +1,18 @@
-import { MILESTONE_LECTURES, MilestoneLecture, LectureSection } from './lectureData.js';
-import { InteractiveExampleWidget } from './interactiveExampleWidget.js';
+/**
+ * lectureDocumentView.ts
+ * 
+ * 8086 Assembly Kapsamlı ve Adım Adım Konu Odaklı Ders ve Pratik Çalışma Merkezi.
+ * Her aşama yerine doğrudan konu başlığı seçilir.
+ * Seçilen her konuda:
+ *   1. Adım adım teorik ve donanım mekanizması bilgisi
+ *   2. Her türlü kullanımı, varyasyonu ve yasakları gösteren zengin kod örnekleri ("Simülatörde Çalıştır" butonlu)
+ *   3. Sınav çıkmışları, durum tahminleri ve adım adım çözümlü sorular
+ *   4. Uygulamalı kodlama alıştırmaları
+ */
+
+import { TOPIC_CURRICULUM, TopicItem, getTopicById } from './topicStudyData.js';
+import { MILESTONE_LECTURES, MilestoneLecture } from './lectureData.js';
 import { CHALLENGES } from '../challenges/challengesData.js';
-import { LectureStorage } from './lectureStorage.js';
-import { MILESTONE_STATE_PREDICTIONS } from './statePredictionData.js';
-import { StatePredictionWidget } from './statePredictionWidget.js';
 
 export interface LectureDocCallbacks {
   onOpenInMainEditor: (title: string, code: string) => void;
@@ -12,650 +21,632 @@ export interface LectureDocCallbacks {
   onNavigateToRoadmap?: () => void;
 }
 
-export interface StepItem {
-  id: string; // 'overview' | 'sec-0' | 'sec-1' ... | 'capstone'
-  tabLabel: string;
-  fullTitle: string;
-  badge: string;
-  isCapstone?: boolean;
-}
+export type TopicSubTab = 'theory' | 'usage' | 'questions' | 'challenges';
 
 export class LectureDocumentView {
   private container: HTMLElement;
-  private currentMilestoneId: string = 'milestone-1';
-  private currentStepId: string = 'overview';
-  private stepList: StepItem[] = [];
+  private currentTopic: TopicItem;
+  private activeSubTab: TopicSubTab = 'theory';
+  private searchQuery: string = '';
   private callbacks: LectureDocCallbacks;
-  private exampleWidgets: InteractiveExampleWidget[] = [];
+  private openSolutions: Set<string> = new Set();
 
   constructor(container: HTMLElement, callbacks: LectureDocCallbacks) {
     this.container = container;
     this.callbacks = callbacks;
+    this.currentTopic = TOPIC_CURRICULUM[0];
   }
 
-  setMilestone(milestoneId: string, targetStepId?: string): void {
-    this.currentMilestoneId = milestoneId;
-    const lecture = MILESTONE_LECTURES[this.currentMilestoneId] || MILESTONE_LECTURES['milestone-1'];
-
-    this.buildStepList(lecture);
-
-    if (targetStepId && this.stepList.some(s => s.id === targetStepId)) {
-      this.currentStepId = targetStepId;
+  setMilestone(milestoneIdOrTopicId: string, targetSubTab?: string): void {
+    this.currentTopic = getTopicById(milestoneIdOrTopicId);
+    if (targetSubTab && ['theory', 'usage', 'questions', 'challenges'].includes(targetSubTab)) {
+      this.activeSubTab = targetSubTab as TopicSubTab;
     } else {
-      const savedStep = LectureStorage.getLastActiveStep(milestoneId);
-      if (savedStep && this.stepList.some(s => s.id === savedStep)) {
-        this.currentStepId = savedStep;
-      } else {
-        this.currentStepId = this.stepList[0]?.id || 'overview';
-      }
+      this.activeSubTab = 'theory';
     }
-
-    LectureStorage.setLastActiveStep(this.currentMilestoneId, this.currentStepId);
     this.render();
   }
 
+  setTopic(topicId: string, subTab?: TopicSubTab): void {
+    this.setMilestone(topicId, subTab);
+  }
+
   getMilestoneId(): string {
-    return this.currentMilestoneId;
+    return this.currentTopic.legacyMilestoneId;
   }
 
   getCurrentStepId(): string {
-    return this.currentStepId;
-  }
-
-  private buildStepList(lecture: MilestoneLecture): void {
-    this.stepList = [];
-
-    // Step 0: Overview
-    this.stepList.push({
-      id: 'overview',
-      tabLabel: 'Genel Bakış',
-      fullTitle: `${lecture.title} - Giriş & Genel Bakış`,
-      badge: '📖'
-    });
-
-    // Sections / Modules
-    lecture.sections.forEach((sec, idx) => {
-      this.stepList.push({
-        id: `sec-${idx}`,
-        tabLabel: this.formatStepTitle(sec.title, idx),
-        fullTitle: sec.title,
-        badge: `${idx + 1}`
-      });
-    });
-
-    // State Prediction Step (if exercises exist for this milestone)
-    const preds = MILESTONE_STATE_PREDICTIONS[this.currentMilestoneId];
-    if (preds && preds.length > 0) {
-      this.stepList.push({
-        id: 'prediction',
-        tabLabel: 'Durum Tahmini',
-        fullTitle: `Aşama ${lecture.milestoneNumber}: Koda Bakarak Durum Tahmini (Register / Flag / Memory)`,
-        badge: '🧠'
-      });
-    }
-
-    // Final Step: Capstone or Hardware Wrap-up
-    const capstone = Object.values(CHALLENGES).find(ch => ch.milestoneId === this.currentMilestoneId && ch.isCapstone);
-    if (this.currentMilestoneId === 'milestone-1') {
-      this.stepList.push({
-        id: 'capstone',
-        tabLabel: 'Mimari Bitiş',
-        fullTitle: 'Aşama 1 Tamamlandı: Donanım & Mimari Temeli',
-        badge: '🏛️',
-        isCapstone: true
-      });
-    } else if (capstone) {
-      this.stepList.push({
-        id: 'capstone',
-        tabLabel: 'Aşama Sınavı',
-        fullTitle: `Aşama ${lecture.milestoneNumber} Sonu Sentez Görevi: ${capstone.title}`,
-        badge: '🏆',
-        isCapstone: true
-      });
-    }
-  }
-
-  private formatStepTitle(title: string, index: number): string {
-    // Strip parenthetical notes for compact tab display
-    const cleaned = title.replace(/\([^)]*\)/g, '').trim();
-
-    // Match "X. Modül: Title"
-    const modMatch = cleaned.match(/^(\d+)\.\s*Modül:\s*(.+)$/i);
-    if (modMatch) {
-      const name = modMatch[2].split(':')[0].trim();
-      return `Modül ${modMatch[1]}: ${name}`;
-    }
-
-    // Match "X. Title"
-    const numMatch = cleaned.match(/^(\d+)\.\s*(.+)$/);
-    if (numMatch) {
-      const name = numMatch[2].split(':')[0].trim();
-      return `${numMatch[1]}. ${name}`;
-    }
-
-    return `Modül ${index + 1}: ${cleaned}`;
+    return this.activeSubTab;
   }
 
   render(): void {
-    const lecture = MILESTONE_LECTURES[this.currentMilestoneId] || MILESTONE_LECTURES['milestone-1'];
-    this.exampleWidgets = [];
-
-    this.buildStepList(lecture);
-
-    // Validate current step
-    if (!this.stepList.some(s => s.id === this.currentStepId)) {
-      this.currentStepId = this.stepList[0]?.id || 'overview';
-    }
-
-    const keys = Object.keys(MILESTONE_LECTURES);
-    const currIdx = keys.indexOf(this.currentMilestoneId);
-    const prevKey = currIdx > 0 ? keys[currIdx - 1] : null;
-    const nextKey = currIdx < keys.length - 1 ? keys[currIdx + 1] : null;
-    const nextMilestoneNumber = nextKey ? (MILESTONE_LECTURES[nextKey]?.milestoneNumber || currIdx + 2) : null;
-    const capstone = Object.values(CHALLENGES).find(ch => ch.milestoneId === this.currentMilestoneId && ch.isCapstone);
-    const preds = MILESTONE_STATE_PREDICTIONS[this.currentMilestoneId];
-
-    const currentStepIdx = this.stepList.findIndex(s => s.id === this.currentStepId);
-    const completedSteps = LectureStorage.getCompletedSteps(this.currentMilestoneId);
-    const completedCount = this.stepList.filter(s => completedSteps.includes(s.id)).length;
-    const totalSteps = this.stepList.length;
-    const progressPercent = totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0;
-    const currentStepObj = this.stepList[currentStepIdx] || this.stepList[0];
+    const topic = this.currentTopic;
 
     this.container.innerHTML = `
-      <div class="lecture-doc-container">
-        <!-- Top Navigation Breadcrumbs -->
+      <div class="lecture-doc-container topic-study-hub">
+        <!-- Top Breadcrumbs -->
         <div class="lecture-doc-breadcrumb">
-          <span class="bc-item bc-roadmap-link" style="cursor: pointer;" title="Yol Haritasına Git">🗺️ Yol Haritası</span>
+          <span class="bc-item bc-roadmap-link" style="cursor: pointer;" title="Konu Kataloğuna Git">🗺️ Konu Kataloğu</span>
           <span class="bc-sep">/</span>
-          <span class="bc-item highlight">Aşama ${lecture.milestoneNumber}: ${this.escapeHtml(lecture.title)}</span>
+          <span class="bc-item">Konu ${topic.number}</span>
+          <span class="bc-sep">/</span>
+          <span class="bc-item highlight">${this.escapeHtml(topic.shortTitle)}</span>
         </div>
 
-        <!-- Lecture Header Banner -->
-        <div class="lecture-doc-header">
+        <!-- Master Topic Selection Bar (Her Aşama Yerine Konu Başlığı Seç) -->
+        <div class="topic-master-nav-card">
+          <div class="topic-nav-top-row">
+            <div class="topic-nav-label-wrap">
+              <span class="topic-nav-icon">📚</span>
+              <span class="topic-nav-heading">Konu Başlığı Seçimi:</span>
+            </div>
+            <div class="topic-select-wrap">
+              <select id="select-active-topic" class="topic-select-dropdown">
+                ${TOPIC_CURRICULUM.map(t => `
+                  <option value="${t.id}" ${t.id === topic.id ? 'selected' : ''}>
+                    ${t.icon} ${t.number}. ${this.escapeHtml(t.title)}
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+            <div class="topic-search-box-wrap">
+              <span class="search-box-icon">🔍</span>
+              <input 
+                type="text" 
+                id="topic-search-input" 
+                class="topic-search-input" 
+                placeholder="Konu veya komut ara (MOV, Stack, CMP, Döngü...)" 
+                value="${this.escapeHtml(this.searchQuery)}"
+              />
+              ${this.searchQuery ? '<button id="btn-clear-topic-search" class="btn-clear-search">✕</button>' : ''}
+            </div>
+          </div>
+
+          <!-- Quick Topic Pills (Hızlı Konu Butonları) -->
+          <div class="topic-pills-row">
+            ${TOPIC_CURRICULUM.map(t => `
+              <button 
+                type="button" 
+                class="btn-topic-pill ${t.id === topic.id ? 'active' : ''}" 
+                data-topic-id="${t.id}"
+                title="${this.escapeHtml(t.title)}"
+              >
+                <span class="pill-icon">${t.icon}</span>
+                <span class="pill-num">${t.number}</span>
+                <span class="pill-title">${this.escapeHtml(t.shortTitle)}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Selected Topic Header Banner -->
+        <div class="lecture-doc-header topic-hero-banner">
           <div class="lecture-header-top">
-            <span class="lecture-pill">DERS ANLATIMI & TEORİ REHBERİ</span>
-            <span class="lecture-slide-ref">📍 Slayt: ${this.escapeHtml(lecture.slideRef)}</span>
+            <span class="lecture-pill">${topic.badge}</span>
+            <span class="lecture-slide-ref">📌 Konu ${topic.number} / 10</span>
           </div>
-          <h1 class="lecture-main-title">${this.escapeHtml(lecture.title)}</h1>
-          <p class="lecture-subtitle-text">${this.escapeHtml(lecture.subtitle)}</p>
-        </div>
+          <h1 class="lecture-main-title">${topic.icon} ${this.escapeHtml(topic.title)}</h1>
+          <p class="lecture-subtitle-text">${this.escapeHtml(topic.summary)}</p>
 
-        <!-- Stepper & Tab Progress Component (Sekme Mantığı & İlerleme Görünümü) -->
-        <div class="lecture-stepper-container">
-          <!-- Stepper Meta Summary Bar -->
-          <div class="stepper-summary-bar">
-            <div class="stepper-meta-left">
-              <span class="stepper-step-indicator">Adım ${currentStepIdx + 1} / ${totalSteps}</span>
-              <span class="stepper-active-title">${this.escapeHtml(currentStepObj?.fullTitle || '')}</span>
-            </div>
-            <div class="stepper-meta-right">
-              <span class="stepper-percent-badge">%${progressPercent} Tamamlandı (${completedCount}/${totalSteps} Adım)</span>
-              <div class="stepper-quick-nav">
-                <button class="btn-step-quick prev" ${currentStepIdx <= 0 ? 'disabled' : ''} title="Önceki Adım">⬅️ Önceki</button>
-                <button class="btn-step-quick next" ${currentStepIdx >= totalSteps - 1 ? 'disabled' : ''} title="Sonraki Adım">Sonraki ➡️</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Progress Bar Track -->
-          <div class="stepper-progress-track">
-            <div class="stepper-progress-fill" style="width: ${progressPercent}%;"></div>
-          </div>
-
-          <!-- Stepper Tabs Scroll Row -->
-          <div class="stepper-tabs-scroll-wrap">
-            <div class="stepper-tabs-row">
-              ${this.stepList.map((step, idx) => {
-                const isCompleted = completedSteps.includes(step.id);
-                const isActive = step.id === this.currentStepId;
-                return `
-                  <button type="button" class="stepper-tab-pill ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${step.isCapstone ? 'capstone-pill' : ''}" data-step-id="${step.id}" title="${this.escapeHtml(step.fullTitle)}">
-                    <span class="tab-pill-badge">${isCompleted ? '✓' : step.badge}</span>
-                    <span class="tab-pill-label">${this.escapeHtml(step.tabLabel)}</span>
-                  </button>
-                `;
-              }).join('')}
+          <!-- Included Opcodes Chips -->
+          <div class="topic-opcodes-bar">
+            <span class="opcodes-label">İçerilen Komut & Yazmaçlar:</span>
+            <div class="opcodes-chips">
+              ${topic.opcodes.map(op => `<span class="opcode-chip">${this.escapeHtml(op)}</span>`).join('')}
             </div>
           </div>
         </div>
 
-        <!-- Step Panes Content Area (Sadece Aktif Modül Gösterilir) -->
-        <div class="lecture-step-content-area">
-
-          <!-- Pane 0: Overview (Genel Bakış) -->
-          <div class="lecture-step-pane" data-pane-id="overview" style="display: ${this.currentStepId === 'overview' ? 'block' : 'none'};">
-            <div class="lecture-overview-mount">
-              ${lecture.overviewHtml}
-            </div>
-            <div class="module-nav-footer">
-              <div style="flex: 1;"></div>
-              <button class="btn-step-nav-action primary" data-target-step="${this.stepList[1]?.id || 'sec-0'}">
-                🚀 1. Modüle Başla ➡️
-              </button>
-            </div>
-          </div>
-
-          <!-- Panes 1..N: Lecture Sections / Modules -->
-          ${lecture.sections.map((sec, secIdx) => {
-            const stepId = `sec-${secIdx}`;
-            const isSecCompleted = completedSteps.includes(stepId);
-            const prevStep = this.stepList[secIdx]?.id || 'overview'; // idx 0 in sections corresponds to idx 1 in stepList
-            const nextStep = this.stepList[secIdx + 2]?.id || 'capstone';
-            const prevLabel = this.stepList[secIdx]?.tabLabel || 'Genel Bakış';
-            const nextLabel = this.stepList[secIdx + 2]?.tabLabel || 'Aşama Sınavı 🏆';
-
-            return `
-              <div class="lecture-step-pane" data-pane-id="${stepId}" style="display: ${this.currentStepId === stepId ? 'block' : 'none'};">
-                <div class="lecture-section-card">
-                  <div class="lecture-sec-header">
-                    <div class="sec-badge-row">
-                      <span class="sec-number-badge">MODÜL ${secIdx + 1} / ${lecture.sections.length}</span>
-                      ${isSecCompleted ? '<span class="sec-done-badge">✓ Tamamlandı</span>' : ''}
-                    </div>
-                    <h2 class="lecture-sec-title">${this.escapeHtml(sec.title)}</h2>
-                  </div>
-
-                  <div class="lecture-sec-content">
-                    ${sec.contentHtml}
-                  </div>
-
-                  ${sec.examples && sec.examples.length > 0 ? `
-                    <div class="lecture-examples-wrapper">
-                      <div id="example-mount-${secIdx}" class="example-widget-mount"></div>
-                    </div>
-                  ` : ''}
-                </div>
-
-                <!-- Intra-module Navigation Bar -->
-                <div class="module-nav-footer">
-                  <button class="btn-step-nav-action prev" data-target-step="${prevStep}">
-                    ⬅️ Önceki: ${this.escapeHtml(prevLabel)}
-                  </button>
-
-                  <button class="btn-step-toggle-complete ${isSecCompleted ? 'is-completed' : ''}" data-step-id="${stepId}">
-                    ${isSecCompleted ? '✓ Bu Adım Tamamlandı' : '⭕ Tamamlandı Olarak İşaretle'}
-                  </button>
-
-                  <button class="btn-step-nav-action next primary" data-target-step="${nextStep}">
-                    Sonraki: ${this.escapeHtml(nextLabel)} ➡️
-                  </button>
-                </div>
-              </div>
-            `;
-          }).join('')}
-
-          <!-- Pane: State Prediction (Register, Flag, Memory Analysis) -->
-          ${preds && preds.length > 0 ? `
-            <div class="lecture-step-pane" data-pane-id="prediction" style="display: ${this.currentStepId === 'prediction' ? 'block' : 'none'};">
-              <div id="state-prediction-mount-${this.currentMilestoneId}" class="state-prediction-mount"></div>
-
-              <div class="module-nav-footer">
-                <button class="btn-step-nav-action prev" data-target-step="sec-${lecture.sections.length - 1}">
-                  ⬅️ Önceki: Son Modül (${lecture.sections.length}. Modül)
-                </button>
-
-                <button class="btn-step-toggle-complete ${completedSteps.includes('prediction') ? 'is-completed' : ''}" data-step-id="prediction">
-                  ${completedSteps.includes('prediction') ? '✓ Durum Tahmini Tamamlandı' : '⭕ Tamamlandı Olarak İşaretle'}
-                </button>
-
-                <button class="btn-step-nav-action next primary" data-target-step="capstone">
-                  Sonraki: Aşama Sınavı 🏆 ➡️
-                </button>
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- Final Pane: Capstone Challenge / Hardware Wrap-up -->
-          <div class="lecture-step-pane" data-pane-id="capstone" style="display: ${this.currentStepId === 'capstone' ? 'block' : 'none'};">
-            <div class="lecture-capstone-container">
-              ${this.currentMilestoneId === 'milestone-1' ? `
-                <div class="lecture-capstone-card milestone-1-notice">
-                  <div class="capstone-card-badge-row">
-                    <span class="capstone-badge arch">🏛️ MİMARİ VE BELLEK TEMELİ TAMAMLANDI</span>
-                    <span class="capstone-scope-tag">1. Aşama: Donanım & Mimari</span>
-                  </div>
-                  <h3 class="capstone-title">Aşama 1 Tamamlandı: Kodlama Öncesi Mimari Donanım</h3>
-                  <p class="capstone-desc">
-                    Bu aşamada 8086'nın iç mimarisini (BIU & EU), 14 adet yazmaç kümesini, 20-bit adresleme formülünü ve Little-Endian prensibini öğrendiniz.
-                    Henüz assembly komutu (MOV, ADD vb.) anlatılmadığı için bu aşamada kodlama görevi bulunmamaktadır.
-                    <strong>Aşama 2'ye geçerek ilk komutları öğrendiğinizde, hem Aşama 1'i hem Aşama 2'yi harmanlayan ilk Kapsayıcı LeetCode Göreviniz açılacaktır!</strong>
-                  </p>
-                  <div class="capstone-card-actions">
-                    <button id="btn-capstone-m1-next" class="btn-capstone-action primary">
-                      🚀 Aşama 2'ye Geç ve İlk Kapsayıcı Göreve Hazırlan ➡️
-                    </button>
-                  </div>
-                </div>
-              ` : capstone ? `
-                <div class="lecture-capstone-card">
-                  <div class="capstone-card-badge-row">
-                    <span class="capstone-badge">🏆 AŞAMA ${lecture.milestoneNumber} SONU KAPSAYICI SENTEZ GÖREVİ</span>
-                    <span class="capstone-diff-tag ${capstone.difficulty.toLowerCase()}">${capstone.difficulty}</span>
-                    <span class="capstone-scope-tag">${this.escapeHtml(capstone.cumulativeStages || '')}</span>
-                  </div>
-
-                  <h3 class="capstone-title">${this.escapeHtml(capstone.title)}</h3>
-                  <p class="capstone-desc">${this.escapeHtml(capstone.scenario).replace(/\n/g, '<br/>')}</p>
-
-                  <div class="capstone-task-box">
-                    <div class="capstone-task-title">🎯 Sınav Görevi:</div>
-                    <div class="capstone-task-content">${this.escapeHtml(capstone.task).replace(/\n/g, '<br/>')}</div>
-                  </div>
-
-                  <div class="capstone-meta-row">
-                    <span class="capstone-opcodes-label">Kullanılacak Komutlar:</span>
-                    <div class="capstone-opcodes-list">
-                      ${capstone.opcodes.map(op => `<span class="capstone-op-pill">${op}</span>`).join('')}
-                    </div>
-                  </div>
-
-                  <div class="capstone-card-actions">
-                    <button id="btn-capstone-open-leetcode" class="btn-capstone-action primary" data-ch-id="${capstone.id}">
-                      ⚡ Bu Kapsayıcı Görevi LeetCode Panelinde Çöz →
-                    </button>
-                  </div>
-                </div>
-              ` : ''}
-            </div>
-
-            <!-- Capstone Navigation Footer -->
-            <div class="module-nav-footer">
-              <button class="btn-step-nav-action prev" data-target-step="${preds && preds.length > 0 ? 'prediction' : `sec-${lecture.sections.length - 1}`}">
-                ⬅️ Önceki: ${preds && preds.length > 0 ? 'Durum Tahmini 🧠' : `Son Modül (${lecture.sections.length}. Modül)`}
-              </button>
-
-              <button class="btn-step-toggle-complete ${completedSteps.includes('capstone') ? 'is-completed' : ''}" data-step-id="capstone">
-                ${completedSteps.includes('capstone') ? '✓ Sınav Tamamlandı' : '⭕ Sınavı Tamamlandı Olarak İşaretle'}
-              </button>
-
-              ${nextKey ? `
-                <button class="btn-jump-next-milestone primary" data-next-key="${nextKey}">
-                  🚀 Sonraki Aşamaya Geç (${nextMilestoneNumber}. Aşama) ➡️
-                </button>
-              ` : '<div style="flex: 1;"></div>'}
-            </div>
-          </div>
+        <!-- 4 Sub-Navigation Tabs Inside Selected Topic -->
+        <div class="topic-subtabs-nav">
+          <button class="btn-topic-subtab ${this.activeSubTab === 'theory' ? 'active' : ''}" data-subtab="theory">
+            <span class="tab-icon">📖</span>
+            <span class="tab-text">1. Adım Adım Konu Anlatımı</span>
+            <span class="tab-count-badge">${topic.theorySteps.length} Adım</span>
+          </button>
+          <button class="btn-topic-subtab ${this.activeSubTab === 'usage' ? 'active' : ''}" data-subtab="usage">
+            <span class="tab-icon">⚡</span>
+            <span class="tab-text">2. Her Kullanım Şekli & Örnekler</span>
+            <span class="tab-count-badge">${topic.usageGroups.reduce((acc, g) => acc + g.items.length, 0)} Örnek</span>
+          </button>
+          <button class="btn-topic-subtab ${this.activeSubTab === 'questions' ? 'active' : ''}" data-subtab="questions">
+            <span class="tab-icon">❓</span>
+            <span class="tab-text">3. Soru Bankası & Sınav Çıkmışları</span>
+            <span class="tab-count-badge">${topic.questions.length} Soru</span>
+          </button>
+          <button class="btn-topic-subtab ${this.activeSubTab === 'challenges' ? 'active' : ''}" data-subtab="challenges">
+            <span class="tab-icon">🚀</span>
+            <span class="tab-text">4. Uygulamalı Kodlama Görevleri</span>
+            <span class="tab-count-badge">${topic.challenges.length} Görev</span>
+          </button>
         </div>
 
-        <!-- Stage Navigation Footer -->
-        <div class="lecture-doc-footer">
-          <div class="footer-btn-group">
-            ${prevKey ? `
-              <button id="btn-lecture-prev" class="btn-lecture-nav prev" data-prev="${prevKey}">
-                ⬅️ Önceki Aşama
-              </button>
-            ` : '<div style="flex:1;"></div>'}
+        <!-- Subtab Content Area -->
+        <div class="topic-content-body">
+          ${this.renderActiveSubTabContent(topic)}
+        </div>
 
-            ${this.currentMilestoneId === 'milestone-1' ? `
-              <button id="btn-lecture-jump-leetcode" class="btn-lecture-leetcode btn-lecture-start-ch" title="Aşama 2'ye geçerek ilk komutları öğrenin ve kodlama görevlerine başlayın">
-                🚀 Aşama 2: İlk Komutlar ve Görevlere Başla ➡️
+        <!-- Footer Navigation Between Topics -->
+        <div class="topic-footer-nav">
+          <div class="footer-nav-left">
+            ${this.getPrevTopic() ? `
+              <button class="btn-topic-nav-prev" data-target-topic="${this.getPrevTopic()!.id}">
+                ⬅️ Önceki Konu: ${this.escapeHtml(this.getPrevTopic()!.shortTitle)}
               </button>
-            ` : `
-              <button id="btn-lecture-jump-leetcode" class="btn-lecture-leetcode">
-                ⚡ Bu Aşamanın LeetCode Görevlerini Çöz →
+            ` : '<span></span>'}
+          </div>
+          <div class="footer-nav-center">
+            <button class="btn-open-in-roadmap">🗺️ Tüm Konuları Gör (Müfredat Kataloğu)</button>
+          </div>
+          <div class="footer-nav-right">
+            ${this.getNextTopic() ? `
+              <button class="btn-topic-nav-next" data-target-topic="${this.getNextTopic()!.id}">
+                Sonraki Konu: ${this.escapeHtml(this.getNextTopic()!.shortTitle)} ➡️
               </button>
-            `}
-
-            ${nextKey ? `
-              <button id="btn-lecture-next" class="btn-lecture-nav next" data-next="${nextKey}">
-                Sonraki Aşama ➡️
-              </button>
-            ` : '<div style="flex:1;"></div>'}
+            ` : '<span></span>'}
           </div>
         </div>
       </div>
     `;
 
-    // Mount Interactive Example Workstations with code persistence & completion triggers
-    lecture.sections.forEach((sec, secIdx) => {
-      if (sec.examples && sec.examples.length > 0) {
-        const mountEl = this.container.querySelector(`#example-mount-${secIdx}`) as HTMLElement;
-        if (mountEl) {
-          const widget = new InteractiveExampleWidget(
-            mountEl,
-            sec.examples[0],
-            {
-              onOpenInMainEditor: (title, code) => {
-                this.callbacks.onOpenInMainEditor(title, code);
-              },
-              onStepCompleted: () => {
-                LectureStorage.setStepCompleted(this.currentMilestoneId, `sec-${secIdx}`, true);
-                this.updateProgressUI();
-              }
-            },
-            sec.examples
-          );
-          this.exampleWidgets.push(widget);
-        }
-      }
-    });
-
-    // Mount State Prediction Widget if present
-    const predMount = this.container.querySelector(`#state-prediction-mount-${this.currentMilestoneId}`) as HTMLElement;
-    if (predMount) {
-      new StatePredictionWidget(predMount, this.currentMilestoneId, {
-        onOpenInMainEditor: (title, code) => this.callbacks.onOpenInMainEditor(title, code)
-      });
-    }
-
-    this.attachEvents(prevKey, nextKey);
+    this.attachEvents();
     this.attachInteractiveDemos();
   }
 
-  private goToStep(stepId: string, autoMarkCurrentDone: boolean = false): void {
-    const targetStep = this.stepList.find(s => s.id === stepId);
-    if (!targetStep) return;
+  private renderActiveSubTabContent(topic: TopicItem): string {
+    switch (this.activeSubTab) {
+      case 'theory':
+        return this.renderTheoryContent(topic);
+      case 'usage':
+        return this.renderUsageContent(topic);
+      case 'questions':
+        return this.renderQuestionsContent(topic);
+      case 'challenges':
+        return this.renderChallengesContent(topic);
+      default:
+        return this.renderTheoryContent(topic);
+    }
+  }
 
-    if (autoMarkCurrentDone && this.currentStepId !== stepId) {
-      LectureStorage.setStepCompleted(this.currentMilestoneId, this.currentStepId, true);
+  // -------------------------------------------------------------------------
+  // 1. ADIM ADIM TEORİ İÇERİĞİ
+  // -------------------------------------------------------------------------
+  private renderTheoryContent(topic: TopicItem): string {
+    return `
+      <div class="theory-steps-stream">
+        <div class="section-intro-banner">
+          <span class="intro-badge">📘 TAM REHBER</span>
+          <h3>${this.escapeHtml(topic.title)} — Adım Adım Mimari & Kavram Anlatımı</h3>
+          <p>Aşağıdaki adımları sırayla takip ederek konunun donanım mekanizmasını, adresleme kurallarını ve sınav tuzaklarını kavrayın.</p>
+        </div>
+
+        ${topic.theorySteps.map(step => `
+          <div class="theory-step-card" id="step-${step.stepNumber}">
+            <div class="step-card-header">
+              <span class="step-card-num">${step.stepNumber}</span>
+              <h3 class="step-card-title">${this.escapeHtml(step.stepTitle)}</h3>
+            </div>
+            <div class="step-card-body">
+              ${step.htmlContent}
+            </div>
+          </div>
+        `).join('')}
+
+        ${topic.id === 'arch-20bit' ? `
+          <!-- Interaktif 20-Bit Adres Hesaplayıcı -->
+          <div class="interactive-calc-card">
+            <div class="calc-card-header">
+              <span class="calc-card-badge">⚡ Canlı İnteraktif Araç</span>
+              <h4 class="calc-card-title">20-Bit Fiziksel Adres ve Bellek Konumu Hesaplayıcı</h4>
+            </div>
+            <p style="font-size: 13.5px; color: #475569; margin-bottom: 12px;">
+              Segment ve Ofset değerlerini Hex (16'lık taban) olarak girin; formülün canlı olarak adım adım nasıl çalıştığını ve adresin 1 MB haritada nereye düştüğünü görün:
+            </p>
+            <div class="calc-input-row">
+              <div class="calc-input-group">
+                <label>Segment Yazmacı (Hex):</label>
+                <input type="text" id="input-calc-segment" class="calc-input" value="1234" maxlength="4" placeholder="örn: 1234">
+              </div>
+              <div class="calc-input-group">
+                <label>Ofset Yazmacı (Hex):</label>
+                <input type="text" id="input-calc-offset" class="calc-input" value="0100" maxlength="4" placeholder="örn: 0100">
+              </div>
+              <button type="button" id="btn-calc-address" class="btn-calc-action">Adresi Hesapla</button>
+            </div>
+            <div id="calc-address-result"></div>
+          </div>
+
+          <!-- Interaktif Little-Endian Simülatörü -->
+          <div class="interactive-calc-card" style="margin-top: 24px;">
+            <div class="calc-card-header">
+              <span class="calc-card-badge">⚡ Canlı İnteraktif Araç</span>
+              <h4 class="calc-card-title">Little-Endian Bellek Yerleşim Simülatörü</h4>
+            </div>
+            <p style="font-size: 13.5px; color: #475569; margin-bottom: 12px;">
+              16-bit bir kelime ve başlangıç adresini girin; düşük baytın düşük adrese, yüksek baytın bir sonraki adrese nasıl dağıldığını canlı izleyin:
+            </p>
+            <div class="calc-input-row">
+              <div class="calc-input-group">
+                <label>16-Bit Kelime (Hex):</label>
+                <input type="text" id="input-endian-word" class="calc-input" value="5A34" maxlength="4" placeholder="örn: 5A34">
+              </div>
+              <div class="calc-input-group">
+                <label>Başlangıç Bellek Adresi:</label>
+                <input type="text" id="input-endian-addr" class="calc-input" value="0200" maxlength="4" placeholder="örn: 0200">
+              </div>
+              <button type="button" id="btn-calc-endian" class="btn-calc-action">Belleğe Yerleştir</button>
+            </div>
+            <div id="endian-result-container"></div>
+          </div>
+        ` : ''}
+
+        <div class="next-subtab-prompt">
+          <p>Tebrikler! Konunun teorik adımlarını incelediniz. Şimdi bu komutların ve kuralların her kullanım şeklini örneklerle görmek için sonraki bölüme geçin:</p>
+          <button class="btn-prompt-subtab-jump primary" data-target-subtab="usage">
+            ⚡ 2. Bölüm: Her Kullanım Şekli & Örnekler ➡️
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // -------------------------------------------------------------------------
+  // 2. HER KULLANIM ŞEKLİ & ÖRNEKLER
+  // -------------------------------------------------------------------------
+  private renderUsageContent(topic: TopicItem): string {
+    return `
+      <div class="usage-variations-stream">
+        <div class="section-intro-banner">
+          <span class="intro-badge">⚡ KAPSAMLI KOD BANKASI</span>
+          <h3>Her Kullanım Şekli, Varyasyonlar & Simülatör Entegrasyonu</h3>
+          <p>
+            Bu konuda yer alan komutların alabildiği <strong>tüm operant varyasyonları</strong>, bellek adresleme modları ve sık yapılan <strong>sözdizimi yasakları</strong> aşağıda listelenmiştir.
+            Her örneğin yanındaki <strong>"⚡ Simülatörde Çalıştır"</strong> butonuna tıklayarak kodu ana editöre alabilir ve adım adım çalıştırabilirsiniz.
+          </p>
+        </div>
+
+        ${topic.usageGroups.map(group => `
+          <div class="usage-group-card">
+            <div class="usage-group-header">
+              <span class="group-folder-icon">📁</span>
+              <div class="group-header-text">
+                <h3 class="group-title">${this.escapeHtml(group.groupTitle)}</h3>
+                ${group.groupDescription ? `<p class="group-desc">${this.escapeHtml(group.groupDescription)}</p>` : ''}
+              </div>
+            </div>
+
+            <div class="usage-items-list">
+              ${group.items.map((item, idx) => `
+                <div class="usage-item-card ${item.isInvalid ? 'is-invalid-syntax' : ''}">
+                  <div class="usage-item-top">
+                    <div class="usage-item-title-wrap">
+                      <span class="usage-item-badge">${item.isInvalid ? '❌ YASAK KULLANIM' : `Varyasyon ${idx + 1}`}</span>
+                      <h4 class="usage-item-title">${this.escapeHtml(item.title)}</h4>
+                    </div>
+                    <button 
+                      class="btn-run-snippet" 
+                      data-code="${this.escapeHtml(item.code)}" 
+                      data-title="${this.escapeHtml(item.title)}"
+                      title="Bu kodu doğrudan ana editöre yükle ve simülatörde adım adım çalıştır"
+                    >
+                      ⚡ Simülatörde / Editörde Çalıştır
+                    </button>
+                  </div>
+
+                  <p class="usage-item-desc">${this.escapeHtml(item.description)}</p>
+
+                  <div class="usage-code-wrapper">
+                    <pre class="usage-code-block"><code>${this.escapeHtml(item.code)}</code></pre>
+                  </div>
+
+                  ${item.syntaxRule ? `
+                    <div class="usage-rule-callout">
+                      📌 <strong>Sözdizimi Kuralı:</strong> ${this.escapeHtml(item.syntaxRule)}
+                    </div>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `).join('')}
+
+        <div class="next-subtab-prompt">
+          <p>Örnekleri incelediniz! Şimdi bu konudaki çıkmış sınav soruları ve durum tahmin alıştırmalarıyla kendinizi test edin:</p>
+          <button class="btn-prompt-subtab-jump primary" data-target-subtab="questions">
+            ❓ 3. Bölüm: Soru Bankası & Sınav Çıkmışları ➡️
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // -------------------------------------------------------------------------
+  // 3. SORU BANKASI & SINAV ÇIKMIŞLARI
+  // -------------------------------------------------------------------------
+  private renderQuestionsContent(topic: TopicItem): string {
+    if (topic.questions.length === 0) {
+      return `
+        <div class="empty-questions-card">
+          <span class="empty-icon">📝</span>
+          <h3>Bu konu için hazırlanan sorular güncellenmektedir.</h3>
+          <p>Uygulamalı kodlama görevlerine göz atabilirsiniz.</p>
+        </div>
+      `;
     }
 
-    this.currentStepId = stepId;
-    LectureStorage.setLastActiveStep(this.currentMilestoneId, stepId);
+    return `
+      <div class="questions-stream">
+        <div class="section-intro-banner">
+          <span class="intro-badge">❓ SINAV HAZIRLIĞI</span>
+          <h3>Üniversite Vize Standartlarında Çıkmış Sorular & Kod Analizleri</h3>
+          <p>
+            Her soruda verilen kodu inceleyin, beklenen değerleri kendiniz hesaplayın ve ardından 
+            <strong>"💡 Çözümü & Açıklamayı Göster"</strong> butonuna basarak adım adım analizi ve hocanın sınav puanlama kriterlerini görün.
+          </p>
+        </div>
 
-    // Update Tab Pills Active State
-    this.container.querySelectorAll<HTMLButtonElement>('.stepper-tab-pill').forEach(btn => {
-      const id = btn.getAttribute('data-step-id');
-      if (id === stepId) {
-        btn.classList.add('active');
-        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      } else {
-        btn.classList.remove('active');
+        ${topic.questions.map(q => {
+          const isOpen = this.openSolutions.has(q.id);
+          return `
+            <div class="topic-question-card" id="question-${q.id}">
+              <div class="question-header">
+                <div class="question-meta-tags">
+                  <span class="q-difficulty-badge ${q.difficulty.toLowerCase()}">${q.difficulty}</span>
+                  ${q.points ? `<span class="q-points-badge">${q.points} Puan</span>` : ''}
+                </div>
+                <h3 class="question-title">${this.escapeHtml(q.title)}</h3>
+              </div>
+
+              <div class="question-scenario">
+                <p>${this.escapeHtml(q.scenario)}</p>
+              </div>
+
+              ${q.codeSnippet ? `
+                <div class="question-code-block-wrap">
+                  <div class="code-block-header">
+                    <span>Soru Kodu:</span>
+                    <button 
+                      class="btn-run-snippet small" 
+                      data-code="${this.escapeHtml(q.codeSnippet)}" 
+                      data-title="${this.escapeHtml(q.title)}"
+                    >
+                      ⚡ Editörde Dene
+                    </button>
+                  </div>
+                  <pre class="question-code-snippet"><code>${this.escapeHtml(q.codeSnippet)}</code></pre>
+                </div>
+              ` : ''}
+
+              <!-- Solution Accordion Button -->
+              <div class="solution-toggle-wrap">
+                <button class="btn-toggle-solution" data-qid="${q.id}">
+                  <span class="toggle-icon">${isOpen ? '▲' : '💡'}</span>
+                  <span class="toggle-text">${isOpen ? 'Çözümü ve Analizi Gizle' : 'Adım Adım Çözümü & Analizi Göster'}</span>
+                </button>
+              </div>
+
+              <!-- Solution Details Drawer -->
+              <div class="question-solution-drawer" style="display: ${isOpen ? 'block' : 'none'};">
+                <div class="solution-steps-box">
+                  <h4 class="solution-steps-title">✅ Adım Adım Doğru Çözüm:</h4>
+                  <ul class="solution-steps-list">
+                    ${q.solutionSteps.map(s => `<li>${this.escapeHtml(s)}</li>`).join('')}
+                  </ul>
+                  ${q.expectedResult ? `
+                    <div class="solution-final-result">
+                      <strong>Beklenen Sonuç:</strong> <code>${this.escapeHtml(q.expectedResult)}</code>
+                    </div>
+                  ` : ''}
+                </div>
+
+                <div class="hoca-exam-tips-box">
+                  <span class="tips-icon">🎓</span>
+                  <div class="tips-body">
+                    <strong>Hocanın Puan Kırma Kriteri & Sınav Uyarısı:</strong><br>
+                    ${this.escapeHtml(q.examTips)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+
+        <div class="next-subtab-prompt">
+          <p>Soruları tamamladınız! Şimdi bu konudaki uygulamalı kodlama görevlerine geçin:</p>
+          <button class="btn-prompt-subtab-jump primary" data-target-subtab="challenges">
+            🚀 4. Bölüm: Uygulamalı Kodlama Görevleri ➡️
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // -------------------------------------------------------------------------
+  // 4. UYGULAMALI KODLAMA GÖREVLERİ
+  // -------------------------------------------------------------------------
+  private renderChallengesContent(topic: TopicItem): string {
+    if (topic.challenges.length === 0) {
+      return `
+        <div class="empty-questions-card">
+          <span class="empty-icon">💻</span>
+          <h3>Bu konu için kodlama alıştırmaları hazırlanmaktadır.</h3>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="challenges-stream">
+        <div class="section-intro-banner">
+          <span class="intro-badge">🚀 PRATİK KODLAMA</span>
+          <h3>Uygulamalı 8086 Assembly Görevleri</h3>
+          <p>Aşağıdaki görevleri ana editöre yükleyin, kodu tamamlayın ve simülatörde test edin.</p>
+        </div>
+
+        ${topic.challenges.map(ch => `
+          <div class="topic-challenge-card" id="challenge-${ch.id}">
+            <div class="challenge-card-header">
+              <span class="ch-badge ${ch.difficulty.toLowerCase()}">${ch.difficulty}</span>
+              <h3 class="ch-title">${this.escapeHtml(ch.title)}</h3>
+            </div>
+            <p class="ch-task-desc">${this.escapeHtml(ch.task)}</p>
+
+            <div class="ch-action-buttons">
+              <button 
+                class="btn-load-challenge primary" 
+                data-code="${this.escapeHtml(ch.starterCode)}" 
+                data-title="${this.escapeHtml(ch.title)}"
+              >
+                🚀 Kodu Editöre Yükle ve Çöz
+              </button>
+              <button 
+                class="btn-view-challenge-solution secondary" 
+                data-code="${this.escapeHtml(ch.solutionCode)}" 
+                data-title="${this.escapeHtml(ch.title)} (Örnek Çözüm)"
+              >
+                💡 Örnek Çözümü Editörde Aç
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  private getPrevTopic(): TopicItem | null {
+    const idx = TOPIC_CURRICULUM.findIndex(t => t.id === this.currentTopic.id);
+    return idx > 0 ? TOPIC_CURRICULUM[idx - 1] : null;
+  }
+
+  private getNextTopic(): TopicItem | null {
+    const idx = TOPIC_CURRICULUM.findIndex(t => t.id === this.currentTopic.id);
+    return idx < TOPIC_CURRICULUM.length - 1 ? TOPIC_CURRICULUM[idx + 1] : null;
+  }
+
+  private attachEvents(): void {
+    // Topic dropdown selection
+    const selectDropdown = this.container.querySelector('#select-active-topic') as HTMLSelectElement | null;
+    selectDropdown?.addEventListener('change', () => {
+      const targetId = selectDropdown.value;
+      if (targetId) {
+        this.setMilestone(targetId, this.activeSubTab);
       }
     });
 
-    // Update Panes Display
-    this.container.querySelectorAll<HTMLElement>('.lecture-step-pane').forEach(pane => {
-      const pId = pane.getAttribute('data-pane-id');
-      pane.style.display = pId === stepId ? 'block' : 'none';
-    });
-
-    this.updateProgressUI();
-
-    // Scroll to the top of the stepper area
-    const stepper = this.container.querySelector('.lecture-stepper-container');
-    if (stepper) {
-      stepper.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  private toggleStepComplete(stepId: string): void {
-    const isDone = LectureStorage.isStepCompleted(this.currentMilestoneId, stepId);
-    LectureStorage.setStepCompleted(this.currentMilestoneId, stepId, !isDone);
-    this.updateProgressUI();
-  }
-
-  private updateProgressUI(): void {
-    const currentStepIdx = this.stepList.findIndex(s => s.id === this.currentStepId);
-    const totalSteps = this.stepList.length;
-    const currentStepObj = this.stepList[currentStepIdx] || this.stepList[0];
-
-    const completedSteps = LectureStorage.getCompletedSteps(this.currentMilestoneId);
-    const completedCount = this.stepList.filter(s => completedSteps.includes(s.id)).length;
-    const progressPercent = totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0;
-
-    // Update Progress Fill and Percent Text
-    const progressFill = this.container.querySelector('.stepper-progress-fill') as HTMLElement | null;
-    if (progressFill) {
-      progressFill.style.width = `${progressPercent}%`;
-    }
-
-    const percentBadge = this.container.querySelector('.stepper-percent-badge') as HTMLElement | null;
-    if (percentBadge) {
-      percentBadge.textContent = `%${progressPercent} Tamamlandı (${completedCount}/${totalSteps} Adım)`;
-    }
-
-    const stepIndicator = this.container.querySelector('.stepper-step-indicator') as HTMLElement | null;
-    if (stepIndicator) {
-      stepIndicator.textContent = `Adım ${currentStepIdx + 1} / ${totalSteps}`;
-    }
-
-    const activeTitle = this.container.querySelector('.stepper-active-title') as HTMLElement | null;
-    if (activeTitle && currentStepObj) {
-      activeTitle.textContent = currentStepObj.fullTitle;
-    }
-
-    // Quick nav buttons
-    const btnQuickPrev = this.container.querySelector('.btn-step-quick.prev') as HTMLButtonElement | null;
-    const btnQuickNext = this.container.querySelector('.btn-step-quick.next') as HTMLButtonElement | null;
-    if (btnQuickPrev) btnQuickPrev.disabled = currentStepIdx <= 0;
-    if (btnQuickNext) btnQuickNext.disabled = currentStepIdx >= totalSteps - 1;
-
-    // Update tab pills checkmarks
-    this.stepList.forEach(step => {
-      const isDone = completedSteps.includes(step.id);
-      const pill = this.container.querySelector(`.stepper-tab-pill[data-step-id="${step.id}"]`) as HTMLElement | null;
-      if (pill) {
-        if (isDone) {
-          pill.classList.add('completed');
-        } else {
-          pill.classList.remove('completed');
+    // Topic pill buttons
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-topic-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const topicId = btn.getAttribute('data-topic-id');
+        if (topicId) {
+          this.setMilestone(topicId, this.activeSubTab);
         }
-        const badgeEl = pill.querySelector('.tab-pill-badge');
-        if (badgeEl) {
-          badgeEl.textContent = isDone ? '✓' : step.badge;
-        }
-      }
+      });
     });
 
-    // Update current active pane's toggle button
-    const toggleBtn = this.container.querySelector(`.btn-step-toggle-complete[data-step-id="${this.currentStepId}"]`) as HTMLButtonElement | null;
-    if (toggleBtn) {
-      const isDone = completedSteps.includes(this.currentStepId);
-      if (isDone) {
-        toggleBtn.classList.add('is-completed');
-        toggleBtn.innerHTML = '✓ Bu Adım Tamamlandı';
-      } else {
-        toggleBtn.classList.remove('is-completed');
-        toggleBtn.innerHTML = '⭕ Tamamlandı Olarak İşaretle';
-      }
-    }
-  }
+    // Subtab navigation buttons
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-topic-subtab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const subtab = btn.getAttribute('data-subtab') as TopicSubTab;
+        if (subtab) {
+          this.activeSubTab = subtab;
+          this.render();
+        }
+      });
+    });
 
-  private attachEvents(prevKey: string | null, nextKey: string | null): void {
+    // Subtab jump prompts (bottom of pages)
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-prompt-subtab-jump').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetSubtab = btn.getAttribute('data-target-subtab') as TopicSubTab;
+        if (targetSubtab) {
+          this.activeSubTab = targetSubtab;
+          this.render();
+          this.container.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+
+    // Prev / Next topic footer buttons
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-topic-nav-prev, .btn-topic-nav-next').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTopic = btn.getAttribute('data-target-topic');
+        if (targetTopic) {
+          this.setMilestone(targetTopic, 'theory');
+          this.container.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+
+    // Open in Roadmap catalog button
+    this.container.querySelector('.btn-open-in-roadmap')?.addEventListener('click', () => {
+      this.callbacks.onNavigateToRoadmap?.();
+    });
+
     // Breadcrumb roadmap link
     this.container.querySelector('.bc-roadmap-link')?.addEventListener('click', () => {
       this.callbacks.onNavigateToRoadmap?.();
     });
 
-    // Tab pills click
-    this.container.querySelectorAll<HTMLButtonElement>('.stepper-tab-pill').forEach(btn => {
+    // "⚡ Simülatörde Çalıştır" buttons
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-run-snippet, .btn-load-challenge, .btn-view-challenge-solution').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const code = btn.getAttribute('data-code') || '';
+        const title = btn.getAttribute('data-title') || 'Ornek Kod';
+        this.callbacks.onOpenInMainEditor(title, code);
+      });
+    });
+
+    // Toggle solution buttons in question cards
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-toggle-solution').forEach(btn => {
       btn.addEventListener('click', () => {
-        const stepId = btn.getAttribute('data-step-id');
-        if (stepId) {
-          this.goToStep(stepId);
+        const qid = btn.getAttribute('data-qid');
+        if (!qid) return;
+        if (this.openSolutions.has(qid)) {
+          this.openSolutions.delete(qid);
+        } else {
+          this.openSolutions.add(qid);
         }
+        this.render();
+        const el = this.container.querySelector(`#question-${qid}`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     });
 
-    // Quick prev / next buttons at top
-    const btnQuickPrev = this.container.querySelector('.btn-step-quick.prev') as HTMLButtonElement | null;
-    const btnQuickNext = this.container.querySelector('.btn-step-quick.next') as HTMLButtonElement | null;
-
-    btnQuickPrev?.addEventListener('click', () => {
-      const currentIdx = this.stepList.findIndex(s => s.id === this.currentStepId);
-      if (currentIdx > 0) {
-        this.goToStep(this.stepList[currentIdx - 1].id);
-      }
+    // Search input
+    const searchInput = this.container.querySelector('#topic-search-input') as HTMLInputElement | null;
+    searchInput?.addEventListener('input', () => {
+      this.searchQuery = searchInput.value.toLowerCase().trim();
+      this.filterBySearch();
     });
 
-    btnQuickNext?.addEventListener('click', () => {
-      const currentIdx = this.stepList.findIndex(s => s.id === this.currentStepId);
-      if (currentIdx < this.stepList.length - 1) {
-        this.goToStep(this.stepList[currentIdx + 1].id, true);
-      }
+    // Clear search button
+    this.container.querySelector('#btn-clear-topic-search')?.addEventListener('click', () => {
+      this.searchQuery = '';
+      this.render();
     });
+  }
 
-    // In-module nav actions (Next / Prev buttons)
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-step-nav-action').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const targetStep = btn.getAttribute('data-target-step');
-        const isNext = btn.classList.contains('next') || btn.classList.contains('primary');
-        if (targetStep) {
-          this.goToStep(targetStep, isNext);
-        }
-      });
-    });
-
-    // Toggle complete button
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-step-toggle-complete').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const stepId = btn.getAttribute('data-step-id');
-        if (stepId) {
-          this.toggleStepComplete(stepId);
-        }
-      });
-    });
-
-    // Next milestone button inside Capstone pane
-    this.container.querySelector('.btn-jump-next-milestone')?.addEventListener('click', (e) => {
-      const btn = e.currentTarget as HTMLButtonElement;
-      const targetMilestone = btn.getAttribute('data-next-key');
-      if (targetMilestone) {
-        this.callbacks.onNavigateToMilestoneLecture(targetMilestone);
-      }
-    });
-
-    // Stage level Previous / Next Navigation
-    if (prevKey) {
-      this.container.querySelector('#btn-lecture-prev')?.addEventListener('click', () => {
-        this.callbacks.onNavigateToMilestoneLecture(prevKey);
-      });
+  private filterBySearch(): void {
+    if (!this.searchQuery) {
+      this.render();
+      return;
     }
 
-    if (nextKey) {
-      this.container.querySelector('#btn-lecture-next')?.addEventListener('click', () => {
-        this.callbacks.onNavigateToMilestoneLecture(nextKey);
-      });
-    }
+    // Match topic titles, opcodes or usage items
+    const matchingTopics = TOPIC_CURRICULUM.filter(t => 
+      t.title.toLowerCase().includes(this.searchQuery) ||
+      t.summary.toLowerCase().includes(this.searchQuery) ||
+      t.opcodes.some(op => op.toLowerCase().includes(this.searchQuery))
+    );
 
-    // Leetcode arena button
-    this.container.querySelector('#btn-lecture-jump-leetcode')?.addEventListener('click', () => {
-      if (this.currentMilestoneId === 'milestone-1') {
-        this.callbacks.onNavigateToMilestoneLecture('milestone-2');
-      } else {
-        this.callbacks.onNavigateToLeetCodeMilestone(this.currentMilestoneId);
-      }
-    });
-
-    // Milestone 1 Capstone action
-    this.container.querySelector('#btn-capstone-m1-next')?.addEventListener('click', () => {
-      this.callbacks.onNavigateToMilestoneLecture('milestone-2');
-    });
-
-    // Capstone LeetCode open button
-    const btnOpenLeetCode = this.container.querySelector('#btn-capstone-open-leetcode') as HTMLButtonElement | null;
-    if (btnOpenLeetCode) {
-      btnOpenLeetCode.addEventListener('click', () => {
-        const chId = btnOpenLeetCode.getAttribute('data-ch-id') || undefined;
-        this.callbacks.onNavigateToLeetCodeMilestone(this.currentMilestoneId, chId);
-      });
+    if (matchingTopics.length > 0 && !matchingTopics.some(t => t.id === this.currentTopic.id)) {
+      this.currentTopic = matchingTopics[0];
+      this.render();
     }
   }
 
   private attachInteractiveDemos(): void {
-    // 1. 20-Bit Physical Address Calculator
+    // 20-Bit Physical Address Calculator
     const btnCalc = this.container.querySelector('#btn-calc-address') as HTMLButtonElement | null;
     const segInput = this.container.querySelector('#input-calc-segment') as HTMLInputElement | null;
     const offInput = this.container.querySelector('#input-calc-offset') as HTMLInputElement | null;
@@ -719,7 +710,7 @@ export class LectureDocumentView {
       doCalc();
     }
 
-    // 2. Little-Endian Visualizer
+    // Little-Endian Visualizer
     const btnEndian = this.container.querySelector('#btn-calc-endian') as HTMLButtonElement | null;
     const wordInput = this.container.querySelector('#input-endian-word') as HTMLInputElement | null;
     const addrInput = this.container.querySelector('#input-endian-addr') as HTMLInputElement | null;
@@ -783,3 +774,6 @@ export class LectureDocumentView {
       .replace(/>/g, '&gt;');
   }
 }
+
+// Export alias for semantic clarity
+export { LectureDocumentView as TopicStudyView };
