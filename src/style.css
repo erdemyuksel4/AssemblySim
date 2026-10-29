@@ -285,7 +285,7 @@ body {
   font-family: var(--font-mono);
   font-size: 13px;
   line-height: 22px;
-  padding: 10px 0;
+  padding: 10px 0 28px 0;
   color: var(--text-muted);
 }
 
@@ -363,10 +363,12 @@ body {
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: 10px 14px;
+  padding: 10px 14px 28px 14px;
   box-sizing: border-box !important;
   font-family: var(--font-mono);
   font-size: 13px;
+  font-weight: 400;
+  font-style: normal;
   line-height: 22px;
   tab-size: 4;
   white-space: pre;
@@ -376,6 +378,7 @@ body {
   word-spacing: 0px;
   border: none;
   outline: none;
+  font-kerning: none;
   font-variant-ligatures: none;
   font-feature-settings: "liga" 0, "calt" 0;
   -webkit-font-smoothing: antialiased;
@@ -397,7 +400,8 @@ body {
   -webkit-text-fill-color: transparent !important;
   caret-color: #000000;
   resize: none;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 /* Crucial: Prevent double-text ghosting during selection */
@@ -412,20 +416,21 @@ body {
   color: transparent !important;
 }
 
-/* Syntax Highlighting */
-.hl-opcode { color: #1d4ed8; font-weight: 700; }
-.hl-reg { color: #7c3aed; font-weight: 600; }
-.hl-directive { color: #b91c1c; font-weight: 700; }
+/* Syntax Highlighting - keep uniform font-weight/style with textarea to prevent character/line drift */
+.hl-opcode { color: #1d4ed8; font-weight: inherit; }
+.hl-reg { color: #7c3aed; font-weight: inherit; }
+.hl-directive { color: #b91c1c; font-weight: inherit; }
 .hl-number { color: #0284c7; }
-.hl-comment { color: #6b7280; font-style: italic; }
+.hl-comment { color: #6b7280; font-style: normal; }
 .hl-string { color: #059669; }
-.hl-label { color: #d97706; font-weight: 700; }
+.hl-label { color: #d97706; font-weight: inherit; }
 
 .editor-line-row {
   height: 22px;
   line-height: 22px;
+  min-width: max-content;
   margin: 0;
-  padding: 0;
+  padding: 0 28px 0 0;
   border: none;
   box-sizing: border-box;
 }

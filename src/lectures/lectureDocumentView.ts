@@ -319,9 +319,6 @@ export class LectureDocumentView {
                     <button id="btn-capstone-open-leetcode" class="btn-capstone-action primary" data-ch-id="${capstone.id}">
                       ⚡ Bu Kapsayıcı Görevi LeetCode Panelinde Çöz →
                     </button>
-                    <button id="btn-capstone-load-editor" class="btn-capstone-action secondary" data-ch-id="${capstone.id}">
-                      📝 Görev Şablonunu Editöre Aktar
-                    </button>
                   </div>
                 </div>
               ` : ''}
@@ -610,18 +607,6 @@ export class LectureDocumentView {
       btnOpenLeetCode.addEventListener('click', () => {
         const chId = btnOpenLeetCode.getAttribute('data-ch-id') || undefined;
         this.callbacks.onNavigateToLeetCodeMilestone(this.currentMilestoneId, chId);
-      });
-    }
-
-    // Capstone Load Editor button
-    const btnLoadEditor = this.container.querySelector('#btn-capstone-load-editor') as HTMLButtonElement | null;
-    if (btnLoadEditor) {
-      btnLoadEditor.addEventListener('click', () => {
-        const chId = btnLoadEditor.getAttribute('data-ch-id');
-        if (chId && CHALLENGES[chId]) {
-          const ch = CHALLENGES[chId];
-          this.callbacks.onOpenInMainEditor(ch.title, ch.starterCode);
-        }
       });
     }
   }

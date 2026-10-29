@@ -86,12 +86,16 @@ export class App {
     code: string;
     asmResult: AsmResult | null;
     ipToLineMap: Map<number, number>;
+    memBasePhys?: number;
+    memUserPinned?: boolean;
   }> = new Map();
 
   private secDocExecCache: Map<string, {
     code: string;
     asmResult: AsmResult | null;
     ipToLineMap: Map<number, number>;
+    memBasePhys?: number;
+    memUserPinned?: boolean;
   }> = new Map();
 
   private setPrimaryDirty(dirty: boolean): void {
@@ -330,7 +334,13 @@ export class App {
 
     // 1. Primary Components
     this.registerPanel = new RegisterPanel(registersContainer);
-    this.memoryView = new MemoryView(memoryContainer);
+    this.memoryView = new MemoryView(memoryContainer, (phys) => {
+      const cached = this.docExecCache.get(this.primaryDocId);
+      if (cached) {
+        cached.memBasePhys = phys;
+        cached.memUserPinned = true;
+      }
+    });
 
     this.consoleView = new ConsoleView(consoleContainer, {
       onInput: (input) => {
@@ -484,7 +494,15 @@ export class App {
     const secLectureMount = document.getElementById('sec-lecture-doc-mount')!;
 
     this.secRegisterPanel = new RegisterPanel(secRegistersContainer);
-    this.secMemoryView = new MemoryView(secMemoryContainer);
+    this.secMemoryView = new MemoryView(secMemoryContainer, (phys) => {
+      if (this.secondaryDocId) {
+        const cached = this.secDocExecCache.get(this.secondaryDocId);
+        if (cached) {
+          cached.memBasePhys = phys;
+          cached.memUserPinned = true;
+        }
+      }
+    });
 
     this.secConsoleView = new ConsoleView(secConsoleContainer, {
       onInput: (input) => {
@@ -914,6 +932,8 @@ export class App {
           this.ipToLineMap = cached.ipToLineMap;
           this.editor.clearErrors();
           this.setPrimaryDirty(false);
+          const originPhys = this.cpu.mem.toPhys(this.cpu.regs.cs, cached.asmResult!.origin);
+          this.memoryView.restoreViewState(originPhys, cached.memBasePhys, cached.memUserPinned);
           const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
           const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
           if (btnRun) btnRun.disabled = false;
@@ -921,6 +941,8 @@ export class App {
           this.syncActiveLine();
           this.updateViews();
         } else {
+          const originPhys = cached?.asmResult ? this.cpu.mem.toPhys(this.cpu.regs.cs, cached.asmResult.origin) : 0x00100;
+          this.memoryView.restoreViewState(originPhys, cached?.memBasePhys, cached?.memUserPinned);
           this.compile();
           this.updateViews();
         }
@@ -1015,6 +1037,8 @@ export class App {
           this.secIpToLineMap = secCached.ipToLineMap;
           this.secEditor.clearErrors();
           this.setSecondaryDirty(false);
+          const originPhys = this.secCpu.mem.toPhys(this.secCpu.regs.cs, secCached.asmResult!.origin);
+          this.secMemoryView.restoreViewState(originPhys, secCached.memBasePhys, secCached.memUserPinned);
           const btnRun = document.getElementById('btn-sec-run') as HTMLButtonElement;
           const btnNext = document.getElementById('btn-sec-next') as HTMLButtonElement;
           if (btnRun) btnRun.disabled = false;
@@ -1022,6 +1046,8 @@ export class App {
           this.secSyncActiveLine();
           this.secUpdateViews();
         } else {
+          const originPhys = secCached?.asmResult ? this.secCpu.mem.toPhys(this.secCpu.regs.cs, secCached.asmResult.origin) : 0x00100;
+          this.secMemoryView.restoreViewState(originPhys, secCached?.memBasePhys, secCached?.memUserPinned);
           this.secCompile();
           this.secUpdateViews();
         }
@@ -1749,14 +1775,28 @@ export class App {
       this.ipToLineMap.set(item.addr, item.line);
     }
 
+    const prevCached = this.docExecCache.get(this.primaryDocId);
+    const prevOriginPhys = prevCached?.asmResult
+      ? this.cpu.mem.toPhys(this.cpu.regs.cs, prevCached.asmResult.origin)
+      : undefined;
+    const originPhys = this.cpu.mem.toPhys(this.cpu.regs.cs, result.origin);
+
+    let memUserPinned = prevCached?.memUserPinned ?? false;
+    let memBasePhys = prevCached?.memBasePhys;
+    if (!memUserPinned || (prevOriginPhys !== undefined && prevOriginPhys !== originPhys)) {
+      memUserPinned = false;
+      memBasePhys = originPhys;
+    }
+
+    this.memoryView.restoreViewState(originPhys, memBasePhys, memUserPinned);
+
     this.docExecCache.set(this.primaryDocId, {
       code,
       asmResult: result,
-      ipToLineMap: new Map(this.ipToLineMap)
+      ipToLineMap: new Map(this.ipToLineMap),
+      memBasePhys: this.memoryView.getBasePhys(),
+      memUserPinned: this.memoryView.isUserPinned()
     });
-
-    const viewAddr = result.origin === 0x0100 ? 0x0000 : result.origin;
-    this.memoryView.jumpToPhys(viewAddr);
 
     this.syncActiveLine();
     this.updateViews();
@@ -1780,11 +1820,6 @@ export class App {
         if (memCount > 0 || hasRegs) {
           this.consoleView.log(`💡 Görev Ortamı Hazırlandı: ${hasRegs ? 'Yazmaçlar ' : ''}${memCount > 0 ? 've Ön Tanımlı Bellek Blokları' : ''} izole CPU ortamına yüklendi.`, 'info');
         }
-        if (challenge.testSetup.initialMemory && challenge.testSetup.initialMemory.length > 0) {
-          const first = challenge.testSetup.initialMemory[0];
-          const phys = (first.segment << 4) + first.offset;
-          this.memoryView.jumpToPhys(phys);
-        }
       }
     }
   }
@@ -1795,6 +1830,8 @@ export class App {
     if (this.currentAsmResult && this.currentAsmResult.errors.length === 0) {
       this.cpu.loadCOM(this.currentAsmResult.bytes, this.currentAsmResult.origin);
       this.applyChallengeEnvironmentIfAny();
+      const originPhys = this.cpu.mem.toPhys(this.cpu.regs.cs, this.currentAsmResult.origin);
+      this.memoryView.syncOrigin(originPhys);
       this.syncActiveLine();
       this.consoleView.log('Program başlangıç durumuna sıfırlandı.', 'info');
     } else {
@@ -2022,16 +2059,30 @@ export class App {
       this.secIpToLineMap.set(item.addr, item.line);
     }
 
+    const prevSecCached = this.secondaryDocId ? this.secDocExecCache.get(this.secondaryDocId) : undefined;
+    const prevOriginPhys = prevSecCached?.asmResult
+      ? this.secCpu.mem.toPhys(this.secCpu.regs.cs, prevSecCached.asmResult.origin)
+      : undefined;
+    const originPhys = this.secCpu.mem.toPhys(this.secCpu.regs.cs, result.origin);
+
+    let memUserPinned = prevSecCached?.memUserPinned ?? false;
+    let memBasePhys = prevSecCached?.memBasePhys;
+    if (!memUserPinned || (prevOriginPhys !== undefined && prevOriginPhys !== originPhys)) {
+      memUserPinned = false;
+      memBasePhys = originPhys;
+    }
+
+    this.secMemoryView.restoreViewState(originPhys, memBasePhys, memUserPinned);
+
     if (this.secondaryDocId) {
       this.secDocExecCache.set(this.secondaryDocId, {
         code,
         asmResult: result,
-        ipToLineMap: new Map(this.secIpToLineMap)
+        ipToLineMap: new Map(this.secIpToLineMap),
+        memBasePhys: this.secMemoryView.getBasePhys(),
+        memUserPinned: this.secMemoryView.isUserPinned()
       });
     }
-
-    const viewAddr = result.origin === 0x0100 ? 0x0000 : result.origin;
-    this.secMemoryView.jumpToPhys(viewAddr);
 
     this.secSyncActiveLine();
     this.secUpdateViews();
@@ -2056,11 +2107,6 @@ export class App {
         if (memCount > 0 || hasRegs) {
           this.secConsoleView.log(`💡 Görev Ortamı Hazırlandı: ${hasRegs ? 'Yazmaçlar ' : ''}${memCount > 0 ? 've Ön Tanımlı Bellek Blokları' : ''} izole CPU ortamına yüklendi.`, 'info');
         }
-        if (challenge.testSetup.initialMemory && challenge.testSetup.initialMemory.length > 0) {
-          const first = challenge.testSetup.initialMemory[0];
-          const phys = (first.segment << 4) + first.offset;
-          this.secMemoryView.jumpToPhys(phys);
-        }
       }
     }
   }
@@ -2072,6 +2118,8 @@ export class App {
     if (this.secCurrentAsmResult && this.secCurrentAsmResult.errors.length === 0) {
       this.secCpu.loadCOM(this.secCurrentAsmResult.bytes, this.secCurrentAsmResult.origin);
       this.applySecChallengeEnvironmentIfAny();
+      const originPhys = this.secCpu.mem.toPhys(this.secCpu.regs.cs, this.secCurrentAsmResult.origin);
+      this.secMemoryView.syncOrigin(originPhys);
       this.secSyncActiveLine();
       this.secConsoleView.log('Program başlangıç durumuna sıfırlandı.', 'info');
     } else {

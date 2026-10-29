@@ -189,9 +189,6 @@ export class RoadmapView {
                                   <button class="btn-ch-load" data-ch-id="${ch.id}" title="Bu görevi yeni bir izole CPU örneği ile editöre yükle">
                                     📝 Editöre Yükle (İzole CPU)
                                   </button>
-                                  <button class="btn-ch-test" data-ch-id="${ch.id}" title="Çözümü test et ve doğrula">
-                                    ▶️ Görevi Test Et
-                                  </button>
                                 </div>
                               </div>
                             `;
@@ -248,31 +245,6 @@ export class RoadmapView {
         if (challenge) {
           this.callbacks.onLoadChallengeToEditor(challenge);
         }
-      });
-    });
-
-    // Test challenge buttons
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-ch-test').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const chId = btn.dataset.chId;
-        if (!chId) return;
-        const challenge = CHALLENGES[chId];
-        if (!challenge) return;
-
-        // Try current editor code if available, otherwise starter or solution
-        let codeToGrade = challenge.solutionCode || challenge.starterCode;
-        if (this.callbacks.getCurrentEditorCode) {
-          const edCode = this.callbacks.getCurrentEditorCode().trim();
-          if (edCode) {
-            codeToGrade = edCode;
-          }
-        }
-
-        const result = ChallengeRunner.grade(challenge, codeToGrade);
-        if (result.status === 'PASSED') {
-          this.markSolved(chId);
-        }
-        this.showGradingModal(challenge, result);
       });
     });
   }

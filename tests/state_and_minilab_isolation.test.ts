@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { MiniLabRegistry } from '../src/lectures/miniLabRegistry.js';
 import { CpuInstanceManager } from '../src/cpu/instanceManager.js';
 import { Editor } from '../src/ui/editor.js';
+import { MemoryView } from '../src/ui/memoryView.js';
+import { CPU } from '../src/cpu/cpu.js';
 import { LectureExample } from '../src/lectures/lectureData.js';
 
 describe('State Persistence & Mini-Lab CPU Isolation Tests', () => {
@@ -125,5 +127,60 @@ describe('State Persistence & Mini-Lab CPU Isolation Tests', () => {
     const scroll = editor.getScroll();
     expect(scroll.top).toBe(450);
     expect(scroll.left).toBe(25);
+  });
+
+  it('defaults MemoryView to ORG 100h (0x00100) and stays there unless user manually navigates', () => {
+    const cpu = new CPU();
+    let inputEl: any = null;
+    let setBtn: any = null;
+
+    const fakeMemContainer = {
+      innerHTML: '',
+      querySelector: (sel: string) => {
+        if (sel === '#mem-start-addr-input') return inputEl;
+        if (sel === '#btn-mem-set') return setBtn;
+        return null;
+      }
+    };
+
+    let manualPhys: number | undefined;
+    const memView = new MemoryView(fakeMemContainer as any, (phys) => {
+      manualPhys = phys;
+    });
+
+    // Default start address is 00100h
+    expect(memView.getBasePhys()).toBe(0x00100);
+    expect(memView.isUserPinned()).toBe(false);
+
+    // Syncing to ORG 100h keeps it at 0x00100
+    memView.syncOrigin(0x00100);
+    expect(memView.getBasePhys()).toBe(0x00100);
+
+    // Simulate user manually navigating to 0x00250 via SET button
+    let setClickHandler: (() => void) | null = null;
+    inputEl = { value: '00250', addEventListener: () => {} };
+    setBtn = {
+      addEventListener: (ev: string, fn: () => void) => {
+        if (ev === 'click') setClickHandler = fn;
+      }
+    };
+
+    memView.render(cpu.mem, cpu.regs);
+    expect(setClickHandler).not.toBeNull();
+    setClickHandler!();
+
+    expect(memView.isUserPinned()).toBe(true);
+    expect(memView.getBasePhys()).toBe(0x00250);
+    expect(manualPhys).toBe(0x00250);
+
+    // Re-syncing with the same ORG 100h preserves the user's manual navigation
+    memView.syncOrigin(0x00100);
+    expect(memView.getBasePhys()).toBe(0x00250);
+    expect(memView.isUserPinned()).toBe(true);
+
+    // Changing ORG to 300h updates the view to the new ORG
+    memView.syncOrigin(0x00300);
+    expect(memView.getBasePhys()).toBe(0x00300);
+    expect(memView.isUserPinned()).toBe(false);
   });
 });

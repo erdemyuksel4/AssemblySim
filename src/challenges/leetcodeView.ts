@@ -208,9 +208,6 @@ export class LeetCodeView {
                   <button class="btn-card-load" data-ch-id="${ch.id}" title="Bu görevi yeni ve izole bir CPU örneği ile editöre yükle">
                     📝 Editöre Yükle (İzole CPU)
                   </button>
-                  <button class="btn-card-test" data-ch-id="${ch.id}" title="Mevcut çözümü sanal sandbox ortamında test et">
-                    ▶️ Görevi Test Et
-                  </button>
                 </div>
               </div>
             `;
@@ -283,30 +280,6 @@ export class LeetCodeView {
         if (ch) {
           this.callbacks.onLoadChallengeToEditor(ch);
         }
-      });
-    });
-
-    // Test challenge
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-card-test').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.chId;
-        if (!id) return;
-        const ch = CHALLENGES[id];
-        if (!ch) return;
-
-        let codeToGrade = ch.solutionCode || ch.starterCode;
-        if (this.callbacks.getCurrentEditorCode) {
-          const edCode = this.callbacks.getCurrentEditorCode().trim();
-          if (edCode) {
-            codeToGrade = edCode;
-          }
-        }
-
-        const result = ChallengeRunner.grade(ch, codeToGrade);
-        if (result.status === 'PASSED') {
-          this.markSolved(id);
-        }
-        this.showGradingModal(ch, result);
       });
     });
   }

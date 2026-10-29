@@ -80,6 +80,8 @@ export class InteractiveExampleWidget {
       if (this.record.consoleBuffer) {
         this.consoleView.appendStdout(this.record.consoleBuffer);
       }
+      const originPhys = this.cpu.mem.toPhys(this.cpu.regs.cs, this.currentAsmResult.origin);
+      this.memoryView.restoreViewState(originPhys, this.record.memBasePhys, this.record.memUserPinned);
       this.syncActiveLine();
       this.updateViews();
       if (this.record.editorScroll) {
@@ -221,7 +223,10 @@ export class InteractiveExampleWidget {
     const memoryContainer = this.container.querySelector('.embedded-memory-container') as HTMLElement;
 
     this.registerPanel = new RegisterPanel(registersContainer);
-    this.memoryView = new MemoryView(memoryContainer);
+    this.memoryView = new MemoryView(memoryContainer, (phys) => {
+      this.record.memBasePhys = phys;
+      this.record.memUserPinned = true;
+    });
 
     this.consoleView = new ConsoleView(consoleContainer, {
       onInput: (input) => {
@@ -406,6 +411,8 @@ export class InteractiveExampleWidget {
       if (this.record.consoleBuffer) {
         this.consoleView.appendStdout(this.record.consoleBuffer);
       }
+      const originPhys = this.cpu.mem.toPhys(this.cpu.regs.cs, this.currentAsmResult.origin);
+      this.memoryView.restoreViewState(originPhys, this.record.memBasePhys, this.record.memUserPinned);
       this.syncActiveLine();
       this.updateViews();
       if (this.record.editorScroll) {
@@ -413,6 +420,8 @@ export class InteractiveExampleWidget {
       }
       this.setDirty(Boolean(this.record.isDirty));
     } else {
+      const originPhys = 0x00100;
+      this.memoryView.restoreViewState(originPhys, this.record.memBasePhys, this.record.memUserPinned);
       this.compile();
       this.consoleView.clear();
       this.consoleView.log(`Alıştırma seviyesi değiştirildi: ${newEx.difficultyLabel || newEx.title}`, 'info');
@@ -462,15 +471,27 @@ export class InteractiveExampleWidget {
       this.ipToLineMap.set(item.addr, item.line);
     }
 
+    const prevOriginPhys = this.record.currentAsmResult
+      ? this.cpu.mem.toPhys(this.cpu.regs.cs, this.record.currentAsmResult.origin)
+      : undefined;
+
     this.record.userCode = code;
     this.record.currentAsmResult = result;
     this.record.ipToLineMap = new Map(this.ipToLineMap);
     this.record.isInitialized = true;
     this.record.consoleBuffer = this.cpu.consoleBuffer || '';
 
-    // Set memory view to origin
-    const viewAddr = result.origin === 0x0100 ? 0x0000 : result.origin;
-    this.memoryView.jumpToPhys(viewAddr);
+    // Set memory view to origin unless user manually navigated elsewhere
+    const originPhys = this.cpu.mem.toPhys(this.cpu.regs.cs, result.origin);
+    let memUserPinned = this.record.memUserPinned ?? false;
+    let memBasePhys = this.record.memBasePhys;
+    if (!memUserPinned || (prevOriginPhys !== undefined && prevOriginPhys !== originPhys)) {
+      memUserPinned = false;
+      memBasePhys = originPhys;
+    }
+    this.record.memBasePhys = memBasePhys;
+    this.record.memUserPinned = memUserPinned;
+    this.memoryView.restoreViewState(originPhys, memBasePhys, memUserPinned);
 
     this.syncActiveLine();
     this.updateViews();
@@ -602,6 +623,8 @@ export class InteractiveExampleWidget {
     if (this.currentAsmResult && this.currentAsmResult.errors.length === 0) {
       this.cpu.loadCOM(this.currentAsmResult.bytes, this.currentAsmResult.origin);
       this.applyExamplePreconditions(false);
+      const originPhys = this.cpu.mem.toPhys(this.cpu.regs.cs, this.currentAsmResult.origin);
+      this.memoryView.syncOrigin(originPhys);
       this.syncActiveLine();
       this.consoleView.log('Program başlangıç durumuna sıfırlandı.', 'info');
     } else {

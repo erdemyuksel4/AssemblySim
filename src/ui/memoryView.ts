@@ -3,11 +3,15 @@ import { Registers } from '../cpu/registers.js';
 
 export class MemoryView {
   private container: HTMLElement;
-  private currentBasePhys: number = 0x00000;
+  private currentBasePhys: number = 0x00100;
+  private defaultOriginPhys: number = 0x00100;
+  private userPinned: boolean = false;
   private rowCount: number = 8; // 8 rows * 16 bytes = 128 bytes visible at a time
+  private onManualAddressChange?: (phys: number) => void;
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, onManualAddressChange?: (phys: number) => void) {
     this.container = container;
+    this.onManualAddressChange = onManualAddressChange;
   }
 
   jumpTo(seg: number, off: number): void {
@@ -17,6 +21,34 @@ export class MemoryView {
 
   jumpToPhys(phys: number): void {
     this.currentBasePhys = Math.max(0, (phys & 0xFFFFF) & ~0x0F);
+  }
+
+  syncOrigin(originPhys: number): void {
+    const alignedOrigin = Math.max(0, (originPhys & 0xFFFFF) & ~0x0F);
+    if (!this.userPinned || alignedOrigin !== this.defaultOriginPhys) {
+      this.defaultOriginPhys = alignedOrigin;
+      this.userPinned = false;
+      this.currentBasePhys = alignedOrigin;
+    }
+  }
+
+  restoreViewState(originPhys: number, customPhys?: number, userPinned: boolean = false): void {
+    const alignedOrigin = Math.max(0, (originPhys & 0xFFFFF) & ~0x0F);
+    this.defaultOriginPhys = alignedOrigin;
+    this.userPinned = userPinned;
+    if (userPinned && customPhys !== undefined) {
+      this.currentBasePhys = Math.max(0, (customPhys & 0xFFFFF) & ~0x0F);
+    } else {
+      this.currentBasePhys = alignedOrigin;
+    }
+  }
+
+  getBasePhys(): number {
+    return this.currentBasePhys;
+  }
+
+  isUserPinned(): boolean {
+    return this.userPinned;
   }
 
   render(mem: Memory, regs: Registers): void {
@@ -84,17 +116,19 @@ export class MemoryView {
     const btnSet = this.container.querySelector('#btn-mem-set') as HTMLButtonElement;
 
     const applyAddr = () => {
-      const val = input.value.trim().toUpperCase();
+      const val = input.value.trim().toUpperCase().replace(/H$/, '');
       let targetPhys = 0;
       if (val.includes(':')) {
         const parts = val.split(':');
-        const seg = parseInt(parts[0], 16) || 0;
-        const off = parseInt(parts[1], 16) || 0;
+        const seg = parseInt(parts[0].replace(/H$/, ''), 16) || 0;
+        const off = parseInt(parts[1].replace(/H$/, ''), 16) || 0;
         targetPhys = mem.toPhys(seg, off);
       } else {
         targetPhys = parseInt(val, 16) || 0;
       }
+      this.userPinned = true;
       this.jumpToPhys(targetPhys);
+      this.onManualAddressChange?.(this.currentBasePhys);
       this.render(mem, regs);
     };
 

@@ -47,7 +47,7 @@ export class Editor {
         <div class="editor-gutter" id="editor-gutter"></div>
         <div class="editor-body">
           <pre class="editor-highlight" id="editor-highlight" aria-hidden="true"></pre>
-          <textarea class="editor-textarea" id="editor-textarea" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+          <textarea class="editor-textarea" id="editor-textarea" wrap="off" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         </div>
       </div>
       <div class="errors-box" id="editor-errors-box">
@@ -65,9 +65,12 @@ export class Editor {
   }
 
   private syncScroll(): void {
+    this.gutterLayer.scrollTop = this.textarea.scrollTop;
+    if (this.gutterLayer.scrollTop !== this.textarea.scrollTop) {
+      this.textarea.scrollTop = this.gutterLayer.scrollTop;
+    }
     this.highlightLayer.scrollTop = this.textarea.scrollTop;
     this.highlightLayer.scrollLeft = this.textarea.scrollLeft;
-    this.gutterLayer.scrollTop = this.textarea.scrollTop;
   }
 
   private applyEdit(newVal: string, newStart: number, newEnd: number): void {
@@ -85,6 +88,9 @@ export class Editor {
     const prevScrollLeft = this.textarea.scrollLeft;
 
     this.textarea.value = newVal;
+    this.updateHighlighting();
+    this.updateGutter();
+
     this.textarea.selectionStart = newStart;
     this.textarea.selectionEnd = newEnd;
 
@@ -93,8 +99,6 @@ export class Editor {
 
     this.history.push({ value: newVal, selectionStart: newStart, selectionEnd: newEnd });
 
-    this.updateHighlighting();
-    this.updateGutter();
     this.syncScroll();
     this.onCodeChange?.(newVal);
   }
@@ -115,14 +119,15 @@ export class Editor {
       const prevScrollLeft = this.textarea.scrollLeft;
 
       this.textarea.value = prevState.value;
+      this.updateHighlighting();
+      this.updateGutter();
+
       this.textarea.selectionStart = prevState.selectionStart;
       this.textarea.selectionEnd = prevState.selectionEnd;
 
       this.textarea.scrollTop = prevScrollTop;
       this.textarea.scrollLeft = prevScrollLeft;
 
-      this.updateHighlighting();
-      this.updateGutter();
       this.syncScroll();
       this.onCodeChange?.(prevState.value);
     }
@@ -135,14 +140,15 @@ export class Editor {
       const prevScrollLeft = this.textarea.scrollLeft;
 
       this.textarea.value = nextState.value;
+      this.updateHighlighting();
+      this.updateGutter();
+
       this.textarea.selectionStart = nextState.selectionStart;
       this.textarea.selectionEnd = nextState.selectionEnd;
 
       this.textarea.scrollTop = prevScrollTop;
       this.textarea.scrollLeft = prevScrollLeft;
 
-      this.updateHighlighting();
-      this.updateGutter();
       this.syncScroll();
       this.onCodeChange?.(nextState.value);
     }
@@ -284,8 +290,9 @@ export class Editor {
   }
 
   setCode(code: string): void {
-    this.textarea.value = code;
-    this.history.reset(code, 0);
+    const cleanCode = code.replace(/\r\n/g, '\n');
+    this.textarea.value = cleanCode;
+    this.history.reset(cleanCode, 0);
     this.updateHighlighting();
     this.updateGutter();
     this.syncScroll();
@@ -340,14 +347,17 @@ export class Editor {
   }
 
   clearErrors(): void {
+    const hadErrors = this.errors.size > 0;
     this.errors.clear();
     const content = this.container.querySelector('#errors-content') as HTMLElement;
     if (content) {
       content.className = 'errors-content status-ok';
       content.textContent = 'Compiled successfully with zero errors.';
     }
-    this.updateGutter();
-    this.updateHighlighting();
+    if (hadErrors) {
+      this.updateGutter();
+      this.updateHighlighting();
+    }
   }
 
   getScroll(): { top: number; left: number } {
@@ -364,12 +374,12 @@ export class Editor {
   }
 
   private scrollToLine(line: number): void {
-    const lineHeight = 22;
-    const targetScroll = (line - 1) * lineHeight - 60;
-    this.textarea.scrollTo({
-      top: Math.max(0, targetScroll),
-      behavior: 'smooth'
-    });
+    if (this.gutterLayer.scrollHeight > this.gutterLayer.clientHeight) {
+      const lineHeight = 22;
+      const targetScroll = (line - 1) * lineHeight - 60;
+      this.textarea.scrollTop = Math.max(0, targetScroll);
+      this.syncScroll();
+    }
   }
 
   private updateGutter(): void {
@@ -400,7 +410,7 @@ export class Editor {
   }
 
   private updateHighlighting(): void {
-    const lines = this.textarea.value.split('\n');
+    const lines = this.getCode().split('\n');
     let highlightedHtml = '';
 
     for (let i = 0; i < lines.length; i++) {

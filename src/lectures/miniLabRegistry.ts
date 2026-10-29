@@ -20,6 +20,8 @@ export interface MiniLabRecord {
   isDirty?: boolean;
   activeDifficultyId?: string;
   editorScroll?: { top: number; left: number };
+  memBasePhys?: number;
+  memUserPinned?: boolean;
 }
 
 /**
@@ -84,6 +86,8 @@ export class MiniLabRegistry {
     rec.consoleBuffer = '';
     rec.isInitialized = false;
     rec.isDirty = false;
+    rec.memBasePhys = undefined;
+    rec.memUserPinned = false;
     return rec;
   }
 
