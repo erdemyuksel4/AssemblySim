@@ -679,10 +679,84 @@ body {
   background-color: #f3f4f6;
 }
 
-/* 16-Column Memory Grid */
+.memory-quick-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.mem-jump-btn {
+  background: var(--bg-primary, #f8fafc);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  padding: 3px 6px;
+  cursor: pointer;
+  color: var(--text-secondary, #475569);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.mem-jump-btn:hover {
+  background: #e2e8f0;
+  color: var(--text-primary);
+  border-color: #94a3b8;
+}
+
+.mem-jump-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
+  font-weight: bold;
+}
+
+.memory-region-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  background: #f1f5f9;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 4px;
+  padding: 3px 8px;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .memory-region-badge {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .mem-jump-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .mem-jump-btn:hover {
+  background: #334155;
+  color: #f8fafc;
+}
+
+.memory-region-badge .region-pin {
+  font-weight: 600;
+  color: var(--accent-blue, #3b82f6);
+}
+
+.memory-region-badge .region-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+/* 16-Column Memory Grid with Row Address & ASCII */
 .memory-grid-box {
   border: 1px solid var(--border-color);
-  background-color: #ffffff;
+  background-color: var(--bg-primary, #ffffff);
   padding: 8px;
   border-radius: 4px;
   font-family: var(--font-mono);
@@ -691,12 +765,41 @@ body {
   overflow-x: auto;
 }
 
+.mem-row-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.mem-row-addr {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  width: 44px;
+  text-align: right;
+  flex-shrink: 0;
+  user-select: none;
+}
+
 .mem-row {
   display: grid;
   grid-template-columns: repeat(16, 1fr);
-  gap: 4px;
-  margin-bottom: 2px;
+  gap: 3px;
+  flex-grow: 1;
   text-align: center;
+}
+
+.mem-row-ascii {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border-color, #e2e8f0);
+  flex-shrink: 0;
+  user-select: none;
+  white-space: pre;
 }
 
 .mem-byte-cell {

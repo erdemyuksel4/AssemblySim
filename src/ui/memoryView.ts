@@ -1,6 +1,22 @@
 import { Memory } from '../cpu/memory.js';
 import { Registers } from '../cpu/registers.js';
 
+export function getMemoryRegionLabel(phys: number): string {
+  const p = phys & 0xFFFFF;
+  if (p < 0x00400) return 'IVT (Kesme Vektör Tablosu - 0x00000)';
+  if (p < 0x00500) return 'BDA (BIOS Veri Alanı - 0x00400)';
+  if (p >= 0x00500 && p < 0x01000) return 'Serbest Alt Bellek (RAM)';
+  if (p >= 0x01000 && p < 0x07C00) return 'KERNEL & Serbest RAM';
+  if (p >= 0x07C00 && p < 0x07E00) return 'BOOTLOADER Alanı (0x07C00 - 512B)';
+  if (p >= 0x07E00 && p < 0xA0000) return 'Serbest Konvansiyonel RAM';
+  if (p >= 0xA0000 && p < 0xB8000) return 'EGA/VGA Grafik Video Belleği';
+  if (p >= 0xB8000 && p < 0xC0000) return 'VRAM (80x25 Renkli Metin CRT Modu)';
+  if (p >= 0xC0000 && p < 0xF0000) return 'Video BIOS & Kart Genişleme ROM';
+  if (p >= 0xF0000 && p < 0xFFFF0) return 'ROM BIOS (Anakart Salt Okunur Belleği)';
+  if (p >= 0xFFFF0) return 'CPU Power-On Reset Vektörü (0xFFFF0)';
+  return 'Kullanıcı Belleği (RAM)';
+}
+
 export class MemoryView {
   private container: HTMLElement;
   private currentBasePhys: number = 0x00100;
@@ -53,16 +69,20 @@ export class MemoryView {
 
   render(mem: Memory, regs: Registers): void {
     const ipPhys = mem.toPhys(regs.cs, regs.ip);
+    const regionName = getMemoryRegionLabel(this.currentBasePhys);
 
     let rowsHtml = '';
     for (let r = 0; r < this.rowCount; r++) {
       const rowPhys = (this.currentBasePhys + r * 16) & 0xFFFFF;
+      const rowHex = rowPhys.toString(16).toUpperCase().padStart(5, '0');
       let cellsHtml = '';
+      let asciiHtml = '';
 
       for (let c = 0; c < 16; c++) {
         const cellPhys = (rowPhys + c) & 0xFFFFF;
         const val = mem.data[cellPhys];
         const hexVal = val.toString(16).toUpperCase().padStart(2, '0');
+        const charStr = (val >= 32 && val <= 126) ? String.fromCharCode(val) : '.';
 
         let cellClass = 'mem-byte-cell';
         if (cellPhys === ipPhys) {
@@ -75,10 +95,18 @@ export class MemoryView {
           else if (type === 'data') cellClass += ' is-data';
         }
 
-        cellsHtml += `<span class="${cellClass}" title="0x${cellPhys.toString(16).toUpperCase()}">${hexVal}</span>`;
+        const safeChar = charStr === '<' ? '&lt;' : charStr === '>' ? '&gt;' : charStr === '&' ? '&amp;' : charStr;
+        cellsHtml += `<span class="${cellClass}" title="0x${cellPhys.toString(16).toUpperCase()} = 0x${hexVal} ('${safeChar}')">${hexVal}</span>`;
+        asciiHtml += safeChar;
       }
 
-      rowsHtml += `<div class="mem-row">${cellsHtml}</div>`;
+      rowsHtml += `
+        <div class="mem-row-wrapper">
+          <span class="mem-row-addr">${rowHex}:</span>
+          <div class="mem-row">${cellsHtml}</div>
+          <span class="mem-row-ascii">${asciiHtml}</span>
+        </div>
+      `;
     }
 
     const addrHex = this.currentBasePhys.toString(16).toUpperCase().padStart(5, '0');
@@ -87,7 +115,7 @@ export class MemoryView {
       <div class="memory-card">
         <div class="memory-header-row">
           <div class="memory-title">
-            <span>Memory</span>
+            <span>Memory (1 MB)</span>
             <span class="info-btn" data-info-title="1 MB Gerçek Mod Belleği" data-info-desc="00000h - FFFFFh arası 20-bitlik fiziksel bellek alanını görüntüler. Yeşil: Kod bölgesi, Mavi: Veri bölgesi, Turuncu: CS:IP, Kırmızı: Son yazılan adres." tabindex="-1">i</span>
           </div>
           <div class="memory-address-control">
@@ -100,6 +128,22 @@ export class MemoryView {
             </div>
             <button id="btn-mem-set" class="btn-set">SET</button>
           </div>
+        </div>
+
+        <!-- Hızlı Konum Atlama Butonları -->
+        <div class="memory-quick-jumps">
+          <button class="mem-jump-btn ${this.currentBasePhys === 0x00000 ? 'active' : ''}" data-addr="00000" title="Kesme Vektör Tablosu (0x00000)">IVT</button>
+          <button class="mem-jump-btn ${this.currentBasePhys === 0x00400 ? 'active' : ''}" data-addr="00400" title="BIOS Veri Alanı (0x00400)">BDA</button>
+          <button class="mem-jump-btn ${this.currentBasePhys === 0x07C00 ? 'active' : ''}" data-addr="07C00" title="MBR Bootloader Adresi (0x07C00)">Boot (7C00h)</button>
+          <button class="mem-jump-btn ${this.currentBasePhys === 0x01000 ? 'active' : ''}" data-addr="01000" title="Kernel Başlangıç Adresi (0x01000)">Kernel (1000h)</button>
+          <button class="mem-jump-btn ${this.currentBasePhys === 0xB8000 ? 'active' : ''}" data-addr="B8000" title="VGA Renkli Metin Belleği (0xB8000)">VRAM</button>
+          <button class="mem-jump-btn ${this.currentBasePhys === 0xF0000 ? 'active' : ''}" data-addr="F0000" title="ROM BIOS Başlangıcı (0xF0000)">BIOS ROM</button>
+          <button class="mem-jump-btn ${this.currentBasePhys === 0xFFFF0 ? 'active' : ''}" data-addr="FFFF0" title="CPU Power-On Reset Vektörü (0xFFFF0)">Reset (FFFF0h)</button>
+        </div>
+
+        <!-- Bölge Bilgi Rozeti -->
+        <div class="memory-region-badge">
+          <span class="region-pin">📍 Bölge:</span> <span class="region-name">${regionName}</span>
         </div>
 
         <div class="memory-grid-box">
@@ -115,8 +159,8 @@ export class MemoryView {
     const input = this.container.querySelector('#mem-start-addr-input') as HTMLInputElement;
     const btnSet = this.container.querySelector('#btn-mem-set') as HTMLButtonElement;
 
-    const applyAddr = () => {
-      const val = input.value.trim().toUpperCase().replace(/H$/, '');
+    const applyAddr = (rawVal?: string) => {
+      const val = (rawVal !== undefined ? rawVal : input.value).trim().toUpperCase().replace(/H$/, '');
       let targetPhys = 0;
       if (val.includes(':')) {
         const parts = val.split(':');
@@ -132,9 +176,23 @@ export class MemoryView {
       this.render(mem, regs);
     };
 
-    btnSet?.addEventListener('click', applyAddr);
+    btnSet?.addEventListener('click', () => applyAddr());
     input?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') applyAddr();
     });
+
+    // Quick jump click handlers
+    if (typeof this.container.querySelectorAll === 'function') {
+      const jumpBtns = this.container.querySelectorAll<HTMLButtonElement>('.mem-jump-btn');
+      jumpBtns.forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const addrStr = btn.getAttribute('data-addr');
+          if (addrStr) {
+            applyAddr(addrStr);
+          }
+        });
+      });
+    }
   }
 }
