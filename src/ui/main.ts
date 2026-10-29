@@ -1,24 +1,16 @@
-import { CPU } from '../cpu/cpu.js';
-import { Assembler, AsmResult } from '../assembler/assembler.js';
-import { Editor } from './editor.js';
-import { RegisterPanel } from './registerPanel.js';
-import { MemoryView } from './memoryView.js';
+import { Assembler } from '../assembler/assembler.js';
 import { TooltipManager } from './tooltip.js';
-import { InstructionDoc, ManualTab } from './instructionDoc.js';
-import { ConsoleView } from './console.js';
+import { ManualTab } from './instructionDoc.js';
 import { CpuInstanceManager } from '../cpu/instanceManager.js';
 import { WorkspaceManager } from '../workspace/workspaceManager.js';
 import { WorkspaceDocument } from '../workspace/types.js';
 import { WorkspaceSidebar, SplitPairInfo } from './sidebar.js';
 import { CpuModal } from './cpuModal.js';
-import { CHALLENGES } from '../challenges/challengesData.js';
-import { ChallengeRunner } from '../challenges/runner.js';
-import { ChallengePanel } from './challengePanel.js';
-import { LectureDocumentView } from '../lectures/lectureDocumentView.js';
 import { MILESTONE_LECTURES } from '../lectures/lectureData.js';
 import { getTopicById } from '../lectures/topicStudyData.js';
+import { PaneSession, ExecutionSpeed } from './paneSession.js';
 
-export type ExecutionSpeed = '0.5' | '1' | '2';
+export type { ExecutionSpeed };
 
 const DEFAULT_CODE = `ORG 100H
 
@@ -30,28 +22,14 @@ START:
 `;
 
 export class App {
-  private cpu: CPU;
   private cpuManager: CpuInstanceManager;
   private workspace: WorkspaceManager;
   private sidebar!: WorkspaceSidebar;
   private cpuModal!: CpuModal;
 
-  // Primary Pane Components
-  private editor!: Editor;
-  private registerPanel!: RegisterPanel;
-  private memoryView!: MemoryView;
-  private consoleView!: ConsoleView;
-  private challengePanel!: ChallengePanel;
-  private lectureDocView!: LectureDocumentView;
-  private instructionDoc!: InstructionDoc;
-
-  // Primary Execution State
-  private currentAsmResult: AsmResult | null = null;
-  private ipToLineMap: Map<number, number> = new Map();
-  private isRunning: boolean = false;
-  private runTimer: number | null = null;
-  private currentSpeed: ExecutionSpeed = '1';
-  private wasRunningBeforeInput: boolean = false;
+  // Pane Sessions
+  private primaryPane!: PaneSession;
+  private secondaryPane!: PaneSession;
 
   // Multi-Pane & Split State
   private isSplitMode: boolean = false;
@@ -61,87 +39,11 @@ export class App {
   private splitPairs: SplitPairInfo[] = [];
   private activePairId: string | null = null;
 
-  // Secondary Pane Components
-  private secCpu: CPU | null = null;
-  private secEditor!: Editor;
-  private secRegisterPanel!: RegisterPanel;
-  private secMemoryView!: MemoryView;
-  private secConsoleView!: ConsoleView;
-  private secChallengePanel!: ChallengePanel;
-  private secLectureDocView!: LectureDocumentView;
-  private secInstructionDoc!: InstructionDoc;
-
-  // Secondary Execution State
-  private secCurrentAsmResult: AsmResult | null = null;
-  private secIpToLineMap: Map<number, number> = new Map();
-  private secIsRunning: boolean = false;
-  private secRunTimer: number | null = null;
-  private secSpeed: ExecutionSpeed = '1';
-  private secWasRunningBeforeInput: boolean = false;
-
-  private isPrimaryDirty: boolean = false;
-  private isSecondaryDirty: boolean = false;
-
-  // Per-document execution caches to preserve CPU state (registers, memory, flags, IP) on document switch
-  private docExecCache: Map<string, {
-    code: string;
-    asmResult: AsmResult | null;
-    ipToLineMap: Map<number, number>;
-    memBasePhys?: number;
-    memUserPinned?: boolean;
-  }> = new Map();
-
-  private secDocExecCache: Map<string, {
-    code: string;
-    asmResult: AsmResult | null;
-    ipToLineMap: Map<number, number>;
-    memBasePhys?: number;
-    memUserPinned?: boolean;
-  }> = new Map();
-
-  private setPrimaryDirty(dirty: boolean): void {
-    this.isPrimaryDirty = dirty;
-    const btn = document.getElementById('btn-compile');
-    const dot = btn?.querySelector('.compile-dirty-dot') as HTMLElement | null;
-    if (dot) {
-      dot.style.display = dirty ? 'inline-block' : 'none';
-    }
-    if (btn) {
-      btn.title = dirty ? 'Derlenmemiş değişiklikler var. Yeniden derlemek için tıklayın.' : 'Kodu derle';
-    }
-    if (dirty && !this.isRunning) {
-      const btnRun = document.getElementById('btn-run') as HTMLButtonElement | null;
-      const btnNext = document.getElementById('btn-next') as HTMLButtonElement | null;
-      if (btnRun) btnRun.disabled = false;
-      if (btnNext) btnNext.disabled = false;
-    }
-  }
-
-  private setSecondaryDirty(dirty: boolean): void {
-    this.isSecondaryDirty = dirty;
-    const btn = document.getElementById('btn-sec-compile');
-    const dot = btn?.querySelector('.compile-dirty-dot') as HTMLElement | null;
-    if (dot) {
-      dot.style.display = dirty ? 'inline-block' : 'none';
-    }
-    if (btn) {
-      btn.title = dirty ? 'Derlenmemiş değişiklikler var. Yeniden derlemek için tıklayın.' : 'Kodu derle';
-    }
-    if (dirty && !this.secIsRunning) {
-      const btnRun = document.getElementById('btn-sec-run') as HTMLButtonElement | null;
-      const btnNext = document.getElementById('btn-sec-next') as HTMLButtonElement | null;
-      if (btnRun) btnRun.disabled = false;
-      if (btnNext) btnNext.disabled = false;
-    }
-  }
-
   constructor() {
     this.cpuManager = new CpuInstanceManager();
     this.workspace = new WorkspaceManager(this.cpuManager);
     const activeDoc = this.workspace.getActiveDocument();
     this.primaryDocId = activeDoc ? activeDoc.id : 'doc-main';
-    const activeCpu = this.cpuManager.getOrDefaultInstance(activeDoc?.cpuInstanceId);
-    this.cpu = activeCpu.cpu;
 
     TooltipManager.init();
     this.initLayout();
@@ -248,41 +150,37 @@ export class App {
             <div class="secondary-pane-header" id="secondary-pane-header" style="display: none;">
               <div class="secondary-pane-title-wrap" id="secondary-pane-title-wrap" draggable="true" title="Sürükleyip sol panele bırakabilirsiniz">
                 <span class="secondary-pane-icon" id="secondary-pane-icon">📖</span>
-                <span class="secondary-pane-title" id="secondary-pane-title">8086 Komut Manueli</span>
-              </div>
-              <div class="secondary-pane-quick-nav">
-                <button class="btn-sec-nav active" data-sec-nav="manual" title="8086 Komut Seti Manueli">📖 Manuel</button>
-                <button class="btn-sec-nav" data-sec-nav="lectures" title="Dersler & Teori Kataloğu">🎓 Dersler</button>
-                <button class="btn-sec-nav" data-sec-nav="leetcode" title="8086 LeetCode Arenası">⚡ LeetCode</button>
-                <button class="btn-sec-nav" data-sec-nav="roadmap" title="Müfredat Yol Haritası">🗺️ Yol Haritası</button>
-                <button class="btn-sec-nav" data-sec-nav="studynotes" title="Ders Çalışma Notları & Vize Hazırlık">📝 Çalışma Notları</button>
+                <span class="secondary-pane-title" id="secondary-pane-title">Referans & Kaynak</span>
               </div>
               <div class="secondary-pane-actions">
-                <button id="btn-secondary-close" class="btn-pane-action btn-close-pane" title="Bölünmüş Ekranı Kapat (Tek Ekrana Dön)">✕</button>
+                <button class="btn-sec-nav" data-sec-nav="manual" title="Komut Manueli">Komutlar</button>
+                <button class="btn-sec-nav" data-sec-nav="lectures" title="Dersler & Teori">Dersler</button>
+                <button class="btn-sec-nav" data-sec-nav="leetcode" title="LeetCode Arenası">LeetCode</button>
+                <button class="btn-sec-nav" data-sec-nav="studynotes" title="Çalışma Notları">Çalışma Notları</button>
+                <button class="btn-sec-close" id="btn-secondary-close" title="Pencereyi Kapat">✕</button>
               </div>
             </div>
 
-            <!-- Secondary IDE Layout (Shown when secondary pane has a code doc) -->
-            <main class="main-layout sec-main-layout" id="sec-ide-layout" style="display: none;">
-              <!-- Top Full-Width Row: Secondary Challenge Goal & Test Bar -->
+            <!-- Secondary IDE Layout (Used when opening an assembly or challenge code doc in secondary pane) -->
+            <main class="main-layout sec-ide-layout" id="sec-ide-layout" style="display: none;">
               <div id="sec-challenge-box-container" class="challenge-box-container" style="display: none;"></div>
-
-              <!-- Left Section: Code Editor -->
+              
               <section class="editor-section">
                 <div class="editor-header-bar">
                   <h2 class="editor-title" id="sec-editor-title-wrap" draggable="true" title="Sürükleyip sol panele bırakabilirsiniz">
-                    <span id="sec-editor-title-text">Code Editor 2</span>
+                    <span id="sec-editor-title-text">Secondary Editor</span>
                     <span class="cpu-badge" id="sec-ide-cpu-badge" style="margin-left: 6px;">CPU-2</span>
+                    <button class="btn-sec-ide-close" id="btn-sec-ide-close" title="Pencereyi Kapat">✕</button>
                   </h2>
                   <div class="editor-toolbar-right">
-                    <!-- Format Switch (HEX / DEC / BIN) -->
+                    <!-- Format Switch for Secondary -->
                     <div class="format-switch-group">
                       <button class="btn-fmt active" data-sec-fmt="hex">HEX</button>
                       <button class="btn-fmt" data-sec-fmt="dec">DEC</button>
                       <button class="btn-fmt" data-sec-fmt="bin">BIN</button>
                     </div>
 
-                    <!-- Speed Switch (0.5x / 1x / 2x) -->
+                    <!-- Speed Switch for Secondary -->
                     <div class="speed-switch-group">
                       <button class="btn-speed" data-sec-speed="0.5" title="0.5x Yavaş (600ms)">0.5x</button>
                       <button class="btn-speed active" data-sec-speed="1" title="1x Normal Hız (300ms)">1x</button>
@@ -296,9 +194,8 @@ export class App {
                     <button id="btn-sec-reset" class="btn-ctrl">RESET</button>
                     <button id="btn-sec-step-back" class="btn-ctrl btn-step-back" title="Geri Adım Al (Step Back)" disabled>↶</button>
                     <button id="btn-sec-complete-and-test" class="btn-complete-and-test" style="display: none;" title="Görevi Doğrula ve Tamamla">
-                      <span class="btn-icon">⚡</span> Test Et
+                      <span class="btn-icon">⚡</span> Tamamla ve Test Et
                     </button>
-                    <button id="btn-sec-ide-close" class="btn-pane-action btn-close-pane" title="Pencereyi Kapat">✕</button>
                   </div>
                 </div>
 
@@ -306,17 +203,13 @@ export class App {
                 <div id="sec-console-container" class="console-section-wrapper"></div>
               </section>
 
-              <!-- Right Section: Registers & Memory -->
-              <section class="cpu-section" id="sec-cpu-section">
+              <section class="cpu-section">
                 <div id="sec-registers-container"></div>
                 <div id="sec-memory-container"></div>
               </section>
             </main>
 
-            <!-- Secondary Lecture Doc Mount -->
             <div id="sec-lecture-doc-mount" class="lecture-doc-mount" style="display: none;"></div>
-
-            <!-- Secondary Reference Doc Mount -->
             <div id="sec-reference-doc-mount" class="reference-doc-mount" style="display: none;"></div>
           </div>
         </div>
@@ -326,334 +219,188 @@ export class App {
 
   private initModules(): void {
     const sidebarMount = document.getElementById('sidebar-mount')!;
-    const editorContainer = document.getElementById('editor-container')!;
-    const consoleContainer = document.getElementById('console-container')!;
-    const registersContainer = document.getElementById('registers-container')!;
-    const memoryContainer = document.getElementById('memory-container')!;
-    const docsContainer = document.getElementById('reference-doc-mount')!;
-    const lectureMount = document.getElementById('lecture-doc-mount')!;
-    const challengeContainer = document.getElementById('challenge-box-container')!;
 
-    // 1. Primary Components
-    this.registerPanel = new RegisterPanel(registersContainer);
-    this.memoryView = new MemoryView(memoryContainer, (phys) => {
-      const cached = this.docExecCache.get(this.primaryDocId);
-      if (cached) {
-        cached.memBasePhys = phys;
-        cached.memUserPinned = true;
-      }
-    });
-
-    this.consoleView = new ConsoleView(consoleContainer, {
-      onInput: (input) => {
-        this.cpu.feedInput(input);
-        this.consoleView.setWaitingForInput(false);
-        if (this.wasRunningBeforeInput) {
-          this.wasRunningBeforeInput = false;
-          this.run();
-        } else {
-          this.step();
-        }
-      }
-    });
-
-    this.editor = new Editor({
-      container: editorContainer,
-      initialCode: '',
-      onCodeChange: () => {
-        this.editor.clearErrors();
-        this.workspace.updateDocumentCode(this.primaryDocId, this.editor.getCode());
-        const doc = this.workspace.getDocument(this.primaryDocId);
-        if (doc) doc.editorScroll = this.editor.getScroll();
-        this.setPrimaryDirty(true);
-      }
-    });
-
-    this.challengePanel = new ChallengePanel(challengeContainer, {
-      onTestChallenge: (ch, code) => {
-        this.workspace.updateDocumentCode(this.primaryDocId, code);
-        this.consoleView.clear();
-        this.consoleView.log(`🧪 '${ch.title}' görevi test ediliyor...`, 'info');
-
-        const result = ChallengeRunner.grade(ch, code);
-
-        if (result.status === 'COMPILE_ERROR' && result.compileError) {
-          this.editor.setErrors([result.compileError]);
-          this.consoleView.log(`❌ [Derleme Hatası] Satır ${result.compileError.line}: ${result.compileError.message}`, 'error');
-          const statusBadge = document.getElementById('console-status-badge') as HTMLElement;
-          if (statusBadge) {
-            statusBadge.textContent = 'DERLEME HATASI';
-            statusBadge.className = 'console-status-badge error';
-          }
-        } else if (result.status === 'RUNTIME_ERROR') {
-          this.consoleView.log(`❌ [Çalışma Hatası]: ${result.runtimeError || 'Hata'}`, 'error');
-          const statusBadge = document.getElementById('console-status-badge') as HTMLElement;
-          if (statusBadge) {
-            statusBadge.textContent = 'ÇALIŞMA HATASI';
-            statusBadge.className = 'console-status-badge error';
-          }
-        } else if (result.status === 'TIMEOUT') {
-          this.consoleView.log(`⏱️ [Zaman Aşımı]: Program ${result.stepCount} adımda durmadı.`, 'warn');
-        } else if (result.status === 'FAILED') {
-          this.consoleView.log(`❌ [Test Başarısız]: Bazı beklenen değerler karşılanamadı:`, 'error');
-          result.diffs.filter(d => !d.passed).forEach(d => {
-            this.consoleView.log(`  • ${d.target}: Beklenen ${d.expected}, Gerçek ${d.actual}${d.message ? ` (${d.message})` : ''}`, 'warn');
+    // 1. Primary Pane Session
+    this.primaryPane = new PaneSession(
+      'primary',
+      this.cpuManager.getOrDefaultInstance().cpu,
+      {
+        container: document.getElementById('pane-primary')!,
+        ideLayout: document.getElementById('main-ide-layout'),
+        editorContainer: document.getElementById('editor-container')!,
+        consoleContainer: document.getElementById('console-container')!,
+        registersContainer: document.getElementById('registers-container')!,
+        memoryContainer: document.getElementById('memory-container')!,
+        challengeBoxContainer: document.getElementById('challenge-box-container')!,
+        lectureDocMount: document.getElementById('lecture-doc-mount')!,
+        referenceDocMount: document.getElementById('reference-doc-mount')!,
+        editorTitleText: document.getElementById('primary-editor-title-text'),
+        cpuBadge: document.getElementById('primary-ide-cpu-badge'),
+        statusBadge: document.getElementById('console-status-badge'),
+        btnCompile: document.getElementById('btn-compile') as HTMLButtonElement,
+        btnRun: document.getElementById('btn-run') as HTMLButtonElement,
+        btnNext: document.getElementById('btn-next') as HTMLButtonElement,
+        btnStop: document.getElementById('btn-stop') as HTMLButtonElement,
+        btnReset: document.getElementById('btn-reset') as HTMLButtonElement,
+        btnStepBack: document.getElementById('btn-step-back') as HTMLButtonElement,
+        btnCompleteAndTest: document.getElementById('btn-complete-and-test') as HTMLButtonElement,
+        formatButtonsSelector: '.btn-fmt:not([data-sec-fmt])',
+        speedButtonsSelector: '.btn-speed:not([data-sec-speed])',
+        formatAttr: 'data-fmt',
+        speedAttr: 'data-speed'
+      },
+      {
+        onCodeChange: (docId, code, scroll) => {
+          this.workspace.updateDocumentCode(docId, code);
+          const doc = this.workspace.getDocument(docId);
+          if (doc) doc.editorScroll = scroll;
+        },
+        onDirtyChange: () => {},
+        onOpenLearningDoc: (tab) => {
+          this.openLearningDocInPane('primary', tab);
+        },
+        onOpenMilestoneLecture: (milestoneId) => {
+          if (this.isSplitMode) this.toggleSplitView(false);
+          this.openMilestoneLectureInPane('primary', milestoneId);
+          this.setActivePane('primary');
+        },
+        onReturnToEditor: () => {
+          this.returnToEditorInPane('primary');
+        },
+        onTabChange: (tab) => {
+          this.syncReferenceDocTab('primary', tab);
+        },
+        onOpenInMainEditor: (title, code) => {
+          if (this.isSplitMode) this.toggleSplitView(false);
+          const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          const newDoc = this.workspace.openDocument({
+            title: `ornek-${cleanTitle}.asm`,
+            type: 'custom',
+            code
           });
-        } else if (result.status === 'PASSED') {
-          this.editor.clearErrors();
-          this.consoleView.log(`✅ [Tebrikler] '${ch.title}' tüm testleri başarıyla geçti! (${result.stepCount} adım, ${result.executionTimeMs} ms)`, 'success');
-          const statusBadge = document.getElementById('console-status-badge') as HTMLElement;
-          if (statusBadge) {
-            statusBadge.textContent = 'BAŞARILI';
-            statusBadge.className = 'console-status-badge ready';
-          }
-        }
-
-        return result;
-      },
-      onResetEnvironment: () => {
-        this.reset();
-      },
-      onNavigateToLeetCode: () => {
-        this.openLearningDocInPane('primary', 'leetcode');
-      },
-      onLoadNextChallenge: (nextCh) => {
-        const doc = this.workspace.openDocument({
-          title: `Görev: ${nextCh.title}`,
-          type: 'challenge',
-          challengeId: nextCh.id,
-          code: nextCh.starterCode
-        });
-        this.openDocumentInPane('primary', doc);
-        this.sidebar.render();
-      },
-      getCurrentCode: () => this.editor.getCode()
-    });
-
-    this.instructionDoc = new InstructionDoc(docsContainer, {
-      onLoadChallengeToEditor: (ch) => {
-        const doc = this.workspace.openDocument({
-          title: `Görev: ${ch.title}`,
-          type: 'challenge',
-          challengeId: ch.id,
-          code: ch.starterCode
-        });
-        this.openDocumentInPane(this.isSplitMode ? 'secondary' : 'primary', doc);
-        if (this.isSplitMode) this.setActivePane('secondary');
-        this.sidebar.render();
-        document.querySelector('.editor-section')?.scrollIntoView({ behavior: 'smooth' });
-      },
-      onOpenLectureDocument: (milestoneId) => {
-        this.openMilestoneLectureInPane('primary', milestoneId);
-      },
-      onReturnToEditor: () => {
-        this.returnToEditorInPane('primary');
-      },
-      onTabChange: (tab) => {
-        this.syncReferenceDocTab('primary', tab);
-      },
-      onOpenInMainEditor: (title: string, code: string) => {
-        if (this.isSplitMode) this.toggleSplitView(false);
-        const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const newDoc = this.workspace.openDocument({
-          title: `ornek-${cleanTitle}.asm`,
-          type: 'custom',
-          code
-        });
-        this.openDocumentInPane('primary', newDoc);
-        this.setActivePane('primary');
-        this.sidebar.render();
-      },
-      getCurrentEditorCode: () => this.editor.getCode()
-    });
-
-    this.lectureDocView = new LectureDocumentView(lectureMount, {
-      onNavigateToMilestoneLecture: (milestoneId: string) => {
-        if (this.isSplitMode) this.toggleSplitView(false);
-        this.openMilestoneLectureInPane('primary', milestoneId);
-        this.setActivePane('primary');
-      },
-      onNavigateToLeetCodeMilestone: (milestoneId: string, challengeId?: string) => {
-        if (this.isSplitMode) this.toggleSplitView(false);
-        this.openLearningDocInPane('primary', 'leetcode');
-        this.instructionDoc.filterLeetCodeByMilestone(milestoneId, challengeId);
-        this.setActivePane('primary');
-      },
-      onNavigateToRoadmap: () => {
-        if (this.isSplitMode) this.toggleSplitView(false);
-        this.openLearningDocInPane('primary', 'roadmap');
-        this.setActivePane('primary');
-      },
-      onOpenInMainEditor: (title: string, code: string) => {
-        if (this.isSplitMode) this.toggleSplitView(false);
-        const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const newDoc = this.workspace.openDocument({
-          title: `ornek-${cleanTitle}.asm`,
-          type: 'custom',
-          code
-        });
-        this.openDocumentInPane('primary', newDoc);
-        this.setActivePane('primary');
-        this.sidebar.render();
-      }
-    });
-
-    // 2. Secondary Components
-    const secEditorContainer = document.getElementById('sec-editor-container')!;
-    const secConsoleContainer = document.getElementById('sec-console-container')!;
-    const secRegistersContainer = document.getElementById('sec-registers-container')!;
-    const secMemoryContainer = document.getElementById('sec-memory-container')!;
-    const secChallengeContainer = document.getElementById('sec-challenge-box-container')!;
-    const secRefMount = document.getElementById('sec-reference-doc-mount')!;
-    const secLectureMount = document.getElementById('sec-lecture-doc-mount')!;
-
-    this.secRegisterPanel = new RegisterPanel(secRegistersContainer);
-    this.secMemoryView = new MemoryView(secMemoryContainer, (phys) => {
-      if (this.secondaryDocId) {
-        const cached = this.secDocExecCache.get(this.secondaryDocId);
-        if (cached) {
-          cached.memBasePhys = phys;
-          cached.memUserPinned = true;
-        }
-      }
-    });
-
-    this.secConsoleView = new ConsoleView(secConsoleContainer, {
-      onInput: (input) => {
-        if (!this.secCpu) return;
-        this.secCpu.feedInput(input);
-        this.secConsoleView.setWaitingForInput(false);
-        if (this.secWasRunningBeforeInput) {
-          this.secWasRunningBeforeInput = false;
-          this.secRun();
-        } else {
-          this.secStep();
-        }
-      }
-    });
-
-    this.secEditor = new Editor({
-      container: secEditorContainer,
-      initialCode: '',
-      onCodeChange: () => {
-        this.secEditor.clearErrors();
-        if (this.secondaryDocId) {
-          this.workspace.updateDocumentCode(this.secondaryDocId, this.secEditor.getCode());
-          const doc = this.workspace.getDocument(this.secondaryDocId);
-          if (doc) doc.editorScroll = this.secEditor.getScroll();
-        }
-        this.setSecondaryDirty(true);
-      }
-    });
-
-    this.secChallengePanel = new ChallengePanel(secChallengeContainer, {
-      onTestChallenge: (ch, code) => {
-        if (this.secondaryDocId) {
-          this.workspace.updateDocumentCode(this.secondaryDocId, code);
-        }
-        this.secConsoleView.clear();
-        this.secConsoleView.log(`🧪 '${ch.title}' görevi test ediliyor...`, 'info');
-
-        const result = ChallengeRunner.grade(ch, code);
-
-        if (result.status === 'COMPILE_ERROR' && result.compileError) {
-          this.secEditor.setErrors([result.compileError]);
-          this.secConsoleView.log(`❌ [Derleme Hatası] Satır ${result.compileError.line}: ${result.compileError.message}`, 'error');
-        } else if (result.status === 'RUNTIME_ERROR') {
-          this.secConsoleView.log(`❌ [Çalışma Hatası]: ${result.runtimeError || 'Hata'}`, 'error');
-        } else if (result.status === 'TIMEOUT') {
-          this.secConsoleView.log(`⏱️ [Zaman Aşımı]: Program ${result.stepCount} adımda durmadı.`, 'warn');
-        } else if (result.status === 'FAILED') {
-          this.secConsoleView.log(`❌ [Test Başarısız]: Bazı beklenen değerler karşılanamadı:`, 'error');
-          result.diffs.filter(d => !d.passed).forEach(d => {
-            this.secConsoleView.log(`  • ${d.target}: Beklenen ${d.expected}, Gerçek ${d.actual}${d.message ? ` (${d.message})` : ''}`, 'warn');
+          this.openDocumentInPane('primary', newDoc);
+          this.setActivePane('primary');
+          this.sidebar.render();
+        },
+        onLoadChallengeToEditor: (ch) => {
+          const doc = this.workspace.openDocument({
+            title: `Görev: ${ch.title}`,
+            type: 'challenge',
+            challengeId: ch.id,
+            code: ch.starterCode
           });
-        } else if (result.status === 'PASSED') {
-          this.secEditor.clearErrors();
-          this.secConsoleView.log(`✅ [Tebrikler] '${ch.title}' tüm testleri başarıyla geçti! (${result.stepCount} adım, ${result.executionTimeMs} ms)`, 'success');
-        }
-
-        return result;
-      },
-      onResetEnvironment: () => {
-        this.secReset();
-      },
-      onNavigateToLeetCode: () => {
-        this.openLearningDocInPane('secondary', 'leetcode');
-      },
-      onLoadNextChallenge: (nextCh) => {
-        const doc = this.workspace.openDocument({
-          title: `Görev: ${nextCh.title}`,
-          type: 'challenge',
-          challengeId: nextCh.id,
-          code: nextCh.starterCode
-        });
-        this.openDocumentInPane('secondary', doc);
-        this.sidebar.render();
-      },
-      getCurrentCode: () => this.secEditor.getCode()
-    });
-
-    this.secInstructionDoc = new InstructionDoc(secRefMount, {
-      onLoadChallengeToEditor: (ch) => {
-        const doc = this.workspace.openDocument({
-          title: `Görev: ${ch.title}`,
-          type: 'challenge',
-          challengeId: ch.id,
-          code: ch.starterCode
-        });
-        this.openDocumentInPane('primary', doc);
-        this.setActivePane('primary');
-        this.sidebar.render();
-      },
-      onOpenLectureDocument: (milestoneId) => {
-        this.openMilestoneLectureInPane('secondary', milestoneId);
-      },
-      onReturnToEditor: () => {
-        this.returnToEditorInPane('secondary');
-      },
-      onTabChange: (tab) => {
-        this.syncReferenceDocTab('secondary', tab);
-      },
-      onOpenInMainEditor: (title: string, code: string) => {
-        const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const newDoc = this.workspace.openDocument({
-          title: `ornek-${cleanTitle}.asm`,
-          type: 'custom',
-          code
-        });
-        this.openDocumentInPane('primary', newDoc);
-        this.setActivePane('primary');
-        this.sidebar.render();
-      },
-      getCurrentEditorCode: () => this.secEditor.getCode()
-    });
-
-    this.secLectureDocView = new LectureDocumentView(secLectureMount, {
-      onNavigateToMilestoneLecture: (milestoneId: string) => {
-        this.openMilestoneLectureInPane('secondary', milestoneId);
-      },
-      onNavigateToLeetCodeMilestone: (milestoneId: string, challengeId?: string) => {
-        this.openLearningDocInPane('secondary', 'leetcode');
-        this.secInstructionDoc.filterLeetCodeByMilestone(milestoneId, challengeId);
-      },
-      onNavigateToRoadmap: () => {
-        this.openLearningDocInPane('secondary', 'roadmap');
-      },
-      onOpenInMainEditor: (title: string, code: string) => {
-        const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const newDoc = this.workspace.openDocument({
-          title: `ornek-${cleanTitle}.asm`,
-          type: 'custom',
-          code
-        });
-        this.openDocumentInPane('primary', newDoc);
-        this.setActivePane('primary');
-        this.sidebar.render();
+          this.openDocumentInPane(this.isSplitMode ? 'secondary' : 'primary', doc);
+          if (this.isSplitMode) this.setActivePane('secondary');
+          this.sidebar.render();
+          document.querySelector('.editor-section')?.scrollIntoView({ behavior: 'smooth' });
+        },
+        onLoadNextChallenge: (nextCh) => {
+          const doc = this.workspace.openDocument({
+            title: `Görev: ${nextCh.title}`,
+            type: 'challenge',
+            challengeId: nextCh.id,
+            code: nextCh.starterCode
+          });
+          this.openDocumentInPane('primary', doc);
+          this.sidebar.render();
+        },
+        getDocument: (id) => this.workspace.getDocument(id),
+        getAllDocuments: () => this.workspace.getAllDocuments(),
+        getWorkspace: () => this.workspace
       }
-    });
+    );
 
-    // 3. Workspace Sidebar & CPU Modal
+    // 2. Secondary Pane Session
+    this.secondaryPane = new PaneSession(
+      'secondary',
+      this.cpuManager.getOrDefaultInstance().cpu,
+      {
+        container: document.getElementById('pane-secondary')!,
+        ideLayout: document.getElementById('sec-ide-layout'),
+        editorContainer: document.getElementById('sec-editor-container')!,
+        consoleContainer: document.getElementById('sec-console-container')!,
+        registersContainer: document.getElementById('sec-registers-container')!,
+        memoryContainer: document.getElementById('sec-memory-container')!,
+        challengeBoxContainer: document.getElementById('sec-challenge-box-container')!,
+        lectureDocMount: document.getElementById('sec-lecture-doc-mount')!,
+        referenceDocMount: document.getElementById('sec-reference-doc-mount')!,
+        editorTitleText: document.getElementById('sec-editor-title-text'),
+        cpuBadge: document.getElementById('sec-ide-cpu-badge'),
+        statusBadge: null,
+        btnCompile: document.getElementById('btn-sec-compile') as HTMLButtonElement,
+        btnRun: document.getElementById('btn-sec-run') as HTMLButtonElement,
+        btnNext: document.getElementById('btn-sec-next') as HTMLButtonElement,
+        btnStop: document.getElementById('btn-sec-stop') as HTMLButtonElement,
+        btnReset: document.getElementById('btn-sec-reset') as HTMLButtonElement,
+        btnStepBack: document.getElementById('btn-sec-step-back') as HTMLButtonElement,
+        btnCompleteAndTest: document.getElementById('btn-sec-complete-and-test') as HTMLButtonElement,
+        formatButtonsSelector: '[data-sec-fmt]',
+        speedButtonsSelector: '[data-sec-speed]',
+        formatAttr: 'data-sec-fmt',
+        speedAttr: 'data-sec-speed',
+        secHeader: document.getElementById('secondary-pane-header'),
+        secHeaderIcon: document.getElementById('secondary-pane-icon'),
+        secHeaderTitle: document.getElementById('secondary-pane-title'),
+        secNavSelector: '.btn-sec-nav'
+      },
+      {
+        onCodeChange: (docId, code, scroll) => {
+          this.workspace.updateDocumentCode(docId, code);
+          const doc = this.workspace.getDocument(docId);
+          if (doc) doc.editorScroll = scroll;
+        },
+        onDirtyChange: () => {},
+        onOpenLearningDoc: (tab) => {
+          this.openLearningDocInPane('secondary', tab);
+        },
+        onOpenMilestoneLecture: (milestoneId) => {
+          this.openMilestoneLectureInPane('secondary', milestoneId);
+        },
+        onReturnToEditor: () => {
+          this.returnToEditorInPane('secondary');
+        },
+        onTabChange: (tab) => {
+          this.syncReferenceDocTab('secondary', tab);
+        },
+        onOpenInMainEditor: (title, code) => {
+          const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          const newDoc = this.workspace.openDocument({
+            title: `ornek-${cleanTitle}.asm`,
+            type: 'custom',
+            code
+          });
+          this.openDocumentInPane('primary', newDoc);
+          this.setActivePane('primary');
+          this.sidebar.render();
+        },
+        onLoadChallengeToEditor: (ch) => {
+          const doc = this.workspace.openDocument({
+            title: `Görev: ${ch.title}`,
+            type: 'challenge',
+            challengeId: ch.id,
+            code: ch.starterCode
+          });
+          this.openDocumentInPane('primary', doc);
+          this.setActivePane('primary');
+          this.sidebar.render();
+        },
+        onLoadNextChallenge: (nextCh) => {
+          const doc = this.workspace.openDocument({
+            title: `Görev: ${nextCh.title}`,
+            type: 'challenge',
+            challengeId: nextCh.id,
+            code: nextCh.starterCode
+          });
+          this.openDocumentInPane('secondary', doc);
+          this.sidebar.render();
+        },
+        getDocument: (id) => this.workspace.getDocument(id),
+        getAllDocuments: () => this.workspace.getAllDocuments(),
+        getWorkspace: () => this.workspace
+      }
+    );
+
+    // 3. Workspace Sidebar
     this.sidebar = new WorkspaceSidebar(
       sidebarMount,
       this.workspace,
@@ -685,6 +432,13 @@ export class App {
             this.toggleSplitView(false, undefined, false);
           }
           this.openLearningDocInPane('primary', tab);
+          this.setActivePane('primary');
+        },
+        onOpenOSSandbox: (projectId) => {
+          if (this.isSplitMode) {
+            this.toggleSplitView(false, undefined, false);
+          }
+          this.openLearningDocInPane('primary', 'ossandbox');
           this.setActivePane('primary');
         },
         onDocumentClosed: (docId) => {
@@ -744,41 +498,57 @@ export class App {
       }
     );
 
+    // 4. CPU Manager Modal
     this.cpuModal = new CpuModal(this.cpuManager, this.workspace, {
       onCpuChanged: () => {
         const activeDocId = this.activePane === 'primary' ? this.primaryDocId : (this.secondaryDocId || this.primaryDocId);
         const doc = this.workspace.getAllDocuments().find(d => d.id === activeDocId);
         const cpuInst = this.cpuManager.getOrDefaultInstance(doc?.cpuInstanceId);
         if (this.activePane === 'primary') {
-          this.cpu = cpuInst.cpu;
-          this.updateViews();
-        } else if (this.secCpu) {
-          this.secCpu = cpuInst.cpu;
-          this.secUpdateViews();
+          this.primaryPane.setCpu(cpuInst.cpu);
+          this.primaryPane.updateViews();
+        } else {
+          this.secondaryPane.setCpu(cpuInst.cpu);
+          this.secondaryPane.updateViews();
         }
         this.sidebar.render();
       },
       onDocumentCpuRemapped: (doc) => {
         if (this.primaryDocId === doc.id) {
           const cpuInst = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
-          this.cpu = cpuInst.cpu;
-          this.compile();
-          this.updateViews();
+          this.primaryPane.setCpu(cpuInst.cpu);
+          this.primaryPane.compile();
+          this.primaryPane.updateViews();
         }
         if (this.secondaryDocId === doc.id) {
           const cpuInst = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
-          this.secCpu = cpuInst.cpu;
-          this.secCompile();
-          this.secUpdateViews();
+          this.secondaryPane.setCpu(cpuInst.cpu);
+          this.secondaryPane.compile();
+          this.secondaryPane.updateViews();
         }
         this.sidebar.render();
       }
     });
 
-    this.attachButtonEvents();
     this.initSplitResizer();
     this.initDragAndDrop();
     this.initScrollTracking();
+    this.attachGlobalKeyboardEvents();
+  }
+
+  private attachGlobalKeyboardEvents(): void {
+    // Keyboard shortcuts: F10 = NEXT, F5 = RUN/STOP (targets active pane!)
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'F10') {
+        e.preventDefault();
+        this.getActivePane().step();
+      } else if (e.key === 'F5') {
+        e.preventDefault();
+        const pane = this.getActivePane();
+        if (pane.isRunning) pane.stop();
+        else pane.run();
+      }
+    });
   }
 
   private initScrollTracking(): void {
@@ -789,45 +559,35 @@ export class App {
     const secLectureMount = document.getElementById('sec-lecture-doc-mount');
     const secRefMount = document.getElementById('sec-reference-doc-mount');
 
-    const updatePrimaryScroll = () => {
-      const doc = this.workspace.getDocument(this.primaryDocId);
+    const updatePaneScroll = (paneId: 'primary' | 'secondary') => {
+      const docId = paneId === 'primary' ? this.primaryDocId : this.secondaryDocId;
+      if (!docId) return;
+      const doc = this.workspace.getDocument(docId);
       if (doc) {
-        if (doc.type === 'lecture') {
-          doc.scrollTop = lectureMount?.scrollTop || panePrimary?.scrollTop || 0;
-        } else if (doc.type === 'reference') {
-          doc.scrollTop = refMount?.scrollTop || panePrimary?.scrollTop || 0;
-        } else {
-          doc.scrollTop = panePrimary?.scrollTop || 0;
-        }
+        this.getPane(paneId).saveScrollAndState(doc);
       }
     };
 
-    const updateSecondaryScroll = () => {
-      if (!this.secondaryDocId) return;
-      const doc = this.workspace.getDocument(this.secondaryDocId);
-      if (doc) {
-        if (doc.type === 'lecture') {
-          doc.scrollTop = secLectureMount?.scrollTop || paneSecondary?.scrollTop || 0;
-        } else if (doc.type === 'reference') {
-          doc.scrollTop = secRefMount?.scrollTop || paneSecondary?.scrollTop || 0;
-        } else {
-          doc.scrollTop = paneSecondary?.scrollTop || 0;
-        }
-      }
-    };
+    panePrimary?.addEventListener('scroll', () => updatePaneScroll('primary'), { passive: true });
+    lectureMount?.addEventListener('scroll', () => updatePaneScroll('primary'), { passive: true });
+    refMount?.addEventListener('scroll', () => updatePaneScroll('primary'), { passive: true });
 
-    panePrimary?.addEventListener('scroll', updatePrimaryScroll, { passive: true });
-    lectureMount?.addEventListener('scroll', updatePrimaryScroll, { passive: true });
-    refMount?.addEventListener('scroll', updatePrimaryScroll, { passive: true });
-
-    paneSecondary?.addEventListener('scroll', updateSecondaryScroll, { passive: true });
-    secLectureMount?.addEventListener('scroll', updateSecondaryScroll, { passive: true });
-    secRefMount?.addEventListener('scroll', updateSecondaryScroll, { passive: true });
+    paneSecondary?.addEventListener('scroll', () => updatePaneScroll('secondary'), { passive: true });
+    secLectureMount?.addEventListener('scroll', () => updatePaneScroll('secondary'), { passive: true });
+    secRefMount?.addEventListener('scroll', () => updatePaneScroll('secondary'), { passive: true });
   }
 
   // =========================================================================
   // MULTI-PANE DOCUMENT OPENING & PANE MANAGEMENT
   // =========================================================================
+
+  getPane(pane: 'primary' | 'secondary'): PaneSession {
+    return pane === 'primary' ? this.primaryPane : this.secondaryPane;
+  }
+
+  getActivePane(): PaneSession {
+    return this.activePane === 'primary' || !this.isSplitMode ? this.primaryPane : this.secondaryPane;
+  }
 
   setActivePane(pane: 'primary' | 'secondary'): void {
     this.activePane = pane;
@@ -850,49 +610,6 @@ export class App {
     this.sidebar.render();
   }
 
-  private savePaneScrollAndState(pane: 'primary' | 'secondary', doc: WorkspaceDocument): void {
-    const paneEl = document.getElementById(pane === 'primary' ? 'pane-primary' : 'pane-secondary');
-    const lectureMount = document.getElementById(pane === 'primary' ? 'lecture-doc-mount' : 'sec-lecture-doc-mount');
-    const refMount = document.getElementById(pane === 'primary' ? 'reference-doc-mount' : 'sec-reference-doc-mount');
-
-    let scroll = 0;
-    if (doc.type === 'lecture') {
-      scroll = lectureMount?.scrollTop || paneEl?.scrollTop || 0;
-    } else if (doc.type === 'reference') {
-      scroll = refMount?.scrollTop || paneEl?.scrollTop || 0;
-    } else {
-      scroll = paneEl?.scrollTop || 0;
-      const ed = pane === 'primary' ? this.editor : this.secEditor;
-      doc.editorScroll = ed.getScroll();
-      doc.code = ed.getCode();
-    }
-    doc.scrollTop = scroll;
-  }
-
-  private restorePaneScroll(pane: 'primary' | 'secondary', doc: WorkspaceDocument): void {
-    const paneEl = document.getElementById(pane === 'primary' ? 'pane-primary' : 'pane-secondary');
-    const lectureMount = document.getElementById(pane === 'primary' ? 'lecture-doc-mount' : 'sec-lecture-doc-mount');
-    const refMount = document.getElementById(pane === 'primary' ? 'reference-doc-mount' : 'sec-reference-doc-mount');
-    const targetScroll = doc.scrollTop || 0;
-
-    const applyScroll = () => {
-      if (doc.type === 'lecture') {
-        if (lectureMount) lectureMount.scrollTop = targetScroll;
-      } else if (doc.type === 'reference') {
-        if (refMount) refMount.scrollTop = targetScroll;
-      }
-      if (paneEl) paneEl.scrollTop = targetScroll;
-
-      if (doc.editorScroll) {
-        const ed = pane === 'primary' ? this.editor : this.secEditor;
-        ed.setScroll(doc.editorScroll);
-      }
-    };
-
-    requestAnimationFrame(applyScroll);
-    setTimeout(applyScroll, 40);
-  }
-
   openDocumentInPane(pane: 'primary' | 'secondary', doc: WorkspaceDocument): void {
     if (pane === 'secondary' && !this.isSplitMode) {
       this.toggleSplitView(true, doc);
@@ -904,193 +621,25 @@ export class App {
     if (prevDocId && prevDocId !== doc.id) {
       const prevDoc = this.workspace.getDocument(prevDocId);
       if (prevDoc) {
-        this.savePaneScrollAndState(pane, prevDoc);
+        this.getPane(pane).saveScrollAndState(prevDoc);
       }
     }
+
+    const cpuInst = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
 
     if (pane === 'primary') {
       this.primaryDocId = doc.id;
       this.workspace.setActiveDocument(doc.id);
-      const cpuInst = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
-      this.cpu = cpuInst.cpu;
-
-      const mainIdeLayout = document.getElementById('main-ide-layout');
-      const lectureDocMount = document.getElementById('lecture-doc-mount');
-      const refDocMount = document.getElementById('reference-doc-mount');
-      const primaryTitle = document.getElementById('primary-editor-title-text');
-      const primaryBadge = document.getElementById('primary-ide-cpu-badge');
-
-      if (doc.type === 'lecture' && doc.milestoneId) {
-        if (mainIdeLayout) mainIdeLayout.style.display = 'none';
-        if (refDocMount) refDocMount.style.display = 'none';
-        if (lectureDocMount) lectureDocMount.style.display = 'block';
-        this.lectureDocView.setMilestone(doc.milestoneId);
-      } else if (doc.type === 'reference' && doc.referenceTab) {
-        if (mainIdeLayout) mainIdeLayout.style.display = 'none';
-        if (lectureDocMount) lectureDocMount.style.display = 'none';
-        if (refDocMount) refDocMount.style.display = 'block';
-        this.instructionDoc.openTab(doc.referenceTab);
-      } else {
-        if (mainIdeLayout) mainIdeLayout.style.display = 'grid';
-        if (lectureDocMount) lectureDocMount.style.display = 'none';
-        if (refDocMount) refDocMount.style.display = 'none';
-
-        if (primaryTitle) primaryTitle.textContent = doc.title;
-        if (primaryBadge) {
-          primaryBadge.textContent = cpuInst.name;
-          primaryBadge.style.borderLeftColor = cpuInst.color;
-        }
-
-        this.stop();
-        this.editor.setCode(doc.code);
-        this.consoleView.clear();
-        if (this.cpu.consoleBuffer) {
-          this.consoleView.appendStdout(this.cpu.consoleBuffer);
-        }
-
-        // Reuse compiled state if code hasn't changed; avoid resetting CPU registers and memory!
-        const cached = this.docExecCache.get(doc.id);
-        const canReuse = cached && cached.code === doc.code && cached.asmResult && cached.asmResult.errors.length === 0;
-
-        if (canReuse) {
-          this.currentAsmResult = cached.asmResult;
-          this.ipToLineMap = cached.ipToLineMap;
-          this.editor.clearErrors();
-          this.setPrimaryDirty(false);
-          const originPhys = this.cpu.mem.toPhys(this.cpu.regs.cs, cached.asmResult!.origin);
-          this.memoryView.restoreViewState(originPhys, cached.memBasePhys, cached.memUserPinned);
-          const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
-          const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
-          if (btnRun) btnRun.disabled = false;
-          if (btnNext) btnNext.disabled = false;
-          this.syncActiveLine();
-          this.updateViews();
-        } else {
-          const originPhys = cached?.asmResult ? this.cpu.mem.toPhys(this.cpu.regs.cs, cached.asmResult.origin) : 0x00100;
-          this.memoryView.restoreViewState(originPhys, cached?.memBasePhys, cached?.memUserPinned);
-          this.compile();
-          this.updateViews();
-        }
-
-        // Sync challenge panel if challenge doc
-        const btnCompleteAndTest = document.getElementById('btn-complete-and-test') as HTMLButtonElement;
-        if (doc.type === 'challenge' && doc.challengeId) {
-          const ch = CHALLENGES[doc.challengeId] || null;
-          this.challengePanel.setChallenge(ch);
-          if (btnCompleteAndTest) btnCompleteAndTest.style.display = 'inline-flex';
-        } else {
-          this.challengePanel.setChallenge(null);
-          if (btnCompleteAndTest) btnCompleteAndTest.style.display = 'none';
-        }
-      }
-
-      this.restorePaneScroll('primary', doc);
+      this.primaryPane.openDocument(doc, cpuInst);
+      this.primaryPane.restoreScroll(doc);
 
       if (this.isSplitMode && this.secondaryDocId) {
         this.syncSplitPair(this.primaryDocId, this.secondaryDocId);
       }
     } else {
-      // Secondary Pane
       this.secondaryDocId = doc.id;
-      const cpuInst = this.cpuManager.getOrDefaultInstance(doc.cpuInstanceId);
-      this.secCpu = cpuInst.cpu;
-
-      const secIdeLayout = document.getElementById('sec-ide-layout');
-      const secHeader = document.getElementById('secondary-pane-header');
-      const secLectureDocMount = document.getElementById('sec-lecture-doc-mount');
-      const secRefDocMount = document.getElementById('sec-reference-doc-mount');
-      const secTitle = document.getElementById('sec-editor-title-text');
-      const secBadge = document.getElementById('sec-ide-cpu-badge');
-      const secHeaderIcon = document.getElementById('secondary-pane-icon');
-      const secHeaderTitle = document.getElementById('secondary-pane-title');
-
-      if (doc.type === 'lecture' && doc.milestoneId) {
-        if (secIdeLayout) secIdeLayout.style.display = 'none';
-        if (secRefDocMount) secRefDocMount.style.display = 'none';
-        if (secHeader) secHeader.style.display = 'flex';
-        if (secLectureDocMount) secLectureDocMount.style.display = 'block';
-
-        this.secLectureDocView.setMilestone(doc.milestoneId);
-        const topic = getTopicById(doc.milestoneId);
-        if (secHeaderIcon) secHeaderIcon.textContent = topic ? topic.icon : '🎓';
-        if (secHeaderTitle) secHeaderTitle.textContent = topic ? `Konu ${topic.number}: ${topic.shortTitle}` : 'Konu Anlatımı';
-        document.querySelectorAll('.btn-sec-nav').forEach(b => b.classList.remove('active'));
-        document.querySelector('.btn-sec-nav[data-sec-nav="lectures"]')?.classList.add('active');
-      } else if (doc.type === 'reference' && doc.referenceTab) {
-        if (secIdeLayout) secIdeLayout.style.display = 'none';
-        if (secLectureDocMount) secLectureDocMount.style.display = 'none';
-        if (secHeader) secHeader.style.display = 'flex';
-        if (secRefDocMount) secRefDocMount.style.display = 'block';
-
-        this.secInstructionDoc.openTab(doc.referenceTab);
-        const tabTitles: Record<ManualTab, { icon: string; title: string }> = {
-          manual: { icon: '📖', title: '8086 Komut Manueli' },
-          lectures: { icon: '🎓', title: 'Dersler & Teori Kataloğu' },
-          leetcode: { icon: '⚡', title: '8086 LeetCode Arenası' },
-          roadmap: { icon: '🗺️', title: 'Müfredat Yol Haritası' },
-          studynotes: { icon: '📝', title: 'Çalışma Notları & Vize Hazırlık' }
-        };
-        const info = tabTitles[doc.referenceTab] || { icon: '📚', title: 'Öğrenme Merkezi' };
-        if (secHeaderIcon) secHeaderIcon.textContent = info.icon;
-        if (secHeaderTitle) secHeaderTitle.textContent = info.title;
-        document.querySelectorAll('.btn-sec-nav').forEach(b => b.classList.remove('active'));
-        document.querySelector(`.btn-sec-nav[data-sec-nav="${doc.referenceTab}"]`)?.classList.add('active');
-      } else {
-        // Code document in secondary pane
-        if (secHeader) secHeader.style.display = 'none';
-        if (secLectureDocMount) secLectureDocMount.style.display = 'none';
-        if (secRefDocMount) secRefDocMount.style.display = 'none';
-        if (secIdeLayout) secIdeLayout.style.display = 'grid';
-
-        if (secTitle) secTitle.textContent = doc.title;
-        if (secBadge) {
-          secBadge.textContent = cpuInst.name;
-          secBadge.style.borderLeftColor = cpuInst.color;
-        }
-
-        this.secStop();
-        this.secEditor.setCode(doc.code);
-        this.secConsoleView.clear();
-        if (this.secCpu.consoleBuffer) {
-          this.secConsoleView.appendStdout(this.secCpu.consoleBuffer);
-        }
-
-        const secCached = this.secDocExecCache.get(doc.id);
-        const canReuse = secCached && secCached.code === doc.code && secCached.asmResult && secCached.asmResult.errors.length === 0;
-
-        if (canReuse) {
-          this.secCurrentAsmResult = secCached.asmResult;
-          this.secIpToLineMap = secCached.ipToLineMap;
-          this.secEditor.clearErrors();
-          this.setSecondaryDirty(false);
-          const originPhys = this.secCpu.mem.toPhys(this.secCpu.regs.cs, secCached.asmResult!.origin);
-          this.secMemoryView.restoreViewState(originPhys, secCached.memBasePhys, secCached.memUserPinned);
-          const btnRun = document.getElementById('btn-sec-run') as HTMLButtonElement;
-          const btnNext = document.getElementById('btn-sec-next') as HTMLButtonElement;
-          if (btnRun) btnRun.disabled = false;
-          if (btnNext) btnNext.disabled = false;
-          this.secSyncActiveLine();
-          this.secUpdateViews();
-        } else {
-          const originPhys = secCached?.asmResult ? this.secCpu.mem.toPhys(this.secCpu.regs.cs, secCached.asmResult.origin) : 0x00100;
-          this.secMemoryView.restoreViewState(originPhys, secCached?.memBasePhys, secCached?.memUserPinned);
-          this.secCompile();
-          this.secUpdateViews();
-        }
-
-        // Sync secondary challenge panel if challenge doc
-        const btnSecTest = document.getElementById('btn-sec-complete-and-test') as HTMLButtonElement;
-        if (doc.type === 'challenge' && doc.challengeId) {
-          const ch = CHALLENGES[doc.challengeId] || null;
-          this.secChallengePanel.setChallenge(ch);
-          if (btnSecTest) btnSecTest.style.display = 'inline-flex';
-        } else {
-          this.secChallengePanel.setChallenge(null);
-          if (btnSecTest) btnSecTest.style.display = 'none';
-        }
-      }
-
-      this.restorePaneScroll('secondary', doc);
+      this.secondaryPane.openDocument(doc, cpuInst);
+      this.secondaryPane.restoreScroll(doc);
 
       if (this.isSplitMode) {
         this.syncSplitPair(this.primaryDocId, this.secondaryDocId);
@@ -1114,7 +663,8 @@ export class App {
       lectures: '🎓 Dersler & Teori',
       leetcode: '⚡ LeetCode Arenası',
       roadmap: '🗺️ Yol Haritası',
-      studynotes: '📝 Çalışma Notları'
+      studynotes: '📝 Çalışma Notları',
+      ossandbox: '💻 OS Sandbox'
     };
 
     const newDoc = this.workspace.openDocument({
@@ -1164,7 +714,8 @@ export class App {
         lectures: '🎓 Dersler & Teori',
         leetcode: '⚡ LeetCode Arenası',
         roadmap: '🗺️ Yol Haritası',
-        studynotes: '📝 Çalışma Notları'
+        studynotes: '📝 Çalışma Notları',
+        ossandbox: '💻 OS Sandbox'
       };
       doc.title = titles[tab] || doc.title;
       this.sidebar.render();
@@ -1338,8 +889,9 @@ export class App {
       panePrimary.style.width = '100%';
       paneSecondary.style.width = '50%';
 
-      this.secStop();
+      this.secondaryPane.stop();
       this.secondaryDocId = null;
+      this.secondaryPane.setCurrentDocId(null);
       this.setActivePane('primary');
 
       if (removeActivePair && this.activePairId) {
@@ -1535,812 +1087,123 @@ export class App {
     mainContent.addEventListener('dragover', (e) => {
       if (!isOurDrag(e)) return;
       e.preventDefault();
-      const dragInfo = (window as any).__assemblySimDraggedDoc;
-      const isRight = rightZone.classList.contains('active');
-      const targetPane: 'primary' | 'secondary' = isRight ? 'secondary' : 'primary';
-      const isBlocked = this.isDocAlreadyOpenInPane(targetPane, dragInfo);
-      if (e.dataTransfer) {
-        e.dataTransfer.dropEffect = isBlocked ? 'none' : 'copy';
-      }
-      showOverlay();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
       updateZoneHover(e.clientX);
     });
 
     dropOverlay.addEventListener('dragover', (e) => {
-      if (!isOurDrag(e)) return;
       e.preventDefault();
-      const dragInfo = (window as any).__assemblySimDraggedDoc;
-      const isRight = rightZone.classList.contains('active');
-      const targetPane: 'primary' | 'secondary' = isRight ? 'secondary' : 'primary';
-      const isBlocked = this.isDocAlreadyOpenInPane(targetPane, dragInfo);
-      if (e.dataTransfer) {
-        e.dataTransfer.dropEffect = isBlocked ? 'none' : 'copy';
-      }
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
       updateZoneHover(e.clientX);
     });
 
-    dropOverlay.addEventListener('drop', (e) => {
+    const handleDropAction = (e: DragEvent) => {
       e.preventDefault();
-      dragCounter = 0;
-      const rawData = e.dataTransfer?.getData('application/x-assemblysim-doc') || e.dataTransfer?.getData('text/plain');
-      const isRight = rightZone.classList.contains('active');
-      const targetPane: 'primary' | 'secondary' = isRight ? 'secondary' : 'primary';
-
+      e.stopPropagation();
       hideOverlay();
-      document.body.classList.remove('is-dragging-doc');
-      (window as any).__assemblySimDraggedDoc = null;
+      dragCounter = 0;
 
+      const rect = mainContent.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const width = rect.width;
+
+      let targetPane: 'primary' | 'secondary' = 'primary';
+      if (this.isSplitMode) {
+        const panePrimary = document.getElementById('pane-primary');
+        const primWidth = panePrimary ? panePrimary.getBoundingClientRect().width : width / 2;
+        targetPane = x < primWidth ? 'primary' : 'secondary';
+      } else {
+        targetPane = x > width * 0.65 ? 'secondary' : 'primary';
+      }
+
+      const rawData = e.dataTransfer?.getData('application/x-assemblysim-doc') || e.dataTransfer?.getData('text/plain');
       if (!rawData) return;
 
       try {
-        const parsed = JSON.parse(rawData);
-
-        // Do not drop onto itself!
-        if (this.isDocAlreadyOpenInPane(targetPane, parsed)) {
+        const payload = JSON.parse(rawData);
+        if (this.isDocAlreadyOpenInPane(targetPane, payload)) {
           return;
         }
 
-        if (parsed.kind === 'workspace-doc' && parsed.docId) {
-          const doc = this.workspace.getAllDocuments().find(d => d.id === parsed.docId);
+        if (payload.kind === 'workspace-doc' && payload.docId) {
+          const doc = this.workspace.getAllDocuments().find(d => d.id === payload.docId);
           if (doc) {
             this.openDocumentInPane(targetPane, doc);
             this.setActivePane(targetPane);
           }
-        } else if (parsed.kind === 'learning-doc' && parsed.tab) {
-          this.openLearningDocInPane(targetPane, parsed.tab as ManualTab);
+        } else if (payload.kind === 'learning-doc' && payload.tab) {
+          this.openLearningDocInPane(targetPane, payload.tab as ManualTab);
           this.setActivePane(targetPane);
         }
       } catch (err) {
-        console.warn('Drop payload parse error', err);
+        console.warn('Drop parse error:', err);
+      } finally {
+        (window as any).__assemblySimDraggedDoc = null;
+        document.body.classList.remove('is-dragging-doc');
       }
-    });
+    };
 
-    // Make editor title bars draggable between panes
-    const primTitle = document.getElementById('primary-editor-title-wrap');
-    if (primTitle) {
-      primTitle.setAttribute('draggable', 'true');
-      primTitle.addEventListener('dragstart', (e) => {
+    dropOverlay.addEventListener('drop', handleDropAction);
+    mainContent.addEventListener('drop', handleDropAction);
+
+    // Draggable header bar hooks
+    const primaryTitleWrap = document.getElementById('primary-editor-title-wrap');
+    if (primaryTitleWrap) {
+      primaryTitleWrap.setAttribute('draggable', 'true');
+      primaryTitleWrap.addEventListener('dragstart', (e) => {
         const payload = JSON.stringify({ kind: 'workspace-doc', docId: this.primaryDocId });
-        e.dataTransfer?.setData('application/x-assemblysim-doc', payload);
-        e.dataTransfer?.setData('text/plain', payload);
-        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
-        document.body.classList.add('is-dragging-doc');
         (window as any).__assemblySimDraggedDoc = { kind: 'workspace-doc', docId: this.primaryDocId };
-      });
-      primTitle.addEventListener('dragend', () => {
-        document.body.classList.remove('is-dragging-doc');
-        (window as any).__assemblySimDraggedDoc = null;
-        hideOverlay();
-      });
-    }
-
-    const secTitle = document.getElementById('sec-editor-title-wrap');
-    if (secTitle) {
-      secTitle.setAttribute('draggable', 'true');
-      secTitle.addEventListener('dragstart', (e) => {
-        if (!this.secondaryDocId) return;
-        const payload = JSON.stringify({ kind: 'workspace-doc', docId: this.secondaryDocId });
+        document.body.classList.add('is-dragging-doc');
         e.dataTransfer?.setData('application/x-assemblysim-doc', payload);
         e.dataTransfer?.setData('text/plain', payload);
         if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
-        document.body.classList.add('is-dragging-doc');
-        (window as any).__assemblySimDraggedDoc = { kind: 'workspace-doc', docId: this.secondaryDocId };
       });
-      secTitle.addEventListener('dragend', () => {
-        document.body.classList.remove('is-dragging-doc');
+      primaryTitleWrap.addEventListener('dragend', () => {
         (window as any).__assemblySimDraggedDoc = null;
+        document.body.classList.remove('is-dragging-doc');
         hideOverlay();
       });
     }
 
-    const secHeaderTitle = document.getElementById('secondary-pane-title-wrap');
-    if (secHeaderTitle) {
-      secHeaderTitle.setAttribute('draggable', 'true');
-      secHeaderTitle.addEventListener('dragstart', (e) => {
+    const secTitleWrap = document.getElementById('sec-editor-title-wrap');
+    if (secTitleWrap) {
+      secTitleWrap.setAttribute('draggable', 'true');
+      secTitleWrap.addEventListener('dragstart', (e) => {
         if (!this.secondaryDocId) return;
         const payload = JSON.stringify({ kind: 'workspace-doc', docId: this.secondaryDocId });
+        (window as any).__assemblySimDraggedDoc = { kind: 'workspace-doc', docId: this.secondaryDocId };
+        document.body.classList.add('is-dragging-doc');
         e.dataTransfer?.setData('application/x-assemblysim-doc', payload);
         e.dataTransfer?.setData('text/plain', payload);
         if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
-        document.body.classList.add('is-dragging-doc');
-        (window as any).__assemblySimDraggedDoc = { kind: 'workspace-doc', docId: this.secondaryDocId };
       });
-      secHeaderTitle.addEventListener('dragend', () => {
-        document.body.classList.remove('is-dragging-doc');
+      secTitleWrap.addEventListener('dragend', () => {
         (window as any).__assemblySimDraggedDoc = null;
+        document.body.classList.remove('is-dragging-doc');
         hideOverlay();
       });
     }
-  }
 
-  // =========================================================================
-  // BUTTON EVENTS & SHORTCUTS
-  // =========================================================================
-
-  private attachButtonEvents(): void {
-    // Primary Controls
-    const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
-    const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
-    const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
-    const btnStop = document.getElementById('btn-stop') as HTMLButtonElement;
-    const btnReset = document.getElementById('btn-reset') as HTMLButtonElement;
-    const btnStepBack = document.getElementById('btn-step-back') as HTMLButtonElement;
-    const btnCompleteAndTest = document.getElementById('btn-complete-and-test') as HTMLButtonElement;
-
-    btnCompile.addEventListener('click', () => this.compile());
-    btnNext.addEventListener('click', () => this.step());
-    btnRun.addEventListener('click', () => this.run());
-    btnStop.addEventListener('click', () => this.stop());
-    btnReset.addEventListener('click', () => this.reset());
-    btnStepBack.addEventListener('click', () => this.stepBack());
-    if (btnCompleteAndTest) {
-      btnCompleteAndTest.addEventListener('click', () => {
-        this.challengePanel.executeTest();
+    const secPaneTitleWrap = document.getElementById('secondary-pane-title-wrap');
+    if (secPaneTitleWrap) {
+      secPaneTitleWrap.addEventListener('dragstart', (e) => {
+        if (!this.secondaryDocId) return;
+        const payload = JSON.stringify({ kind: 'workspace-doc', docId: this.secondaryDocId });
+        (window as any).__assemblySimDraggedDoc = { kind: 'workspace-doc', docId: this.secondaryDocId };
+        document.body.classList.add('is-dragging-doc');
+        e.dataTransfer?.setData('application/x-assemblysim-doc', payload);
+        e.dataTransfer?.setData('text/plain', payload);
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove';
       });
-    }
-
-    // Primary Format Switch
-    document.querySelectorAll('.btn-fmt:not([data-sec-fmt])').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.btn-fmt:not([data-sec-fmt])').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        const fmt = btn.getAttribute('data-fmt') as 'hex' | 'dec' | 'bin';
-        this.registerPanel.setFormat(fmt);
-        this.updateViews();
+      secPaneTitleWrap.addEventListener('dragend', () => {
+        (window as any).__assemblySimDraggedDoc = null;
+        document.body.classList.remove('is-dragging-doc');
+        hideOverlay();
       });
-    });
-
-    // Primary Speed Switch
-    document.querySelectorAll('.btn-speed:not([data-sec-speed])').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.btn-speed:not([data-sec-speed])').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.currentSpeed = (btn.getAttribute('data-speed') as ExecutionSpeed) || '1';
-      });
-    });
-
-    // Secondary Controls
-    const btnSecCompile = document.getElementById('btn-sec-compile') as HTMLButtonElement;
-    const btnSecRun = document.getElementById('btn-sec-run') as HTMLButtonElement;
-    const btnSecNext = document.getElementById('btn-sec-next') as HTMLButtonElement;
-    const btnSecStop = document.getElementById('btn-sec-stop') as HTMLButtonElement;
-    const btnSecReset = document.getElementById('btn-sec-reset') as HTMLButtonElement;
-    const btnSecStepBack = document.getElementById('btn-sec-step-back') as HTMLButtonElement;
-    const btnSecCompleteAndTest = document.getElementById('btn-sec-complete-and-test') as HTMLButtonElement;
-
-    btnSecCompile?.addEventListener('click', () => this.secCompile());
-    btnSecNext?.addEventListener('click', () => this.secStep());
-    btnSecRun?.addEventListener('click', () => this.secRun());
-    btnSecStop?.addEventListener('click', () => this.secStop());
-    btnSecReset?.addEventListener('click', () => this.secReset());
-    btnSecStepBack?.addEventListener('click', () => this.secStepBack());
-    btnSecCompleteAndTest?.addEventListener('click', () => {
-      this.secChallengePanel.executeTest();
-    });
-
-    // Secondary Format Switch
-    document.querySelectorAll('[data-sec-fmt]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-sec-fmt]').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        const fmt = btn.getAttribute('data-sec-fmt') as 'hex' | 'dec' | 'bin';
-        this.secRegisterPanel.setFormat(fmt);
-        this.secUpdateViews();
-      });
-    });
-
-    // Secondary Speed Switch
-    document.querySelectorAll('[data-sec-speed]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-sec-speed]').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.secSpeed = (btn.getAttribute('data-sec-speed') as ExecutionSpeed) || '1';
-      });
-    });
-
-    // Keyboard shortcuts: F10 = NEXT, F5 = RUN/STOP (targets active pane!)
-    window.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'F10') {
-        e.preventDefault();
-        if (this.activePane === 'secondary' && this.isSplitMode) {
-          this.secStep();
-        } else {
-          this.step();
-        }
-      } else if (e.key === 'F5') {
-        e.preventDefault();
-        if (this.activePane === 'secondary' && this.isSplitMode) {
-          if (this.secIsRunning) this.secStop();
-          else this.secRun();
-        } else {
-          if (this.isRunning) this.stop();
-          else this.run();
-        }
-      }
-    });
-  }
-
-  // =========================================================================
-  // PRIMARY CPU & EDITOR EXECUTION LOGIC
-  // =========================================================================
-
-  private compile(): boolean {
-    this.stop();
-    const code = this.editor.getCode();
-    const result = Assembler.assemble(code);
-    this.currentAsmResult = result;
-
-    const btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
-    const statusBadge = document.getElementById('console-status-badge') as HTMLElement;
-
-    this.consoleView.clear();
-    if (result.errors.length > 0) {
-      this.editor.setErrors(result.errors);
-      if (statusBadge) {
-        statusBadge.textContent = `${result.errors.length} DERLEME HATASI`;
-        statusBadge.className = 'console-status-badge error';
-      }
-      result.errors.forEach(err => this.consoleView.log(`❌ [Derleme Hatası] Satır ${err.line}: ${err.message}`, 'error'));
-      this.setPrimaryDirty(true);
-      return false;
-    }
-
-    if (statusBadge) {
-      statusBadge.textContent = 'HAZIR';
-      statusBadge.className = 'console-status-badge ready';
-    }
-
-    this.editor.clearErrors();
-    this.consoleView.log(`✓ Program başarıyla derlendi (${result.bytes.length} bayt). Giriş noktası: CS:${result.origin.toString(16).toUpperCase().padStart(4, '0')}h`, 'success');
-
-    this.setPrimaryDirty(false);
-
-    this.cpu.loadCOM(result.bytes, result.origin);
-    this.applyChallengeEnvironmentIfAny();
-
-    this.ipToLineMap.clear();
-    for (const item of result.listing) {
-      this.ipToLineMap.set(item.addr, item.line);
-    }
-
-    const prevCached = this.docExecCache.get(this.primaryDocId);
-    const prevOriginPhys = prevCached?.asmResult
-      ? this.cpu.mem.toPhys(this.cpu.regs.cs, prevCached.asmResult.origin)
-      : undefined;
-    const originPhys = this.cpu.mem.toPhys(this.cpu.regs.cs, result.origin);
-
-    let memUserPinned = prevCached?.memUserPinned ?? false;
-    let memBasePhys = prevCached?.memBasePhys;
-    if (!memUserPinned || (prevOriginPhys !== undefined && prevOriginPhys !== originPhys)) {
-      memUserPinned = false;
-      memBasePhys = originPhys;
-    }
-
-    this.memoryView.restoreViewState(originPhys, memBasePhys, memUserPinned);
-
-    this.docExecCache.set(this.primaryDocId, {
-      code,
-      asmResult: result,
-      ipToLineMap: new Map(this.ipToLineMap),
-      memBasePhys: this.memoryView.getBasePhys(),
-      memUserPinned: this.memoryView.isUserPinned()
-    });
-
-    this.syncActiveLine();
-    this.updateViews();
-
-    const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
-    const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
-    if (btnRun) btnRun.disabled = false;
-    if (btnNext) btnNext.disabled = false;
-
-    return true;
-  }
-
-  private applyChallengeEnvironmentIfAny(): void {
-    const activeDoc = this.workspace.getAllDocuments().find(d => d.id === this.primaryDocId);
-    if (activeDoc && activeDoc.type === 'challenge' && activeDoc.challengeId) {
-      const challenge = CHALLENGES[activeDoc.challengeId];
-      if (challenge && challenge.testSetup) {
-        ChallengeRunner.applySetup(this.cpu, challenge.testSetup);
-        const memCount = challenge.testSetup.initialMemory?.length || 0;
-        const hasRegs = challenge.testSetup.initialRegisters !== undefined;
-        if (memCount > 0 || hasRegs) {
-          this.consoleView.log(`💡 Görev Ortamı Hazırlandı: ${hasRegs ? 'Yazmaçlar ' : ''}${memCount > 0 ? 've Ön Tanımlı Bellek Blokları' : ''} izole CPU ortamına yüklendi.`, 'info');
-        }
-      }
-    }
-  }
-
-  private reset(): void {
-    this.stop();
-    this.consoleView.setWaitingForInput(false);
-    if (this.currentAsmResult && this.currentAsmResult.errors.length === 0) {
-      this.cpu.loadCOM(this.currentAsmResult.bytes, this.currentAsmResult.origin);
-      this.applyChallengeEnvironmentIfAny();
-      const originPhys = this.cpu.mem.toPhys(this.cpu.regs.cs, this.currentAsmResult.origin);
-      this.memoryView.syncOrigin(originPhys);
-      this.syncActiveLine();
-      this.consoleView.log('Program başlangıç durumuna sıfırlandı.', 'info');
-    } else {
-      this.cpu.reset();
-      this.applyChallengeEnvironmentIfAny();
-      this.editor.setActiveLine(null);
-      this.consoleView.log('Simülatör sıfırlandı.', 'info');
-    }
-
-    const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
-    const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
-    if (btnRun) btnRun.disabled = false;
-    if (btnNext) btnNext.disabled = false;
-
-    this.updateViews();
-  }
-
-  private step(): void {
-    if (this.isPrimaryDirty) {
-      if (!this.compile()) return;
-    }
-    if (this.currentAsmResult && this.currentAsmResult.errors.length > 0) {
-      return;
-    }
-
-    if (this.cpu.halted) {
-      this.consoleView.log('Program sonlandı (HLT). Yeniden çalıştırmak için RESET butonuna basın.', 'info');
-      return;
-    }
-
-    const info = this.cpu.step();
-
-    if (info.error) {
-      this.stop();
-      const line = this.ipToLineMap.get(this.cpu.regs.ip) || 1;
-      this.editor.setErrors([{ line, message: info.error }]);
-      this.consoleView.log(`❌ [Çalışma Hatası] Satır ${line}: ${info.error}`, 'error');
-      const statusBadge = document.getElementById('console-status-badge') as HTMLElement;
-      if (statusBadge) {
-        statusBadge.textContent = 'ÇALIŞMA HATASI';
-        statusBadge.className = 'console-status-badge error';
-      }
-      return;
-    }
-
-    if (info.consoleText) {
-      if (info.consoleText.startsWith('[')) {
-        const isPort = info.consoleText.includes('Port');
-        this.consoleView.log(info.consoleText, isPort ? 'port' : 'info');
-      } else {
-        this.consoleView.appendStdout(info.consoleText);
-      }
-    }
-
-    if (info.waitingForInput) {
-      this.wasRunningBeforeInput = false;
-      this.stop();
-      this.consoleView.setWaitingForInput(true);
-      this.syncActiveLine();
-      this.updateViews();
-      return;
-    }
-
-    if (info.halted) {
-      this.stop();
-      this.consoleView.log('Program sonlandı (HLT).', 'warn');
-    }
-
-    this.syncActiveLine();
-    this.updateViews(info.changedRegs, info.changedFlags);
-  }
-
-  private run(): void {
-    if (this.isRunning) return;
-
-    if (this.isPrimaryDirty) {
-      if (!this.compile()) return;
-    }
-    if (this.currentAsmResult && this.currentAsmResult.errors.length > 0) {
-      return;
-    }
-
-    if (this.cpu.halted) {
-      this.reset();
-    }
-
-    this.isRunning = true;
-    const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
-    const btnStop = document.getElementById('btn-stop') as HTMLButtonElement;
-    const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
-
-    if (btnRun) btnRun.disabled = true;
-    if (btnStop) btnStop.disabled = false;
-    if (btnNext) btnNext.disabled = true;
-
-    const getDelay = (): number => {
-      if (this.currentSpeed === '0.5') return 600;
-      if (this.currentSpeed === '2') return 100;
-      return 300;
-    };
-
-    const loop = () => {
-      if (!this.isRunning) return;
-
-      const currentLine = this.ipToLineMap.get(this.cpu.regs.ip);
-      if (currentLine !== undefined && this.editor.isBreakpoint(currentLine)) {
-        this.stop();
-        this.consoleView.log(`Kesme noktasına ulaşıldı (Satır ${currentLine}).`, 'warn');
-        this.syncActiveLine();
-        this.updateViews();
-        return;
-      }
-
-      const info = this.cpu.step();
-
-      if (info.consoleText) {
-        if (info.consoleText.startsWith('[')) {
-          const isPort = info.consoleText.includes('Port');
-          this.consoleView.log(info.consoleText, isPort ? 'port' : 'info');
-        } else {
-          this.consoleView.appendStdout(info.consoleText);
-        }
-      }
-
-      if (info.waitingForInput) {
-        this.wasRunningBeforeInput = true;
-        this.stop();
-        this.consoleView.setWaitingForInput(true);
-        this.syncActiveLine();
-        this.updateViews();
-        return;
-      }
-
-      if (info.halted || info.error) {
-        this.stop();
-        if (info.error) {
-          this.editor.setErrors([{ line: currentLine || 1, message: info.error }]);
-          this.consoleView.log(`Çalışma Hatası: ${info.error}`, 'error');
-        } else {
-          this.consoleView.log('Program sonlandı (HLT).', 'warn');
-        }
-        this.syncActiveLine();
-        this.updateViews();
-        return;
-      }
-
-      this.syncActiveLine();
-      this.updateViews();
-
-      this.runTimer = window.setTimeout(loop, getDelay());
-    };
-
-    loop();
-  }
-
-  private stop(): void {
-    this.isRunning = false;
-    if (this.runTimer !== null) {
-      clearTimeout(this.runTimer);
-      this.runTimer = null;
-    }
-
-    const btnRun = document.getElementById('btn-run') as HTMLButtonElement;
-    const btnStop = document.getElementById('btn-stop') as HTMLButtonElement;
-    const btnNext = document.getElementById('btn-next') as HTMLButtonElement;
-
-    if (btnRun) btnRun.disabled = false;
-    if (btnStop) btnStop.disabled = true;
-    if (btnNext) btnNext.disabled = this.cpu.halted && !this.isPrimaryDirty;
-  }
-
-  private stepBack(): void {
-    this.stop();
-    if (this.cpu.stepBack()) {
-      this.syncActiveLine();
-      this.updateViews();
-    }
-  }
-
-  private syncActiveLine(): void {
-    const line = this.ipToLineMap.get(this.cpu.regs.ip);
-    this.editor.setActiveLine(line !== undefined ? line : null);
-  }
-
-  private updateViews(changedRegs: string[] = [], changedFlags: string[] = []): void {
-    this.registerPanel.update(this.cpu.regs, this.cpu.flags, changedRegs, changedFlags);
-    this.memoryView.render(this.cpu.mem, this.cpu.regs);
-
-    const btnStepBack = document.getElementById('btn-step-back') as HTMLButtonElement;
-    if (btnStepBack) {
-      btnStepBack.disabled = !this.cpu.canStepBack();
-    }
-  }
-
-  // =========================================================================
-  // SECONDARY CPU & EDITOR EXECUTION LOGIC
-  // =========================================================================
-
-  private secCompile(): boolean {
-    this.secStop();
-    if (!this.secCpu) return false;
-    const code = this.secEditor.getCode();
-    const result = Assembler.assemble(code);
-    this.secCurrentAsmResult = result;
-
-    const btnCompile = document.getElementById('btn-sec-compile') as HTMLButtonElement;
-    this.secConsoleView.clear();
-
-    if (result.errors.length > 0) {
-      this.secEditor.setErrors(result.errors);
-      result.errors.forEach(err => this.secConsoleView.log(`❌ [Derleme Hatası] Satır ${err.line}: ${err.message}`, 'error'));
-      this.setSecondaryDirty(true);
-      return false;
-    }
-
-    this.secEditor.clearErrors();
-    this.secConsoleView.log(`✓ Program başarıyla derlendi (${result.bytes.length} bayt). Giriş noktası: CS:${result.origin.toString(16).toUpperCase().padStart(4, '0')}h`, 'success');
-    this.setSecondaryDirty(false);
-
-    this.secCpu.loadCOM(result.bytes, result.origin);
-    this.applySecChallengeEnvironmentIfAny();
-
-    this.secIpToLineMap.clear();
-    for (const item of result.listing) {
-      this.secIpToLineMap.set(item.addr, item.line);
-    }
-
-    const prevSecCached = this.secondaryDocId ? this.secDocExecCache.get(this.secondaryDocId) : undefined;
-    const prevOriginPhys = prevSecCached?.asmResult
-      ? this.secCpu.mem.toPhys(this.secCpu.regs.cs, prevSecCached.asmResult.origin)
-      : undefined;
-    const originPhys = this.secCpu.mem.toPhys(this.secCpu.regs.cs, result.origin);
-
-    let memUserPinned = prevSecCached?.memUserPinned ?? false;
-    let memBasePhys = prevSecCached?.memBasePhys;
-    if (!memUserPinned || (prevOriginPhys !== undefined && prevOriginPhys !== originPhys)) {
-      memUserPinned = false;
-      memBasePhys = originPhys;
-    }
-
-    this.secMemoryView.restoreViewState(originPhys, memBasePhys, memUserPinned);
-
-    if (this.secondaryDocId) {
-      this.secDocExecCache.set(this.secondaryDocId, {
-        code,
-        asmResult: result,
-        ipToLineMap: new Map(this.secIpToLineMap),
-        memBasePhys: this.secMemoryView.getBasePhys(),
-        memUserPinned: this.secMemoryView.isUserPinned()
-      });
-    }
-
-    this.secSyncActiveLine();
-    this.secUpdateViews();
-
-    const btnRun = document.getElementById('btn-sec-run') as HTMLButtonElement;
-    const btnNext = document.getElementById('btn-sec-next') as HTMLButtonElement;
-    if (btnRun) btnRun.disabled = false;
-    if (btnNext) btnNext.disabled = false;
-
-    return true;
-  }
-
-  private applySecChallengeEnvironmentIfAny(): void {
-    if (!this.secCpu) return;
-    const secDoc = this.secondaryDocId ? this.workspace.getAllDocuments().find(d => d.id === this.secondaryDocId) : null;
-    if (secDoc && secDoc.type === 'challenge' && secDoc.challengeId) {
-      const challenge = CHALLENGES[secDoc.challengeId];
-      if (challenge && challenge.testSetup) {
-        ChallengeRunner.applySetup(this.secCpu, challenge.testSetup);
-        const memCount = challenge.testSetup.initialMemory?.length || 0;
-        const hasRegs = challenge.testSetup.initialRegisters !== undefined;
-        if (memCount > 0 || hasRegs) {
-          this.secConsoleView.log(`💡 Görev Ortamı Hazırlandı: ${hasRegs ? 'Yazmaçlar ' : ''}${memCount > 0 ? 've Ön Tanımlı Bellek Blokları' : ''} izole CPU ortamına yüklendi.`, 'info');
-        }
-      }
-    }
-  }
-
-  private secReset(): void {
-    this.secStop();
-    if (!this.secCpu) return;
-    this.secConsoleView.setWaitingForInput(false);
-    if (this.secCurrentAsmResult && this.secCurrentAsmResult.errors.length === 0) {
-      this.secCpu.loadCOM(this.secCurrentAsmResult.bytes, this.secCurrentAsmResult.origin);
-      this.applySecChallengeEnvironmentIfAny();
-      const originPhys = this.secCpu.mem.toPhys(this.secCpu.regs.cs, this.secCurrentAsmResult.origin);
-      this.secMemoryView.syncOrigin(originPhys);
-      this.secSyncActiveLine();
-      this.secConsoleView.log('Program başlangıç durumuna sıfırlandı.', 'info');
-    } else {
-      this.secCpu.reset();
-      this.applySecChallengeEnvironmentIfAny();
-      this.secEditor.setActiveLine(null);
-      this.secConsoleView.log('Simülatör sıfırlandı.', 'info');
-    }
-
-    const btnRun = document.getElementById('btn-sec-run') as HTMLButtonElement;
-    const btnNext = document.getElementById('btn-sec-next') as HTMLButtonElement;
-    if (btnRun) btnRun.disabled = false;
-    if (btnNext) btnNext.disabled = false;
-
-    this.secUpdateViews();
-  }
-
-  private secStep(): void {
-    if (!this.secCpu) return;
-    if (this.isSecondaryDirty) {
-      if (!this.secCompile()) return;
-    }
-    if (this.secCurrentAsmResult && this.secCurrentAsmResult.errors.length > 0) {
-      return;
-    }
-
-    if (this.secCpu.halted) {
-      this.secConsoleView.log('Program sonlandı (HLT). Yeniden çalıştırmak için RESET butonuna basın.', 'info');
-      return;
-    }
-
-    const info = this.secCpu.step();
-
-    if (info.error) {
-      this.secStop();
-      const line = this.secIpToLineMap.get(this.secCpu.regs.ip) || 1;
-      this.secEditor.setErrors([{ line, message: info.error }]);
-      this.secConsoleView.log(`❌ [Çalışma Hatası] Satır ${line}: ${info.error}`, 'error');
-      return;
-    }
-
-    if (info.consoleText) {
-      if (info.consoleText.startsWith('[')) {
-        const isPort = info.consoleText.includes('Port');
-        this.secConsoleView.log(info.consoleText, isPort ? 'port' : 'info');
-      } else {
-        this.secConsoleView.appendStdout(info.consoleText);
-      }
-    }
-
-    if (info.waitingForInput) {
-      this.secWasRunningBeforeInput = false;
-      this.secStop();
-      this.secConsoleView.setWaitingForInput(true);
-      this.secSyncActiveLine();
-      this.secUpdateViews();
-      return;
-    }
-
-    if (info.halted) {
-      this.secStop();
-      this.secConsoleView.log('Program sonlandı (HLT).', 'warn');
-    }
-
-    this.secSyncActiveLine();
-    this.secUpdateViews(info.changedRegs, info.changedFlags);
-  }
-
-  private secRun(): void {
-    if (this.secIsRunning || !this.secCpu) return;
-
-    if (this.isSecondaryDirty) {
-      if (!this.secCompile()) return;
-    }
-    if (this.secCurrentAsmResult && this.secCurrentAsmResult.errors.length > 0) {
-      return;
-    }
-
-    if (this.secCpu.halted) {
-      this.secReset();
-    }
-
-    this.secIsRunning = true;
-    const btnRun = document.getElementById('btn-sec-run') as HTMLButtonElement;
-    const btnStop = document.getElementById('btn-sec-stop') as HTMLButtonElement;
-    const btnNext = document.getElementById('btn-sec-next') as HTMLButtonElement;
-
-    if (btnRun) btnRun.disabled = true;
-    if (btnStop) btnStop.disabled = false;
-    if (btnNext) btnNext.disabled = true;
-
-    const getDelay = (): number => {
-      if (this.secSpeed === '0.5') return 600;
-      if (this.secSpeed === '2') return 100;
-      return 300;
-    };
-
-    const loop = () => {
-      if (!this.secIsRunning || !this.secCpu) return;
-
-      const currentLine = this.secIpToLineMap.get(this.secCpu.regs.ip);
-      if (currentLine !== undefined && this.secEditor.isBreakpoint(currentLine)) {
-        this.secStop();
-        this.secConsoleView.log(`Kesme noktasına ulaşıldı (Satır ${currentLine}).`, 'warn');
-        this.secSyncActiveLine();
-        this.secUpdateViews();
-        return;
-      }
-
-      const info = this.secCpu.step();
-
-      if (info.consoleText) {
-        if (info.consoleText.startsWith('[')) {
-          const isPort = info.consoleText.includes('Port');
-          this.secConsoleView.log(info.consoleText, isPort ? 'port' : 'info');
-        } else {
-          this.secConsoleView.appendStdout(info.consoleText);
-        }
-      }
-
-      if (info.waitingForInput) {
-        this.secWasRunningBeforeInput = true;
-        this.secStop();
-        this.secConsoleView.setWaitingForInput(true);
-        this.secSyncActiveLine();
-        this.secUpdateViews();
-        return;
-      }
-
-      if (info.halted || info.error) {
-        this.secStop();
-        if (info.error) {
-          this.secEditor.setErrors([{ line: currentLine || 1, message: info.error }]);
-          this.secConsoleView.log(`Çalışma Hatası: ${info.error}`, 'error');
-        } else {
-          this.secConsoleView.log('Program sonlandı (HLT).', 'warn');
-        }
-        this.secSyncActiveLine();
-        this.secUpdateViews();
-        return;
-      }
-
-      this.secSyncActiveLine();
-      this.secUpdateViews();
-
-      this.secRunTimer = window.setTimeout(loop, getDelay());
-    };
-
-    loop();
-  }
-
-  private secStop(): void {
-    this.secIsRunning = false;
-    if (this.secRunTimer !== null) {
-      clearTimeout(this.secRunTimer);
-      this.secRunTimer = null;
-    }
-
-    const btnRun = document.getElementById('btn-sec-run') as HTMLButtonElement;
-    const btnStop = document.getElementById('btn-sec-stop') as HTMLButtonElement;
-    const btnNext = document.getElementById('btn-sec-next') as HTMLButtonElement;
-
-    if (btnRun) btnRun.disabled = !this.secCpu;
-    if (btnStop) btnStop.disabled = true;
-    if (btnNext) btnNext.disabled = this.secCpu ? (this.secCpu.halted && !this.isSecondaryDirty) : true;
-  }
-
-  private secStepBack(): void {
-    this.secStop();
-    if (this.secCpu && this.secCpu.stepBack()) {
-      this.secSyncActiveLine();
-      this.secUpdateViews();
-    }
-  }
-
-  private secSyncActiveLine(): void {
-    if (!this.secCpu) return;
-    const line = this.secIpToLineMap.get(this.secCpu.regs.ip);
-    this.secEditor.setActiveLine(line !== undefined ? line : null);
-  }
-
-  private secUpdateViews(changedRegs: string[] = [], changedFlags: string[] = []): void {
-    if (!this.secCpu) return;
-    this.secRegisterPanel.update(this.secCpu.regs, this.secCpu.flags, changedRegs, changedFlags);
-    this.secMemoryView.render(this.secCpu.mem, this.secCpu.regs);
-
-    const btnStepBack = document.getElementById('btn-sec-step-back') as HTMLButtonElement;
-    if (btnStepBack) {
-      btnStepBack.disabled = !this.secCpu.canStepBack();
     }
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+if (typeof window !== 'undefined') {
   new App();
-});
+}

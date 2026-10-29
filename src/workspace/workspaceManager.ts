@@ -1,8 +1,16 @@
-import { WorkspaceDocument, DocumentType } from './types.js';
+import { WorkspaceDocument, DocumentType, OSProject, OSFileRole } from './types.js';
 import { CpuInstanceManager } from '../cpu/instanceManager.js';
+import { 
+  BOOT_ASM_TEMPLATE, 
+  KERNEL_ASM_TEMPLATE, 
+  SCREEN_ASM_TEMPLATE, 
+  KEYBOARD_ASM_TEMPLATE, 
+  SHELL_ASM_TEMPLATE 
+} from '../os/starterTemplates.js';
 
 const STORAGE_DOCS_KEY = 'assemblysim_workspace_docs_v1';
 const STORAGE_ACTIVE_ID_KEY = 'assemblysim_active_doc_id_v1';
+const STORAGE_OS_PROJECTS_KEY = 'assemblysim_os_projects_v1';
 
 export const DEFAULT_USER_CODE = `; 8086 Assembly Program
 ; Ornek: 1'den 5'e kadar sayilari topla (1+2+3+4+5 = 15 / 0Fh)
@@ -39,6 +47,7 @@ function getSafeStorage(): Storage | null {
 
 export class WorkspaceManager {
   private docs: Map<string, WorkspaceDocument> = new Map();
+  private osProjects: Map<string, OSProject> = new Map();
   private activeId: string = 'doc-main';
   private cpuManager: CpuInstanceManager;
   private events: WorkspaceEvents;
@@ -59,6 +68,16 @@ export class WorkspaceManager {
     try {
       const savedDocs = storage.getItem(STORAGE_DOCS_KEY);
       const savedActiveId = storage.getItem(STORAGE_ACTIVE_ID_KEY);
+      const savedProjects = storage.getItem(STORAGE_OS_PROJECTS_KEY);
+
+      if (savedProjects) {
+        const parsedProj: OSProject[] = JSON.parse(savedProjects);
+        if (Array.isArray(parsedProj)) {
+          for (const p of parsedProj) {
+            this.osProjects.set(p.id, p);
+          }
+        }
+      }
 
       if (savedDocs) {
         const parsed: WorkspaceDocument[] = JSON.parse(savedDocs);
@@ -108,6 +127,9 @@ export class WorkspaceManager {
       const arr = Array.from(this.docs.values());
       storage.setItem(STORAGE_DOCS_KEY, JSON.stringify(arr));
       storage.setItem(STORAGE_ACTIVE_ID_KEY, this.activeId);
+
+      const projArr = Array.from(this.osProjects.values());
+      storage.setItem(STORAGE_OS_PROJECTS_KEY, JSON.stringify(projArr));
     } catch (e) {
       console.warn('Could not save workspace to localStorage', e);
     }
@@ -144,7 +166,7 @@ export class WorkspaceManager {
     code: string;
     challengeId?: string;
     milestoneId?: string;
-    referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes';
+    referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes' | 'ossandbox';
   }): WorkspaceDocument {
     const docId = docInput.id || (
       docInput.referenceTab ? `ref-${docInput.referenceTab}` :
@@ -243,5 +265,166 @@ export class WorkspaceManager {
   setDocumentCpu(docId: string, cpuId: string): WorkspaceDocument | undefined {
     const success = this.assignCpuToDocument(docId, cpuId);
     return success ? this.docs.get(docId) : undefined;
+  }
+
+  renameDocument(docId: string, newTitle: string): boolean {
+    const doc = this.docs.get(docId);
+    if (!doc) return false;
+    const cleanTitle = newTitle.trim();
+    if (!cleanTitle) return false;
+
+    doc.title = cleanTitle;
+    doc.lastModified = Date.now();
+    this.saveToStorage();
+    this.events.onDocumentListChange?.(this.getAllDocuments());
+    return true;
+  }
+
+  getOSProjects(): OSProject[] {
+    return Array.from(this.osProjects.values());
+  }
+
+  getOSProject(id: string): OSProject | undefined {
+    return this.osProjects.get(id);
+  }
+
+  createOSProject(name?: string): OSProject {
+    const projId = `os-proj-${Date.now()}`;
+    const projName = (name && name.trim()) ? name.trim() : 'BenimOS';
+
+    // 5 Temel Başlangıç Modül Dosyasını Oluştur
+    const bootDoc = this.createOSFileInternal(projId, 'boot.asm', 'boot', BOOT_ASM_TEMPLATE);
+    const kernelDoc = this.createOSFileInternal(projId, 'kernel.asm', 'kernel', KERNEL_ASM_TEMPLATE);
+    const screenDoc = this.createOSFileInternal(projId, 'screen.asm', 'screen', SCREEN_ASM_TEMPLATE);
+    const keyboardDoc = this.createOSFileInternal(projId, 'keyboard.asm', 'keyboard', KEYBOARD_ASM_TEMPLATE);
+    const shellDoc = this.createOSFileInternal(projId, 'shell.asm', 'shell', SHELL_ASM_TEMPLATE);
+
+    const project: OSProject = {
+      id: projId,
+      name: projName,
+      createdAt: Date.now(),
+      lastModified: Date.now(),
+      isCollapsed: false,
+      activeFileId: bootDoc.id,
+      fileDocIds: [bootDoc.id, kernelDoc.id, screenDoc.id, keyboardDoc.id, shellDoc.id]
+    };
+
+    this.osProjects.set(projId, project);
+    this.saveToStorage();
+    this.events.onDocumentListChange?.(this.getAllDocuments());
+    return project;
+  }
+
+  private createOSFileInternal(
+    projId: string, 
+    fileName: string, 
+    role: OSFileRole, 
+    code: string
+  ): WorkspaceDocument {
+    const docId = `doc-${projId}-${role}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const cpuInst = this.cpuManager.createInstance(`OS: ${fileName}`);
+
+    const doc: WorkspaceDocument = {
+      id: docId,
+      title: fileName,
+      type: 'os_file',
+      code: code,
+      cpuInstanceId: cpuInst.id,
+      osProjectId: projId,
+      osRole: role,
+      createdAt: Date.now(),
+      lastModified: Date.now()
+    };
+
+    this.docs.set(docId, doc);
+    return doc;
+  }
+
+  addFileToOSProject(
+    projectId: string, 
+    fileName: string, 
+    role: OSFileRole = 'custom', 
+    initialCode?: string
+  ): WorkspaceDocument | null {
+    const proj = this.osProjects.get(projectId);
+    if (!proj) return null;
+
+    const code = initialCode !== undefined ? initialCode : `; ${fileName} - ${proj.name} Modulu\nORG 1000h\n\n`;
+    const doc = this.createOSFileInternal(projectId, fileName, role, code);
+    proj.fileDocIds.push(doc.id);
+    proj.lastModified = Date.now();
+
+    this.saveToStorage();
+    this.events.onDocumentListChange?.(this.getAllDocuments());
+    return doc;
+  }
+
+  renameOSProject(id: string, newName: string): boolean {
+    const proj = this.osProjects.get(id);
+    if (!proj) return false;
+    const cleanName = newName.trim();
+    if (!cleanName) return false;
+
+    proj.name = cleanName;
+    proj.lastModified = Date.now();
+    this.saveToStorage();
+    this.events.onDocumentListChange?.(this.getAllDocuments());
+    return true;
+  }
+
+  deleteOSProject(id: string): boolean {
+    const proj = this.osProjects.get(id);
+    if (!proj) return false;
+
+    // Projeye ait tüm dosyaları sil
+    for (const fileId of proj.fileDocIds) {
+      this.docs.delete(fileId);
+    }
+    this.osProjects.delete(id);
+
+    // Eğer silinen dosyalardan biri aktifse, ana belgeye dön
+    if (!this.docs.has(this.activeId)) {
+      const remaining = this.getAllDocuments();
+      if (remaining.length > 0) {
+        this.activeId = remaining[0].id;
+        this.events.onDocumentChange?.(remaining[0]);
+      }
+    }
+
+    this.saveToStorage();
+    this.events.onDocumentListChange?.(this.getAllDocuments());
+    return true;
+  }
+
+  toggleOSProjectCollapse(id: string): void {
+    const proj = this.osProjects.get(id);
+    if (proj) {
+      proj.isCollapsed = !proj.isCollapsed;
+      this.saveToStorage();
+    }
+  }
+
+  deleteOSFile(fileDocId: string): boolean {
+    const doc = this.docs.get(fileDocId);
+    if (!doc || !doc.osProjectId) return false;
+
+    const proj = this.osProjects.get(doc.osProjectId);
+    if (proj) {
+      proj.fileDocIds = proj.fileDocIds.filter(fid => fid !== fileDocId);
+      proj.lastModified = Date.now();
+    }
+
+    this.docs.delete(fileDocId);
+    if (this.activeId === fileDocId) {
+      const remaining = this.getAllDocuments();
+      if (remaining.length > 0) {
+        this.activeId = remaining[0].id;
+        this.events.onDocumentChange?.(remaining[0]);
+      }
+    }
+
+    this.saveToStorage();
+    this.events.onDocumentListChange?.(this.getAllDocuments());
+    return true;
   }
 }

@@ -1242,6 +1242,13 @@ export class Executor {
         this.regs.sp = (this.regs.sp + imm) & 0xFFFF;
         break;
       }
+      // IRET (Interrupt Return: POP IP, POP CS, POPF)
+      case 0xCF: {
+        currIp = this.pop();
+        this.regs.cs = this.pop();
+        this.flags.fromWord(this.pop());
+        break;
+      }
 
       // --- Flag Operations ---
       case 0xF8: this.flags.cf = false; break; // CLC

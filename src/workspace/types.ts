@@ -1,4 +1,16 @@
-export type DocumentType = 'custom' | 'challenge' | 'example' | 'lecture' | 'reference';
+export type DocumentType = 'custom' | 'challenge' | 'example' | 'lecture' | 'reference' | 'os_file' | 'os_sandbox';
+
+export type OSFileRole = 'boot' | 'kernel' | 'screen' | 'keyboard' | 'shell' | 'interrupts' | 'custom';
+
+export interface OSProject {
+  id: string;
+  name: string;
+  createdAt: number;
+  lastModified: number;
+  isCollapsed?: boolean;
+  activeFileId?: string;
+  fileDocIds: string[];
+}
 
 export interface WorkspaceDocument {
   id: string;
@@ -8,7 +20,9 @@ export interface WorkspaceDocument {
   cpuInstanceId: string;
   challengeId?: string;
   milestoneId?: string;
-  referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes';
+  referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes' | 'ossandbox';
+  osProjectId?: string;
+  osRole?: OSFileRole;
   createdAt: number;
   lastModified: number;
   scrollTop?: number;

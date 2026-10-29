@@ -17,8 +17,9 @@ import { LeetCodeView, LeetCodeCallbacks } from '../challenges/leetcodeView.js';
 import { RoadmapCurriculumView } from '../challenges/roadmapCurriculumView.js';
 import { Challenge } from '../challenges/types.js';
 import { StudyNotesView } from './studyNotesView.js';
+import { OSSandboxView } from '../os/osSandboxView.js';
 
-export type ManualTab = 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes';
+export type ManualTab = 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes' | 'ossandbox';
 export type LectureSubTab = 'addressing' | 'architecture' | 'flags' | 'dma_io' | 'interrupts' | 'pipelining' | 'glossary';
 
 export interface InstructionDocCallbacks extends LeetCodeCallbacks {
@@ -26,6 +27,8 @@ export interface InstructionDocCallbacks extends LeetCodeCallbacks {
   onReturnToEditor?: () => void;
   onTabChange?: (tab: ManualTab) => void;
   onOpenInMainEditor?: (title: string, code: string) => void;
+  getWorkspace?: () => any;
+  onOpenOSSandbox?: (projectId?: string) => void;
 }
 
 export class InstructionDoc {
@@ -39,6 +42,7 @@ export class InstructionDoc {
   private leetcodeView?: LeetCodeView;
   private roadmapCurriculumView?: RoadmapCurriculumView;
   private studyNotesView?: StudyNotesView;
+  private osSandboxView?: OSSandboxView;
   private callbacks?: InstructionDocCallbacks;
 
   constructor(container: HTMLElement, callbacks?: InstructionDocCallbacks) {
@@ -86,6 +90,9 @@ export class InstructionDoc {
             </button>
             <button class="docs-main-tab" data-tab="studynotes">
               📝 5. Çalışma Notları & Vize Hazırlık
+            </button>
+            <button class="docs-main-tab" data-tab="ossandbox">
+              💻 6. OS Lab (İşletim Sistemi)
             </button>
           </div>
         </div>
@@ -208,6 +215,11 @@ export class InstructionDoc {
           <div class="docs-tab-pane" id="pane-studynotes">
             <div id="docs-studynotes-container"></div>
           </div>
+
+          <!-- TAB 6: 💻 6. OS Lab (İşletim Sistemi) -->
+          <div class="docs-tab-pane" id="pane-ossandbox">
+            <div id="docs-ossandbox-container"></div>
+          </div>
         </div>
       </div>
     `;
@@ -225,6 +237,19 @@ export class InstructionDoc {
     this.renderLeetCode();
     this.renderRoadmap();
     this.renderStudyNotes();
+    this.renderOSSandbox();
+  }
+
+  private renderOSSandbox(): void {
+    const container = this.container.querySelector('#docs-ossandbox-container') as HTMLElement;
+    const ws = this.callbacks?.getWorkspace ? this.callbacks.getWorkspace() : undefined;
+    if (container && ws) {
+      this.osSandboxView = new OSSandboxView(container, ws, {
+        onOpenInMainEditor: (title, code) => {
+          this.callbacks?.onOpenInMainEditor?.(title, code);
+        }
+      });
+    }
   }
 
   private renderStudyNotes(): void {
@@ -312,11 +337,20 @@ export class InstructionDoc {
         if (desc) desc.textContent = 'Doç. Dr. Mehmet Akif Çifci slaytları, laboratuvar kodları, tahta notları ve geçmiş yıl sınav sorularından derlenen eksiksiz çalışma merkezi.';
         if (bc) bc.textContent = '📝 5. Çalışma Notları & Vize Hazırlık';
         break;
+      case 'ossandbox':
+        if (pill) pill.textContent = '8086 KİŞİSEL İŞLETİM SİSTEMİ LABORATUVARI';
+        if (title) title.textContent = 'Sıfırdan Kendi 8086 İşletim Sistemini İnşa Et';
+        if (desc) desc.textContent = 'Bootloader, Çekirdek, Ekran Sürücüsü, Klavye Tamponu ve Sistem Çağrılarını (Syscalls) adım adım öğren ve çalıştır.';
+        if (bc) bc.textContent = '💻 6. OS Lab (İşletim Sistemi)';
+        break;
     }
   }
 
-  openTab(tab: ManualTab): void {
+  openTab(tab: ManualTab, projectId?: string): void {
     this.activeTab = tab;
+    if (tab === 'ossandbox' && projectId && this.osSandboxView) {
+      this.osSandboxView.setProject(projectId);
+    }
     const tabsWrap = this.container.querySelector('#docs-main-tabs');
     if (tabsWrap) {
       tabsWrap.querySelectorAll('.docs-main-tab').forEach(b => b.classList.remove('active'));

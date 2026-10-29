@@ -83,6 +83,7 @@ export class Encoder {
       case 'STD': return { bytes: [0xFD], length: 1 };
       case 'CLI': return { bytes: [0xFA], length: 1 };
       case 'STI': return { bytes: [0xFB], length: 1 };
+      case 'IRET': return { bytes: [0xCF], length: 1 };
 
       case 'CBW': return { bytes: [0x98], length: 1 };
       case 'CWD': return { bytes: [0x99], length: 1 };
