@@ -913,6 +913,36 @@ export const MILESTONE_LECTURES: Record<string, MilestoneLecture> = {
             "examTips": "STOSB kaynak olarak daima AL akümülatörünü kullanır."
           }
         ]
+      },
+      {
+        "title": "4. Modül: Akümülatöre Karakter / Bayt Yükleme (LODSB & LODSW)",
+        "contentHtml": "\n        <div class=\"instruction-box\">\n          <h4><code>LODSB</code> (Load String Byte) ve <code>LODSW</code> (Load String Word)</h4>\n          <p><code>DS:SI</code> kaynak bellek adresindeki veriyi okuyup akümülatöre yükler ve <code>SI</code> indisini otomatik günceller:</p>\n          <ul>\n            <li><code>LODSB</code>: <code>AL = [DS:SI]</code> yapar. Ardından <code>DF = 0</code> (CLD) ise <code>SI = SI + 1</code>, <code>DF = 1</code> (STD) ise <code>SI = SI - 1</code> olur.</li>\n            <li><code>LODSW</code>: <code>AX = [DS:SI]</code> (16-bit word) yapar ve <code>SI = SI ± 2</code> olur.</li>\n            <li>🚨 <strong>Neden REP ile Kullanılmaz?</strong><br>\n              <code>REP LODSB</code> yazılırsa her çevrimde <code>AL</code>'nin üzerine yeni değer yazılır ve döngü bittiğinde yalnızca en son bayt kalır! Bu nedenle <code>LODSB</code> tek başına veya bir <code>LOOP</code> döngüsü içinde karakter karakter okuma, büyük/küçük harf dönüştürme ve filtreleme işlemlerinde kullanılır.\n            </li>\n            <li><strong>Kompakt Eşdeğeri:</strong> <code>LODSB</code> komutu, <code>MOV AL, [SI]</code> ardından <code>INC SI</code> yapmanın 1 baytlık donanımsal karşılığıdır.</li>\n          </ul>\n        </div>\n      ",
+        "examples": [
+          {
+            "id": "ex-m7-lodsb",
+            "difficulty": "kolay",
+            "difficultyLabel": "🟢 4. Modül Labı: LODSB",
+            "title": "Mini-Lab 7.4: LODSB ile Bellekten Karakter Okuma",
+            "scenario": "Belleğin [0200H] adresinde 'A' (41H) karakteri bulunmaktadır. LODSB komutu ile bu karakteri AL akümülatörüne okuyun ve SI indeksinin 0201H olduğunu doğrulayın.",
+            "task": "SI=0200H ayarlayın, CLD ile yönü kurun ve LODSB komutu ile baytı AL'ye yükleyin.",
+            "code": "; 🟢 Mini-Lab 7.4: LODSB Komutu\nORG 100H\n\nMOV SI, 0200H\n\n; 1. CLD ile artan yonu secin ve LODSB komutunu calistirin:\n; TODO:\n\n\nHLT\n",
+            "initialMemory": [
+              {
+                "segment": 0,
+                "offset": 512,
+                "bytes": [
+                  65
+                ]
+              }
+            ],
+            "solutionCode": "ORG 100H\nMOV SI, 0200H\nCLD\nLODSB\nHLT",
+            "solutionBreakdown": [
+              "1. Satır: CLD — Yön bayrağı temizlenir (DF=0, ileri yön).",
+              "2. Satır: LODSB — [0200H] adresindeki 41H (65) AL'ye okunur ve SI otomatik olarak 0201H'a artırılır."
+            ],
+            "examTips": "LODSB komutu operand almaz; daima DS:SI'den okur ve AL'ye yazar."
+          }
+        ]
       }
     ]
   },

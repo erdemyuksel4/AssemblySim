@@ -206,13 +206,13 @@ export const MIDTERM_EXAM_QUESTIONS: MidtermQuestion[] = [
     points: 25,
     title: "Soru 8: 0xaa İle Sonlanan Bayt Dizisindeki En Büyük Elemanı Bulma",
     difficulty: "zor",
-    scenario: "DS:SI adresinde 0AAH baytı ile sonlanan pozitif işaretsiz bir bayt dizisi bulunmaktadır. LODSB ve CMP komutlarını kullanarak dizinin en büyük elemanını BL yazmacına bulan assembly kodunu yazınız.",
+    scenario: "DS:SI adresinde 0AAH baytı ile sonlanan pozitif işaretsiz bir bayt dizisi bulunmaktadır. LODSB ve CMP komutlarını kullanarak dizinin en büyük elemanını BL yazmacına bulan assembly kodunu yazınız. (Not: LODSB komutu, [SI] adresindeki baytı AL'ye yükleyip SI'yi otomatik 1 artıran kompakt string okuma komutudur; MOV AL, [SI] ardından INC SI ile eşdeğerdir).",
     codeSnippet: "; 0AAH sonlu dizide max bulma\nORG 100H\nMOV SI, 0200H\nMOV BL, 0        ; Baslangic max\n\nKONTROL:\nLODSB\nCMP AL, 0AAH\nJZ BITTI\nCMP AL, BL\nJB KONTROL\nMOV BL, AL\nJMP KONTROL\n\nBITTI:\nHLT",
     initialState: {},
     expectedRegisters: [
       { name: "BL", expected: "MAX", accepted: ["MAX", "En Büyük Eleman"], note: "Dizi taranarak en büyük eleman BL içine aktarılır." }
     ],
     expectedFlags: [],
-    hocaRubric: "Hoca Puanlama Kriterleri: LODSB ile SI ilerletme (5P), 0AAH dizi sonu kontrolü JZ (5P), CMP AL, BL ve işaretsiz JB atlaması (10P - Eğer JL kullanılırsa 5P kırılır!), Max güncelleme ve döngü akışı (5P)."
+    hocaRubric: "Hoca Puanlama Kriterleri: LODSB (veya MOV AL, [SI] + INC SI) ile eleman okuma ve ilerletme (5P), 0AAH dizi sonu kontrolü JZ (5P), CMP AL, BL ve işaretsiz JB atlaması (10P - İşaretsiz pozitif sayılar olduğu için JB şarttır; JL kullanılırsa 5P kırılır!), Max güncelleme ve döngü akışı (5P)."
   }
 ];

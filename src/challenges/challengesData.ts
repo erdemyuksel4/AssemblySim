@@ -200,7 +200,7 @@ export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
         title: 'Blok Bellek Kopyalama ve Doldurma',
         opcodes: ['MOVSB', 'LODSB', 'STOSB', 'REP', 'CLD'],
         description: 'SI ve DI indeks register\'ları ve REP ön eki ile bellek blok transferi.',
-        challengeIds: ['ch-string-copy', 'ch-string-fill']
+        challengeIds: ['ch-string-copy', 'ch-string-fill', 'ch-string-load']
       },
       {
         id: 'topic-string-scan',
@@ -1146,6 +1146,52 @@ HLT`,
     }
   },
 
+  'ch-string-load': {
+    id: 'ch-string-load',
+    title: 'LODSB ile Bellekten Karakter Okuma ve İndeks İlerletme',
+    milestoneId: 'milestone-7',
+    difficulty: 'Kolay',
+    opcodes: ['LODSB', 'CLD', 'MOV'],
+    scenario: 'Bellekte [0200h] adresinde 3 baytlık \'ABC\' metni (ASCII 41h, 42h, 43h) saklanmaktadır. LODSB komutu kullanarak ilk iki karakteri sırayla okuyup ilkini AH\'ye, ikincisini AL\'ye yerleştirmeniz isteniyor.',
+    task: '1. CLD ile artan yönü ayarlayın ve SI = 0200h yapın.\n2. İlk LODSB komutunu çalıştırarak \'A\' (41h) baytını AL\'ye okuyun (SI = 0201h olur).\n3. Bu değeri AH\'ye saklayın (MOV AH, AL).\n4. İkinci LODSB komutunu çalıştırarak \'B\' (42h) baytını AL\'ye okuyun (SI = 0202h olur).\n5. Program bittiğinde AX = 4142h ve SI = 0202h olmalıdır.',
+    starterCode: `; Görev: LODSB ile Karakter Okuma
+; Bellek [0200H]: 'A' (41H), 'B' (42H), 'C' (43H)
+; Beklenen: AX = 4142H ('AB'), SI = 0202H
+ORG 100H
+
+; 1. CLD ile yonu secin, SI = 0200H yapin
+; 2. Ilk bayti AL'ye okuyup AH'ye kopyalayin
+; 3. Ikinci bayti AL'ye okuyun
+; TODO:
+
+
+HLT
+`,
+    hints: [
+      'LODSB komutu operand almaz; daima DS:SI adresinden okuyup AL\'ye yazar ve SI\'yi (DF=0 iken) 1 artırır.',
+      'İlk LODSB sonrası MOV AH, AL yaparak ilk okunan değeri güvenceye alın, ardından ikinci LODSB\'yi çalıştırın.'
+    ],
+    solutionCode: `ORG 100H
+CLD
+MOV SI, 0200H
+LODSB
+MOV AH, AL
+LODSB
+HLT`,
+    testSetup: {
+      initialMemory: [
+        { segment: 0x0000, offset: 0x0200, bytes: [0x41, 0x42, 0x43] } // "ABC"
+      ]
+    },
+    assertions: {
+      expectedRegisters: {
+        ax: 0x4142,
+        si: 0x0202
+      },
+      maxSteps: 20
+    }
+  },
+
   'ch-string-len': {
     id: 'ch-string-len',
     title: 'REPNE SCASB ile String Uzunluğu Bulma (Strlen)',
@@ -1885,7 +1931,7 @@ HLT`,
     difficulty: 'Orta',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-5 Kapsayıcı Sentez',
-    opcodes: ['MOV', 'CMP', 'LOOP', 'ADD'],
+    opcodes: ['MOV', 'CMP', 'JLE', 'LOOP', 'ADD', 'INC'],
     scenario: `Bellekte [0500h] adresinden başlayarak 4 adet 16-bitlik (2 baytlık word) tam sayıdan oluşan bir dizi bulunmaktadır:
 • [0500h] = 5   (0005h)
 • [0502h] = 20  (0014h)  --> 10'dan büyük!
@@ -1894,8 +1940,8 @@ HLT`,
 Bu diziyi döngü ile tarayarak sadece eşik değeri olan 10'dan büyük (> 10) sayıları seçmeniz, bu sayıların toplamını (20 + 15 = 35) ve kaç adet olduklarını (2 adet) belleğe kaydetmeniz istenmektedir.`,
     task: `1. [0500h] adresinden başlayan 4 elemanlı 16-bit (word) diziyi LOOP komutuyla tarayın (her eleman 2 bayt olduğu için dizi indisini her adımda 2 artırın).
 2. Her elemanı 10 sayısıyla karşılaştırın (CMP):
-   • Eğer sayı 10 veya daha küçükse (<= 10) toplama işlemine dahil etmeden sonraki elemana geçin.
-   • Eğer sayı 10'dan büyükse (> 10) toplam yazmacına ekleyin ve adet sayacını 1 artırın.
+   • Eğer sayı 10 veya daha küçükse (<= 10) JLE (Jump if Less or Equal) veya JBE ile toplama işlemini atlayıp sonraki elemana geçin.
+   • Eğer sayı 10'dan büyükse (> 10) ADD ile toplam yazmacına ekleyin ve INC ile adet sayacını 1 artırın.
 3. Döngü bittiğinde:
    • 10'dan büyük sayıların Toplamını (35 / 0023h) 16-bit word olarak [0510h] adresine yazın.
    • 10'dan büyük sayıların Adedini (2 / 0002h) 16-bit word olarak [0512h] adresine yazın.`,
@@ -1914,7 +1960,8 @@ HLT
     hints: [
       '4 elemanlı dizi için CX = 4 ayarlayıp LOOP komutunu kullanabilirsiniz.',
       'Her eleman 16-bit (2 bayt) olduğu için SI indisini her turda ADD SI, 2 ile ilerletin.',
-      'CMP BX, 10 yaptıktan sonra JLE ATLA (veya JBE ATLA) ile 10 ve altındaki sayıları atlayabilirsiniz.',
+      'Aşama 5 Modül 4\'te öğrendiğiniz JLE (Jump if Less or Equal) veya JBE komutu ile CMP sonrası 10 ve altındaki sayıları atlayabilirsiniz: CMP BX, 10 ardından JLE ATLA.',
+      'Adet sayısını artırmak için Aşama 3\'te öğrendiğiniz INC komutunu (INC DX) kullanabilirsiniz.',
       'Adım Adım Çözüm Örneği:\n1. MOV SI, 0 / MOV AX, 0 (Toplam) / MOV DX, 0 (Adet) / MOV CX, 4\n2. DONGU: MOV BX, [0500H + SI]\n3. CMP BX, 10 -> JLE ATLA\n4. ADD AX, BX -> INC DX\n5. ATLA: ADD SI, 2 -> LOOP DONGU\n6. MOV [0510H], AX ve MOV [0512H], DX\n7. HLT'
     ],
     solutionCode: `ORG 100H
@@ -2055,7 +2102,8 @@ HLT
 `,
     hints: [
       'CLD komutu Direction Flag (DF) bayrağını 0 yapar; böylece her LODSB ve STOSB sonrasında SI ve DI otomatik olarak 1 artar (INC SI / INC DI yazmanıza gerek kalmaz!).',
-      'LODSB komutu AL = [DS:SI] yapar; STOSB komutu ise [ES:DI] = AL yapar.',
+      'LODSB komutu (Aşama 7 Modül 4\'te öğrendiğiniz) AL = [DS:SI] yaparak baytı okur ve SI\'yi 1 artırır; STOSB komutu (Aşama 7 Modül 3\'te öğrendiğiniz) [ES:DI] = AL yaparak baytı yazar ve DI\'yi 1 artırır.',
+      'Aşama 4\'te öğrendiğiniz XOR komutu (XOR AL, 20h) 5. biti tersleyerek büyük harfi küçük harfe dönüştürür (örn: 4Dh ^ 20h = 6Dh).',
       'Adım Adım Çözüm Örneği:\n1. CLD\n2. MOV SI, 0700H\n3. MOV DI, 0710H\n4. MOV CX, 5\n5. DONUSTUR:\n     LODSB\n     XOR AL, 20H\n     STOSB\n     LOOP DONUSTUR\n6. HLT'
     ],
     solutionCode: `ORG 100H
@@ -2231,7 +2279,7 @@ HLT`,
     difficulty: 'Zor',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-10 Kapsayıcı Sentez',
-    opcodes: ['MOV', 'CMP', 'SUB', 'LOOP'],
+    opcodes: ['MOV', 'CMP', 'JAE', 'JBE', 'ADD', 'SUB', 'LOOP'],
     scenario: `Bellekte [1000h] adresinden başlayarak 6 elemanlı bir 16-bit (2 baytlık word) tam sayı dizisi bulunmaktadır:
 • Dizi Elemanları: [15, 42, 8, 60, 23, 12]
   ([1000h]=15, [1002h]=42, [1004h]=8, [1006h]=60, [1008h]=23, [100Ah]=12)
@@ -2261,7 +2309,7 @@ HLT
 `,
     hints: [
       'Dizinin ilk elemanını ([1000h] = 15) başlangıçta hem Min (AX) hem de Max (DX) yazmacına yükleyebilirsiniz. Böylece kalan 5 eleman için CX = 5 ve SI = 2 ile döngüyü başlatabilirsiniz.',
-      'Her adımda okunan elemanı (BX) önce AX (Min) ile karşılaştırın: eğer BX < AX ise AX = BX yapın. Ardından DX (Max) ile karşılaştırın: eğer BX > DX ise DX = BX yapın.',
+      'Aşama 5 Modül 3\'te öğrendiğiniz JAE (Jump if Above or Equal) ve JBE (Jump if Below or Equal) komutlarını kullanabilirsiniz: Okunan elemanı (BX) önce AX (Min) ile karşılaştırın; eğer BX < AX ise AX = BX yapın (JAE ile atlayın). Ardından DX (Max) ile karşılaştırın; eğer BX > DX ise DX = BX yapın (JBE ile atlayın).',
       'Adım Adım Çözüm Örneği:\n1. MOV AX, [1000H] (Min) / MOV DX, AX (Max)\n2. MOV SI, 2 / MOV CX, 5\n3. DONGU:\n     MOV BX, [1000H + SI]\n     CMP BX, AX -> JAE KONTROL_MAX -> MOV AX, BX\n   KONTROL_MAX:\n     CMP BX, DX -> JBE SONRAKI -> MOV DX, BX\n   SONRAKI:\n     ADD SI, 2 -> LOOP DONGU\n4. MOV [1020H], AX (Min) ve MOV [1022H], DX (Max)\n5. SUB DX, AX -> MOV [1024H], DX (Max - Min)\n6. HLT'
     ],
     solutionCode: `ORG 100H
@@ -2312,7 +2360,7 @@ HLT`,
     difficulty: 'Zor',
     isCapstone: true,
     cumulativeStages: 'Aşama 1-11 Tüm Müfredat Grand Capstone',
-    opcodes: ['CLC', 'JCXZ', 'XLAT', 'LOOP', 'STC', 'MOV'],
+    opcodes: ['CLC', 'JCXZ', 'XLAT', 'INC', 'LOOP', 'STC', 'MOV'],
     scenario: `Bir donanım sürücüsü, [1100h] adresindeki ham indeks dizisini [1150h] adresindeki donanımsal arama tablosunu (Lookup Table / XLAT) kullanarak dönüştürmekte ve sonuçları [1120h] adresine yazmaktadır:
 • Kaynak İndeks Dizisi ([1100h..1102h], 3 bayt): [2, 0, 1]
 • XLAT Dönüşüm Tablosu ([1150h..1152h], 3 bayt):
