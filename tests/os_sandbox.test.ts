@@ -5,19 +5,20 @@ import { CPU } from '../src/cpu/cpu.js';
 import { Assembler } from '../src/assembler/assembler.js';
 
 describe('OS Sandbox Altyapısı ve Proje Yönetimi', () => {
-  it('yeni bir OS projesi oluşturulduğunda 5 temel modül dosyası otomatik oluşturulur', () => {
+  it('yeni bir OS projesi oluşturulduğunda mimari rehberi ve 5 temel modül dosyası otomatik oluşturulur', () => {
     const cpuManager = new CpuInstanceManager();
     const ws = new WorkspaceManager(cpuManager);
 
     const proj = ws.createOSProject('ErdemOS');
     expect(proj.name).toBe('ErdemOS');
-    expect(proj.fileDocIds.length).toBe(5);
+    expect(proj.fileDocIds.length).toBe(6);
 
     const docs = ws.getAllDocuments();
     const projDocs = docs.filter(d => proj.fileDocIds.includes(d.id));
-    expect(projDocs.length).toBe(5);
+    expect(projDocs.length).toBe(6);
 
     const titles = projDocs.map(d => d.title);
+    expect(titles).toContain('00_REHBER.asm');
     expect(titles).toContain('boot.asm');
     expect(titles).toContain('kernel.asm');
     expect(titles).toContain('screen.asm');

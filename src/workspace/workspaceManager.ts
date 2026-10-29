@@ -1,6 +1,7 @@
 import { WorkspaceDocument, DocumentType, OSProject, OSFileRole } from './types.js';
 import { CpuInstanceManager } from '../cpu/instanceManager.js';
 import { 
+  OS_GUIDE_TEMPLATE,
   BOOT_ASM_TEMPLATE, 
   KERNEL_ASM_TEMPLATE, 
   SCREEN_ASM_TEMPLATE, 
@@ -89,6 +90,16 @@ export class WorkspaceManager {
             }
             this.docs.set(d.id, d);
           }
+
+          // Ensure all OS projects have the architecture guide file
+          for (const proj of this.osProjects.values()) {
+            const hasGuide = proj.fileDocIds.some(id => this.docs.get(id)?.osRole === 'guide');
+            if (!hasGuide) {
+              const guideDoc = this.createOSFileInternal(proj.id, '00_REHBER.asm', 'guide', OS_GUIDE_TEMPLATE);
+              proj.fileDocIds.unshift(guideDoc.id);
+            }
+          }
+
           if (savedActiveId && this.docs.has(savedActiveId)) {
             this.activeId = savedActiveId;
           } else {
@@ -292,7 +303,8 @@ export class WorkspaceManager {
     const projId = `os-proj-${Date.now()}`;
     const projName = (name && name.trim()) ? name.trim() : 'BenimOS';
 
-    // 5 Temel Başlangıç Modül Dosyasını Oluştur
+    // 6 Temel Başlangıç Modül ve Rehber Dosyasını Oluştur
+    const guideDoc = this.createOSFileInternal(projId, '00_REHBER.asm', 'guide', OS_GUIDE_TEMPLATE);
     const bootDoc = this.createOSFileInternal(projId, 'boot.asm', 'boot', BOOT_ASM_TEMPLATE);
     const kernelDoc = this.createOSFileInternal(projId, 'kernel.asm', 'kernel', KERNEL_ASM_TEMPLATE);
     const screenDoc = this.createOSFileInternal(projId, 'screen.asm', 'screen', SCREEN_ASM_TEMPLATE);
@@ -305,8 +317,8 @@ export class WorkspaceManager {
       createdAt: Date.now(),
       lastModified: Date.now(),
       isCollapsed: false,
-      activeFileId: bootDoc.id,
-      fileDocIds: [bootDoc.id, kernelDoc.id, screenDoc.id, keyboardDoc.id, shellDoc.id]
+      activeFileId: guideDoc.id,
+      fileDocIds: [guideDoc.id, bootDoc.id, kernelDoc.id, screenDoc.id, keyboardDoc.id, shellDoc.id]
     };
 
     this.osProjects.set(projId, project);

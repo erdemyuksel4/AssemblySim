@@ -325,6 +325,7 @@ export class WorkspaceSidebar {
     if (!doc) return '📄';
     if (doc.type === 'os_file') {
       switch (doc.osRole) {
+        case 'guide': return '📘';
         case 'boot': return '🚀';
         case 'kernel': return '⚙️';
         case 'screen': return '🖥️';

@@ -1,6 +1,6 @@
 export type DocumentType = 'custom' | 'challenge' | 'example' | 'lecture' | 'reference' | 'os_file' | 'os_sandbox';
 
-export type OSFileRole = 'boot' | 'kernel' | 'screen' | 'keyboard' | 'shell' | 'interrupts' | 'custom';
+export type OSFileRole = 'boot' | 'kernel' | 'screen' | 'keyboard' | 'shell' | 'interrupts' | 'guide' | 'custom';
 
 export interface OSProject {
   id: string;
