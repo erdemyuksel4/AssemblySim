@@ -5,7 +5,7 @@
  * bileşenini yöneten interaktif kontrolcü.
  */
 
-import { StatePredictionExercise, MILESTONE_STATE_PREDICTIONS } from './statePredictionData.js';
+import { StatePredictionExercise, MILESTONE_STATE_PREDICTIONS, PredictionStore } from './statePredictionData.js';
 
 export interface StatePredictionWidgetCallbacks {
   onOpenInMainEditor?: (title: string, code: string) => void;
@@ -15,13 +15,6 @@ export class StatePredictionWidget {
   private container: HTMLElement;
   private exercises: StatePredictionExercise[];
   private callbacks?: StatePredictionWidgetCallbacks;
-  private userInputs: Record<string, Record<string, string>> = {}; // exId -> fieldName -> value
-  private gradedResults: Record<string, {
-    score: number;
-    total: number;
-    fieldFeedback: Record<string, { passed: boolean; message: string }>;
-    revealed: boolean;
-  }> = {};
 
   constructor(container: HTMLElement, milestoneId: string, callbacks?: StatePredictionWidgetCallbacks) {
     this.container = container;
@@ -39,11 +32,10 @@ export class StatePredictionWidget {
     this.container.innerHTML = `
       <div class="state-pred-widget-container">
         <div class="state-pred-header">
-          <div class="pred-header-badge">🧠 İNTERAKTİF DURUM TAHMİNİ & ANALİZ</div>
-          <h3 class="pred-header-title">Koda Bakarak Register, Flag ve Memory Durumunu Tahmin Et</h3>
+          <div class="pred-header-badge">DURUM TAHMİNİ</div>
+          <h3 class="pred-header-title">Koda Bakarak Register, Flag ve Memory Durumunu Belirleme</h3>
           <p class="pred-header-desc">
-            Sınavlarda en çok puan kırılan kısım kodun adım adım işletiminde bayrak ve yazmaçların aldığı değerlerdir.
-            Aşağıdaki kod parçalarını inceleyin, oluşan değerleri kutucuklara girip <b>"Tahmini Doğrula (Puanla)"</b> butonuna tıklayarak kendinizi test edin.
+            Aşağıdaki kod parçalarını inceleyerek işlem sonrasında yazmaçların, bayrakların ve bellek hücrelerinin alacağı değerleri giriniz.
           </p>
         </div>
 
@@ -57,7 +49,7 @@ export class StatePredictionWidget {
   }
 
   private renderExerciseCard(ex: StatePredictionExercise, idx: number): string {
-    const graded = this.gradedResults[ex.id];
+    const graded = PredictionStore.getGradedResult(ex.id);
     const isGraded = !!graded;
     const isPassed = graded && graded.score === graded.total;
 
@@ -67,10 +59,10 @@ export class StatePredictionWidget {
           <span class="pred-diff-tag ${ex.difficulty}">${ex.difficultyLabel}</span>
           ${isGraded ? `
             <span class="pred-score-badge ${isPassed ? 'passed' : 'failed'}">
-              ${isPassed ? '🎉 TAM PUAN: ' : '⚠️ '} ${graded.score} / ${graded.total} Puan
+              ${isPassed ? '✓ ' : ''}${graded.score} / ${graded.total} Doğru
             </span>
           ` : `
-            <span class="pred-pending-badge">Henüz Değerlendirilmedi</span>
+            <span class="pred-pending-badge">Yanıt Bekleniyor</span>
           `}
         </div>
 
@@ -81,8 +73,8 @@ export class StatePredictionWidget {
         <div class="pred-code-block-wrap">
           <div class="pred-code-header">
             <span>8086 Assembly Kodu</span>
-            <button class="btn-pred-try-sim" data-ex-id="${ex.id}" title="Bu kodu ana editöre kopyala ve simülatörde canlı adım adım gör">
-              🚀 Simülatörde Canlı Dene
+            <button class="btn-pred-try-sim" data-ex-id="${ex.id}" title="Bu kodu simülatörde çalıştır">
+              Simülatörde Canlı Dene
             </button>
           </div>
           <pre class="pred-code-snippet"><code>${this.escapeHtml(ex.codeSnippet)}</code></pre>
@@ -91,7 +83,7 @@ export class StatePredictionWidget {
         <!-- Initial State Info (if any) -->
         ${ex.initialState && (ex.initialState.registers || ex.initialState.flags || ex.initialState.memory) ? `
           <div class="pred-initial-state-bar">
-            <span class="initial-label">📌 Başlangıç Durumu:</span>
+            <span class="initial-label">Başlangıç:</span>
             ${ex.initialState.registers ? Object.entries(ex.initialState.registers).map(([r, v]) => `
               <span class="initial-pill"><code>${r} = ${v}</code></span>
             `).join('') : ''}
@@ -109,7 +101,7 @@ export class StatePredictionWidget {
           <!-- 1. Registers Prediction -->
           ${ex.registersToPredict.length > 0 ? `
             <div class="pred-input-section">
-              <h5 class="pred-section-title">📊 1. Yazmaç (Register) Tahmini (Hex):</h5>
+              <h5 class="pred-section-title">1. Yazmaç Değerleri (Hex):</h5>
               <div class="pred-inputs-row">
                 ${ex.registersToPredict.map(r => {
                   const val = this.getUserInput(ex.id, `reg_${r.name}`);
@@ -120,7 +112,7 @@ export class StatePredictionWidget {
                       <input type="text" class="pred-text-input" 
                         data-ex-id="${ex.id}" 
                         data-field="reg_${r.name}" 
-                        placeholder="örn: ${r.expected}" 
+                        placeholder="${r.expected}" 
                         value="${this.escapeHtml(val)}"
                         autocomplete="off" spellcheck="false" />
                       ${feedback ? `
@@ -136,7 +128,7 @@ export class StatePredictionWidget {
           <!-- 2. Flags Prediction -->
           ${ex.flagsToPredict.length > 0 ? `
             <div class="pred-input-section">
-              <h5 class="pred-section-title">🚩 2. Durum Bayrakları (Flags: 0 veya 1):</h5>
+              <h5 class="pred-section-title">2. Durum Bayrakları (0 / 1):</h5>
               <div class="pred-flags-row">
                 ${ex.flagsToPredict.map(f => {
                   const val = this.getUserInput(ex.id, `flag_${f.name}`);
@@ -161,7 +153,7 @@ export class StatePredictionWidget {
           <!-- 3. Memory / Stack Prediction -->
           ${ex.memoryToPredict && ex.memoryToPredict.length > 0 ? `
             <div class="pred-input-section">
-              <h5 class="pred-section-title">💾 3. Bellek / Yığın (Memory) Tahmini:</h5>
+              <h5 class="pred-section-title">3. Bellek / Yığın Baytları:</h5>
               <div class="pred-inputs-row">
                 ${ex.memoryToPredict.map(m => {
                   const val = this.getUserInput(ex.id, `mem_${m.address}`);
@@ -172,7 +164,7 @@ export class StatePredictionWidget {
                       <input type="text" class="pred-text-input" 
                         data-ex-id="${ex.id}" 
                         data-field="mem_${m.address}" 
-                        placeholder="örn: ${m.expected}" 
+                        placeholder="${m.expected}" 
                         value="${this.escapeHtml(val)}"
                         autocomplete="off" spellcheck="false" />
                       ${feedback ? `
@@ -189,19 +181,19 @@ export class StatePredictionWidget {
         <!-- Action Buttons -->
         <div class="pred-actions-bar">
           <button class="btn-pred-grade primary" data-ex-id="${ex.id}">
-            ✅ Tahmini Doğrula (Puanla)
+            Kontrol Et
           </button>
           ${isGraded ? `
             <button class="btn-pred-toggle-solution secondary" data-ex-id="${ex.id}">
-              ${graded.revealed ? '🔼 Çözümü Gizle' : '💡 Hocanın Adım Adım Çözümünü Göster'}
+              ${graded.revealed ? 'Çözümü Gizle' : 'Çözümü Göster'}
             </button>
           ` : ''}
         </div>
 
-        <!-- Teacher's Walkthrough & Grading Explanation (Revealed upon submit or toggle) -->
+        <!-- Walkthrough & Explanation -->
         ${isGraded && graded.revealed ? `
           <div class="pred-solution-box">
-            <h5 class="sol-box-title">👨‍🏫 Hocanın Adım Adım Bit & Durum Çözümü:</h5>
+            <h5 class="sol-box-title">Adım Adım Çözüm & Bayrak Mantığı:</h5>
             <div class="sol-breakdown-list">
               ${ex.registersToPredict.map(r => `
                 <div class="sol-item">
@@ -223,8 +215,7 @@ export class StatePredictionWidget {
             </div>
 
             <div class="hoca-strict-warning">
-              ⚠️ <strong>Hoca Puanlama Notu & Sınav Püf Noktası:</strong><br>
-              ${ex.hocaGradingNotes}
+              📌 <strong>Kural & Not:</strong> ${ex.hocaGradingNotes}
             </div>
           </div>
         ` : ''}
@@ -233,14 +224,11 @@ export class StatePredictionWidget {
   }
 
   private getUserInput(exId: string, field: string): string {
-    return this.userInputs[exId]?.[field] || '';
+    return PredictionStore.getUserInput(exId, field);
   }
 
   private setUserInput(exId: string, field: string, val: string): void {
-    if (!this.userInputs[exId]) {
-      this.userInputs[exId] = {};
-    }
-    this.userInputs[exId][field] = val;
+    PredictionStore.setUserInput(exId, field, val);
   }
 
   private gradeExercise(exId: string): void {
@@ -259,7 +247,7 @@ export class StatePredictionWidget {
       if (passed) score++;
       fieldFeedback[`reg_${r.name}`] = {
         passed,
-        message: passed ? 'Doğru!' : `Beklenen: ${r.expected}, Girilen: ${userVal || 'Boş'}`
+        message: passed ? 'Doğru' : `Beklenen: ${r.expected}, Girilen: ${userVal || 'Boş'}`
       };
     });
 
@@ -271,7 +259,7 @@ export class StatePredictionWidget {
       if (passed) score++;
       fieldFeedback[`flag_${f.name}`] = {
         passed,
-        message: passed ? 'Doğru!' : `Beklenen: ${f.expected}, Girilen: ${userVal || 'Seçilmedi'}`
+        message: passed ? 'Doğru' : `Beklenen: ${f.expected}, Girilen: ${userVal || 'Seçilmedi'}`
       };
     });
 
@@ -284,17 +272,17 @@ export class StatePredictionWidget {
         if (passed) score++;
         fieldFeedback[`mem_${m.address}`] = {
           passed,
-          message: passed ? 'Doğru!' : `Beklenen: ${m.expected}, Girilen: ${userVal || 'Boş'}`
+          message: passed ? 'Doğru' : `Beklenen: ${m.expected}, Girilen: ${userVal || 'Boş'}`
         };
       });
     }
 
-    this.gradedResults[exId] = {
+    PredictionStore.setGradedResult(exId, {
       score,
       total,
       fieldFeedback,
       revealed: true
-    };
+    });
 
     this.render();
   }
@@ -368,9 +356,15 @@ export class StatePredictionWidget {
     this.container.querySelectorAll<HTMLButtonElement>('.btn-pred-toggle-solution').forEach(btn => {
       btn.addEventListener('click', () => {
         const exId = btn.dataset.exId;
-        if (exId && this.gradedResults[exId]) {
-          this.gradedResults[exId].revealed = !this.gradedResults[exId].revealed;
-          this.render();
+        if (exId) {
+          const graded = PredictionStore.getGradedResult(exId);
+          if (graded) {
+            PredictionStore.setGradedResult(exId, {
+              ...graded,
+              revealed: !graded.revealed
+            });
+            this.render();
+          }
         }
       });
     });

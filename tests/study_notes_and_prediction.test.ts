@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { MILESTONE_STATE_PREDICTIONS } from '../src/lectures/statePredictionData.js';
+import { MILESTONE_STATE_PREDICTIONS, PredictionStore } from '../src/lectures/statePredictionData.js';
 import { ALL_WEEKS_STUDY_NOTES, INSTRUCTION_FLAG_MATRIX } from '../src/ui/studyNotesData.js';
 import { MIDTERM_EXAM_QUESTIONS } from '../src/ui/midtermExamData.js';
+import { StudyNotesStore } from '../src/ui/studyNotesStore.js';
 
 describe('Study Notes & Vize Hazırlık Veritabanı Testleri', () => {
   it('Her aşama için (milestone-1 ile milestone-11 arası) en az bir durum tahmin alıştırması tanımlı olmalıdır', () => {
@@ -109,5 +110,35 @@ describe('Study Notes & Vize Hazırlık Veritabanı Testleri', () => {
     const flagZF = qF5?.expectedFlags.find(f => f.name === 'ZF');
     expect(flagCF?.expected).toBe('1');
     expect(flagZF?.expected).toBe('1');
+  });
+
+  it('StudyNotesStore ve PredictionStore verileri saklamalı ve yan pencereye geçildiğinde sıfırlanmamalıdır', () => {
+    // 1. StudyNotesStore Tab & User Input persistence
+    StudyNotesStore.setSubTab('trace');
+    expect(StudyNotesStore.getState().activeSubTab).toBe('trace');
+
+    StudyNotesStore.setUserInput('vize-q1-f5-add', 'reg_AL', '00');
+    expect(StudyNotesStore.getUserInput('vize-q1-f5-add', 'reg_AL')).toBe('00');
+
+    StudyNotesStore.setTraceInput('r1_ax', '2');
+    expect(StudyNotesStore.getTraceInput('r1_ax')).toBe('2');
+
+    StudyNotesStore.setAluState('7F', '01', 'ADD', '8bit');
+    expect(StudyNotesStore.getState().aluCalculator.num1).toBe('7F');
+    expect(StudyNotesStore.getState().aluCalculator.num2).toBe('01');
+
+    // 2. PredictionStore persistence
+    PredictionStore.setUserInput('m1-ex1', 'reg_AX', '1234');
+    expect(PredictionStore.getUserInput('m1-ex1', 'reg_AX')).toBe('1234');
+
+    PredictionStore.setGradedResult('m1-ex1', {
+      score: 1,
+      total: 1,
+      fieldFeedback: { reg_AX: { passed: true, message: 'Doğru' } },
+      revealed: true
+    });
+    const graded = PredictionStore.getGradedResult('m1-ex1');
+    expect(graded?.score).toBe(1);
+    expect(graded?.revealed).toBe(true);
   });
 });

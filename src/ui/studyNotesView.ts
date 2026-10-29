@@ -1,197 +1,205 @@
 /**
  * studyNotesView.ts
  * 
- * Öğrenme & Referans Merkezi bünyesinde 5. Ana Bölüm:
- * "📝 5. Çalışma Notları & Vize Hazırlık"
+ * Doç. Dr. Mehmet Akif Çifci'nin ders slaytları, laboratuvar föyleri ve tahta notlarına dayalı;
+ * sade, net ve PDF formatında tasarlanmış interaktif Vize Çalışma & Sınav Merkezi.
  * 
- * Doç. Dr. Mehmet Akif Çifci'nin ders slaytları, PDF'leri, tahta notları
- * ve geçmiş yıl sınav sorularına dayalı, hiçbir ayrıntı atlanmadan hazırlanan
- * interaktif çalışma ve sınav simülatörü görünümü.
+ * Durumlar StudyNotesStore üzerinde tutulur; yan sayfaya taşındığında sıfırlanmaz.
  */
 
-import { ALL_WEEKS_STUDY_NOTES, INSTRUCTION_FLAG_MATRIX, WeekStudyNote } from './studyNotesData.js';
+import { ALL_WEEKS_STUDY_NOTES, INSTRUCTION_FLAG_MATRIX } from './studyNotesData.js';
 import { MIDTERM_EXAM_QUESTIONS, MidtermQuestion } from './midtermExamData.js';
+import { StudyNotesStore, StudyNotesState } from './studyNotesStore.js';
 
 export interface StudyNotesCallbacks {
   onOpenInMainEditor?: (title: string, code: string) => void;
   onNavigateToLecture?: (milestoneId: string) => void;
 }
 
-export type StudyNotesSubTab = 'notes' | 'flags' | 'exam' | 'cheatsheet';
-
 export class StudyNotesView {
   private container: HTMLElement;
   private callbacks?: StudyNotesCallbacks;
-  private activeSubTab: StudyNotesSubTab = 'exam';
-  private selectedWeek: number = 0; // 0 = all
-  private selectedCategory: string = 'all'; // for exam questions
-  private userInputs: Record<string, Record<string, string>> = {}; // qId -> field -> value
-  private gradedQuestions: Record<string, {
-    score: number;
-    total: number;
-    fieldFeedback: Record<string, { passed: boolean; message: string }>;
-    revealed: boolean;
-  }> = {};
+  private unsubscribe?: () => void;
 
   constructor(container: HTMLElement, callbacks?: StudyNotesCallbacks) {
     this.container = container;
     this.callbacks = callbacks;
     this.render();
+
+    // Re-render when store updates (keeps primary and secondary panes strictly in sync)
+    this.unsubscribe = StudyNotesStore.subscribe(() => {
+      this.updateView();
+    });
+  }
+
+  destroy(): void {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+    }
   }
 
   render(): void {
-    this.container.innerHTML = `
-      <div class="studynotes-view-container">
-        <!-- Sub-navigation Bar -->
-        <div class="studynotes-subnav-bar">
-          <button class="btn-sn-subnav ${this.activeSubTab === 'exam' ? 'active' : ''}" data-subtab="exam">
-            🎯 1. Vize Sınavı Çalışma Soruları & Kod Tahmin Simülatörü
-          </button>
-          <button class="btn-sn-subnav ${this.activeSubTab === 'flags' ? 'active' : ''}" data-subtab="flags">
-            🚩 2. Bayraklar (Flags) & Komut Etkisi Başucu Rehberi
-          </button>
-          <button class="btn-sn-subnav ${this.activeSubTab === 'notes' ? 'active' : ''}" data-subtab="notes">
-            📚 3. Hafta Hafta Eksiksiz Ders Notları (1–15)
-          </button>
-          <button class="btn-sn-subnav ${this.activeSubTab === 'cheatsheet' ? 'active' : ''}" data-subtab="cheatsheet">
-            📋 4. Sınav Öncesi Formül & Altın Kurallar (Cheat Sheet)
-          </button>
-        </div>
+    const state = StudyNotesStore.getState();
 
-        <!-- Content Mount according to active subtab -->
-        <div class="studynotes-content-area">
-          ${this.renderSubTabContent()}
-        </div>
+    this.container.innerHTML = `
+      <div class="pdf-study-container">
+        <!-- PDF Document Header -->
+        <header class="pdf-doc-header">
+          <div class="pdf-header-top">
+            <span class="pdf-course-code">BMI3121 MİKROİŞLEMCİLER</span>
+            <span class="pdf-doc-type">DERS ÇALIŞMA VE SINAV FÖYÜ</span>
+          </div>
+          <h1 class="pdf-main-title">8086 Assembly Vize Hazırlık & Konu Notları</h1>
+          <p class="pdf-subtitle">
+            Doç. Dr. Mehmet Akif Çifci ders slaytları, sınıf tahtası döngü izleme çizimleri ve laboratuvar kodları referans alınarak hazırlanmıştır.
+          </p>
+
+          <!-- PDF Navigation Tabs -->
+          <nav class="pdf-tabs-nav">
+            <button class="btn-pdf-tab ${state.activeSubTab === 'exam' ? 'active' : ''}" data-subtab="exam">
+              [FÖY 1] Vize Çalışma Soruları
+            </button>
+            <button class="btn-pdf-tab ${state.activeSubTab === 'trace' ? 'active' : ''}" data-subtab="trace">
+              [FÖY 2] Döngü İzleme Tablosu
+            </button>
+            <button class="btn-pdf-tab ${state.activeSubTab === 'alu' ? 'active' : ''}" data-subtab="alu">
+              [FÖY 3] Canlı Bit ALU & Bayrak Aracı
+            </button>
+            <button class="btn-pdf-tab ${state.activeSubTab === 'flags' ? 'active' : ''}" data-subtab="flags">
+              [FÖY 4] Bayraklar & Komut Etki Matrisi
+            </button>
+            <button class="btn-pdf-tab ${state.activeSubTab === 'notes' ? 'active' : ''}" data-subtab="notes">
+              [FÖY 5] Hafta Hafta Konu Notları
+            </button>
+          </nav>
+        </header>
+
+        <!-- PDF Page Content Area -->
+        <main class="pdf-page-sheet" id="pdf-page-sheet">
+          ${this.renderActiveSheet(state)}
+        </main>
       </div>
     `;
 
     this.attachEvents();
   }
 
-  private renderSubTabContent(): string {
-    switch (this.activeSubTab) {
+  private updateView(): void {
+    const state = StudyNotesStore.getState();
+    const sheet = this.container.querySelector('#pdf-page-sheet');
+    if (sheet) {
+      sheet.innerHTML = this.renderActiveSheet(state);
+      this.attachEvents();
+    }
+  }
+
+  private renderActiveSheet(state: StudyNotesState): string {
+    switch (state.activeSubTab) {
       case 'exam':
-        return this.renderExamWorkbench();
+        return this.renderExamSheet(state);
+      case 'trace':
+        return this.renderTraceTableSheet(state);
+      case 'alu':
+        return this.renderAluCalculatorSheet(state);
       case 'flags':
-        return this.renderFlagsGuide();
+        return this.renderFlagsSheet();
       case 'notes':
-        return this.renderWeekNotes();
-      case 'cheatsheet':
-        return this.renderCheatSheet();
+        return this.renderNotesSheet(state);
       default:
-        return '';
+        return this.renderExamSheet(state);
     }
   }
 
   // =========================================================================
-  // SUBTAB 1: Vize Sınavı Çalışma Soruları & Kod Tahmin Simülatörü
+  // FÖY 1: Vize Çalışma Soruları (Temiz PDF Soru Kağıdı)
   // =========================================================================
-  private renderExamWorkbench(): string {
+  private renderExamSheet(state: StudyNotesState): string {
     const totalPoints = MIDTERM_EXAM_QUESTIONS.reduce((sum, q) => sum + q.points, 0);
-    const earnedPoints = Object.values(this.gradedQuestions).reduce((sum, g) => sum + g.score, 0);
-    const gradedCount = Object.keys(this.gradedQuestions).length;
+    const earnedPoints = Object.values(state.gradedQuestions).reduce((sum, g) => sum + g.score, 0);
+    const gradedCount = Object.keys(state.gradedQuestions).length;
 
-    const filteredQuestions = this.selectedCategory === 'all'
+    const filteredQuestions = state.selectedCategory === 'all'
       ? MIDTERM_EXAM_QUESTIONS
-      : MIDTERM_EXAM_QUESTIONS.filter(q => q.category === this.selectedCategory);
+      : MIDTERM_EXAM_QUESTIONS.filter(q => q.category === state.selectedCategory);
 
     return `
-      <div class="exam-workbench-wrapper">
-        <!-- Strict Professor Warning Banner -->
-        <div class="exam-hero-card">
-          <div class="exam-badge-row">
-            <span class="exam-hero-pill">⚠️ DOÇ. DR. MEHMET AKİF ÇİFCİ VİZE STANDARDI</span>
-            <span class="exam-strict-tag">Sıkı Puanlama Modu Açık</span>
+      <div class="pdf-section">
+        <div class="pdf-section-header">
+          <div>
+            <h2 class="pdf-section-title">BÖLÜM 1: VİZE SINAV ÇALIŞMA SORULARI</h2>
+            <p class="pdf-section-desc">Kodu inceleyiniz; oluşan yazmaç, bayrak ve bellek değerlerini ilgili kutucuklara yazıp kontrol ediniz.</p>
           </div>
-          <h2 class="exam-hero-title">7. Hafta Sonrası Vize Çalışma Soruları & Kod Tahmin Simülatörü</h2>
-          <p class="exam-hero-desc">
-            Bu bölüm; hocanın ders slaytları, laboratuvar kodları (<code>MicroProcessor code examples week.pdf</code>),
-            tahta notları (Week 6 Excalidraw) ve klasik sınav tuzakları taranarak hazırlanmıştır.
-            Koda bakarak register, flag ve bellek durumlarını tahmin ediniz.
-          </p>
-
-          <div class="exam-score-tracker-bar">
-            <div class="tracker-item">
-              <span class="tracker-label">Çözülen Soru:</span>
-              <span class="tracker-val">${gradedCount} / ${MIDTERM_EXAM_QUESTIONS.length}</span>
-            </div>
-            <div class="tracker-item">
-              <span class="tracker-label">Kazanılan Puan:</span>
-              <span class="tracker-val score-highlight">${earnedPoints} / ${totalPoints} Puan</span>
-            </div>
-            <div class="tracker-item">
-              <span class="tracker-label">Başarı Oranı:</span>
-              <span class="tracker-val">${totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0}%</span>
-            </div>
+          <div class="pdf-score-box">
+            <span>Çözülen: <b>${gradedCount} / ${MIDTERM_EXAM_QUESTIONS.length}</b></span>
+            <span>Toplam Puan: <b>${earnedPoints} / ${totalPoints}</b></span>
           </div>
         </div>
 
-        <!-- Filter Categories -->
-        <div class="exam-categories-toolbar">
-          <span class="toolbar-label">Filtrele:</span>
-          <button class="btn-exam-filter ${this.selectedCategory === 'all' ? 'active' : ''}" data-cat="all">Tüm Sorular (${MIDTERM_EXAM_QUESTIONS.length})</button>
-          <button class="btn-exam-filter ${this.selectedCategory === 'flags' ? 'active' : ''}" data-cat="flags">🚩 Bayrak Türetimi</button>
-          <button class="btn-exam-filter ${this.selectedCategory === 'trace' ? 'active' : ''}" data-cat="trace">🔄 Döngü & Yığın İzleme</button>
-          <button class="btn-exam-filter ${this.selectedCategory === 'traps' ? 'active' : ''}" data-cat="traps">⚡ Sınav Tuzakları</button>
-          <button class="btn-exam-filter ${this.selectedCategory === 'coding' ? 'active' : ''}" data-cat="coding">💻 Klasik Kodlama</button>
+        <!-- Filter bar -->
+        <div class="pdf-filter-bar">
+          <span class="pdf-filter-label">Soru Tipi:</span>
+          <button class="btn-pdf-filter ${state.selectedCategory === 'all' ? 'active' : ''}" data-cat="all">Tümü (${MIDTERM_EXAM_QUESTIONS.length})</button>
+          <button class="btn-pdf-filter ${state.selectedCategory === 'flags' ? 'active' : ''}" data-cat="flags">Bayrak Hesaplama</button>
+          <button class="btn-pdf-filter ${state.selectedCategory === 'trace' ? 'active' : ''}" data-cat="trace">Kod / Yığın İzleme</button>
+          <button class="btn-pdf-filter ${state.selectedCategory === 'traps' ? 'active' : ''}" data-cat="traps">Önemli Kurallar & Hatalar</button>
+          <button class="btn-pdf-filter ${state.selectedCategory === 'coding' ? 'active' : ''}" data-cat="coding">Klasik Kodlama</button>
         </div>
 
-        <!-- Questions List -->
-        <div class="exam-questions-list">
-          ${filteredQuestions.map(q => this.renderExamQuestionCard(q)).join('')}
+        <!-- Question Items -->
+        <div class="pdf-questions-list">
+          ${filteredQuestions.map((q, qIdx) => this.renderSingleQuestion(q, qIdx + 1, state)).join('')}
         </div>
       </div>
     `;
   }
 
-  private renderExamQuestionCard(q: MidtermQuestion): string {
-    const graded = this.gradedQuestions[q.id];
+  private renderSingleQuestion(q: MidtermQuestion, num: number, state: StudyNotesState): string {
+    const graded = state.gradedQuestions[q.id];
     const isGraded = !!graded;
     const isPassed = graded && graded.score === q.points;
 
     return `
-      <div class="exam-question-card ${isGraded ? (isPassed ? 'status-passed' : 'status-failed') : ''}" data-q-id="${q.id}">
-        <div class="eq-header">
-          <div class="eq-meta-row">
-            <span class="eq-cat-badge">${q.categoryLabel}</span>
-            <span class="eq-diff-badge ${q.difficulty}">${q.difficulty.toUpperCase()}</span>
-            <span class="eq-points-badge">${q.points} Puan</span>
-          </div>
+      <article class="pdf-question-card ${isGraded ? (isPassed ? 'is-correct' : 'is-wrong') : ''}">
+        <div class="pdf-q-topbar">
+          <span class="pdf-q-number">SORU ${num}</span>
+          <span class="pdf-q-points">[${q.points} PUAN]</span>
+          <span class="pdf-q-category">${q.categoryLabel}</span>
           ${isGraded ? `
-            <div class="eq-result-badge ${isPassed ? 'passed' : 'failed'}">
-              ${isPassed ? '✅ TAM PUAN:' : '⚠️ PUAN:'} ${graded.score} / ${q.points}
-            </div>
-          ` : `
-            <span class="eq-status-pending">Henüz Puanlanmadı</span>
-          `}
+            <span class="pdf-q-status ${isPassed ? 'status-ok' : 'status-err'}">
+              ${isPassed ? '✓ Doğru' : `Puan: ${graded.score} / ${q.points}`}
+            </span>
+          ` : ''}
         </div>
 
-        <h3 class="eq-title">${q.title}</h3>
-        <p class="eq-scenario">${q.scenario}</p>
+        <h3 class="pdf-q-title">${q.title}</h3>
+        <p class="pdf-q-scenario">${q.scenario}</p>
 
-        <!-- Code Snippet -->
-        <div class="eq-code-box">
-          <div class="eq-code-topbar">
-            <span>8086 Assembly Kodu</span>
-            <button class="btn-eq-run-sim" data-q-id="${q.id}">🚀 Simülatörde Canlı Çalıştır</button>
+        <!-- Code Block -->
+        <div class="pdf-code-block">
+          <div class="pdf-code-header">
+            <span>Assembly Kaynak Kodu:</span>
+            <button class="btn-pdf-try-code" data-q-id="${q.id}">Simülatörde Canlı Çalıştır ↗</button>
           </div>
-          <pre class="eq-code-content"><code>${this.escapeHtml(q.codeSnippet)}</code></pre>
+          <pre><code>${this.escapeHtml(q.codeSnippet)}</code></pre>
         </div>
 
-        <!-- Inputs Area -->
-        <div class="eq-inputs-area">
+        <!-- Inputs Grid -->
+        <div class="pdf-inputs-grid">
           ${q.expectedRegisters.length > 0 ? `
-            <div class="eq-input-group">
-              <label class="eq-group-title">📊 Yazmaç (Register) Tahmini (Hex):</label>
-              <div class="eq-fields-row">
+            <div class="pdf-input-subgroup">
+              <span class="pdf-subgroup-label">Yazmaç Değerleri (Hex):</span>
+              <div class="pdf-fields-row">
                 ${q.expectedRegisters.map(r => {
-                  const val = this.getUserInput(q.id, `reg_${r.name}`);
+                  const val = StudyNotesStore.getUserInput(q.id, `reg_${r.name}`);
                   const feedback = graded?.fieldFeedback[`reg_${r.name}`];
                   return `
-                    <div class="eq-field-box ${feedback ? (feedback.passed ? 'valid' : 'invalid') : ''}">
-                      <span class="field-name"><code>${r.name}</code> =</span>
-                      <input type="text" class="eq-text-in" data-q-id="${q.id}" data-field="reg_${r.name}" value="${this.escapeHtml(val)}" placeholder="${r.expected}" autocomplete="off" spellcheck="false" />
-                      ${feedback ? `<span class="feedback-icon">${feedback.passed ? '✓' : '✗'}</span>` : ''}
+                    <div class="pdf-field-cell ${feedback ? (feedback.passed ? 'field-ok' : 'field-err') : ''}">
+                      <label><code>${r.name}</code> =</label>
+                      <input type="text" class="pdf-text-input" 
+                        data-q-id="${q.id}" data-field="reg_${r.name}" 
+                        value="${this.escapeHtml(val)}" placeholder="${r.expected}" 
+                        autocomplete="off" spellcheck="false" />
+                      ${feedback ? `<span class="feedback-mark">${feedback.passed ? '✓' : '✗'}</span>` : ''}
                     </div>
                   `;
                 }).join('')}
@@ -200,20 +208,20 @@ export class StudyNotesView {
           ` : ''}
 
           ${q.expectedFlags.length > 0 ? `
-            <div class="eq-input-group">
-              <label class="eq-group-title">🚩 Durum Bayrakları (Flags: 0 veya 1):</label>
-              <div class="eq-flags-row">
+            <div class="pdf-input-subgroup">
+              <span class="pdf-subgroup-label">Durum Bayrakları (0 / 1):</span>
+              <div class="pdf-flags-row">
                 ${q.expectedFlags.map(f => {
-                  const val = this.getUserInput(q.id, `flag_${f.name}`);
+                  const val = StudyNotesStore.getUserInput(q.id, `flag_${f.name}`);
                   const feedback = graded?.fieldFeedback[`flag_${f.name}`];
                   return `
-                    <div class="eq-flag-box ${feedback ? (feedback.passed ? 'valid' : 'invalid') : ''}">
-                      <span class="flag-name"><code>${f.name}</code>:</span>
-                      <div class="eq-flag-toggle-wrap" data-q-id="${q.id}" data-field="flag_${f.name}">
-                        <button type="button" class="btn-eq-flag ${val === '0' ? 'selected' : ''}" data-val="0">0</button>
-                        <button type="button" class="btn-eq-flag ${val === '1' ? 'selected' : ''}" data-val="1">1</button>
+                    <div class="pdf-flag-cell ${feedback ? (feedback.passed ? 'field-ok' : 'field-err') : ''}">
+                      <span class="pdf-flag-tag"><code>${f.name}</code>:</span>
+                      <div class="pdf-flag-btn-group" data-q-id="${q.id}" data-field="flag_${f.name}">
+                        <button type="button" class="btn-flag-num ${val === '0' ? 'selected' : ''}" data-val="0">0</button>
+                        <button type="button" class="btn-flag-num ${val === '1' ? 'selected' : ''}" data-val="1">1</button>
                       </div>
-                      ${feedback ? `<span class="feedback-icon">${feedback.passed ? '✓' : '✗'}</span>` : ''}
+                      ${feedback ? `<span class="feedback-mark">${feedback.passed ? '✓' : '✗'}</span>` : ''}
                     </div>
                   `;
                 }).join('')}
@@ -222,17 +230,20 @@ export class StudyNotesView {
           ` : ''}
 
           ${q.expectedMemory && q.expectedMemory.length > 0 ? `
-            <div class="eq-input-group">
-              <label class="eq-group-title">💾 Bellek / Yığın Bayt Tahmini:</label>
-              <div class="eq-fields-row">
+            <div class="pdf-input-subgroup">
+              <span class="pdf-subgroup-label">Bellek / Yığın Baytları:</span>
+              <div class="pdf-fields-row">
                 ${q.expectedMemory.map(m => {
-                  const val = this.getUserInput(q.id, `mem_${m.address}`);
+                  const val = StudyNotesStore.getUserInput(q.id, `mem_${m.address}`);
                   const feedback = graded?.fieldFeedback[`mem_${m.address}`];
                   return `
-                    <div class="eq-field-box ${feedback ? (feedback.passed ? 'valid' : 'invalid') : ''}">
-                      <span class="field-name"><code>${m.address}</code> =</span>
-                      <input type="text" class="eq-text-in" data-q-id="${q.id}" data-field="mem_${m.address}" value="${this.escapeHtml(val)}" placeholder="${m.expected}" autocomplete="off" spellcheck="false" />
-                      ${feedback ? `<span class="feedback-icon">${feedback.passed ? '✓' : '✗'}</span>` : ''}
+                    <div class="pdf-field-cell ${feedback ? (feedback.passed ? 'field-ok' : 'field-err') : ''}">
+                      <label><code>${m.address}</code> =</label>
+                      <input type="text" class="pdf-text-input" 
+                        data-q-id="${q.id}" data-field="mem_${m.address}" 
+                        value="${this.escapeHtml(val)}" placeholder="${m.expected}" 
+                        autocomplete="off" spellcheck="false" />
+                      ${feedback ? `<span class="feedback-mark">${feedback.passed ? '✓' : '✗'}</span>` : ''}
                     </div>
                   `;
                 }).join('')}
@@ -242,44 +253,189 @@ export class StudyNotesView {
         </div>
 
         <!-- Action Bar -->
-        <div class="eq-actions-bar">
-          <button class="btn-eq-submit primary" data-q-id="${q.id}">
-            ✅ Sınav Cevabını Doğrula & Puanla
-          </button>
+        <div class="pdf-actions-row">
+          <button class="btn-pdf-submit" data-q-id="${q.id}">Kontrol Et</button>
           ${isGraded ? `
-            <button class="btn-eq-toggle-rubric secondary" data-q-id="${q.id}">
-              ${graded.revealed ? '🔼 Çözüm Anahtarını Gizle' : '👨‍🏫 Hocanın Puanlama Kriterlerini ve Çözümünü Göster'}
+            <button class="btn-pdf-solution-toggle" data-q-id="${q.id}">
+              ${graded.revealed ? 'Çözümü Gizle' : 'Çözümü Göster'}
             </button>
           ` : ''}
         </div>
 
-        <!-- Strict Grading Rubric (Teacher's Solution) -->
+        <!-- Clean Solution Sheet -->
         ${isGraded && graded.revealed ? `
-          <div class="eq-rubric-box">
-            <h5 class="rubric-title">👨‍🏫 Hocanın Sınav Çözüm Anahtarı ve Puan Kırma Kriterleri:</h5>
-            <div class="rubric-content">
+          <div class="pdf-solution-sheet">
+            <h4 class="pdf-sol-title">Adım Adım Çözüm & Bayrak Mantığı:</h4>
+            <ul class="pdf-sol-list">
               ${q.expectedRegisters.map(r => `
-                <div class="rubric-item">
-                  <strong>• ${r.name}:</strong> Doğru Değer <code>${r.expected}</code> — ${r.note}
-                </div>
+                <li><b>${r.name}:</b> Beklenen <code>${r.expected}</code> — ${r.note}</li>
               `).join('')}
-
               ${q.expectedFlags.map(f => `
-                <div class="rubric-item">
-                  <strong>• ${f.name} Bayrağı:</strong> Doğru Değer <code>${f.expected}</code> — ${f.reason}
-                </div>
+                <li><b>${f.name} Bayrağı:</b> Beklenen <code>${f.expected}</code> — ${f.reason}</li>
               `).join('')}
-
               ${q.expectedMemory ? q.expectedMemory.map(m => `
-                <div class="rubric-item">
-                  <strong>• ${m.address}:</strong> Doğru Değer <code>${m.expected}</code> — ${m.note}
-                </div>
+                <li><b>${m.address}:</b> Beklenen <code>${m.expected}</code> — ${m.note}</li>
               `).join('') : ''}
-            </div>
+            </ul>
 
-            <div class="rubric-strict-note">
-              📋 <strong>Hocanın Puan Dağılımı ve Uyarıları:</strong><br>
+            <div class="pdf-rule-note">
+              <strong>Önemli Kural / Değerlendirme Ölçütü:</strong><br>
               ${q.hocaRubric}
+            </div>
+          </div>
+        ` : ''}
+      </article>
+    `;
+  }
+
+  // =========================================================================
+  // FÖY 2: İnteraktif Döngü İzleme Tablosu (Trace Table)
+  // =========================================================================
+  private renderTraceTableSheet(state: StudyNotesState): string {
+    const traceGraded = state.traceTableGraded;
+
+    return `
+      <div class="pdf-section">
+        <div class="pdf-section-header">
+          <div>
+            <h2 class="pdf-section-title">BÖLÜM 2: DÖNGÜ İZLEME TABLOSU (TRACE TABLE)</h2>
+            <p class="pdf-section-desc">Hocanın Week 6 tahtaya çizdiği döngü adımlarını tablo üzerinde doldurunuz ve sonucu kontrol ediniz.</p>
+          </div>
+        </div>
+
+        <!-- Assembly Code Preview -->
+        <div class="pdf-code-block" style="margin-bottom: 16px;">
+          <div class="pdf-code-header"><span>Tahtadaki Döngü Kodu (Excalidraw Week 6):</span></div>
+          <pre><code>MOV CX, 4\nMOV AX, 0\nMOV BX, 2\n\nDONGU:\n  ADD AX, BX\n  ADD BX, 2\n  LOOP DONGU\nHLT</code></pre>
+        </div>
+
+        <!-- Interactive Fillable Table -->
+        <div class="pdf-table-responsive">
+          <table class="pdf-trace-table">
+            <thead>
+              <tr>
+                <th style="width: 12%;">Çevrim</th>
+                <th style="width: 18%;">Tur Başı CX</th>
+                <th style="width: 22%;">AX Değeri (Hex / Onluk)</th>
+                <th style="width: 22%;">BX Değeri (Hex / Onluk)</th>
+                <th style="width: 14%;">Tur Sonu CX</th>
+                <th style="width: 12%;">Çıkış?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Row 1 -->
+              <tr>
+                <td><b>1. Tur</b></td>
+                <td><code>4</code></td>
+                <td>
+                  <input type="text" class="pdf-table-input" data-trace-key="r1_ax" 
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r1_ax'))}" placeholder="2" />
+                  ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r1_ax ? '✓' : '✗ (2)'}</span>` : ''}
+                </td>
+                <td>
+                  <input type="text" class="pdf-table-input" data-trace-key="r1_bx" 
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r1_bx'))}" placeholder="4" />
+                  ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r1_bx ? '✓' : '✗ (4)'}</span>` : ''}
+                </td>
+                <td><code>3</code></td>
+                <td>Hayır</td>
+              </tr>
+
+              <!-- Row 2 -->
+              <tr>
+                <td><b>2. Tur</b></td>
+                <td><code>3</code></td>
+                <td>
+                  <input type="text" class="pdf-table-input" data-trace-key="r2_ax" 
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r2_ax'))}" placeholder="6" />
+                  ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r2_ax ? '✓' : '✗ (6)'}</span>` : ''}
+                </td>
+                <td>
+                  <input type="text" class="pdf-table-input" data-trace-key="r2_bx" 
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r2_bx'))}" placeholder="6" />
+                  ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r2_bx ? '✓' : '✗ (6)'}</span>` : ''}
+                </td>
+                <td><code>2</code></td>
+                <td>Hayır</td>
+              </tr>
+
+              <!-- Row 3 -->
+              <tr>
+                <td><b>3. Tur</b></td>
+                <td><code>2</code></td>
+                <td>
+                  <input type="text" class="pdf-table-input" data-trace-key="r3_ax" 
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r3_ax'))}" placeholder="12" />
+                  ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r3_ax ? '✓' : '✗ (12)'}</span>` : ''}
+                </td>
+                <td>
+                  <input type="text" class="pdf-table-input" data-trace-key="r3_bx" 
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r3_bx'))}" placeholder="8" />
+                  ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r3_bx ? '✓' : '✗ (8)'}</span>` : ''}
+                </td>
+                <td><code>1</code></td>
+                <td>Hayır</td>
+              </tr>
+
+              <!-- Row 4 -->
+              <tr>
+                <td><b>4. Tur</b></td>
+                <td><code>1</code></td>
+                <td>
+                  <input type="text" class="pdf-table-input" data-trace-key="r4_ax" 
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r4_ax'))}" placeholder="20 veya 14H" />
+                  ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r4_ax ? '✓' : '✗ (20 / 14H)'}</span>` : ''}
+                </td>
+                <td>
+                  <input type="text" class="pdf-table-input" data-trace-key="r4_bx" 
+                    value="${this.escapeHtml(StudyNotesStore.getTraceInput('r4_bx'))}" placeholder="10 veya 0AH" />
+                  ${traceGraded ? `<span class="feedback-mark">${traceGraded.feedback.r4_bx ? '✓' : '✗ (10 / 0AH)'}</span>` : ''}
+                </td>
+                <td><code>0</code></td>
+                <td><b>EVET</b></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Critical Flag Question -->
+        <div class="pdf-trace-flag-box">
+          <label class="pdf-trace-flag-label">
+            Kritik Soru: <b>Döngü tamamlandığında Sıfır Bayrağı (Zero Flag - ZF) değeri ne olur?</b>
+          </label>
+          <div class="pdf-fields-row" style="margin-top: 6px;">
+            <div class="pdf-flag-btn-group" data-trace-key="zf_val">
+              <button type="button" class="btn-flag-num ${StudyNotesStore.getTraceInput('zf_val') === '0' ? 'selected' : ''}" data-val="0">0</button>
+              <button type="button" class="btn-flag-num ${StudyNotesStore.getTraceInput('zf_val') === '1' ? 'selected' : ''}" data-val="1">1</button>
+            </div>
+            ${traceGraded ? `
+              <span class="pdf-trace-zf-result ${traceGraded.feedback.zf_val ? 'field-ok' : 'field-err'}">
+                ${traceGraded.feedback.zf_val ? '✓ Doğru: ZF = 0 kalır.' : '✗ Yanlış: Beklenen ZF = 0.'}
+              </span>
+            ` : ''}
+          </div>
+        </div>
+
+        <div class="pdf-actions-row" style="margin-top: 14px;">
+          <button class="btn-pdf-submit" id="btn-trace-grade">Tabloyu Kontrol Et</button>
+          ${traceGraded ? `
+            <button class="btn-pdf-solution-toggle" id="btn-trace-toggle-sol">
+              ${traceGraded.revealed ? 'Açıklamayı Gizle' : 'Açıklamayı Göster'}
+            </button>
+          ` : ''}
+        </div>
+
+        ${traceGraded && traceGraded.revealed ? `
+          <div class="pdf-solution-sheet" style="margin-top: 14px;">
+            <h4 class="pdf-sol-title">Döngü İzleme Açıklaması:</h4>
+            <p>1. Tur: AX = 0 + 2 = 2, BX = 2 + 2 = 4, CX = 3 (Döngü devam eder).</p>
+            <p>2. Tur: AX = 2 + 4 = 6, BX = 4 + 2 = 6, CX = 2 (Döngü devam eder).</p>
+            <p>3. Tur: AX = 6 + 6 = 12, BX = 6 + 2 = 8, CX = 1 (Döngü devam eder).</p>
+            <p>4. Tur: AX = 12 + 8 = 20 (14H), BX = 8 + 2 = 10 (0AH), CX = 0 (Döngü sonlanır).</p>
+            <div class="pdf-rule-note">
+              <strong>Sıfır Bayrağı (ZF) Neden 0 Kalır?</strong><br>
+              8086 donanımında <code>LOOP</code> komutu bayrakları <b>asla değiştirmez</b>. CX sayacı 0 olsa bile ZF kurulmaz.
+              En son çalışan aritmetik komut <code>ADD BX, 2</code> olup BX = 10 sonucunu ürettiği için ZF = 0 kalmıştır.
             </div>
           </div>
         ` : ''}
@@ -288,131 +444,202 @@ export class StudyNotesView {
   }
 
   // =========================================================================
-  // SUBTAB 2: Bayraklar (Flags) & Komut Etkisi Başucu Rehberi
+  // FÖY 3: Canlı Bit Seviyesi ALU & Bayrak Hesaplayıcı (Visual Bit Adder/Subtractor)
   // =========================================================================
-  private renderFlagsGuide(): string {
+  private renderAluCalculatorSheet(state: StudyNotesState): string {
+    const calc = state.aluCalculator;
+    const n1 = parseInt(calc.num1 || '0', 16) || 0;
+    const n2 = parseInt(calc.num2 || '0', 16) || 0;
+    const is8bit = calc.mode === '8bit';
+    const mask = is8bit ? 0xFF : 0xFFFF;
+    const bitWidth = is8bit ? 8 : 16;
+
+    // Bit calculations
+    const op = calc.op;
+    const rawResult = op === 'ADD' ? (n1 + n2) : (n1 - n2);
+    const maskedResult = (rawResult & mask);
+
+    // Carry bits array
+    const carries: number[] = new Array(bitWidth + 1).fill(0);
+    let carry = 0;
+    for (let i = 0; i < bitWidth; i++) {
+      const b1 = (n1 >> i) & 1;
+      const b2 = op === 'ADD' ? ((n2 >> i) & 1) : (((~n2 & mask) >> i) & 1);
+      const sum = b1 + b2 + (op === 'SUB' && i === 0 ? 1 : carry);
+      carry = sum >= 2 ? 1 : 0;
+      carries[i + 1] = carry;
+    }
+
+    // Flags
+    const cf = op === 'ADD' 
+      ? (rawResult > mask ? 1 : 0)
+      : (n1 < n2 ? 1 : 0);
+    const zf = maskedResult === 0 ? 1 : 0;
+    const msb = (maskedResult >> (bitWidth - 1)) & 1;
+    const sf = msb;
+
+    // Auxiliary Carry (AF): carry from bit 3 to bit 4
+    let af = 0;
+    if (op === 'ADD') {
+      af = ((n1 & 0x0F) + (n2 & 0x0F)) > 0x0F ? 1 : 0;
+    } else {
+      af = (n1 & 0x0F) < (n2 & 0x0F) ? 1 : 0;
+    }
+
+    // Parity Flag (PF): low 8 bits 1s count is even
+    const low8 = maskedResult & 0xFF;
+    let onesCount = 0;
+    for (let i = 0; i < 8; i++) {
+      if ((low8 >> i) & 1) onesCount++;
+    }
+    const pf = (onesCount % 2 === 0) ? 1 : 0;
+
+    // Overflow Flag (OF)
+    let of = 0;
+    const s1 = (n1 >> (bitWidth - 1)) & 1;
+    const s2 = (n2 >> (bitWidth - 1)) & 1;
+    if (op === 'ADD') {
+      of = (s1 === s2 && s1 !== sf) ? 1 : 0;
+    } else {
+      of = (s1 !== s2 && s1 !== sf) ? 1 : 0;
+    }
+
     return `
-      <div class="flags-guide-wrapper">
-        <div class="flags-hero-card">
-          <span class="exam-hero-pill">7. HAFTA ÖNCESİ ÖZEL BAŞUCU REHBERİ</span>
-          <h2 class="exam-hero-title">8086 Bayraklar (Flags) & Komut Etkisi Tam Kılavuzu</h2>
-          <p class="exam-hero-desc">
-            Vize sınavında puan kayıplarının %70'i bayrakların donanımsal olarak nasıl kurulduğunu
-            ve hangi komutun hangi bayrağı değiştirdiğini bilmemekten kaynaklanır.
-            Aşağıdaki tablolar ve formüllerle bayrak matematiğini eksiksiz öğrenin.
-          </p>
-        </div>
-
-        <!-- FLAGS Register Bit Layout -->
-        <div class="theory-card" style="border-left: 4px solid #6366f1;">
-          <h4 class="theory-card-title">🗺️ 16-Bit FLAGS Yazmacı Bit Yerleşimi (Hardware Layout)</h4>
-          <p class="theory-card-desc">8086 mikroişlemcisinde 16-bitlik FLAGS yazmacının bit dağılımı:</p>
-          <div class="table-responsive" style="margin-top: 10px;">
-            <table class="theory-table" style="text-align: center; font-size: 11px;">
-              <thead>
-                <tr>
-                  <th>Bit 15</th><th>14</th><th>13</th><th>12</th>
-                  <th>11</th><th>10</th><th>9</th><th>8</th>
-                  <th>7</th><th>6</th><th>5</th><th>4</th>
-                  <th>3</th><th>2</th><th>1</th><th>0</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style="font-weight: 700;">
-                  <td style="color:#94a3b8;">X</td>
-                  <td style="background:#fef3c7; color:#b45309;">NT</td>
-                  <td style="background:#fef3c7; color:#b45309;">IOPL</td>
-                  <td style="background:#fef3c7; color:#b45309;">IOPL</td>
-                  <td style="background:#fee2e2; color:#b91c1c;">OF</td>
-                  <td style="background:#e0e7ff; color:#4338ca;">DF</td>
-                  <td style="background:#e0e7ff; color:#4338ca;">IF</td>
-                  <td style="background:#e0e7ff; color:#4338ca;">TF</td>
-                  <td style="background:#fee2e2; color:#b91c1c;">SF</td>
-                  <td style="background:#fee2e2; color:#b91c1c;">ZF</td>
-                  <td style="color:#94a3b8;">X</td>
-                  <td style="background:#fee2e2; color:#b91c1c;">AF</td>
-                  <td style="color:#94a3b8;">X</td>
-                  <td style="background:#fee2e2; color:#b91c1c;">PF</td>
-                  <td style="color:#94a3b8;">1</td>
-                  <td style="background:#fee2e2; color:#b91c1c;">CF</td>
-                </tr>
-                <tr style="font-size: 10px; color: #475569;">
-                  <td>Ayrılmış</td><td>İç İçe Görev</td><td colspan="2">I/O Yetki</td><td>Taşma</td><td>Yön</td><td>Kesme</td><td>Adım</td><td>İşaret</td><td>Sıfır</td><td>Ayrılmış</td><td>Yardımcı</td><td>Ayrılmış</td><td>Eşlik</td><td>Sabit</td><td>Elde</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="docs-var-note" style="margin-top: 8px; font-size: 11px;">
-            🔴 Kırmızı: <b>6 Durum Bayrağı</b> (ALU kurar: CF, PF, AF, ZF, SF, OF) • 🔵 Mavi: <b>3 Kontrol Bayrağı</b> (DF, IF, TF) • 🟡 Sarı: <b>Sistem Bayrakları</b> (IOPL, NT, 286+).
-          </div>
-        </div>
-
-        <!-- Master Instruction-to-Flags Matrix Table -->
-        <div class="theory-card" style="margin-top: 20px;">
-          <h4 class="theory-card-title">📊 8086 Komutlarının Bayraklar Üzerindeki Etki Matrisi</h4>
-          <p class="theory-card-desc">Sınavda ezbere bilmeniz gereken tam bayrak değişim tablosu:</p>
-          <div class="table-responsive" style="margin-top: 10px;">
-            <table class="theory-table">
-              <thead>
-                <tr>
-                  <th style="width: 20%;">Komut(lar)</th>
-                  <th style="width: 12%;">Kategori</th>
-                  <th>CF</th><th>ZF</th><th>SF</th><th>OF</th><th>PF</th><th>AF</th>
-                  <th style="width: 32%;">Hocanın Altın Açıklaması</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${INSTRUCTION_FLAG_MATRIX.map(row => `
-                  <tr>
-                    <td><code>${row.instruction}</code></td>
-                    <td><small>${row.category}</small></td>
-                    <td><b>${row.cf}</b></td>
-                    <td>${row.zf}</td>
-                    <td>${row.sf}</td>
-                    <td>${row.of}</td>
-                    <td>${row.pf}</td>
-                    <td>${row.af}</td>
-                    <td style="font-size: 11.5px; line-height: 1.4;">${row.ruleExplanation}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Mathematical Flag Derivations (Carry vs Overflow, SUB 3-step) -->
-        <div class="theory-grid-2col" style="margin-top: 20px;">
-          <div class="theory-card">
-            <h4 class="theory-card-title">⚖️ İşaretsiz (CF/ZF) vs İşaretli (OF/SF) Karşılaştırması</h4>
-            <div class="table-responsive">
-              <table class="theory-table" style="font-size: 11.5px;">
-                <thead>
-                  <tr><th>Kriter</th><th>İşaretsiz (Unsigned)</th><th>İşaretli (Signed)</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td><b>Sayı Aralığı (8-bit)</b></td><td>0 .. 255</td><td>-128 .. +127</td></tr>
-                  <tr><td><b>Hangi Bayrak Taşmayı Gösterir?</b></td><td><b>Carry Flag (CF)</b></td><td><b>Overflow Flag (OF)</b></td></tr>
-                  <tr><td><b>Büyükse Atlama (>)</b></td><td><code>JA</code> (Jump if Above)<br><small>CF=0 ve ZF=0</small></td><td><code>JG</code> (Jump if Greater)<br><small>SF = OF ve ZF=0</small></td></tr>
-                  <tr><td><b>Küçükse Atlama (<)</b></td><td><code>JB</code> (Jump if Below)<br><small>CF=1</small></td><td><code>JL</code> (Jump if Less)<br><small>SF ≠ OF</small></td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p style="font-size: 11px; color: #b91c1c; margin-top: 6px;">
-              🚨 <b>Önemli:</b> Negatif sayı karşılaştırmasında <code>JA</code> kullanılırsa <code>-10 (FFF6H)</code> pozitif <code>+5</code>'ten büyük sanılır ve kod çöker!
+      <div class="pdf-section">
+        <div class="pdf-section-header">
+          <div>
+            <h2 class="pdf-section-title">BÖLÜM 3: CANLI BİT SEVİYESİ ALU & BAYRAK HESAPLAYICI</h2>
+            <p class="pdf-section-desc">
+              İki onaltılık (hex) sayı girerek 8086 ALU'sunun bitleri nasıl topladığını/çıkardığını ve her bayrağın (CF, ZF, AF, PF, SF, OF) matematiksel olarak neden 0 veya 1 olduğunu canlı izleyiniz.
             </p>
           </div>
+        </div>
 
-          <div class="theory-card">
-            <h4 class="theory-card-title">⚙️ Donanımsal 3 Adımlı Çıkarma Algoritması (w11.pdf)</h4>
-            <p style="font-size: 11.5px; color: #334155;">8086 donanımı <code>SUB Hedef, Kaynak</code> yaparken:</p>
-            <ol style="font-size: 11px; line-height: 1.5; margin: 4px 0 8px 18px; padding: 0;">
-              <li>Kaynağın 2'nin tümleyenini alır (Negatifini hesaplar).</li>
-              <li>Hedef ile 2'nin tümleyenini <b>toplar</b>.</li>
-              <li>Oluşan donanım eldesini (Carry) <b>TERSLEYEREK</b> CF'ye yazar (Invert Carry)!</li>
-            </ol>
-            <div class="code-preview-box" style="font-size: 11px;">
-              <code>Örnek: 22H - 44H\n1. 44H'ın 2'nin tümleyeni = BCH\n2. 22H + BCH = DEH (Elde çıkmadı, C=0)\n3. CF = NOT(0) = 1 (Borç alındı!)</code>
-            </div>
+        <!-- Inputs Row -->
+        <div class="pdf-alu-controls">
+          <div class="pdf-alu-field">
+            <label>Sayı 1 (Hex):</label>
+            <input type="text" id="alu-in-num1" class="pdf-text-input" value="${this.escapeHtml(calc.num1)}" maxlength="4" />
+          </div>
+
+          <div class="pdf-alu-field">
+            <label>İşlem:</label>
+            <select id="alu-select-op" class="pdf-select">
+              <option value="ADD" ${calc.op === 'ADD' ? 'selected' : ''}>ADD (+)</option>
+              <option value="SUB" ${calc.op === 'SUB' ? 'selected' : ''}>SUB (-)</option>
+            </select>
+          </div>
+
+          <div class="pdf-alu-field">
+            <label>Sayı 2 (Hex):</label>
+            <input type="text" id="alu-in-num2" class="pdf-text-input" value="${this.escapeHtml(calc.num2)}" maxlength="4" />
+          </div>
+
+          <div class="pdf-alu-field">
+            <label>Genişlik:</label>
+            <select id="alu-select-mode" class="pdf-select">
+              <option value="8bit" ${calc.mode === '8bit' ? 'selected' : ''}>8-Bit (Bayt)</option>
+              <option value="16bit" ${calc.mode === '16bit' ? 'selected' : ''}>16-Bit (Kelime)</option>
+            </select>
+          </div>
+
+          <!-- Quick presets -->
+          <div class="pdf-alu-presets">
+            <span style="font-size: 11px; font-weight:700;">Hızlı Örnekler:</span>
+            <button class="btn-pdf-preset" data-p1="F5" data-p2="0B" data-op="ADD">F5H + 0BH</button>
+            <button class="btn-pdf-preset" data-p1="22" data-p2="44" data-op="SUB">22H - 44H</button>
+            <button class="btn-pdf-preset" data-p1="7F" data-p2="01" data-op="ADD">7FH + 01H (OF)</button>
+            <button class="btn-pdf-preset" data-p1="3F" data-p2="23" data-op="SUB">3FH - 23H</button>
+          </div>
+        </div>
+
+        <!-- Visual Bit Matrix -->
+        <div class="pdf-bit-display-card">
+          <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 800;">Bit Seviyesinde Donanım Akışı:</h4>
+          
+          <div class="pdf-bit-grid-wrap">
+            <table class="pdf-bit-grid-table">
+              <tbody>
+                <!-- Carries Row -->
+                <tr class="row-carries">
+                  <td class="col-label">Elde (Carry Akışı):</td>
+                  ${Array.from({ length: bitWidth }).map((_, i) => {
+                    const bitIdx = bitWidth - 1 - i;
+                    const c = carries[bitIdx + 1];
+                    const isAfBit = (bitIdx === 4);
+                    const isCfBit = (bitIdx === bitWidth - 1);
+                    return `<td class="bit-cell carry ${c ? 'has-carry' : ''} ${isAfBit ? 'af-col' : ''} ${isCfBit ? 'cf-col' : ''}">
+                      ${c ? '1' : '0'}
+                      ${isAfBit && c ? '<small class="af-tag">AF</small>' : ''}
+                      ${isCfBit && c ? '<small class="cf-tag">CF</small>' : ''}
+                    </td>`;
+                  }).join('')}
+                </tr>
+
+                <!-- Number 1 Row -->
+                <tr class="row-num1">
+                  <td class="col-label">Sayı 1 (${calc.num1.toUpperCase()}H):</td>
+                  ${Array.from({ length: bitWidth }).map((_, i) => {
+                    const bitIdx = bitWidth - 1 - i;
+                    const b = (n1 >> bitIdx) & 1;
+                    return `<td class="bit-cell">${b}</td>`;
+                  }).join('')}
+                </tr>
+
+                <!-- Number 2 Row -->
+                <tr class="row-num2">
+                  <td class="col-label">Sayı 2 (${calc.num2.toUpperCase()}H):</td>
+                  ${Array.from({ length: bitWidth }).map((_, i) => {
+                    const bitIdx = bitWidth - 1 - i;
+                    const b = (n2 >> bitIdx) & 1;
+                    return `<td class="bit-cell">${b}</td>`;
+                  }).join('')}
+                </tr>
+
+                <!-- Result Row -->
+                <tr class="row-result">
+                  <td class="col-label">Sonuç (${maskedResult.toString(16).toUpperCase().padStart(is8bit ? 2 : 4, '0')}H):</td>
+                  ${Array.from({ length: bitWidth }).map((_, i) => {
+                    const bitIdx = bitWidth - 1 - i;
+                    const b = (maskedResult >> bitIdx) & 1;
+                    return `<td class="bit-cell res ${b ? 'is-one' : 'is-zero'}">${b}</td>`;
+                  }).join('')}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Flags Result Summary Cards -->
+        <div class="pdf-flags-summary-grid">
+          <div class="pdf-flag-summary-card ${cf ? 'active' : ''}">
+            <div class="pfs-head"><span class="pfs-name">CF (Carry)</span><span class="pfs-val">${cf}</span></div>
+            <p class="pfs-desc">${cf ? 'Bit 7 / 15 dışına elde taştı (veya borç alındı).' : 'Taşma veya borç oluşmadı.'}</p>
+          </div>
+
+          <div class="pdf-flag-summary-card ${zf ? 'active' : ''}">
+            <div class="pfs-head"><span class="pfs-name">ZF (Zero)</span><span class="pfs-val">${zf}</span></div>
+            <p class="pfs-desc">${zf ? 'Sonuç tam olarak 0 çıktı.' : 'Sonuç sıfırdan farklı.'}</p>
+          </div>
+
+          <div class="pdf-flag-summary-card ${sf ? 'active' : ''}">
+            <div class="pfs-head"><span class="pfs-name">SF (Sign)</span><span class="pfs-val">${sf}</span></div>
+            <p class="pfs-desc">${sf ? 'En yüksek anlamlı bit (MSB) 1 (Sonuç negatif).' : 'MSB 0 (Sonuç pozitif).'}</p>
+          </div>
+
+          <div class="pdf-flag-summary-card ${of ? 'active' : ''}">
+            <div class="pfs-head"><span class="pfs-name">OF (Overflow)</span><span class="pfs-val">${of}</span></div>
+            <p class="pfs-desc">${of ? 'İşaretli sınır aşıldı (+127 / -128 dışına çıkıldı).' : 'İşaretli taşma yok.'}</p>
+          </div>
+
+          <div class="pdf-flag-summary-card ${pf ? 'active' : ''}">
+            <div class="pfs-head"><span class="pfs-name">PF (Parity)</span><span class="pfs-val">${pf}</span></div>
+            <p class="pfs-desc">${pf ? `Düşük 8 bit içinde ${onesCount} adet '1' var (${onesCount} çifttir).` : `Düşük 8 bit içinde ${onesCount} adet '1' var (${onesCount} tektir).`}</p>
+          </div>
+
+          <div class="pdf-flag-summary-card ${af ? 'active' : ''}">
+            <div class="pfs-head"><span class="pfs-name">AF (Auxiliary)</span><span class="pfs-val">${af}</span></div>
+            <p class="pfs-desc">${af ? 'Bit 3 ten Bit 4 e alt nibble eldesi geçti.' : 'Alt nibble eldesi yok.'}</p>
           </div>
         </div>
       </div>
@@ -420,55 +647,101 @@ export class StudyNotesView {
   }
 
   // =========================================================================
-  // SUBTAB 3: Hafta Hafta Eksiksiz Ders Notları (Hafta 1 - 15)
+  // FÖY 4: Bayraklar & Komut Etki Matrisi (PDF Tablosu)
   // =========================================================================
-  private renderWeekNotes(): string {
-    const notesToShow = this.selectedWeek === 0
+  private renderFlagsSheet(): string {
+    return `
+      <div class="pdf-section">
+        <div class="pdf-section-header">
+          <div>
+            <h2 class="pdf-section-title">BÖLÜM 4: BAYRAKLAR & KOMUT ETKİ MATRİSİ</h2>
+            <p class="pdf-section-desc">8086 mikroişlemcisinde her komutun durum bayrakları üzerindeki kesin donanımsal etkisi.</p>
+          </div>
+        </div>
+
+        <div class="pdf-table-responsive">
+          <table class="pdf-trace-table" style="font-size: 11.5px;">
+            <thead>
+              <tr>
+                <th style="width: 18%;">Komut(lar)</th>
+                <th style="width: 12%;">Kategori</th>
+                <th>CF</th><th>ZF</th><th>SF</th><th>OF</th><th>PF</th><th>AF</th>
+                <th style="width: 35%;">Donanımsal Kural & Açıklama</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${INSTRUCTION_FLAG_MATRIX.map(row => `
+                <tr>
+                  <td><code>${row.instruction}</code></td>
+                  <td>${row.category}</td>
+                  <td><b>${row.cf}</b></td>
+                  <td>${row.zf}</td>
+                  <td>${row.sf}</td>
+                  <td>${row.of}</td>
+                  <td>${row.pf}</td>
+                  <td>${row.af}</td>
+                  <td style="font-size: 11px; line-height: 1.4;">${row.ruleExplanation}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pdf-rule-note" style="margin-top: 16px;">
+          <strong>Temel Sınav Kuralları Özeti:</strong>
+          <ul style="margin: 4px 0 0 16px; padding: 0; line-height: 1.5;">
+            <li><code>MOV, XCHG, LEA, PUSH, POP, NOT, LOOP, JCXZ</code> bayrakları <b>asla değiştirmez</b>.</li>
+            <li><code>INC ve DEC</code> sayaç döngülerinde eldeyi korumak için <b>CF bayrağını değiştirmez</b>.</li>
+            <li><code>AND, OR, XOR, TEST</code> mantıksal komutları <b>CF=0 ve OF=0</b> yapar.</li>
+            <li><code>MUL ve IMUL</code> komutlarında yalnızca <b>CF ve OF</b> tanımlıdır; diğerleri belirsizdir.</li>
+            <li><code>DIV ve IDIV</code> komutlarında <b>tüm durum bayrakları belirsizdir</b>.</li>
+          </ul>
+        </div>
+      </div>
+    `;
+  }
+
+  // =========================================================================
+  // FÖY 5: Hafta Hafta Konu Notları (Temiz PDF Kitapçığı)
+  // =========================================================================
+  private renderNotesSheet(state: StudyNotesState): string {
+    const notesToShow = state.selectedWeek === 0
       ? ALL_WEEKS_STUDY_NOTES
-      : ALL_WEEKS_STUDY_NOTES.filter(w => w.weekNumber === this.selectedWeek);
+      : ALL_WEEKS_STUDY_NOTES.filter(w => w.weekNumber === state.selectedWeek);
 
     return `
-      <div class="week-notes-wrapper">
-        <!-- Week Selector Filter -->
-        <div class="week-selector-bar">
-          <button class="btn-week-pill ${this.selectedWeek === 0 ? 'active' : ''}" data-week="0">Tüm Haftalar (1–15)</button>
+      <div class="pdf-section">
+        <div class="pdf-section-header">
+          <div>
+            <h2 class="pdf-section-title">BÖLÜM 5: HAFTA HAFTA DERS NOTLARI</h2>
+            <p class="pdf-section-desc">Hafta 1'den Hafta 15'e kadar ders slaytları ve sınav konularının tam özeti.</p>
+          </div>
+        </div>
+
+        <!-- Week tabs -->
+        <div class="pdf-filter-bar">
+          <button class="btn-pdf-week ${state.selectedWeek === 0 ? 'active' : ''}" data-week="0">Tümü (1–15)</button>
           ${ALL_WEEKS_STUDY_NOTES.map(w => `
-            <button class="btn-week-pill ${this.selectedWeek === w.weekNumber ? 'active' : ''}" data-week="${w.weekNumber}">
-              Hafta ${w.weekNumber} (${w.period.startsWith('Vize Öncesi') ? 'Vize' : 'Final'})
+            <button class="btn-pdf-week ${state.selectedWeek === w.weekNumber ? 'active' : ''}" data-week="${w.weekNumber}">
+              Hafta ${w.weekNumber}
             </button>
           `).join('')}
         </div>
 
-        <!-- Notes Cards List -->
-        <div class="week-notes-list">
+        <div class="pdf-notes-container">
           ${notesToShow.map(note => `
-            <div class="week-note-card">
-              <div class="wn-card-header">
-                <div class="wn-badge-group">
-                  <span class="wn-week-badge">HAFTA ${note.weekNumber}</span>
-                  <span class="wn-period-badge ${note.period.startsWith('Vize Öncesi') ? 'pre-mid' : 'post-mid'}">${note.period}</span>
-                  <span class="wn-slide-badge">${note.slideCount}</span>
-                </div>
-                <h3 class="wn-title">${note.title}</h3>
-                <p class="wn-subtitle">${note.subtitle}</p>
-                <div class="wn-source-files">
-                  📁 <strong>Kaynak Dosyalar:</strong> ${note.sourceFiles.map(f => `<code>${f}</code>`).join(', ')}
-                </div>
+            <article class="pdf-week-block">
+              <div class="pwb-header">
+                <span class="pwb-week-tag">HAFTA ${note.weekNumber}</span>
+                <span class="pwb-period-tag">${note.period}</span>
+                <h3 class="pwb-title">${note.title}</h3>
+                <p class="pwb-sub">${note.subtitle}</p>
               </div>
 
-              <!-- Key Topics Grid -->
-              <div class="wn-key-topics">
-                <strong>📌 Bu Haftanın İşlenen Temel Konuları:</strong>
-                <ul class="wn-topics-list">
-                  ${note.keyTopics.map(t => `<li>${t}</li>`).join('')}
-                </ul>
-              </div>
-
-              <!-- Full HTML Content (All Slides & Notes) -->
-              <div class="wn-full-content">
+              <div class="pwb-content">
                 ${note.summaryHtml}
               </div>
-            </div>
+            </article>
           `).join('')}
         </div>
       </div>
@@ -476,116 +749,159 @@ export class StudyNotesView {
   }
 
   // =========================================================================
-  // SUBTAB 4: Sınav Öncesi Hızlı Özet & Formül Tablosu (Cheat Sheet)
+  // EVENT BINDINGS
   // =========================================================================
-  private renderCheatSheet(): string {
-    return `
-      <div class="cheatsheet-wrapper">
-        <div class="flags-hero-card">
-          <span class="exam-hero-pill">SINAV ÖNCESİ 10 DAKİKALIK TEKRAR</span>
-          <h2 class="exam-hero-title">8086 Mikroişlemciler Altın Formül & Kural Tablosu</h2>
-          <p class="exam-hero-desc">
-            Sınava girmeden önce mutlaka gözden geçirmeniz gereken adresleme formülleri,
-            yazmaç eşleşmeleri, donanım limitleri ve pipeline denklemleri.
-          </p>
-        </div>
+  private attachEvents(): void {
+    // 1. Subtab navigation
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-pdf-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sub = btn.dataset.subtab as StudyNotesState['activeSubTab'];
+        if (sub) {
+          StudyNotesStore.setSubTab(sub);
+        }
+      });
+    });
 
-        <div class="theory-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-          <!-- Card 1: Adresleme ve Segmentler -->
-          <div class="theory-card" style="border-left: 4px solid #3b82f6;">
-            <h4 class="theory-card-title">📐 Fiziksel Adres Formülleri</h4>
-            <div class="theory-formula-box">
-              <code>Fiziksel Adres = (Segment × 10H) + Offset</code>
-            </div>
-            <ul style="font-size: 11.5px; line-height: 1.5; margin: 8px 0 0 16px; padding: 0;">
-              <li><code>CS : IP</code> ➔ Yürütülecek komut adresi (Fetch)</li>
-              <li><code>SS : SP</code> ➔ Yığın tepesi (TOS)</li>
-              <li><code>SS : BP</code> ➔ Yığın çerçevesi / Yerel değişkenler</li>
-              <li><code>DS : BX / SI / DI</code> ➔ Veri segmenti erişimi</li>
-              <li><code>ES : DI</code> ➔ String işlemleri hedefi</li>
-              <li><b>Maksimum Segment Boyutu:</b> Tam 64 KB (0000H – FFFFH).</li>
-              <li><b>Segment Bitiş Adresi:</b> <code>Başlangıç + FFFFH</code>.</li>
-            </ul>
-          </div>
+    // 2. Category filter
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-pdf-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cat = btn.dataset.cat;
+        if (cat) {
+          StudyNotesStore.setSelectedCategory(cat);
+        }
+      });
+    });
 
-          <!-- Card 2: Yığın Dinamikleri -->
-          <div class="theory-card" style="border-left: 4px solid #ef4444;">
-            <h4 class="theory-card-title">🥞 Yığın (Stack) LIFO Kuralları</h4>
-            <ul style="font-size: 11.5px; line-height: 1.5; margin: 4px 0 0 16px; padding: 0;">
-              <li><b>Yığın Aşağı Büyür:</b> PUSH komutunda <strong>SP 2 AZALIR</strong> (<code>SP = SP - 2</code>).</li>
-              <li><b>POP Komutunda:</b> SP 2 ARTAR (<code>SP = SP + 2</code>).</li>
-              <li><b>Little-Endian:</b> Düşük bayt düşük adrese, yüksek bayt yüksek adrese yazılır.</li>
-              <li><b>Sadece Kelime (16-bit):</b> 8-bitlik <code>PUSH AL</code> yapılamaz!</li>
-              <li><b>POP CS Yasaktır!</b> Kod akışı tutarlılığı için CS yığından doğrudan çekilemez.</li>
-            </ul>
-          </div>
+    // 3. Week filter
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-pdf-week').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const week = parseInt(btn.dataset.week || '0', 10);
+        StudyNotesStore.setSelectedWeek(week);
+      });
+    });
 
-          <!-- Card 3: Port I/O Kuralları -->
-          <div class="theory-card" style="border-left: 4px solid #10b981;">
-            <h4 class="theory-card-title">🔌 Giriş/Çıkış (IN / OUT) Port Kuralları</h4>
-            <ul style="font-size: 11.5px; line-height: 1.5; margin: 4px 0 0 16px; padding: 0;">
-              <li><b>Akümülatör Şartı:</b> Transfer <strong>YALNIZCA AL (8-bit) veya AX (16-bit)</strong> ile yapılabilir!</li>
-              <li><b>00H – FFH (0–255):</b> Sabit port numarası doğrudan komuta yazılabilir: <code>IN AL, 60H</code>.</li>
-              <li><b>255'ten büyükse:</b> Port adresi <strong>MUTLAKA DX YAZMACINA</strong> alınmalıdır: <code>MOV DX, 03F8H; OUT DX, AL</code>.</li>
-              <li><b>I/O Uzayı:</b> 64 KB (0000H – FFFFH).</li>
-            </ul>
-          </div>
+    // 4. Question Text Inputs
+    this.container.querySelectorAll<HTMLInputElement>('.pdf-text-input').forEach(input => {
+      input.addEventListener('input', () => {
+        const qId = input.dataset.qId;
+        const field = input.dataset.field;
+        if (qId && field) {
+          StudyNotesStore.setUserInput(qId, field, input.value);
+        }
+      });
+    });
 
-          <!-- Card 4: IVT Formülü -->
-          <div class="theory-card" style="border-left: 4px solid #f59e0b;">
-            <h4 class="theory-card-title">🗺️ Kesme Vektör Tablosu (IVT)</h4>
-            <div class="theory-formula-box">
-              <code>Vektör Adresi = Tip N × 4</code>
-            </div>
-            <ul style="font-size: 11.5px; line-height: 1.5; margin: 8px 0 0 16px; padding: 0;">
-              <li><b>Konum:</b> Belleğin ilk 1024 baytı (<code>00000H – 003FFH</code>).</li>
-              <li><b>Toplam Vektör:</b> 256 adet (0 – 255).</li>
-              <li><b>Her Vektör 4 Bayt:</b> İlk 2 bayt IP (ofset), sonraki 2 bayt CS (segment).</li>
-              <li><b>INT 0:</b> Sıfıra bölme / Bölme taşması hatası.</li>
-              <li><b>INT 1:</b> Single Step (TF=1).</li>
-              <li><b>INT 2:</b> NMI (Maskelenemez Kesme).</li>
-              <li><b>INT 3:</b> Breakpoint (CC opcode'u).</li>
-            </ul>
-          </div>
+    // 5. Question Flag Toggle Buttons
+    this.container.querySelectorAll<HTMLElement>('.pdf-flag-btn-group').forEach(group => {
+      const qId = group.dataset.qId;
+      const field = group.dataset.field;
+      const traceKey = group.dataset.traceKey;
 
-          <!-- Card 5: Pipeline & Amdahl -->
-          <div class="theory-card" style="border-left: 4px solid #8b5cf6;">
-            <h4 class="theory-card-title">🚀 Boru Hattı & Paralellik Yasaları</h4>
-            <ul style="font-size: 11.5px; line-height: 1.5; margin: 4px 0 0 16px; padding: 0;">
-              <li><b>Toplam Süre:</b> <code>T_{k,n} = [k + (n - 1)] × τ</code></li>
-              <li><b>Maksimum Hızlanma:</b> $S_k \to k$ (Kademe sayısı kadar).</li>
-              <li><b>Amdahl Yasası (Sabit Yük):</b> <code>Speedup = 1 / [(1 - P) + (P / N)]</code>.</li>
-              <li><b>Gustafson Yasası (Ölçekli):</b> <code>Speedup = N - P(N - 1)</code>.</li>
-            </ul>
-          </div>
+      group.querySelectorAll<HTMLButtonElement>('.btn-flag-num').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const val = btn.dataset.val || '0';
+          if (qId && field) {
+            StudyNotesStore.setUserInput(qId, field, val);
+            group.querySelectorAll('.btn-flag-num').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+          } else if (traceKey) {
+            StudyNotesStore.setTraceInput(traceKey, val);
+            group.querySelectorAll('.btn-flag-num').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+          }
+        });
+      });
+    });
 
-          <!-- Card 6: Segment Başlatma (@DATA) -->
-          <div class="theory-card" style="border-left: 4px solid #ec4899;">
-            <h4 class="theory-card-title">🏛️ Segment Kurulum Kuralı (@DATA)</h4>
-            <ul style="font-size: 11.5px; line-height: 1.5; margin: 4px 0 0 16px; padding: 0;">
-              <li>🚨 <b>Neden MOV DS, 1000H Yasaktır?</b> 8086 mimarisinde Immediate-to-Segment opcode'u yoktur!</li>
-              <li><b>Doğru Kurulum:</b>
-                <pre style="margin:4px 0; font-size:11px;"><code>MOV AX, @DATA\nMOV DS, AX</code></pre>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    `;
-  }
+    // 6. Grade Question Button
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-pdf-submit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const qId = btn.dataset.qId;
+        if (qId) {
+          this.gradeQuestion(qId);
+        }
+      });
+    });
 
-  // =========================================================================
-  // LOGIC & GRADING HELPERS
-  // =========================================================================
-  private getUserInput(qId: string, field: string): string {
-    return this.userInputs[qId]?.[field] || '';
-  }
+    // 7. Toggle Solution
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-pdf-solution-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const qId = btn.dataset.qId;
+        if (qId) {
+          StudyNotesStore.toggleQuestionSolution(qId);
+        }
+      });
+    });
 
-  private setUserInput(qId: string, field: string, val: string): void {
-    if (!this.userInputs[qId]) {
-      this.userInputs[qId] = {};
-    }
-    this.userInputs[qId][field] = val;
+    // 8. Open Code in Simulator
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-pdf-try-code').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const qId = btn.dataset.qId;
+        const q = MIDTERM_EXAM_QUESTIONS.find(item => item.id === qId);
+        if (q && this.callbacks?.onOpenInMainEditor) {
+          this.callbacks.onOpenInMainEditor(`vize-${q.id}.asm`, q.codeSnippet);
+        }
+      });
+    });
+
+    // 9. Trace Table inputs
+    this.container.querySelectorAll<HTMLInputElement>('.pdf-table-input').forEach(input => {
+      input.addEventListener('input', () => {
+        const traceKey = input.dataset.traceKey;
+        if (traceKey) {
+          StudyNotesStore.setTraceInput(traceKey, input.value);
+        }
+      });
+    });
+
+    // 10. Grade Trace Table
+    const btnTraceGrade = this.container.querySelector<HTMLButtonElement>('#btn-trace-grade');
+    btnTraceGrade?.addEventListener('click', () => {
+      this.gradeTraceTable();
+    });
+
+    const btnTraceToggle = this.container.querySelector<HTMLButtonElement>('#btn-trace-toggle-sol');
+    btnTraceToggle?.addEventListener('click', () => {
+      const current = StudyNotesStore.getState().traceTableGraded;
+      if (current) {
+        StudyNotesStore.setTraceGraded({
+          ...current,
+          revealed: !current.revealed
+        });
+      }
+    });
+
+    // 11. ALU Calculator Inputs
+    const num1In = this.container.querySelector<HTMLInputElement>('#alu-in-num1');
+    const num2In = this.container.querySelector<HTMLInputElement>('#alu-in-num2');
+    const opSelect = this.container.querySelector<HTMLSelectElement>('#alu-select-op');
+    const modeSelect = this.container.querySelector<HTMLSelectElement>('#alu-select-mode');
+
+    const updateAlu = () => {
+      if (num1In && num2In && opSelect && modeSelect) {
+        StudyNotesStore.setAluState(
+          num1In.value.trim().toUpperCase(),
+          num2In.value.trim().toUpperCase(),
+          opSelect.value as 'ADD' | 'SUB',
+          modeSelect.value as '8bit' | '16bit'
+        );
+      }
+    };
+
+    num1In?.addEventListener('input', updateAlu);
+    num2In?.addEventListener('input', updateAlu);
+    opSelect?.addEventListener('change', updateAlu);
+    modeSelect?.addEventListener('change', updateAlu);
+
+    // ALU presets
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-pdf-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p1 = btn.dataset.p1 || 'F5';
+        const p2 = btn.dataset.p2 || '0B';
+        const op = (btn.dataset.op || 'ADD') as 'ADD' | 'SUB';
+        StudyNotesStore.setAluState(p1, p2, op, '8bit');
+      });
+    });
   }
 
   private gradeQuestion(qId: string): void {
@@ -599,50 +915,80 @@ export class StudyNotesView {
 
     // 1. Check Registers
     q.expectedRegisters.forEach(r => {
-      const userVal = this.getUserInput(qId, `reg_${r.name}`).trim();
+      const userVal = StudyNotesStore.getUserInput(qId, `reg_${r.name}`).trim();
       const passed = this.compareValues(userVal, r.expected, r.accepted);
       if (passed) score += pointPerItem;
       fieldFeedback[`reg_${r.name}`] = {
         passed,
-        message: passed ? 'Doğru!' : `Beklenen: ${r.expected}, Girilen: ${userVal || 'Boş'}`
+        message: passed ? 'Doğru' : `Beklenen: ${r.expected}, Girilen: ${userVal || 'Boş'}`
       };
     });
 
     // 2. Check Flags
     q.expectedFlags.forEach(f => {
-      const userVal = this.getUserInput(qId, `flag_${f.name}`).trim();
+      const userVal = StudyNotesStore.getUserInput(qId, `flag_${f.name}`).trim();
       const passed = userVal === f.expected;
       if (passed) score += pointPerItem;
       fieldFeedback[`flag_${f.name}`] = {
         passed,
-        message: passed ? 'Doğru!' : `Beklenen: ${f.expected}, Girilen: ${userVal || 'Seçilmedi'}`
+        message: passed ? 'Doğru' : `Beklenen: ${f.expected}, Girilen: ${userVal || 'Seçilmedi'}`
       };
     });
 
     // 3. Check Memory
     if (q.expectedMemory) {
       q.expectedMemory.forEach(m => {
-        const userVal = this.getUserInput(qId, `mem_${m.address}`).trim();
+        const userVal = StudyNotesStore.getUserInput(qId, `mem_${m.address}`).trim();
         const passed = this.compareValues(userVal, m.expected);
         if (passed) score += pointPerItem;
         fieldFeedback[`mem_${m.address}`] = {
           passed,
-          message: passed ? 'Doğru!' : `Beklenen: ${m.expected}, Girilen: ${userVal || 'Boş'}`
+          message: passed ? 'Doğru' : `Beklenen: ${m.expected}, Girilen: ${userVal || 'Boş'}`
         };
       });
     }
 
-    // Round score to nearest integer
     const finalScore = Math.min(q.points, Math.round(score));
-
-    this.gradedQuestions[qId] = {
+    StudyNotesStore.setGradedQuestion(qId, {
       score: finalScore,
       total: q.points,
       fieldFeedback,
       revealed: true
+    });
+  }
+
+  private gradeTraceTable(): void {
+    const answers: Record<string, string[]> = {
+      r1_ax: ['2', '02', '0002', '2H', '02H'],
+      r1_bx: ['4', '04', '0004', '4H', '04H'],
+      r2_ax: ['6', '06', '0006', '6H', '06H'],
+      r2_bx: ['6', '06', '0006', '6H', '06H'],
+      r3_ax: ['12', '0C', '000C', '0CH', 'CH'],
+      r3_bx: ['8', '08', '0008', '8H', '08H'],
+      r4_ax: ['20', '14', '0014', '14H'],
+      r4_bx: ['10', '0A', '000A', '0AH', 'AH']
     };
 
-    this.render();
+    const feedback: Record<string, boolean> = {};
+    let allPassed = true;
+
+    for (const [key, accepted] of Object.entries(answers)) {
+      const userVal = StudyNotesStore.getTraceInput(key).trim().toUpperCase().replace(/^0X/, '').replace(/H$/, '');
+      const passed = accepted.some(a => a.toUpperCase().replace(/^0X/, '').replace(/H$/, '') === userVal);
+      feedback[key] = passed;
+      if (!passed) allPassed = false;
+    }
+
+    const zfVal = StudyNotesStore.getTraceInput('zf_val').trim();
+    const zfPassed = zfVal === '0';
+    feedback['zf_val'] = zfPassed;
+    if (!zfPassed) allPassed = false;
+
+    StudyNotesStore.setTraceGraded({
+      passed: allPassed,
+      feedback,
+      revealed: true
+    });
   }
 
   private compareValues(input: string, expected: string, acceptedList?: string[]): boolean {
@@ -668,98 +1014,6 @@ export class StudyNotesView {
     }
 
     return false;
-  }
-
-  private attachEvents(): void {
-    // Sub-nav tab switcher
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-sn-subnav').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const sub = btn.dataset.subtab as StudyNotesSubTab;
-        if (sub && sub !== this.activeSubTab) {
-          this.activeSubTab = sub;
-          this.render();
-        }
-      });
-    });
-
-    // Exam category filters
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-exam-filter').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const cat = btn.dataset.cat;
-        if (cat) {
-          this.selectedCategory = cat;
-          this.render();
-        }
-      });
-    });
-
-    // Week pills filter
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-week-pill').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const week = parseInt(btn.dataset.week || '0', 10);
-        this.selectedWeek = week;
-        this.render();
-      });
-    });
-
-    // Exam Text Inputs
-    this.container.querySelectorAll<HTMLInputElement>('.eq-text-in').forEach(input => {
-      input.addEventListener('input', () => {
-        const qId = input.dataset.qId;
-        const field = input.dataset.field;
-        if (qId && field) {
-          this.setUserInput(qId, field, input.value);
-        }
-      });
-    });
-
-    // Exam Flag Toggle Buttons (0 or 1)
-    this.container.querySelectorAll<HTMLElement>('.eq-flag-toggle-wrap').forEach(wrap => {
-      const qId = wrap.dataset.qId;
-      const field = wrap.dataset.field;
-      wrap.querySelectorAll<HTMLButtonElement>('.btn-eq-flag').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const val = btn.dataset.val || '0';
-          if (qId && field) {
-            this.setUserInput(qId, field, val);
-            wrap.querySelectorAll('.btn-eq-flag').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-          }
-        });
-      });
-    });
-
-    // Grade Exam Question Button
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-eq-submit').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const qId = btn.dataset.qId;
-        if (qId) {
-          this.gradeQuestion(qId);
-        }
-      });
-    });
-
-    // Toggle Rubric Breakdown
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-eq-toggle-rubric').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const qId = btn.dataset.qId;
-        if (qId && this.gradedQuestions[qId]) {
-          this.gradedQuestions[qId].revealed = !this.gradedQuestions[qId].revealed;
-          this.render();
-        }
-      });
-    });
-
-    // Try in simulator live
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-eq-run-sim').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const qId = btn.dataset.qId;
-        const q = MIDTERM_EXAM_QUESTIONS.find(item => item.id === qId);
-        if (q && this.callbacks?.onOpenInMainEditor) {
-          this.callbacks.onOpenInMainEditor(`vize-${q.id}.asm`, q.codeSnippet);
-        }
-      });
-    });
   }
 
   private escapeHtml(str: string): string {

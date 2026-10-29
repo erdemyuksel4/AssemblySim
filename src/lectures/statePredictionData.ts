@@ -49,6 +49,52 @@ export interface StatePredictionExercise {
   hocaGradingNotes: string; // Hocanın sınavda dikkat ettiği püf noktası ve puan kırma kriteri
 }
 
+export class PredictionStoreClass {
+  private userInputs: Record<string, Record<string, string>> = {};
+  private gradedResults: Record<string, any> = {};
+
+  constructor() {
+    try {
+      const saved = localStorage.getItem('assemblysim_prediction_store');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        this.userInputs = parsed.userInputs || {};
+        this.gradedResults = parsed.gradedResults || {};
+      }
+    } catch (_) {}
+  }
+
+  private save(): void {
+    try {
+      localStorage.setItem('assemblysim_prediction_store', JSON.stringify({
+        userInputs: this.userInputs,
+        gradedResults: this.gradedResults
+      }));
+    } catch (_) {}
+  }
+
+  getUserInput(exId: string, field: string): string {
+    return this.userInputs[exId]?.[field] || '';
+  }
+
+  setUserInput(exId: string, field: string, val: string): void {
+    if (!this.userInputs[exId]) this.userInputs[exId] = {};
+    this.userInputs[exId][field] = val;
+    this.save();
+  }
+
+  getGradedResult(exId: string): any {
+    return this.gradedResults[exId];
+  }
+
+  setGradedResult(exId: string, res: any): void {
+    this.gradedResults[exId] = res;
+    this.save();
+  }
+}
+
+export const PredictionStore = new PredictionStoreClass();
+
 export const MILESTONE_STATE_PREDICTIONS: Record<string, StatePredictionExercise[]> = {
   // =========================================================================
   // AŞAMA 1: CPU Mimarisi, 20-Bit Adresleme, Little-Endian & Bayrak Temelleri
