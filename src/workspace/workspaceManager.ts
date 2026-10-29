@@ -166,7 +166,7 @@ export class WorkspaceManager {
     code: string;
     challengeId?: string;
     milestoneId?: string;
-    referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes' | 'ossandbox';
+    referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes';
   }): WorkspaceDocument {
     const docId = docInput.id || (
       docInput.referenceTab ? `ref-${docInput.referenceTab}` :

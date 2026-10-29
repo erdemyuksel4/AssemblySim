@@ -220,8 +220,7 @@ export class PaneSession {
       onOpenInMainEditor: (title: string, code: string) => {
         this.callbacks.onOpenInMainEditor(title, code);
       },
-      getCurrentEditorCode: () => this.editor.getCode(),
-      getWorkspace: () => this.callbacks.getWorkspace ? this.callbacks.getWorkspace() : undefined
+      getCurrentEditorCode: () => this.editor.getCode()
     });
 
     this.lectureDocView = new LectureDocumentView(elements.lectureDocMount, {
@@ -629,8 +628,7 @@ export class PaneSession {
           lectures: { icon: '🎓', title: 'Dersler & Teori Kataloğu' },
           leetcode: { icon: '⚡', title: '8086 LeetCode Arenası' },
           roadmap: { icon: '🗺️', title: 'Müfredat Yol Haritası' },
-          studynotes: { icon: '📝', title: 'Çalışma Notları & Vize Hazırlık' },
-          ossandbox: { icon: '💻', title: 'OS Sandbox' }
+          studynotes: { icon: '📝', title: 'Çalışma Notları & Vize Hazırlık' }
         };
         const info = tabTitles[doc.referenceTab] || { icon: '📚', title: 'Öğrenme Merkezi' };
         if (secHeaderIcon) secHeaderIcon.textContent = info.icon;

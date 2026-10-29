@@ -19,7 +19,7 @@ export interface SidebarCallbacks {
   onDocumentSelect: (doc: WorkspaceDocument) => void;
   onNewDocument: () => void;
   onOpenCpuModal: () => void;
-  onOpenLearningDoc?: (tab: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes' | 'ossandbox') => void;
+  onOpenLearningDoc?: (tab: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes') => void;
   onDocumentClosed?: (docId: string) => void;
   onSelectPane?: (pane: 'primary' | 'secondary') => void;
   onCloseSplit?: () => void;
@@ -194,12 +194,6 @@ export class WorkspaceSidebar {
           <span>Öğrenme & Referans</span>
         </div>
         <div class="sidebar-learning-list">
-          <div class="sidebar-learning-row os-lab-row" draggable="true" data-nav="ossandbox" title="💻 OS Sandbox (Kendi İşletim Sistemini Yaz)">
-            <button class="sidebar-learning-btn ${docs.some(d => openDocIds.includes(d.id) && d.type === 'reference' && d.referenceTab === 'ossandbox') ? 'active' : ''}" data-nav="ossandbox">
-              <span class="learning-btn-icon">💻</span>
-              <span class="learning-btn-text">OS Sandbox</span>
-            </button>
-          </div>
           <div class="sidebar-learning-row" draggable="true" data-nav="manual" title="📖 Manuel (Sürükleyip istediğiniz panele bırakabilirsiniz)">
             <button class="sidebar-learning-btn ${docs.some(d => openDocIds.includes(d.id) && d.type === 'reference' && d.referenceTab === 'manual') ? 'active' : ''}" data-nav="manual">
               <span class="learning-btn-icon">📖</span>
@@ -344,7 +338,6 @@ export class WorkspaceSidebar {
     if (doc.type === 'lecture') return '🎓';
     if (doc.type === 'example') return '💡';
     if (doc.type === 'reference') {
-      if (doc.referenceTab === 'ossandbox') return '💻';
       if (doc.referenceTab === 'manual') return '📖';
       if (doc.referenceTab === 'lectures') return '🎓';
       if (doc.referenceTab === 'leetcode') return '⚡';
@@ -395,7 +388,7 @@ export class WorkspaceSidebar {
     this.container.querySelectorAll<HTMLButtonElement>('.sidebar-learning-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const nav = btn.dataset.nav as 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes' | 'ossandbox';
+        const nav = btn.dataset.nav as 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes';
         if (nav && this.callbacks.onOpenLearningDoc) {
           this.callbacks.onOpenLearningDoc(nav);
         }
@@ -414,15 +407,20 @@ export class WorkspaceSidebar {
       });
     });
 
-    // OS Project Open Sandbox Button
+    // OS Project Open / Focus Button
     this.container.querySelectorAll<HTMLButtonElement>('.btn-os-open-sandbox').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const projId = btn.dataset.projId;
-        if (this.callbacks.onOpenOSSandbox) {
-          this.callbacks.onOpenOSSandbox(projId);
-        } else if (this.callbacks.onOpenLearningDoc) {
-          this.callbacks.onOpenLearningDoc('ossandbox');
+        if (projId) {
+          const proj = this.workspace.getOSProject(projId);
+          if (proj && proj.fileDocIds.length > 0) {
+            const firstDoc = this.workspace.getDocument(proj.fileDocIds[0]);
+            if (firstDoc) {
+              this.callbacks.onDocumentSelect(firstDoc);
+              this.render();
+            }
+          }
         }
       });
     });
@@ -561,10 +559,11 @@ export class WorkspaceSidebar {
     const name = prompt('Yeni İşletim Sistemi Projesinin Adı:', 'ErdemOS');
     if (name && name.trim()) {
       const proj = this.workspace.createOSProject(name.trim());
-      if (this.callbacks.onOpenOSSandbox) {
-        this.callbacks.onOpenOSSandbox(proj.id);
-      } else if (this.callbacks.onOpenLearningDoc) {
-        this.callbacks.onOpenLearningDoc('ossandbox');
+      if (proj && proj.fileDocIds.length > 0) {
+        const firstDoc = this.workspace.getDocument(proj.fileDocIds[0]);
+        if (firstDoc) {
+          this.callbacks.onDocumentSelect(firstDoc);
+        }
       }
       this.render();
     }
@@ -719,10 +718,15 @@ export class WorkspaceSidebar {
       }
       case 'open-sandbox': {
         const projId = item.dataset.projId;
-        if (this.callbacks.onOpenOSSandbox) {
-          this.callbacks.onOpenOSSandbox(projId);
-        } else if (this.callbacks.onOpenLearningDoc) {
-          this.callbacks.onOpenLearningDoc('ossandbox');
+        if (projId) {
+          const proj = this.workspace.getOSProject(projId);
+          if (proj && proj.fileDocIds.length > 0) {
+            const firstDoc = this.workspace.getDocument(proj.fileDocIds[0]);
+            if (firstDoc) {
+              this.callbacks.onDocumentSelect(firstDoc);
+              this.render();
+            }
+          }
         }
         break;
       }

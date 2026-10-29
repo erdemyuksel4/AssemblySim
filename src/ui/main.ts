@@ -434,13 +434,6 @@ export class App {
           this.openLearningDocInPane('primary', tab);
           this.setActivePane('primary');
         },
-        onOpenOSSandbox: (projectId) => {
-          if (this.isSplitMode) {
-            this.toggleSplitView(false, undefined, false);
-          }
-          this.openLearningDocInPane('primary', 'ossandbox');
-          this.setActivePane('primary');
-        },
         onDocumentClosed: (docId) => {
           this.handleDocumentClosed(docId);
         },
@@ -663,8 +656,7 @@ export class App {
       lectures: '🎓 Dersler & Teori',
       leetcode: '⚡ LeetCode Arenası',
       roadmap: '🗺️ Yol Haritası',
-      studynotes: '📝 Çalışma Notları',
-      ossandbox: '💻 OS Sandbox'
+      studynotes: '📝 Çalışma Notları'
     };
 
     const newDoc = this.workspace.openDocument({
@@ -714,8 +706,7 @@ export class App {
         lectures: '🎓 Dersler & Teori',
         leetcode: '⚡ LeetCode Arenası',
         roadmap: '🗺️ Yol Haritası',
-        studynotes: '📝 Çalışma Notları',
-        ossandbox: '💻 OS Sandbox'
+        studynotes: '📝 Çalışma Notları'
       };
       doc.title = titles[tab] || doc.title;
       this.sidebar.render();

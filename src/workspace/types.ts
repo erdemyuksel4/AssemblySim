@@ -20,7 +20,7 @@ export interface WorkspaceDocument {
   cpuInstanceId: string;
   challengeId?: string;
   milestoneId?: string;
-  referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes' | 'ossandbox';
+  referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes';
   osProjectId?: string;
   osRole?: OSFileRole;
   createdAt: number;

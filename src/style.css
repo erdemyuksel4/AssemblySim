@@ -1524,6 +1524,143 @@ body {
   background: #0f172a;
 }
 
+.monitor-console-wrapper {
+  height: 260px;
+}
+
+.monitor-tab-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+}
+
+.btn-mon-tab {
+  background: #334155;
+  border: 1px solid #475569;
+  color: #94a3b8;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-mon-tab:hover {
+  background: #475569;
+  color: #f8fafc;
+}
+
+.btn-mon-tab.active {
+  background: #4f46e5;
+  color: #ffffff;
+  border-color: #6366f1;
+}
+
+.crt-mini-palettes {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-right: 8px;
+}
+
+.btn-mini-pal {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-mini-pal:hover {
+  background: #334155;
+  color: #ffffff;
+}
+
+.btn-mini-pal.active {
+  background: #38bdf8;
+  color: #0f172a;
+  border-color: #7dd3fc;
+}
+
+/* CRT Screen Wrapper */
+.crt-screen-wrapper {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  background: #050505;
+  padding: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.crt-screen-wrapper.active {
+  display: flex;
+  flex-direction: column;
+}
+
+.crt-screen-box {
+  flex: 1;
+  min-height: 0;
+  background: #020617;
+  border: 2px solid #1e293b;
+  border-radius: 6px;
+  padding: 10px 14px;
+  overflow-y: auto;
+  position: relative;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  outline: none;
+  cursor: text;
+  box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.9);
+}
+
+.crt-screen-box:focus {
+  border-color: #6366f1;
+}
+
+.crt-screen-box.vga {
+  color: #f1f5f9;
+  text-shadow: 0 0 2px rgba(241, 245, 249, 0.4);
+}
+
+.crt-screen-box.green {
+  color: #22c55e;
+  text-shadow: 0 0 4px #22c55e;
+}
+
+.crt-screen-box.amber {
+  color: #f59e0b;
+  text-shadow: 0 0 4px #f59e0b;
+}
+
+.crt-idle-screen {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.crt-banner-line {
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: inherit;
+}
+
+.crt-subtext {
+  font-size: 11px;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+.crt-prompt-line {
+  margin-top: 6px;
+}
+
 .console-header {
   display: flex;
   align-items: center;
@@ -1645,6 +1782,7 @@ body {
 }
 
 .console-body {
+  display: none;
   flex: 1;
   padding: 8px 12px;
   overflow-y: auto;
@@ -1652,9 +1790,12 @@ body {
   font-size: 12px;
   line-height: 1.5;
   color: #e2e8f0;
-  display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.console-body.active {
+  display: flex;
 }
 
 .console-line {
