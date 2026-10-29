@@ -58,12 +58,15 @@ export class OperandParser {
     let sizeOverride: OperandSize | undefined;
     let segOverride: 'CS' | 'DS' | 'ES' | 'SS' | undefined;
 
-    // Check for size directive: BYTE PTR or WORD PTR
+    // Check for size directive: BYTE PTR or WORD PTR (or NASM style BYTE / WORD)
     const firstWord = tokens[0].text.toUpperCase();
     if (firstWord === 'BYTE' || firstWord === 'WORD') {
       if (tokens.length > 1 && tokens[1].text.toUpperCase() === 'PTR') {
         sizeOverride = firstWord as OperandSize;
         tokenIdx = 2;
+      } else if (tokens.length > 1 && (tokens[1].type === 'LBRACKET' || (tokens[1].text.toUpperCase() in SEG_NAMES))) {
+        sizeOverride = firstWord as OperandSize;
+        tokenIdx = 1;
       }
     }
 
@@ -145,9 +148,18 @@ export class OperandParser {
       throw new Error('Memory operand must be enclosed in brackets [...]');
     }
 
-    const inner = tokens.slice(1, -1);
+    let inner = tokens.slice(1, -1);
     if (inner.length === 0) {
       throw new Error('Empty memory brackets []');
+    }
+
+    // Check if segment override was written inside brackets: e.g. [ES:0050h]
+    if (inner.length >= 2 && inner[1].type === 'COLON') {
+      const segName = inner[0].text.toUpperCase();
+      if (segName in SEG_NAMES) {
+        segOverride = segName as any;
+        inner = inner.slice(2);
+      }
     }
 
     let baseReg: 'BX' | 'BP' | undefined;

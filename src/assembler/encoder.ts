@@ -63,6 +63,8 @@ export class Encoder {
     switch (mnemonic) {
       case 'NOP': return { bytes: [0x90], length: 1 };
       case 'HLT': return { bytes: [0xF4], length: 1 };
+      case 'PUSHA': return { bytes: [0x60], length: 1 };
+      case 'POPA': return { bytes: [0x61], length: 1 };
       case 'PUSHF': return { bytes: [0x9C], length: 1 };
       case 'POPF': return { bytes: [0x9D], length: 1 };
       case 'MOVSB': return { bytes: [0xA4], length: 1 };

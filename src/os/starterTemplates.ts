@@ -225,7 +225,6 @@ MSG_NEWLINE:
     DB 13, 10, 0
 
 ; 512 Bayt Bootloader İmzası
-TIMES 510-($-$$) DB 0
 DW 0AA55h
 `;
 
@@ -277,7 +276,6 @@ KERNEL_ENTRY:
     HLT
 
 ; 512 Bayt MBR Dolgusu ve İmzası
-TIMES 510-($-$$) DB 0
 DW 0AA55h
 `;
 
@@ -534,5 +532,32 @@ HELP_TEXT:
     DB "  help - Bu yardim mesajini gosterir", 13, 10
     DB "  cls  - CRT ekranini temizler", 13, 10, 0
 
-SHELL_INPUT_BUFFER: TIMES 64 DB 0
+SHELL_INPUT_BUFFER: DB 64 DUP(0)
+
+; --- HARİCİ SÜRÜCÜ BAĞLANTILARI (screen.asm ve keyboard.asm ile entegre) ---
+SCREEN_PUTS:
+    PUSHA
+.loop:
+    LODSB
+    OR AL, AL
+    JZ .done
+    MOV AH, 0Eh
+    INT 10h
+    JMP .loop
+.done:
+    POPA
+    RET
+
+SCREEN_CLEAR:
+    MOV AH, 00h
+    MOV AL, 03h
+    INT 10h
+    RET
+
+KEYBOARD_READ_LINE:
+    MOV AH, 00h
+    INT 16h
+    MOV BYTE PTR [DI], AL
+    MOV BYTE PTR [DI+1], 0
+    RET
 `;

@@ -1218,6 +1218,32 @@ export class Executor {
       case 0x1E: this.push(this.regs.ds); break;
       case 0x1F: this.regs.ds = this.pop(); break;
 
+      // PUSHA (0x60): AX, CX, DX, BX, original SP, BP, SI, DI
+      case 0x60: {
+        const oldSp = this.regs.sp;
+        this.push(this.regs.ax);
+        this.push(this.regs.cx);
+        this.push(this.regs.dx);
+        this.push(this.regs.bx);
+        this.push(oldSp);
+        this.push(this.regs.bp);
+        this.push(this.regs.si);
+        this.push(this.regs.di);
+        break;
+      }
+      // POPA (0x61): DI, SI, BP, skip SP, BX, DX, CX, AX
+      case 0x61: {
+        this.regs.di = this.pop();
+        this.regs.si = this.pop();
+        this.regs.bp = this.pop();
+        this.pop(); // discard original SP
+        this.regs.bx = this.pop();
+        this.regs.dx = this.pop();
+        this.regs.cx = this.pop();
+        this.regs.ax = this.pop();
+        break;
+      }
+
       // PUSHF / POPF
       case 0x9C: this.push(this.flags.toWord()); break;
       case 0x9D: this.flags.fromWord(this.pop()); break;
