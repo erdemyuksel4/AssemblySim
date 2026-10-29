@@ -2,6 +2,8 @@ import { MILESTONE_LECTURES, MilestoneLecture, LectureSection } from './lectureD
 import { InteractiveExampleWidget } from './interactiveExampleWidget.js';
 import { CHALLENGES } from '../challenges/challengesData.js';
 import { LectureStorage } from './lectureStorage.js';
+import { MILESTONE_STATE_PREDICTIONS } from './statePredictionData.js';
+import { StatePredictionWidget } from './statePredictionWidget.js';
 
 export interface LectureDocCallbacks {
   onOpenInMainEditor: (title: string, code: string) => void;
@@ -81,6 +83,17 @@ export class LectureDocumentView {
       });
     });
 
+    // State Prediction Step (if exercises exist for this milestone)
+    const preds = MILESTONE_STATE_PREDICTIONS[this.currentMilestoneId];
+    if (preds && preds.length > 0) {
+      this.stepList.push({
+        id: 'prediction',
+        tabLabel: 'Durum Tahmini',
+        fullTitle: `Aşama ${lecture.milestoneNumber}: Koda Bakarak Durum Tahmini (Register / Flag / Memory)`,
+        badge: '🧠'
+      });
+    }
+
     // Final Step: Capstone or Hardware Wrap-up
     const capstone = Object.values(CHALLENGES).find(ch => ch.milestoneId === this.currentMilestoneId && ch.isCapstone);
     if (this.currentMilestoneId === 'milestone-1') {
@@ -140,6 +153,7 @@ export class LectureDocumentView {
     const nextKey = currIdx < keys.length - 1 ? keys[currIdx + 1] : null;
     const nextMilestoneNumber = nextKey ? (MILESTONE_LECTURES[nextKey]?.milestoneNumber || currIdx + 2) : null;
     const capstone = Object.values(CHALLENGES).find(ch => ch.milestoneId === this.currentMilestoneId && ch.isCapstone);
+    const preds = MILESTONE_STATE_PREDICTIONS[this.currentMilestoneId];
 
     const currentStepIdx = this.stepList.findIndex(s => s.id === this.currentStepId);
     const completedSteps = LectureStorage.getCompletedSteps(this.currentMilestoneId);
@@ -271,6 +285,27 @@ export class LectureDocumentView {
             `;
           }).join('')}
 
+          <!-- Pane: State Prediction (Register, Flag, Memory Analysis) -->
+          ${preds && preds.length > 0 ? `
+            <div class="lecture-step-pane" data-pane-id="prediction" style="display: ${this.currentStepId === 'prediction' ? 'block' : 'none'};">
+              <div id="state-prediction-mount-${this.currentMilestoneId}" class="state-prediction-mount"></div>
+
+              <div class="module-nav-footer">
+                <button class="btn-step-nav-action prev" data-target-step="sec-${lecture.sections.length - 1}">
+                  ⬅️ Önceki: Son Modül (${lecture.sections.length}. Modül)
+                </button>
+
+                <button class="btn-step-toggle-complete ${completedSteps.includes('prediction') ? 'is-completed' : ''}" data-step-id="prediction">
+                  ${completedSteps.includes('prediction') ? '✓ Durum Tahmini Tamamlandı' : '⭕ Tamamlandı Olarak İşaretle'}
+                </button>
+
+                <button class="btn-step-nav-action next primary" data-target-step="capstone">
+                  Sonraki: Aşama Sınavı 🏆 ➡️
+                </button>
+              </div>
+            </div>
+          ` : ''}
+
           <!-- Final Pane: Capstone Challenge / Hardware Wrap-up -->
           <div class="lecture-step-pane" data-pane-id="capstone" style="display: ${this.currentStepId === 'capstone' ? 'block' : 'none'};">
             <div class="lecture-capstone-container">
@@ -326,8 +361,8 @@ export class LectureDocumentView {
 
             <!-- Capstone Navigation Footer -->
             <div class="module-nav-footer">
-              <button class="btn-step-nav-action prev" data-target-step="sec-${lecture.sections.length - 1}">
-                ⬅️ Son Modüle Dön (${lecture.sections.length}. Modül)
+              <button class="btn-step-nav-action prev" data-target-step="${preds && preds.length > 0 ? 'prediction' : `sec-${lecture.sections.length - 1}`}">
+                ⬅️ Önceki: ${preds && preds.length > 0 ? 'Durum Tahmini 🧠' : `Son Modül (${lecture.sections.length}. Modül)`}
               </button>
 
               <button class="btn-step-toggle-complete ${completedSteps.includes('capstone') ? 'is-completed' : ''}" data-step-id="capstone">
@@ -395,6 +430,14 @@ export class LectureDocumentView {
         }
       }
     });
+
+    // Mount State Prediction Widget if present
+    const predMount = this.container.querySelector(`#state-prediction-mount-${this.currentMilestoneId}`) as HTMLElement;
+    if (predMount) {
+      new StatePredictionWidget(predMount, this.currentMilestoneId, {
+        onOpenInMainEditor: (title, code) => this.callbacks.onOpenInMainEditor(title, code)
+      });
+    }
 
     this.attachEvents(prevKey, nextKey);
     this.attachInteractiveDemos();

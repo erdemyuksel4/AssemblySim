@@ -16,14 +16,16 @@ import {
 import { LeetCodeView, LeetCodeCallbacks } from '../challenges/leetcodeView.js';
 import { RoadmapCurriculumView } from '../challenges/roadmapCurriculumView.js';
 import { Challenge } from '../challenges/types.js';
+import { StudyNotesView } from './studyNotesView.js';
 
-export type ManualTab = 'manual' | 'lectures' | 'leetcode' | 'roadmap';
+export type ManualTab = 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes';
 export type LectureSubTab = 'addressing' | 'architecture' | 'flags' | 'dma_io' | 'interrupts' | 'pipelining' | 'glossary';
 
 export interface InstructionDocCallbacks extends LeetCodeCallbacks {
   onOpenLectureDocument?: (milestoneId: string) => void;
   onReturnToEditor?: () => void;
   onTabChange?: (tab: ManualTab) => void;
+  onOpenInMainEditor?: (title: string, code: string) => void;
 }
 
 export class InstructionDoc {
@@ -36,6 +38,7 @@ export class InstructionDoc {
   private selectedOpcode: string = 'MOV';
   private leetcodeView?: LeetCodeView;
   private roadmapCurriculumView?: RoadmapCurriculumView;
+  private studyNotesView?: StudyNotesView;
   private callbacks?: InstructionDocCallbacks;
 
   constructor(container: HTMLElement, callbacks?: InstructionDocCallbacks) {
@@ -80,6 +83,9 @@ export class InstructionDoc {
             </button>
             <button class="docs-main-tab" data-tab="roadmap">
               🗺️ 4. Yol Haritası
+            </button>
+            <button class="docs-main-tab" data-tab="studynotes">
+              📝 5. Çalışma Notları & Vize Hazırlık
             </button>
           </div>
         </div>
@@ -199,6 +205,11 @@ export class InstructionDoc {
           <div class="docs-tab-pane" id="pane-roadmap">
             <div id="docs-roadmap-container"></div>
           </div>
+
+          <!-- TAB 5: 📝 5. Çalışma Notları & Vize Hazırlık -->
+          <div class="docs-tab-pane" id="pane-studynotes">
+            <div id="docs-studynotes-container"></div>
+          </div>
         </div>
       </div>
     `;
@@ -215,6 +226,25 @@ export class InstructionDoc {
     this.renderGlossary();
     this.renderLeetCode();
     this.renderRoadmap();
+    this.renderStudyNotes();
+  }
+
+  private renderStudyNotes(): void {
+    const container = this.container.querySelector('#docs-studynotes-container') as HTMLElement;
+    if (container) {
+      this.studyNotesView = new StudyNotesView(container, {
+        onOpenInMainEditor: (title, code) => {
+          if (this.callbacks?.onOpenInMainEditor) {
+            this.callbacks.onOpenInMainEditor(title, code);
+          }
+        },
+        onNavigateToLecture: (milestoneId) => {
+          if (this.callbacks?.onOpenLectureDocument) {
+            this.callbacks.onOpenLectureDocument(milestoneId);
+          }
+        }
+      });
+    }
   }
 
   private renderLeetCode(): void {
@@ -277,6 +307,12 @@ export class InstructionDoc {
         if (title) title.textContent = '8086 Assembly Tam Müfredat Yol Haritası';
         if (desc) desc.textContent = 'Aşama aşama komut dağılımı, mimari hedefler ve öğrenme sırası.';
         if (bc) bc.textContent = '🗺️ 4. Yol Haritası';
+        break;
+      case 'studynotes':
+        if (pill) pill.textContent = 'DERS ÇALIŞMA NOTLARI & VİZE HAZIRLIK';
+        if (title) title.textContent = 'Ders Çalışma Notları, Bayrak Rehberi & Vize Sınavı Soruları';
+        if (desc) desc.textContent = 'Doç. Dr. Mehmet Akif Çifci slaytları, laboratuvar kodları, tahta notları ve geçmiş yıl sınav sorularından derlenen eksiksiz çalışma merkezi.';
+        if (bc) bc.textContent = '📝 5. Çalışma Notları & Vize Hazırlık';
         break;
     }
   }

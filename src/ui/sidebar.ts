@@ -19,7 +19,7 @@ export interface SidebarCallbacks {
   onDocumentSelect: (doc: WorkspaceDocument) => void;
   onNewDocument: () => void;
   onOpenCpuModal: () => void;
-  onOpenLearningDoc?: (tab: 'manual' | 'lectures' | 'leetcode' | 'roadmap') => void;
+  onOpenLearningDoc?: (tab: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes') => void;
   onDocumentClosed?: (docId: string) => void;
   onSelectPane?: (pane: 'primary' | 'secondary') => void;
   onCloseSplit?: () => void;
@@ -190,6 +190,12 @@ export class WorkspaceSidebar {
               <span class="learning-btn-text">Yol Haritası</span>
             </button>
           </div>
+          <div class="sidebar-learning-row" draggable="true" data-nav="studynotes" title="📝 Çalışma Notları (Sürükleyip istediğiniz panele bırakabilirsiniz)">
+            <button class="sidebar-learning-btn ${docs.some(d => openDocIds.includes(d.id) && d.type === 'reference' && d.referenceTab === 'studynotes') ? 'active' : ''}" data-nav="studynotes">
+              <span class="learning-btn-icon">📝</span>
+              <span class="learning-btn-text">Çalışma Notları</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -234,7 +240,7 @@ export class WorkspaceSidebar {
     this.container.querySelectorAll<HTMLButtonElement>('.sidebar-learning-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const nav = btn.dataset.nav as 'manual' | 'lectures' | 'leetcode' | 'roadmap';
+        const nav = btn.dataset.nav as 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes';
         if (nav && this.callbacks.onOpenLearningDoc) {
           this.callbacks.onOpenLearningDoc(nav);
         }
@@ -392,6 +398,7 @@ export class WorkspaceSidebar {
       if (doc.referenceTab === 'lectures') return '🎓';
       if (doc.referenceTab === 'leetcode') return '⚡';
       if (doc.referenceTab === 'roadmap') return '🗺️';
+      if (doc.referenceTab === 'studynotes') return '📝';
       return '📚';
     }
     return '📄';

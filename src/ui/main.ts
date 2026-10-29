@@ -254,6 +254,7 @@ export class App {
                 <button class="btn-sec-nav" data-sec-nav="lectures" title="Dersler & Teori Kataloğu">🎓 Dersler</button>
                 <button class="btn-sec-nav" data-sec-nav="leetcode" title="8086 LeetCode Arenası">⚡ LeetCode</button>
                 <button class="btn-sec-nav" data-sec-nav="roadmap" title="Müfredat Yol Haritası">🗺️ Yol Haritası</button>
+                <button class="btn-sec-nav" data-sec-nav="studynotes" title="Ders Çalışma Notları & Vize Hazırlık">📝 Çalışma Notları</button>
               </div>
               <div class="secondary-pane-actions">
                 <button id="btn-secondary-close" class="btn-pane-action btn-close-pane" title="Bölünmüş Ekranı Kapat (Tek Ekrana Dön)">✕</button>
@@ -450,6 +451,18 @@ export class App {
       onTabChange: (tab) => {
         this.syncReferenceDocTab('primary', tab);
       },
+      onOpenInMainEditor: (title: string, code: string) => {
+        if (this.isSplitMode) this.toggleSplitView(false);
+        const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const newDoc = this.workspace.openDocument({
+          title: `ornek-${cleanTitle}.asm`,
+          type: 'custom',
+          code
+        });
+        this.openDocumentInPane('primary', newDoc);
+        this.setActivePane('primary');
+        this.sidebar.render();
+      },
       getCurrentEditorCode: () => this.editor.getCode()
     });
 
@@ -600,6 +613,17 @@ export class App {
       },
       onTabChange: (tab) => {
         this.syncReferenceDocTab('secondary', tab);
+      },
+      onOpenInMainEditor: (title: string, code: string) => {
+        const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const newDoc = this.workspace.openDocument({
+          title: `ornek-${cleanTitle}.asm`,
+          type: 'custom',
+          code
+        });
+        this.openDocumentInPane('primary', newDoc);
+        this.setActivePane('primary');
+        this.sidebar.render();
       },
       getCurrentEditorCode: () => this.secEditor.getCode()
     });
@@ -1002,7 +1026,8 @@ export class App {
           manual: { icon: '📖', title: '8086 Komut Manueli' },
           lectures: { icon: '🎓', title: 'Dersler & Teori Kataloğu' },
           leetcode: { icon: '⚡', title: '8086 LeetCode Arenası' },
-          roadmap: { icon: '🗺️', title: 'Müfredat Yol Haritası' }
+          roadmap: { icon: '🗺️', title: 'Müfredat Yol Haritası' },
+          studynotes: { icon: '📝', title: 'Çalışma Notları & Vize Hazırlık' }
         };
         const info = tabTitles[doc.referenceTab] || { icon: '📚', title: 'Öğrenme Merkezi' };
         if (secHeaderIcon) secHeaderIcon.textContent = info.icon;
@@ -1087,7 +1112,8 @@ export class App {
       manual: '📖 Komut Manueli',
       lectures: '🎓 Dersler & Teori',
       leetcode: '⚡ LeetCode Arenası',
-      roadmap: '🗺️ Yol Haritası'
+      roadmap: '🗺️ Yol Haritası',
+      studynotes: '📝 Çalışma Notları'
     };
 
     const newDoc = this.workspace.openDocument({
@@ -1136,7 +1162,8 @@ export class App {
         manual: '📖 Komut Manueli',
         lectures: '🎓 Dersler & Teori',
         leetcode: '⚡ LeetCode Arenası',
-        roadmap: '🗺️ Yol Haritası'
+        roadmap: '🗺️ Yol Haritası',
+        studynotes: '📝 Çalışma Notları'
       };
       doc.title = titles[tab] || doc.title;
       this.sidebar.render();

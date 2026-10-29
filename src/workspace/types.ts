@@ -8,7 +8,7 @@ export interface WorkspaceDocument {
   cpuInstanceId: string;
   challengeId?: string;
   milestoneId?: string;
-  referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap';
+  referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes';
   createdAt: number;
   lastModified: number;
   scrollTop?: number;
