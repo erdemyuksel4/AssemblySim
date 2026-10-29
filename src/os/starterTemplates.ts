@@ -1,7 +1,9 @@
 /**
  * starterTemplates.ts
  * 
- * OS Sandbox için zengin mimari rehberi ve modül başlangıç şablonları.
+ * OS Sandbox mimari rehberi ve modül başlangıç şablonları.
+ * Her modül için Giriş, Çıkış, İstenen Mantık ve Test adımlarını içeren
+ * yapılandırılmış görev tanımları barındırır.
  */
 
 export const OS_GUIDE_TEMPLATE = `; ==============================================================================
@@ -11,33 +13,68 @@ export const OS_GUIDE_TEMPLATE = `; ============================================
 ; arkasındaki donanımsal mantığı, bellek haritasını ve kod yapısını öğretir.
 ;
 ; İÇİNDEKİLER:
-; 1. BİLGİSAYAR AÇILDIĞINDA NE OLUR? (BOOT SIRASI & DONANIM)
+; 1. BİLGİSAYARIN KRONOLOJİK ÇALIŞMA SIRASI (GÜÇ DÜĞMESİNDEN SHELL'E KADAR)
 ; 2. BELLEK HARİTASI (NEDEN 7C00H? NEDEN 0700H? BAŞKA SAYI SEÇİLEMEZ Mİ?)
 ; 3. YAZMAÇLAR (REGISTERS) VE GÖREVLERİ
-; 4. KESMELER (INTERRUPTS) VE IVT TABLOSU
-; 5. MODÜL MİMARİSİ VE ADIM ADIM İŞLETİM SİSTEMİ YAPIMI
-; 6. ÇALIŞAN TAM REFERANS KODU
+; 4. KESMELER (INTERRUPTS) VE EKRAN / KLAVYE
+; 5. 5 AŞAMALI GÖREV DAĞILIMI (HANGİ MODÜL NE YAPACAK?)
+; 6. ÇALIŞAN TAM REFERANS İŞLETİM SİSTEMİ (MİNİ ÖRNEK)
 ; ==============================================================================
 
 ; ------------------------------------------------------------------------------
-; BÖLÜM 1: BİLGİSAYAR AÇILDIĞINDA DONANIMDA NE OLUR?
+; BÖLÜM 1: BİLGİSAYARIN KRONOLOJİK ÇALIŞMA SIRASI (GÜÇTEN KULLANICIYA)
 ; ------------------------------------------------------------------------------
-; 1. Güç Düğmesi: Anakart CPU'ya RESET sinyali gönderir.
-; 2. Reset Vektörü: 8086 CPU mimarisi donanımsal olarak CS=0FFFFh, IP=0000h ile
-;    uyanır. Fiziksel adres: (0FFFFh * 16) + 0000h = 0FFFF0h. Burası anakarttaki
-;    ROM BIOS çipinin başlangıcıdır.
-; 3. POST (Power-On Self Test): BIOS RAM'i, ekranı, klavyeyi ve sürücüleri test eder.
-; 4. MBR Taraması: BIOS sabit disk veya disketin ilk sektörünü (512 bayt) okur.
-;    Eğer son iki bayt 55h ve AAh (Boot İmzası) ise bu geçerli bir Bootloader'dır.
-; 5. RAM'e Yükleme: BIOS bu 512 baytı RAM'in 0000:7C00h adresine kopyalar ve
-;    işlemciyi 'JMP 0000:7C00h' ile oraya yönlendirir.
-;    ARTIK TÜM DONANIM VE İŞLEMCİ KONTROLÜ SİZİN KODUNUZDADIR!
+; Bir x86 bilgisayarın güç düğmesine basıldığında işletim sistemi kabuğuna
+; (Shell) ulaşana kadar donanımda şu 10 adım gerçekleşir:
+;
+; [0. MİKROSANİYE] GÜÇ DÜĞMESİ & RESET SİNYALİ:
+;   Anakart güç kaynağı (PSU) voltajların oturduğunu bildiren "Power Good"
+;   sinyali üretir ve 8086 işlemcisine bir RESET voltajı gönderir.
+;
+; [1. ADIM] CPU İLK UYANMA (RESET VEKTÖRÜ):
+;   8086 işlemcisi fabrikasyon donanım kuralı gereği CS=FFFFh, IP=0000h ile uyanır.
+;   Fiziksel Adres: (FFFFh * 16) + 0000h = 0xFFFF0.
+;   Burası anakarttaki ROM BIOS çipidir. Burada "JMP FAR F000:E05Bh" emri vardır.
+;
+; [2. ADIM] POST (POWER-ON SELF TEST):
+;   BIOS donanımı test eder: RAM hücrelerini sayar, ekran kartını ve klavye
+;   kontrolcüsünü (Intel 8042) başlatır.
+;
+; [3. ADIM] IVT VE BDA KURULUMU:
+;   BIOS, RAM'in en altındaki Kesme Vektör Tablosunu (IVT: 0x00000 - 0x003FF) ve
+;   BIOS Veri Alanını (BDA: 0x00400 - 0x004FF) hazır eder.
+;
+; [4. ADIM] MBR DİSK TARAMASI (INT 19h BOOTSTRAP):
+;   BIOS sabit diskin/disketin 0. sektörünü (ilk 512 bayt) okur.
+;   Son 2 baytın 0xAA55 (Boot İmzası) olup olmadığını denetler.
+;
+; [5. ADIM] RAM'E YÜKLEME VE JUMP:
+;   BIOS bu 512 baytı RAM'in 0000:7C00h adresine yazar ve "JMP 0000:7C00h" yapar.
+;   ARTIŞ TÜM DONANIM KONTROLÜ SİZİN KODUNUZDADIR!
+;
+; [6. ADIM -> boot.asm (GÖREV 1)]:
+;   Bootloader kodunuz çalışır: CLI ile kesmeleri susturur, DS=0, SS=0 segmentlerini
+;   sıfırlar, Yığını (SP=7C00h) kurar, Kernel'ı RAM'e (1000h) yükler ve oraya zıplar.
+;
+; [7. ADIM -> kernel.asm (GÖREV 2)]:
+;   Çekirdek RAM'de uyanır; ekran modunu 03h (80x25 renkli CRT) yapar, karşılama
+;   başlığını basar ve sistem alt servislerini hazırlar.
+;
+; [8. ADIM -> screen.asm (GÖREV 3)]:
+;   Ekran sürücüsü VRAM (0B800h) ve INT 10h ile karakter/string basma fonksiyonlarını
+;   çekirdeğin ve kabuğun emrine sunar.
+;
+; [9. ADIM -> keyboard.asm (GÖREV 4)]:
+;   Klavye sürücüsü INT 16h ile tuş okuma, tampon belleğe alma ve Backspace ile
+;   karakter silme mantığını yürütür.
+;
+; [10. ADIM -> shell.asm (GÖREV 5)]:
+;   Kullanıcıya komut istemini açar ("BenimOS> "); kullanıcı komut yazar, Shell
+;   komutu ayrıştırır (help, cls vb.), çalıştırır ve sonsuz döngüde sistemi yönetir.
 
 ; ------------------------------------------------------------------------------
 ; BÖLÜM 2: BELLEK HARİTASI VE ADRES KARARLARI
 ; ------------------------------------------------------------------------------
-; 8086 Gerçek Modu (Real Mode) 1 MB (1,048,576 bayt) adres alanına sahiptir:
-;
 ;  +-------------------------+ 0x00000
 ;  |  IVT (Kesme Tablosu)    |  1 KB (0x00000 - 0x003FF) -> INT 0 - INT 255 vektörleri
 ;  +-------------------------+ 0x00400
@@ -54,63 +91,25 @@ export const OS_GUIDE_TEMPLATE = `; ============================================
 ;  +-------------------------+ 0xC0000
 ;  |  Genişleme ROM / BIOS   |  256 KB (0xC0000 - 0xFFFFF)
 ;  +-------------------------+ 0xFFFFF (1 MB Tepe Noktası)
-;
+
 ; ❓ SORU: NEDEN 7C00h? NEDEN BAŞKA BİR SAYI DEĞİL?
-; CEVAP: 1981 yılında ilk IBM PC 5150 tasarlanırken en düşük RAM kapasitesi
-; 32 KB idi (32 * 1024 = 32768 bayt = 0x8000h).
-; Bootloader 512 bayttır (0x200h).
-; IBM mühendisleri dediler ki: "Bootloader'ı 32 KB'lık belleğin en sonuna koyalım
-; ki altında (0x0500 ile 0x7BFF arasında) işletim sistemi için tek parça en geniş
-; boş RAM alanı kalsın."
-; Hesap: 0x8000 - 0x0200 = 0x7C00!
-; Bu yüzden tüm x86 PC BIOS'ları diski mutlaka 0000:7C00h adresine indirir.
-;
-; ❓ SORU: BEN BAŞKA BİR SAYI SEÇEMEZ MİYİM?
-; CEVAP: 
-; 1. Bootloader için: BIOS donanımı kodlanmış olduğu için ilk 512 bayt mutlaka
-;    7C00h'a gelir. FAKAT bootloader kodunuz başlar başlamaz kendini RAM'in
-;    istediğiniz yerine kopyalayabilir (Relocation)! Örneğin kendini 0600h'a
-;    kopyalayıp oraya zıplayabilir (Linux & Windows bootloader'ları bunu yapar).
-; 2. Kernel (Çekirdek) için: %100 ÖZGÜRSÜNÜZ! BIOS Kernel'ı yüklemez; Kernel'ı
-;    yükleyen sizsiniz (Bootloader'ınız). İster 1000h adresine koyun, ister
-;    2000h, ister 0700h. Tek kural IVT (0-3FFh) ve BDA (400-4FFh)'ya yazmayın!
-;
-; ❓ SORU: 0700h / 0100h NEREDEN GELİYOR?
-; CEVAP: MS-DOS COM programları her zaman segmentin 0100h ofsetine yüklenir.
-; İlk 256 bayt (0000h-00FFh) PSP (Program Segment Prefix) için ayrılmıştır.
-; 0700:0100h adresi alt bellekten uzak, son derece güvenli bir standart alandır.
+; CEVAP: 1981 IBM PC 5150 mimarisinde en düşük RAM 32 KB idi (0x8000h).
+; Bootloader 512 bayttır (0x200h). Mühendisler 32 KB'ın en tepesine koydular:
+; 0x8000h - 0x0200h = 0x7C00h! Böylece altında en geniş serbest RAM kaldı.
 
 ; ------------------------------------------------------------------------------
-; BÖLÜM 3: YAZMAÇLAR (REGISTERS) NE İŞ YAPAR?
+; BÖLÜM 3: 5 AŞAMALI GÖREV DAĞILIMI
 ; ------------------------------------------------------------------------------
-; - AX (Akümülatör): Matematik, I/O ve kesme fonksiyon kodları (AH=işlev, AL=veri).
-; - BX (Taban/Base): Bellek taban adresi işaretçisi (Pointer).
-; - CX (Sayaç/Counter): Döngü (LOOP) ve string işlemlerinde (REP) sayaç.
-; - DX (Veri/Data): Çarpma/bölme işlemlerinde ve I/O port adreslerinde kullanılır.
-; - SI (Kaynak İndeks): Kaynak bellek işaretçisi (String okurken: LODSB).
-; - DI (Hedef İndeks): Hedef bellek işaretçisi (Video belleğine yazarken: STOSW).
-; - SP (Yığın İşaretçisi): Stack'in tepesi (PUSH edince küçülür, POP ile büyür).
-; - BP (Taban İşaretçisi): Fonksiyon yerel değişkenlerine erişim işaretçisi.
-; - CS, DS, SS, ES: Segment yazmaçları (Kod, Veri, Yığın, Ekstra).
-
-; ------------------------------------------------------------------------------
-; BÖLÜM 4: KESMELER (INTERRUPTS) VE EKRAN / KLAVYE
-; ------------------------------------------------------------------------------
-; - INT 10h: Video / CRT Monitör Sürücüsü
-;     AH = 0Eh -> Teletype karakter yazma (AL = ASCII Karakteri, BL = Renk)
-;     AH = 00h -> Video modu ayarlama (AL = 03h: 80x25 16 Renk Metin Modu)
-;     AH = 02h -> İmleç konumlandırma (DH = Satır, DL = Sütun)
-; - INT 16h: Klavye Sürücüsü
-;     AH = 00h -> Tuşa basılmasını bekle ve oku (AL = ASCII Kodu döner)
-;     AH = 01h -> Tuş basıldı mı kontrol et (ZF bayrağı)
-; - VRAM Doğrudan Erişim:
-;     Segment 0B800h adresi ekranın piksel/karakter hafızasıdır.
-;     Her karakter 2 bayttır: [ASCII Karakteri] + [Renk Özelliği (Attribute)].
+; Sol menüdeki modüller sırasıyla şu görevleri üstlenir:
+;   - boot.asm     -> GÖREV 1: Segmentleri sıfırla, yığını kur, Kernel'a atla.
+;   - kernel.asm   -> GÖREV 2: Ekran modunu 03h yap, karşılama başlığını yazdır.
+;   - screen.asm   -> GÖREV 3: Karakter/string basma ve ekran temizleme rutinleri.
+;   - keyboard.asm -> GÖREV 4: Tuş bekleme, echo ve satır tamponu (Backspase dahil).
+;   - shell.asm    -> GÖREV 5: "BenimOS>" komut istemi ve "help"/"cls" komutları.
 
 ; ==============================================================================
-; BÖLÜM 5: ÇALIŞAN TAM REFERANS İŞLETİM SİSTEMİ (MİNİ ÖRNEK)
-; Aşağıdaki kod tam çalışan bir mini çekirdektir. Simülatörde "Çalıştır" diyerek
-; hemen CRT Monitörde test edebilirsiniz!
+; BÖLÜM 4: ÇALIŞAN TAM REFERANS İŞLETİM SİSTEMİ (MİNİ ÖRNEK)
+; Aşağıdaki kod tam çalışan bir mini çekirdektir. Hemen "Çalıştır" diyerek test edin!
 ; ==============================================================================
 
 ORG 7C00h               ; Bootloader başlangıç adresi
@@ -136,13 +135,12 @@ START:
     MOV SI, MSG_PROMPT
     CALL PRINT_STRING
 
-; 3. Ana Etkileşimli Shell (Komut İstemcisi) Döngüsü
 SHELL_LOOP:
     ; Klavyeden bir tuş bekle
     MOV AH, 00h
     INT 16h             ; AL = basılan tuşun ASCII değeri
 
-    ; ENTER basıldı mı? (ASCII 13 / 0Dh)
+    ; ENTER basıldı mı? (ASCII 13)
     CMP AL, 13
     JE  ON_ENTER
 
@@ -186,9 +184,6 @@ DO_HELP:
     CALL PRINT_STRING
     JMP SHELL_LOOP
 
-; ------------------------------------------------------------------------------
-; ALT RUTİNLER (DRIVERS)
-; ------------------------------------------------------------------------------
 PRINT_STRING:
     PUSHA               ; Tüm yazmaçları koru
 .loop:
@@ -203,9 +198,6 @@ PRINT_STRING:
     POPA                ; Yazmaçları geri yükle
     RET
 
-; ------------------------------------------------------------------------------
-; VERİ ALANI (STRINGS & VERİLER)
-; ------------------------------------------------------------------------------
 MSG_BANNER:
     DB 13, 10
     DB "==================================================", 13, 10
@@ -229,12 +221,19 @@ DW 0AA55h
 `;
 
 export const BOOT_ASM_TEMPLATE = `; ==============================================================================
-; [MODÜL 1] boot.asm - MBR Önyükleyici (Bootloader)
-; ==============================================================================
-; BIOS bilgisayar açıldığında bu kodu diskin ilk 512 baytından okur ve
-; RAM'in 0000:7C00h fiziksel adresine yükleyip CS:IP'yi buraya yönlendirir.
-;
-; Görevi: Donanım segmentlerini sıfırlamak, yığını kurmak ve Kernel'ı yüklemek.
+; +-----------------------------------------------------------------------------+
+; | 🎯 GÖREV 1: MBR ÖNYÜKLEYİCİ & DONANIM SEGMENT KURULUMU                      |
+; +-----------------------------------------------------------------------------+
+; | 📥 GİRİŞ:  CS:IP = 0000:7C00h (BIOS'un yüklediği yer) | DL = 80h (Sürücü No)|
+; | 📤 ÇIKIŞ:  DS=0000h, ES=0000h, SS=0000h | SP=7C00h | JMP 1000h (Kernel)     |
+; | ⚙️ İSTENEN: 1. CLI ile kesmeleri sustur                                      |
+; |            2. XOR AX, AX -> DS, ES, SS segmentlerini sıfırla               |
+; |            3. Yığını SP=7C00h olarak kur                                    |
+; |            4. STI ile kesmeleri aç                                          |
+; |            5. Ekrana yeşil CRT boot mesajı bas (INT 10h)                    |
+; |            6. Çekirdek giriş noktasına atla (JMP KERNEL_ENTRY / 1000h)      |
+; | 🧪 TEST:   CRT monitörde yeşil bootloader yazısını ve Kernel geçişini görün.|
+; +-----------------------------------------------------------------------------+
 ; ==============================================================================
 
 ORG 7C00h
@@ -254,36 +253,47 @@ BOOT_START:
 
     ; Kernel modülüne geçiş simülasyonu
     ; Gerçek donanımda burada INT 13h ile diskten sektörler okunur.
-    ; Simülatörümüzde doğrudan Kernel başlangıcına atlıyoruz:
     JMP KERNEL_ENTRY
 
 BOOT_PRINT:
+    PUSHA
+.loop:
     LODSB
     OR AL, AL
     JZ .done
     MOV AH, 0Eh
     MOV BL, 0Ah         ; CRT Yeşili
     INT 10h
-    JMP BOOT_PRINT
+    JMP .loop
 .done:
+    POPA
     RET
 
 BOOT_MSG:
     DB ">> [BOOTLOADER] BIOS MBR yuklendi (0x7C00). Kernel calistiriliyor...", 13, 10, 0
 
-; Simülatör için Kernel giriş noktası etiketi:
 KERNEL_ENTRY:
     HLT
 
-; 512 Bayt MBR Dolgusu ve İmzası
+; 512 Bayt MBR İmzası
 DW 0AA55h
 `;
 
 export const KERNEL_ASM_TEMPLATE = `; ==============================================================================
-; [MODÜL 2] kernel.asm - Ana Çekirdek (Core Kernel)
-; ==============================================================================
-; Bootloader tarafından RAM'e (genellikle 1000h adresine) yüklenen ve
-; sistemin tüm donanımını, sürücülerini ve komut istemcisini yöneten beyin.
+; +-----------------------------------------------------------------------------+
+; | 🎯 GÖREV 2: ANA ÇEKİRDEK BAŞLATMA & SİSTEM KARŞILAMA                        |
+; +-----------------------------------------------------------------------------+
+; | 📥 GİRİŞ:  CS:IP = 1000:0000h (Bootloader'dan devralınan kontrol)           |
+; |            DS = 0000h, SP = 7C00h (Güvenli segment ve yığın)               |
+; | 📤 ÇIKIŞ:  Video Modu = 03h (80x25 renkli CRT metin)                        |
+; |            CRT Ekranında beyaz sistem başlığı ve RAM bilgisi                |
+; |            JMP SHELL_START (Komut kabuğuna geçiş)                           |
+; | ⚙️ İSTENEN: 1. INT 10h (AH=00h, AL=03h) ile ekranı temizle                  |
+; |            2. SI yazmacına KERNEL_BANNER adresini ata, ekrana yazdır        |
+; |            3. Kontrolü Shell modülüne (JMP SHELL_START) devret              |
+; | 🧪 TEST:   Çalıştırdığınızda CRT monitörün temizlenip başlığın geldiğini    |
+; |            gözlemleyin.                                                     |
+; +-----------------------------------------------------------------------------+
 ; ==============================================================================
 
 ORG 1000h
@@ -326,10 +336,22 @@ SHELL_START:
 `;
 
 export const SCREEN_ASM_TEMPLATE = `; ==============================================================================
-; [MODÜL 3] screen.asm - Video & CRT Ekran Sürücüsü (Display Driver)
-; ==============================================================================
-; Bu modül ekrana karakter basma, renkli metin yazdırma, imleç yönetimi ve
-; VRAM (0B800h) doğrudan erişim rutinlerini içerir.
+; +-----------------------------------------------------------------------------+
+; | 🎯 GÖREV 3: CRT EKRAN & METİN SÜRÜCÜSÜ (DISPLAY DRIVER)                    |
+; +-----------------------------------------------------------------------------+
+; | 📥 GİRİŞ:  PUTC: AL = Karakter, BL = Renk kodu                              |
+; |            PUTS: SI = Null (0) ile biten string RAM adresi                  |
+; |            SET_CURSOR: DH = Satır (0-24), DL = Sütun (0-79)                 |
+; |            CLEAR: Giriş parametresi yok                                     |
+; | 📤 ÇIKIŞ:  Karakterler CRT monitöre basılır, imleç güncellenir              |
+; |            Çağıran yazmaçlar PUSHA ve POPA ile korunur                      |
+; | ⚙️ İSTENEN: 1. SCREEN_CLEAR ile INT 10h (AH=00h, AL=03h) çağır              |
+; |            2. SCREEN_PUTC ile INT 10h (AH=0Eh) çağır                        |
+; |            3. SCREEN_PUTS içinde LODSB ile sıfıra kadar döngü kur           |
+; |            4. Fonksiyonların başında PUSHA, sonunda POPA ve RET kullan      |
+; | 🧪 TEST:   CALL SCREEN_CLEAR ardından SI'ye metin verip CALL SCREEN_PUTS    |
+; |            yaparak CRT ekranda çıktıyı doğrulayın.                          |
+; +-----------------------------------------------------------------------------+
 ; ==============================================================================
 
 ; --- RUTİN 1: Ekranı Temizle ---
@@ -377,10 +399,24 @@ SCREEN_PUTS:
 `;
 
 export const KEYBOARD_ASM_TEMPLATE = `; ==============================================================================
-; [MODÜL 4] keyboard.asm - Klavye Sürücüsü (Keyboard Driver)
-; ==============================================================================
-; Klavyeden karakter okuma, tuş tamponu (buffer) kontrolü ve
-; ekrana yansıtma (echo) işlemlerini üstlenir.
+; +-----------------------------------------------------------------------------+
+; | 🎯 GÖREV 4: KLAVYE SÜRÜCÜSÜ & SATIR TAMPONU (KEYBOARD DRIVER)              |
+; +-----------------------------------------------------------------------------+
+; | 📥 GİRİŞ:  READ_CHAR: Giriş yok                                             |
+; |            CHECK_KEY: Giriş yok                                             |
+; |            READ_LINE: DI = Karakter tampon RAM adresi                       |
+; |                       CX = Maksimum karakter sınırı                         |
+; | 📤 ÇIKIŞ:  READ_CHAR: AL = ASCII tuş kodu, AH = Hardware Scan Code          |
+; |            CHECK_KEY: ZF=1 (Tuş yok), ZF=0 (Tuş hazır, AL=ASCII)            |
+; |            READ_LINE: [DI] içinde null ile biten metin, CRT ekranında Echo  |
+; | ⚙️ İSTENEN: 1. KEYBOARD_READ_CHAR içinde INT 16h (AH=00h) çağır             |
+; |            2. READ_LINE içinde her tuşu ekrana yansıt (Echo)                |
+; |            3. Enter (13) basılırsa tamponu 0 ile bitir ve CR+LF bas         |
+; |            4. Backspace (8) basılırsa tampon sayacını 1 azalt, CRT ekranda  |
+; |               boşlukla sil                                                  |
+; | 🧪 TEST:   Çalıştırıp monitöre tıklayın, klavyeden yazı yazın, Backspace ile|
+; |            silip Enter'a basarak tamponun dolduğunu test edin.              |
+; +-----------------------------------------------------------------------------+
 ; ==============================================================================
 
 ; --- RUTİN 1: Tuş Basılmasını Bekle ve Oku ---
@@ -440,7 +476,7 @@ KEYBOARD_READ_LINE:
     JMP .read_loop
 
 .enter_pressed:
-    MOV BYTE [DI + BX], 0 ; Null ile bitir
+    MOV BYTE PTR [DI + BX], 0 ; Null ile bitir
     ; Alt satıra geç (CR + LF)
     MOV AH, 0Eh
     MOV AL, 13
@@ -452,10 +488,21 @@ KEYBOARD_READ_LINE:
 `;
 
 export const SHELL_ASM_TEMPLATE = `; ==============================================================================
-; [MODÜL 5] shell.asm - Komut İstemcisi ve Yorumlayıcı (CLI Shell)
-; ==============================================================================
-; Kullanıcıdan gelen komutları ayrıştıran, yorumlayan ve alt programları
-; çalıştıran etkileşimli kabuk (Shell).
+; +-----------------------------------------------------------------------------+
+; | 🎯 GÖREV 5: ETKİLEŞİMLİ KOMUT KABUĞU (CLI SHELL)                            |
+; +-----------------------------------------------------------------------------+
+; | 📥 GİRİŞ:  SHELL_INPUT_BUFFER: Klavyeden girilen komut dizisi               |
+; | 📤 ÇIKIŞ:  "help" yazılırsa: Yardım menüsü metni                           |
+; |            "cls" yazılırsa: CRT ekranının sıfırlanması                      |
+; |            Bilinmeyen komutta: Hata mesajı                                  |
+; |            Her işlem sonunda tekrar "BenimOS> " komut istemi                |
+; | ⚙️ İSTENEN: 1. Sonsuz döngüde SHELL_PROMPT ("BenimOS> ") yazdır             |
+; |            2. KEYBOARD_READ_LINE ile komut satırını oku                     |
+; |            3. STRING_COMPARE ile komutu "help" ve "cls" ile karşılaştır     |
+; |            4. Eşleşen komut rutinini çalıştırıp yeni satırda döngüye dön     |
+; | 🧪 TEST:   Monitörde "help" yazıp Enter'a basın; ardından "cls" yazıp       |
+; |            ekranın temizlendiğini test edin.                                |
+; +-----------------------------------------------------------------------------+
 ; ==============================================================================
 
 SHELL_MAIN_LOOP:
@@ -472,7 +519,7 @@ SHELL_MAIN_LOOP:
     MOV SI, SHELL_INPUT_BUFFER
     
     ; Boş giriş kontrolü
-    CMP BYTE [SI], 0
+    CMP BYTE PTR [SI], 0
     JE SHELL_MAIN_LOOP
 
     ; 'help' komutu mu?

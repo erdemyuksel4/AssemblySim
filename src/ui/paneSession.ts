@@ -13,6 +13,7 @@ import { WorkspaceDocument } from '../workspace/types.js';
 import { CpuInstance } from '../cpu/instanceManager.js';
 import { getTopicById } from '../lectures/topicStudyData.js';
 import { Challenge } from '../challenges/types.js';
+import { getMissionForDoc, OSMission } from '../os/osMissions.js';
 
 export type ExecutionSpeed = '0.5' | '1' | '2';
 
@@ -679,17 +680,76 @@ export class PaneSession {
         this.updateViews();
       }
 
-      // Sync challenge panel
+      // Sync challenge or OS mission panel
       const btnTest = this.elements.btnCompleteAndTest;
       if (doc.type === 'challenge' && doc.challengeId) {
         const ch = CHALLENGES[doc.challengeId] || null;
         this.challengePanel.setChallenge(ch);
         if (btnTest) btnTest.style.display = 'inline-flex';
+      } else if (doc.type === 'os_file') {
+        if (btnTest) btnTest.style.display = 'none';
+        const mission = getMissionForDoc(doc.title, doc.osRole);
+        if (mission) {
+          this.renderOSMissionBox(mission);
+        } else {
+          this.challengePanel.setChallenge(null);
+          this.elements.challengeBoxContainer.style.display = 'none';
+        }
       } else {
         this.challengePanel.setChallenge(null);
         if (btnTest) btnTest.style.display = 'none';
+        this.elements.challengeBoxContainer.style.display = 'none';
       }
     }
+  }
+
+  private renderOSMissionBox(m: OSMission): void {
+    const box = this.elements.challengeBoxContainer;
+    if (!box) return;
+
+    box.style.display = 'block';
+    box.innerHTML = `
+      <div class="os-mission-card">
+        <div class="os-mission-header">
+          <div class="os-mission-title-group">
+            <span class="os-mission-badge">${m.badge}</span>
+            <h3 class="os-mission-title">${m.title}</h3>
+          </div>
+          <button class="btn-os-mission-collapse" title="Görevi Daralt / Genişlet">▼</button>
+        </div>
+        <div class="os-mission-content">
+          <p class="os-mission-summary">${m.summary}</p>
+          <div class="os-mission-io-grid">
+            <div class="os-mission-io-cell io-input">
+              <span class="io-label">📥 GİRİŞ (Registers / Memory):</span>
+              <span class="io-val"><code>${m.inputs}</code></span>
+            </div>
+            <div class="os-mission-io-cell io-output">
+              <span class="io-label">📤 ÇIKIŞ (Ne Döndürülmeli / Sonuç):</span>
+              <span class="io-val"><code>${m.outputs}</code></span>
+            </div>
+          </div>
+          <div class="os-mission-requirements">
+            <span class="req-title">⚙️ İstenen Mantık ve Adımlar:</span>
+            <ul>
+              ${m.requirements.map(r => `<li>${r}</li>`).join('')}
+            </ul>
+          </div>
+          <div class="os-mission-test-bar">
+            <span class="test-icon">🧪</span>
+            <span><strong>Doğrulama & CRT Testi:</strong> ${m.testStep}</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const collapseBtn = box.querySelector('.btn-os-mission-collapse') as HTMLButtonElement;
+    const content = box.querySelector('.os-mission-content') as HTMLElement;
+    collapseBtn?.addEventListener('click', () => {
+      const isHidden = content.style.display === 'none';
+      content.style.display = isHidden ? 'block' : 'none';
+      collapseBtn.textContent = isHidden ? '▼' : '▶';
+    });
   }
 
   saveScrollAndState(doc: WorkspaceDocument): void {
