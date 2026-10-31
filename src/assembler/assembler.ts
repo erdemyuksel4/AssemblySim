@@ -69,7 +69,7 @@ export class Assembler {
 
         // Calculate size of directive or instruction
         if (parsed.directive) {
-          const size = this.getDirectiveSize(parsed.directive);
+          const size = this.getDirectiveSize(parsed.directive, currentAddr, origin, symbols);
           currentAddr += size;
         } else if (parsed.instruction) {
           const ctx: EncodeContext = {
@@ -127,7 +127,7 @@ export class Assembler {
           ) {
             // Emits no machine code bytes
           } else {
-            const dataBytes = this.generateDirectiveBytes(parsed.directive, symbols, lineNum);
+            const dataBytes = this.generateDirectiveBytes(parsed.directive, symbols, lineNum, currentAddr, origin);
             lineBytes.push(...dataBytes);
             emittedBytes.push(...dataBytes);
             currentAddr += dataBytes.length;
@@ -165,8 +165,81 @@ export class Assembler {
     };
   }
 
-  // Calculate size in bytes for DB and DW directives
-  private static getDirectiveSize(directive: ParsedDirective): number {
+  // Evaluates TIMES expression (e.g. 510 - ($ - $$), 64, etc.)
+  private static evaluateTimesCount(
+    directive: ParsedDirective,
+    currentAddr: number,
+    origin: number,
+    symbols: Map<string, number>
+  ): number {
+    const tokens = directive.timesTokens || [];
+    if (tokens.length === 0) return 0;
+
+    let pos = 0;
+
+    const parsePrimary = (): number => {
+      if (pos >= tokens.length) return 0;
+      const tok = tokens[pos];
+
+      if (tok.type === 'LPAREN') {
+        pos++; // skip '('
+        const val = parseAddSub();
+        if (pos < tokens.length && tokens[pos].type === 'RPAREN') {
+          pos++; // skip ')'
+        }
+        return val;
+      }
+
+      if (tok.type === 'NUMBER' && tok.value !== undefined) {
+        pos++;
+        return tok.value;
+      }
+
+      if (tok.type === 'IDENTIFIER') {
+        const text = tok.text.toUpperCase();
+        pos++;
+        if (text === '$') return currentAddr;
+        if (text === '$$') return origin;
+        if (symbols.has(text)) return symbols.get(text)!;
+        return 0;
+      }
+
+      pos++;
+      return 0;
+    };
+
+    const parseMul = (): number => {
+      let val = parsePrimary();
+      while (pos < tokens.length && tokens[pos].type === 'MULTIPLY') {
+        pos++;
+        val = val * parsePrimary();
+      }
+      return val;
+    };
+
+    const parseAddSub = (): number => {
+      let val = parseMul();
+      while (pos < tokens.length && (tokens[pos].type === 'PLUS' || tokens[pos].type === 'MINUS')) {
+        const op = tokens[pos].type;
+        pos++;
+        const nextVal = parseMul();
+        if (op === 'PLUS') val += nextVal;
+        else val -= nextVal;
+      }
+      return val;
+    };
+
+    const result = parseAddSub();
+    return Math.max(0, result);
+  }
+
+  // Calculate size in bytes for DB, DW, and TIMES directives
+  private static getDirectiveSize(
+    directive: ParsedDirective,
+    currentAddr: number = 0,
+    origin: number = 0,
+    symbols: Map<string, number> = new Map()
+  ): number {
     if (
       directive.type === 'ORG' ||
       directive.type === 'EQU' ||
@@ -179,6 +252,26 @@ export class Assembler {
       directive.type === 'ASSUME' ||
       directive.type === 'END'
     ) return 0;
+
+    if (directive.type === 'TIMES') {
+      const count = this.evaluateTimesCount(directive, currentAddr, origin, symbols);
+      const mult = directive.innerType === 'DW' ? 2 : 1;
+      let singleLen = 0;
+      for (const item of directive.items) {
+        if (typeof item === 'number') {
+          singleLen += mult;
+        } else if (typeof item === 'string') {
+          singleLen += item.length * mult;
+        } else if (typeof item === 'object') {
+          if ('count' in item && item.count !== undefined) {
+            singleLen += item.count * mult;
+          } else if ('label' in item) {
+            singleLen += mult;
+          }
+        }
+      }
+      return count * (singleLen || mult);
+    }
 
     const mult = directive.type === 'DW' ? 2 : 1;
     let size = 0;
@@ -204,13 +297,62 @@ export class Assembler {
     return size;
   }
 
-  // Generate actual bytes for DB and DW directives
+  // Generate actual bytes for DB, DW, and TIMES directives
   private static generateDirectiveBytes(
     directive: ParsedDirective,
     symbols: Map<string, number>,
-    lineNum: number
+    lineNum: number,
+    currentAddr: number = 0,
+    origin: number = 0
   ): number[] {
     const bytes: number[] = [];
+
+    if (directive.type === 'TIMES') {
+      const count = this.evaluateTimesCount(directive, currentAddr, origin, symbols);
+      const isDW = directive.innerType === 'DW';
+
+      const emitVal = (val: number) => {
+        if (isDW) {
+          bytes.push(val & 0xFF, (val >> 8) & 0xFF);
+        } else {
+          bytes.push(val & 0xFF);
+        }
+      };
+
+      const emitStr = (str: string) => {
+        for (let i = 0; i < str.length; i++) {
+          emitVal(str.charCodeAt(i));
+        }
+      };
+
+      for (let c = 0; c < count; c++) {
+        for (const item of directive.items) {
+          if (typeof item === 'number') {
+            emitVal(item);
+          } else if (typeof item === 'string') {
+            emitStr(item);
+          } else if (typeof item === 'object') {
+            if ('count' in item && item.count !== undefined) {
+              for (let ic = 0; ic < item.count; ic++) {
+                for (const v of item.values) {
+                  if (typeof v === 'string') emitStr(v);
+                  else emitVal(v);
+                }
+              }
+            } else if ('label' in item) {
+              const lblUpper = item.label.toUpperCase();
+              if (symbols.has(lblUpper)) {
+                emitVal(symbols.get(lblUpper)!);
+              } else {
+                throw new Error(`Tanımsız etiket '${item.label}' satır: ${lineNum}`);
+              }
+            }
+          }
+        }
+      }
+      return bytes;
+    }
+
     const isDW = directive.type === 'DW';
 
     const emitVal = (val: number) => {

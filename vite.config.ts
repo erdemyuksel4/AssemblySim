@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 
@@ -10,5 +11,9 @@ export default defineConfig({
     chunkSizeWarningLimit: 100000000,
     cssCodeSplit: false,
     modulePreload: false,
+  },
+  test: {
+    include: ['tests/**/*.test.ts'],
+    exclude: ['archive/**', 'node_modules/**'],
   },
 });

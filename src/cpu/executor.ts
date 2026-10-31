@@ -1699,17 +1699,263 @@ export class Executor {
         break;
       }
 
-      // INT 10h / INT 16h / INT 20h / INT 21h / INT 3
+      // INT n instruction (0xCD)
       case 0xCD: {
         const intNum = fetchByte();
-        if (intNum === 0x10) { // BIOS video service
+
+        // 1. Check custom IVT interrupt vector (0000:[intNum * 4])
+        const ivtIp = this.mem.readWord(0, intNum * 4, false);
+        const ivtCs = this.mem.readWord(0, intNum * 4 + 2, false);
+        // If user defined a custom interrupt handler in the IVT (not standard ROM 0xF000 stub):
+        if (ivtCs !== 0xF000 && (ivtCs !== 0 || ivtIp !== 0)) {
+          this.push(this.flags.toWord());
+          this.flags.if = false;
+          this.flags.tf = false;
+          this.push(this.regs.cs);
+          this.push(currIp);
+          this.regs.cs = ivtCs;
+          currIp = ivtIp;
+          consoleText = `[INT ${intNum.toString(16).toUpperCase()}h -> ${ivtCs.toString(16).padStart(4, '0')}:${ivtIp.toString(16).padStart(4, '0')}]`;
+          break;
+        }
+
+        // -------------------------------------------------------------
+        // Authentic 1981 IBM PC (Model 5150) ROM BIOS Interrupt Services
+        // -------------------------------------------------------------
+        if (intNum === 0x10) { // BIOS Video Services
           const ah = this.regs.ah;
-          if (ah === 0x0E) { // Teletype output (AL = character)
+
+          if (ah === 0x00) { // Set Video Mode (AL = mode, e.g. 03h: 80x25 text, 13h: 320x200 graphics)
+            const mode = this.regs.al;
+            this.mem.writeByte(0, 0x0449, mode, false); // BDA video mode
+            if (mode === 0x13) {
+              // Mode 13h: 320x200 256-Color Graphics Mode (VRAM at 0xA0000, 64000 bytes)
+              this.mem.writeWord(0, 0x044A, 40, false); // Columns: 40
+              for (let i = 0; i < 64000; i++) {
+                this.mem.writeByte(0xA000, i, 0, false); // Clear graphics VRAM
+              }
+              this.io.setCrtcCursorOffset(0);
+              this.mem.onVramWrite?.(0xA0000, 0);
+              consoleText = `[INT 10h: Video Modu 13h (320x200 256 Renk Grafik) ayarlandı]`;
+            } else {
+              // Text Mode (03h): 80x25 16-color text (VRAM at 0xB8000, 4000 bytes)
+              this.mem.writeWord(0, 0x044A, 80, false); // Columns: 80
+              for (let i = 0; i < 2000; i++) {
+                const vramPhys = 0xB8000 + i * 2;
+                this.mem.writeByte(0, vramPhys, 0x20, false);     // ' '
+                this.mem.writeByte(0, vramPhys + 1, 0x07, false); // Light gray on black
+              }
+              // Reset cursor positions in BDA and CRTC
+              for (let p = 0; p < 8; p++) {
+                this.mem.writeWord(0, 0x0450 + p * 2, 0, false);
+              }
+              this.io.setCrtcCursorOffset(0);
+              this.mem.onVramWrite?.(0xB8000, 0x20);
+              consoleText = `[INT 10h: Video Modu 0x${mode.toString(16).padStart(2, '0').toUpperCase()} ayarlandı, ekran temizlendi]`;
+            }
+          } else if (ah === 0x01) { // Set Cursor Shape (CH = start line, CL = end line)
+            this.mem.writeWord(0, 0x0460, this.regs.cx, false);
+            consoleText = `[INT 10h AH=01h: İmleç Şekli ${this.regs.ch}:${this.regs.cl}]`;
+          } else if (ah === 0x02) { // Set Cursor Position (DH = row, DL = col, BH = page)
+            const page = this.regs.bh & 0x07;
+            const row = Math.min(24, Math.max(0, this.regs.dh));
+            const col = Math.min(79, Math.max(0, this.regs.dl));
+            this.mem.writeByte(0, 0x0450 + page * 2, col, false);
+            this.mem.writeByte(0, 0x0451 + page * 2, row, false);
+            this.io.setCrtcCursorOffset(row * 80 + col);
+          } else if (ah === 0x03) { // Get Cursor Position and Shape (BH = page)
+            const page = this.regs.bh & 0x07;
+            const col = this.mem.readByte(0, 0x0450 + page * 2, false);
+            const row = this.mem.readByte(0, 0x0451 + page * 2, false);
+            this.regs.dl = col;
+            this.regs.dh = row;
+            this.regs.cx = this.mem.readWord(0, 0x0460, false) || 0x0607;
+          } else if (ah === 0x06 || ah === 0x07) { // Scroll Window Up (06h) / Down (07h)
+            // AL = lines (0 = blank window), BH = attribute
+            // CH, CL = upper left (row, col); DH, DL = lower right (row, col)
+            const lines = this.regs.al;
+            const attr = this.regs.bh;
+            const r1 = Math.min(24, this.regs.ch);
+            const c1 = Math.min(79, this.regs.cl);
+            const r2 = Math.min(24, this.regs.dh);
+            const c2 = Math.min(79, this.regs.dl);
+
+            if (lines === 0 || lines >= (r2 - r1 + 1)) {
+              // Blank the entire specified rectangle
+              for (let r = r1; r <= r2; r++) {
+                for (let c = c1; c <= c2; c++) {
+                  const off = 0xB8000 + (r * 80 + c) * 2;
+                  this.mem.writeByte(0, off, 0x20, false);
+                  this.mem.writeByte(0, off + 1, attr, false);
+                }
+              }
+            } else {
+              // Scroll lines
+              if (ah === 0x06) { // Scroll Up
+                for (let r = r1; r <= r2 - lines; r++) {
+                  for (let c = c1; c <= c2; c++) {
+                    const srcOff = 0xB8000 + ((r + lines) * 80 + c) * 2;
+                    const destOff = 0xB8000 + (r * 80 + c) * 2;
+                    this.mem.writeByte(0, destOff, this.mem.readByte(0, srcOff, false), false);
+                    this.mem.writeByte(0, destOff + 1, this.mem.readByte(0, srcOff + 1, false), false);
+                  }
+                }
+                for (let r = r2 - lines + 1; r <= r2; r++) {
+                  for (let c = c1; c <= c2; c++) {
+                    const off = 0xB8000 + (r * 80 + c) * 2;
+                    this.mem.writeByte(0, off, 0x20, false);
+                    this.mem.writeByte(0, off + 1, attr, false);
+                  }
+                }
+              } else { // Scroll Down
+                for (let r = r2; r >= r1 + lines; r--) {
+                  for (let c = c1; c <= c2; c++) {
+                    const srcOff = 0xB8000 + ((r - lines) * 80 + c) * 2;
+                    const destOff = 0xB8000 + (r * 80 + c) * 2;
+                    this.mem.writeByte(0, destOff, this.mem.readByte(0, srcOff, false), false);
+                    this.mem.writeByte(0, destOff + 1, this.mem.readByte(0, srcOff + 1, false), false);
+                  }
+                }
+                for (let r = r1; r < r1 + lines; r++) {
+                  for (let c = c1; c <= c2; c++) {
+                    const off = 0xB8000 + (r * 80 + c) * 2;
+                    this.mem.writeByte(0, off, 0x20, false);
+                    this.mem.writeByte(0, off + 1, attr, false);
+                  }
+                }
+              }
+            }
+          } else if (ah === 0x08) { // Read Character & Attribute at Cursor (BH = page)
+            const page = this.regs.bh & 0x07;
+            const col = this.mem.readByte(0, 0x0450 + page * 2, false);
+            const row = this.mem.readByte(0, 0x0451 + page * 2, false);
+            const off = 0xB8000 + (row * 80 + col) * 2;
+            this.regs.al = this.mem.readByte(0, off, false);
+            this.regs.ah = this.mem.readByte(0, off + 1, false);
+          } else if (ah === 0x09 || ah === 0x0A) { // Write Character (& Attr) at Cursor
+            // AL = char, BL = attr (for 09h), CX = count, BH = page
+            const page = this.regs.bh & 0x07;
+            let col = this.mem.readByte(0, 0x0450 + page * 2, false);
+            let row = this.mem.readByte(0, 0x0451 + page * 2, false);
+            const count = this.regs.cx;
+            for (let i = 0; i < count; i++) {
+              const curPos = row * 80 + col + i;
+              if (curPos >= 2000) break;
+              const off = 0xB8000 + curPos * 2;
+              this.mem.writeByte(0, off, this.regs.al, false);
+              if (ah === 0x09) {
+                this.mem.writeByte(0, off + 1, this.regs.bl, false);
+              }
+            }
+          } else if (ah === 0x0E) { // Teletype Output (AL = character, BL = foreground color)
+            this.writeTeletype(this.regs.al);
             consoleText = String.fromCharCode(this.regs.al);
+          } else if (ah === 0x0C) { // Write Graphics Pixel (AL=Color, BH=Page, CX=X, DX=Y)
+            const x = this.regs.cx;
+            const y = this.regs.dx;
+            if (x >= 0 && x < 320 && y >= 0 && y < 200) {
+              const offset = y * 320 + x;
+              const isXor = (this.regs.al & 0x80) !== 0;
+              let color = this.regs.al & 0xFF;
+              if (isXor) {
+                const oldColor = this.mem.readByte(0xA000, offset, false);
+                color = oldColor ^ (this.regs.al & 0x7F);
+              }
+              this.mem.writeByte(0xA000, offset, color, true);
+            }
+          } else if (ah === 0x0D) { // Read Graphics Pixel (BH=Page, CX=X, DX=Y)
+            const x = this.regs.cx;
+            const y = this.regs.dx;
+            if (x >= 0 && x < 320 && y >= 0 && y < 200) {
+              const offset = y * 320 + x;
+              this.regs.al = this.mem.readByte(0xA000, offset, false);
+            } else {
+              this.regs.al = 0;
+            }
           } else {
             consoleText = `[INT 10h AH=${ah.toString(16).padStart(2, '0')}h]`;
           }
-        } else if (intNum === 0x16) { // BIOS keyboard services
+        } else if (intNum === 0x11) { // BIOS Equipment Check
+          // Returns AX = Equipment word from BDA 0040:0010h (IBM PC 5150 default: 0x0021)
+          this.regs.ax = this.mem.readWord(0, 0x0410, false) || 0x0021;
+          consoleText = `[INT 11h: Donanım Listesi AX=0x${this.regs.ax.toString(16).toUpperCase().padStart(4, '0')}]`;
+        } else if (intNum === 0x12) { // BIOS Conventional Memory Size
+          // Returns AX = contiguous memory in KB from BDA 0040:0013h (IBM PC 5150: 640 KB = 0x0280)
+          this.regs.ax = this.mem.readWord(0, 0x0413, false) || 640;
+          consoleText = `[INT 12h: Bellek Boyutu AX=${this.regs.ax} KB (0x${this.regs.ax.toString(16).toUpperCase()})]`;
+        } else if (intNum === 0x13) { // BIOS Floppy Diskette Services
+          const ah = this.regs.ah;
+          if (ah === 0x00) { // Reset Disk System
+            this.flags.cf = false;
+            this.regs.ah = 0x00; // Success
+            consoleText = `[INT 13h AH=00h: Disk Sürücüsü Sıfırlandı]`;
+          } else if (ah === 0x01) { // Get Disk Status
+            this.flags.cf = false;
+            this.regs.al = 0x00;
+          } else if (ah === 0x02) { // Read Sectors into Memory
+            // AL = count, CH = cylinder, CL = sector, DH = head, DL = drive, ES:BX = buffer
+            const count = this.regs.al;
+            const destSeg = this.regs.es;
+            const destOff = this.regs.bx;
+            // If reading sector 1 of track 0 head 0 (boot sector):
+            for (let s = 0; s < count; s++) {
+              const bufferBase = (destOff + s * 512) & 0xFFFF;
+              // If reading MBR/boot sector to another address, mirror 0000:7C00
+              if (this.regs.ch === 0 && (this.regs.cl & 0x3F) === 1 && this.regs.dh === 0) {
+                for (let b = 0; b < 512; b++) {
+                  const val = this.mem.readByte(0, 0x7C00 + b, false);
+                  this.mem.writeByte(destSeg, (bufferBase + b) & 0xFFFF, val, true);
+                }
+              }
+            }
+            this.flags.cf = false;
+            this.regs.ah = 0x00; // Success status
+            consoleText = `[INT 13h AH=02h: ${count} Sektör Okundu -> ${destSeg.toString(16).padStart(4,'0')}:${destOff.toString(16).padStart(4,'0')}]`;
+          } else if (ah === 0x03) { // Write Sectors
+            this.flags.cf = false;
+            this.regs.ah = 0x00;
+          } else if (ah === 0x08) { // Get Drive Parameters
+            // DL = 1 drive, DH = 1 (2 heads, max head idx 1), CH = 79, CL = 18 (1.44M standard floppy)
+            this.regs.dl = 1;
+            this.regs.dh = 1;
+            this.regs.ch = 79;
+            this.regs.cl = 18;
+            this.regs.bl = 0x04;
+            this.regs.ah = 0x00;
+            this.flags.cf = false;
+          } else if (ah === 0x15) { // Get Disk Type
+            this.regs.ah = 0x01; // Floppy without change-line support
+            this.flags.cf = false;
+          } else {
+            this.flags.cf = false;
+            this.regs.ah = 0x00;
+          }
+        } else if (intNum === 0x14) { // BIOS Serial Communications (COM1/COM2)
+          const ah = this.regs.ah;
+          if (ah === 0x00) { // Init Serial Port
+            this.regs.ah = 0x60; // Line status: transmitter ready
+            this.regs.al = 0x00;
+          } else if (ah === 0x01) { // Send Character (AL = char)
+            this.regs.ah = 0x60;
+            consoleText = `[COM TX: '${String.fromCharCode(this.regs.al)}']`;
+          } else if (ah === 0x02) { // Read Character
+            this.regs.ah = 0x00;
+            this.regs.al = 0x00;
+          } else if (ah === 0x03) { // Status
+            this.regs.ah = 0x60;
+            this.regs.al = 0x00;
+          }
+        } else if (intNum === 0x15) { // BIOS System Services
+          const ah = this.regs.ah;
+          if (ah === 0x86) { // BIOS Wait / Delay (CX:DX = microseconds)
+            this.flags.cf = false;
+          } else if (ah === 0xC0) { // Get System Configuration Parameters
+            this.flags.cf = false;
+            this.regs.ah = 0x00;
+          } else {
+            this.flags.cf = false;
+          }
+        } else if (intNum === 0x16) { // BIOS Keyboard Services
           const ah = this.regs.ah;
           if (ah === 0x00 || ah === 0x10) { // Wait for keystroke
             if (this.io.hasInput()) {
@@ -1733,6 +1979,50 @@ export class Executor {
           } else {
             consoleText = `[Unhandled INT 16h AH=${ah.toString(16).padStart(2, '0')}h]`;
           }
+        } else if (intNum === 0x17) { // BIOS Parallel Printer Services (LPT1)
+          const ah = this.regs.ah;
+          if (ah === 0x00) { // Print Character (AL = char)
+            this.regs.ah = 0x90; // Printer status: Selected and ready (not busy)
+            consoleText = `[LPT PRN: '${String.fromCharCode(this.regs.al)}']`;
+          } else {
+            this.regs.ah = 0x90;
+          }
+        } else if (intNum === 0x18) { // ROM Cassette BASIC
+          halted = true;
+          consoleText = "[IBM PC 5150: ROM CASSETTE BASIC C1.10 (C) 1981 IBM CORP]";
+        } else if (intNum === 0x19) { // Bootstrap Loader (Reboot to 0000:7C00h)
+          this.regs.cs = 0x0000;
+          currIp = 0x7C00;
+          this.regs.dl = 0x00; // Boot drive 0 (Floppy A:)
+          consoleText = "[INT 19h: Bootstrap Loader -> Yeniden Başlatıldı (0000:7C00h)]";
+        } else if (intNum === 0x1A) { // BIOS Real-Time Clock / Timer Services
+          const ah = this.regs.ah;
+          if (ah === 0x00) { // Get System Time (Clock Ticks)
+            // CX:DX = tick count from BDA 0040:006Ch, AL = midnight rollover flag
+            const ticksLo = this.mem.readWord(0, 0x046C, false);
+            const ticksHi = this.mem.readWord(0, 0x046E, false);
+            this.regs.cx = ticksHi;
+            this.regs.dx = ticksLo;
+            this.regs.al = this.mem.readByte(0, 0x0470, false);
+            this.mem.writeByte(0, 0x0470, 0, false); // Clear midnight flag on read
+            consoleText = `[INT 1Ah AH=00h: Saat Ticks CX:DX=${ticksHi}:${ticksLo}]`;
+          } else if (ah === 0x01) { // Set System Time
+            this.mem.writeWord(0, 0x046E, this.regs.cx, false);
+            this.mem.writeWord(0, 0x046C, this.regs.dx, false);
+            this.mem.writeByte(0, 0x0470, 0, false);
+          } else if (ah === 0x02) { // Get RTC Time (BCD)
+            this.regs.ch = 0x12; // 12 hours BCD
+            this.regs.cl = 0x00; // 00 minutes BCD
+            this.regs.dh = 0x00; // 00 seconds BCD
+            this.regs.dl = 0x00; // Standard time
+            this.flags.cf = false;
+          } else if (ah === 0x04) { // Get RTC Date (BCD)
+            this.regs.ch = 0x19; // Century 19xx
+            this.regs.cl = 0x81; // Year 81
+            this.regs.dh = 0x01; // Month 01
+            this.regs.dl = 0x01; // Day 01
+            this.flags.cf = false;
+          }
         } else if (intNum === 0x20) { // DOS terminate
           halted = true;
           consoleText = "[Program terminated via INT 20h]";
@@ -1743,6 +2033,7 @@ export class Executor {
               const ch = this.io.popInput()!;
               this.regs.al = ch;
               if (ah === 0x01) {
+                this.writeTeletype(ch);
                 consoleText = String.fromCharCode(ch);
               }
             } else {
@@ -1751,6 +2042,7 @@ export class Executor {
               consoleText = '[INT 21h: Karakter girdisi bekleniyor...]';
             }
           } else if (ah === 0x02) { // Print char in DL
+            this.writeTeletype(this.regs.dl);
             const charStr = String.fromCharCode(this.regs.dl);
             consoleText = charStr;
           } else if (ah === 0x09) { // Print $-terminated string at DS:DX
@@ -1759,6 +2051,7 @@ export class Executor {
             while (true) {
               const b = this.mem.readByte(this.regs.ds, ptr, true);
               if (b === 0x24) break; // '$'
+              this.writeTeletype(b);
               str += String.fromCharCode(b);
               ptr = (ptr + 1) & 0xFFFF;
               if (str.length > 2000) break; // safety guard
@@ -1818,5 +2111,57 @@ export class Executor {
       consoleText,
       waitingForInput
     };
+  }
+
+  /**
+   * Authentic 1981 IBM PC BIOS Teletype writer.
+   * Outputs character directly to CGA Text Mode VRAM (0xB8000),
+   * handling CR, LF, BS, and hardware scrolling at line 24.
+   */
+  public writeTeletype(ch: number, attr: number = 0x07): void {
+    let col = this.mem.readByte(0, 0x0450, false);
+    let row = this.mem.readByte(0, 0x0451, false);
+
+    if (ch === 0x0D) { // Carriage return (\r)
+      col = 0;
+    } else if (ch === 0x0A) { // Line feed (\n)
+      row++;
+    } else if (ch === 0x08) { // Backspace (\b)
+      if (col > 0) col--;
+    } else if (ch === 0x07) { // Bell (\a)
+      // Audio beep
+    } else {
+      // Normal printable character
+      const off = 0xB8000 + (row * 80 + col) * 2;
+      this.mem.writeByte(0, off, ch, true);
+      this.mem.writeByte(0, off + 1, attr, true);
+      col++;
+      if (col >= 80) {
+        col = 0;
+        row++;
+      }
+    }
+
+    // Auto-scroll screen if cursor exceeds row 24 (line 25)
+    if (row >= 25) {
+      for (let r = 0; r < 24; r++) {
+        for (let c = 0; c < 80; c++) {
+          const srcOff = 0xB8000 + ((r + 1) * 80 + c) * 2;
+          const destOff = 0xB8000 + (r * 80 + c) * 2;
+          this.mem.writeByte(0, destOff, this.mem.readByte(0, srcOff, false), false);
+          this.mem.writeByte(0, destOff + 1, this.mem.readByte(0, srcOff + 1, false), false);
+        }
+      }
+      for (let c = 0; c < 80; c++) {
+        const off = 0xB8000 + (24 * 80 + c) * 2;
+        this.mem.writeByte(0, off, 0x20, false);
+        this.mem.writeByte(0, off + 1, 0x07, false);
+      }
+      row = 24;
+    }
+
+    this.mem.writeByte(0, 0x0450, col, false);
+    this.mem.writeByte(0, 0x0451, row, false);
+    this.io.setCrtcCursorOffset(row * 80 + col);
   }
 }

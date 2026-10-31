@@ -1,40 +1,68 @@
-import { WorkspaceDocument, DocumentType, OSProject, OSFileRole } from './types.js';
-import { CpuInstanceManager } from '../cpu/instanceManager.js';
-import { 
-  OS_GUIDE_TEMPLATE,
-  BOOT_ASM_TEMPLATE, 
-  KERNEL_ASM_TEMPLATE, 
-  SCREEN_ASM_TEMPLATE, 
-  KEYBOARD_ASM_TEMPLATE, 
-  SHELL_ASM_TEMPLATE 
-} from '../os/starterTemplates.js';
-import {
-  REF_BIOS_ROM_TEMPLATE,
-  REF_IVT_TABLE_TEMPLATE,
-  REF_BDA_MAP_TEMPLATE
-} from '../os/hardwareRefTemplates.js';
+import { WorkspaceFile, WorkspaceProject } from './types.js';
 
-const STORAGE_DOCS_KEY = 'assemblysim_workspace_docs_v1';
-const STORAGE_ACTIVE_ID_KEY = 'assemblysim_active_doc_id_v1';
-const STORAGE_OS_PROJECTS_KEY = 'assemblysim_os_projects_v1';
+const STORAGE_PROJECT_KEY = 'assemblysim_project_v4';
+const LEGACY_PROJECT_V3 = 'assemblysim_project_v3';
+const LEGACY_DOCS_KEY = 'assemblysim_docs_v2';
+const LEGACY_V1_KEY = 'assemblysim_workspace_docs_v1';
 
-export const DEFAULT_USER_CODE = `; 8086 Assembly Program
-; Ornek: 1'den 5'e kadar sayilari topla (1+2+3+4+5 = 15 / 0Fh)
-ORG 100H
+export const DEFAULT_MAIN_CODE = `; ==========================================================
+; 8086 Bare-Metal Bootloader (boot.asm)
+; BIOS POST sonrasi 0000:7C00h adresinde calisir.
+; 1 MB RAM: 00000h (IVT) | 00400h (BDA) | 07C00h (Boot) | B8000h (VRAM)
+; ==========================================================
+ORG 7C00H
 
-MOV AX, 0000H     ; Toplam = 0
-MOV CX, 0005H     ; Sayac = 5
+START:
+    CLI                 ; Kesmeleri gecici olarak kapat
+    XOR AX, AX
+    MOV DS, AX          ; DS = 0000h
+    MOV ES, AX          ; ES = 0000h
+    MOV SS, AX          ; SS = 0000h
+    MOV SP, 7C00H       ; Stack: 0000:7C00h altina buyur
+    STI                 ; Kesmeleri tekrar ac
 
-DONGU:
-    ADD AX, CX    ; AX = AX + CX
-    LOOP DONGU    ; CX 1 azalt, CX != 0 ise DONGU'ye don
+    ; Ekrana (B800h CGA/VGA Renkli Metin VRAM) dogrudan 'BOOT OK' yaz
+    MOV AX, 0B800H
+    MOV ES, AX
 
-HLT               ; Programi sonlandir
+    ; 'B' (42h) - Sari yazi (0Eh)
+    MOV BYTE PTR ES:[0000H], 42H
+    MOV BYTE PTR ES:[0001H], 0EH
+
+    ; 'O' (4Fh)
+    MOV BYTE PTR ES:[0002H], 4FH
+    MOV BYTE PTR ES:[0003H], 0EH
+
+    ; 'O' (4Fh)
+    MOV BYTE PTR ES:[0004H], 4FH
+    MOV BYTE PTR ES:[0005H], 0EH
+
+    ; 'T' (54h)
+    MOV BYTE PTR ES:[0006H], 54H
+    MOV BYTE PTR ES:[0007H], 0EH
+
+    ; ' ' (20h)
+    MOV BYTE PTR ES:[0008H], 20H
+    MOV BYTE PTR ES:[0009H], 0EH
+
+    ; 'O' (4Fh) - Acik yesil yazi (0Ah)
+    MOV BYTE PTR ES:[000AH], 4FH
+    MOV BYTE PTR ES:[000BH], 0AH
+
+    ; 'K' (4Bh)
+    MOV BYTE PTR ES:[000CH], 4BH
+    MOV BYTE PTR ES:[000DH], 0AH
+
+HANG:
+    HLT                 ; Islemciyi durdur
+    JMP HANG            ; Bekleme dongusu
 `;
 
 export interface WorkspaceEvents {
-  onDocumentChange?: (doc: WorkspaceDocument) => void;
-  onDocumentListChange?: (docs: WorkspaceDocument[]) => void;
+  onProjectChange?: (project: WorkspaceProject) => void;
+  onActiveFileChange?: (file: WorkspaceFile) => void;
+  onDocumentChange?: (doc: WorkspaceFile) => void;
+  onDocumentListChange?: (docs: WorkspaceFile[]) => void;
 }
 
 function getSafeStorage(): Storage | null {
@@ -52,14 +80,10 @@ function getSafeStorage(): Storage | null {
 }
 
 export class WorkspaceManager {
-  private docs: Map<string, WorkspaceDocument> = new Map();
-  private osProjects: Map<string, OSProject> = new Map();
-  private activeId: string = 'doc-main';
-  private cpuManager: CpuInstanceManager;
+  private project!: WorkspaceProject;
   private events: WorkspaceEvents;
 
-  constructor(cpuManager: CpuInstanceManager, events: WorkspaceEvents = {}) {
-    this.cpuManager = cpuManager;
+  constructor(events: WorkspaceEvents = {}) {
     this.events = events;
     this.loadFromStorage();
   }
@@ -67,411 +91,290 @@ export class WorkspaceManager {
   private loadFromStorage(): void {
     const storage = getSafeStorage();
     if (!storage) {
-      this.initDefaultDoc();
+      this.initDefaultProject();
       return;
     }
 
     try {
-      const savedDocs = storage.getItem(STORAGE_DOCS_KEY);
-      const savedActiveId = storage.getItem(STORAGE_ACTIVE_ID_KEY);
-      const savedProjects = storage.getItem(STORAGE_OS_PROJECTS_KEY);
-
-      if (savedProjects) {
-        const parsedProj: OSProject[] = JSON.parse(savedProjects);
-        if (Array.isArray(parsedProj)) {
-          for (const p of parsedProj) {
-            this.osProjects.set(p.id, p);
-          }
-        }
-      }
-
-      if (savedDocs) {
-        const parsed: WorkspaceDocument[] = JSON.parse(savedDocs);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          for (const d of parsed) {
-            // Ensure a matching CPU instance exists for each document
-            if (!this.cpuManager.getInstance(d.cpuInstanceId)) {
-              this.cpuManager.createInstance(d.title, d.cpuInstanceId);
-            }
-            this.docs.set(d.id, d);
-          }
-
-          // Ensure all OS projects have the architecture guide and hardware reference files
-          for (const proj of this.osProjects.values()) {
-            const hasGuide = proj.fileDocIds.some(id => this.docs.get(id)?.osRole === 'guide');
-            if (!hasGuide) {
-              const guideDoc = this.createOSFileInternal(proj.id, '00_REHBER.asm', 'guide', OS_GUIDE_TEMPLATE);
-              proj.fileDocIds.push(guideDoc.id);
-            }
-            const hasBios = proj.fileDocIds.some(id => this.docs.get(id)?.title === 'ref_bios_rom.asm');
-            if (!hasBios) {
-              const biosDoc = this.createOSFileInternal(proj.id, 'ref_bios_rom.asm', 'hardware_ref', REF_BIOS_ROM_TEMPLATE);
-              proj.fileDocIds.push(biosDoc.id);
-            }
-            const hasIvt = proj.fileDocIds.some(id => this.docs.get(id)?.title === 'ref_ivt_tablosu.asm');
-            if (!hasIvt) {
-              const ivtDoc = this.createOSFileInternal(proj.id, 'ref_ivt_tablosu.asm', 'hardware_ref', REF_IVT_TABLE_TEMPLATE);
-              proj.fileDocIds.push(ivtDoc.id);
-            }
-            const hasBda = proj.fileDocIds.some(id => this.docs.get(id)?.title === 'ref_bda_donanim.asm');
-            if (!hasBda) {
-              const bdaDoc = this.createOSFileInternal(proj.id, 'ref_bda_donanim.asm', 'hardware_ref', REF_BDA_MAP_TEMPLATE);
-              proj.fileDocIds.push(bdaDoc.id);
-            }
-          }
-
-          if (savedActiveId && this.docs.has(savedActiveId)) {
-            this.activeId = savedActiveId;
-          } else {
-            this.activeId = parsed[0].id;
-          }
+      const saved = storage.getItem(STORAGE_PROJECT_KEY);
+      if (saved) {
+        const parsed: WorkspaceProject = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.files) && parsed.files.length > 0) {
+          this.project = parsed;
+          this.ensureIntegrity();
           return;
         }
       }
-    } catch (e) {
-      console.warn('Could not load workspace from localStorage', e);
+
+      // Check legacy v2 docs
+      const legacyDocs = storage.getItem(LEGACY_DOCS_KEY) || storage.getItem(LEGACY_V1_KEY);
+      if (legacyDocs) {
+        const parsedLegacy = JSON.parse(legacyDocs);
+        if (Array.isArray(parsedLegacy) && parsedLegacy.length > 0) {
+          const files: WorkspaceFile[] = parsedLegacy
+            .filter((d: any) => d && typeof d.code === 'string')
+            .map((d: any, idx: number) => ({
+              id: String(d.id || `file-${idx}`),
+              name: String(d.title || `file${idx + 1}.asm`),
+              code: String(d.code),
+              isEntry: idx === 0,
+              createdAt: Number(d.createdAt || Date.now()),
+              lastModified: Number(d.lastModified || Date.now()),
+              editorScroll: d.editorScroll
+            }));
+
+          if (files.length > 0) {
+            this.project = {
+              id: 'project-default',
+              name: '8086 Projesi',
+              entryFileId: files[0].id,
+              activeFileId: files[0].id,
+              openFileIds: files.map(f => f.id),
+              files,
+              createdAt: Date.now(),
+              lastModified: Date.now()
+            };
+            this.saveToStorage();
+            return;
+          }
+        }
+      }
+    } catch {
+      // Fallback
     }
 
-    this.initDefaultDoc();
+    this.initDefaultProject();
   }
 
-  private initDefaultDoc(): void {
-    const mainDoc: WorkspaceDocument = {
-      id: 'doc-main',
-      title: 'main.asm',
-      type: 'custom',
-      code: DEFAULT_USER_CODE,
-      cpuInstanceId: this.cpuManager.getDefaultInstance().id,
+  private initDefaultProject(): void {
+    const bootFile: WorkspaceFile = {
+      id: 'file-boot',
+      name: 'boot.asm',
+      code: DEFAULT_MAIN_CODE,
+      isEntry: true,
       createdAt: Date.now(),
       lastModified: Date.now()
     };
-    this.docs.set(mainDoc.id, mainDoc);
-    this.activeId = mainDoc.id;
+
+    this.project = {
+      id: 'project-default',
+      name: '8086 Bare-Metal Sistem',
+      entryFileId: bootFile.id,
+      activeFileId: bootFile.id,
+      openFileIds: [bootFile.id],
+      files: [bootFile],
+      createdAt: Date.now(),
+      lastModified: Date.now()
+    };
     this.saveToStorage();
   }
 
-  private saveToStorage(): void {
+  private ensureIntegrity(): void {
+    if (!this.project.files || this.project.files.length === 0) {
+      this.initDefaultProject();
+      return;
+    }
+
+    // Ensure entry file exists
+    if (!this.project.files.some(f => f.id === this.project.entryFileId)) {
+      this.project.entryFileId = this.project.files[0].id;
+      this.project.files[0].isEntry = true;
+    }
+
+    // Ensure active file exists
+    if (!this.project.files.some(f => f.id === this.project.activeFileId)) {
+      this.project.activeFileId = this.project.entryFileId;
+    }
+
+    // Ensure open file IDs are valid
+    this.project.openFileIds = this.project.openFileIds.filter(id =>
+      this.project.files.some(f => f.id === id)
+    );
+    if (this.project.openFileIds.length === 0) {
+      this.project.openFileIds = [this.project.activeFileId];
+    }
+  }
+
+  saveToStorage(): void {
     const storage = getSafeStorage();
     if (!storage) return;
-
     try {
-      const arr = Array.from(this.docs.values());
-      storage.setItem(STORAGE_DOCS_KEY, JSON.stringify(arr));
-      storage.setItem(STORAGE_ACTIVE_ID_KEY, this.activeId);
-
-      const projArr = Array.from(this.osProjects.values());
-      storage.setItem(STORAGE_OS_PROJECTS_KEY, JSON.stringify(projArr));
-    } catch (e) {
-      console.warn('Could not save workspace to localStorage', e);
+      storage.setItem(STORAGE_PROJECT_KEY, JSON.stringify(this.project));
+    } catch {
+      // storage full or disabled
     }
   }
 
-  getAllDocuments(): WorkspaceDocument[] {
-    return Array.from(this.docs.values());
+  getProject(): WorkspaceProject {
+    return this.project;
   }
 
-  getDocument(id: string): WorkspaceDocument | undefined {
-    return this.docs.get(id);
+  getAllFiles(): WorkspaceFile[] {
+    return this.project.files.map(f => ({ ...f, title: f.title || f.name }));
   }
 
-  getActiveDocument(): WorkspaceDocument {
-    return this.docs.get(this.activeId) || this.getAllDocuments()[0];
+  getAllDocuments(): WorkspaceFile[] {
+    return this.getAllFiles();
   }
 
-  setActiveDocument(id: string): WorkspaceDocument | undefined {
-    const doc = this.docs.get(id);
-    if (!doc) return undefined;
-    this.activeId = id;
-    this.saveToStorage();
-    this.events.onDocumentChange?.(doc);
-    return doc;
+  getFile(id: string): WorkspaceFile | undefined {
+    const f = this.project.files.find(item => item.id === id);
+    if (!f) return undefined;
+    return { ...f, title: f.title || f.name };
   }
 
-  /**
-   * Opens an existing document or creates a new one with its own isolated CPU instance
-   */
-  openDocument(docInput: {
-    id?: string;
-    title: string;
-    type: DocumentType;
-    code: string;
-    challengeId?: string;
-    milestoneId?: string;
-    referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes';
-  }): WorkspaceDocument {
-    const docId = docInput.id || (
-      docInput.referenceTab ? `ref-${docInput.referenceTab}` :
-      docInput.milestoneId ? `lecture-${docInput.milestoneId}` :
-      docInput.challengeId ? `challenge-${docInput.challengeId}` : 
-      `doc-${Date.now()}`
-    );
-
-    // If already open, switch to it and update code if starter
-    if (this.docs.has(docId)) {
-      this.activeId = docId;
-      const existing = this.docs.get(docId)!;
-      this.saveToStorage();
-      this.events.onDocumentChange?.(existing);
-      return existing;
-    }
-
-    // Automatically create a dedicated isolated CPU instance for this new document
-    const cpuInst = this.cpuManager.createInstance(`İşlemci: ${docInput.title}`);
-
-    const newDoc: WorkspaceDocument = {
-      id: docId,
-      title: docInput.title,
-      type: docInput.type,
-      code: docInput.code,
-      cpuInstanceId: cpuInst.id,
-      challengeId: docInput.challengeId,
-      milestoneId: docInput.milestoneId,
-      referenceTab: docInput.referenceTab,
-      createdAt: Date.now(),
-      lastModified: Date.now()
-    };
-
-    this.docs.set(docId, newDoc);
-    this.activeId = docId;
-    this.saveToStorage();
-    this.events.onDocumentListChange?.(this.getAllDocuments());
-    this.events.onDocumentChange?.(newDoc);
-    return newDoc;
+  getDocument(id: string): WorkspaceFile | undefined {
+    return this.getFile(id);
   }
 
-  updateActiveCode(code: string): void {
-    const doc = this.getActiveDocument();
-    if (doc) {
-      doc.code = code;
-      doc.lastModified = Date.now();
-      this.saveToStorage();
-    }
+  getActiveFile(): WorkspaceFile {
+    const file = this.getFile(this.project.activeFileId);
+    if (file) return file;
+    const first = this.project.files[0];
+    return { ...first, title: first.title || first.name };
+  }
+
+  getActiveDocument(): WorkspaceFile {
+    return this.getActiveFile();
+  }
+
+  setActiveDocument(id: string): void {
+    this.setActiveFile(id);
+  }
+
+  createDocument(name?: string, initialCode?: string): WorkspaceFile {
+    return this.createFile(name, initialCode);
   }
 
   updateDocumentCode(id: string, code: string): void {
-    const doc = this.docs.get(id);
-    if (doc) {
-      doc.code = code;
-      doc.lastModified = Date.now();
+    this.updateFileCode(id, code);
+  }
+
+  setActiveFile(id: string): void {
+    if (this.project.files.some(f => f.id === id)) {
+      this.project.activeFileId = id;
+      this.openTab(id);
       this.saveToStorage();
+      this.events.onActiveFileChange?.(this.getActiveFile());
+      this.events.onProjectChange?.(this.project);
     }
   }
 
-  closeDocument(id: string): WorkspaceDocument | null {
-    if (this.docs.size <= 1) {
-      // Don't close the last document; reset it instead
-      return null;
+  getEntryFile(): WorkspaceFile {
+    const file = this.getFile(this.project.entryFileId);
+    if (file) return file;
+    return this.project.files[0];
+  }
+
+  setEntryFile(id: string): void {
+    if (this.project.files.some(f => f.id === id)) {
+      this.project.entryFileId = id;
+      this.project.files.forEach(f => {
+        f.isEntry = f.id === id;
+      });
+      this.saveToStorage();
+      this.events.onProjectChange?.(this.project);
     }
-
-    const doc = this.docs.get(id);
-    if (!doc) return null;
-
-    this.docs.delete(id);
-
-    // If active document was closed, pick another active document
-    if (this.activeId === id) {
-      const remaining = this.getAllDocuments();
-      this.activeId = remaining[0].id;
-      this.events.onDocumentChange?.(remaining[0]);
-    }
-
-    this.saveToStorage();
-    this.events.onDocumentListChange?.(this.getAllDocuments());
-    return this.getActiveDocument();
   }
 
-  assignCpuToDocument(docId: string, cpuId: string): boolean {
-    const doc = this.docs.get(docId);
-    const cpu = this.cpuManager.getInstance(cpuId);
-    if (!doc || !cpu) return false;
+  createFile(name?: string, initialCode?: string): WorkspaceFile {
+    const count = this.project.files.length + 1;
+    let fileName = name ? name.trim() : `file${count}.asm`;
+    if (!fileName.endsWith('.asm')) fileName += '.asm';
 
-    doc.cpuInstanceId = cpuId;
-    this.saveToStorage();
-    if (this.activeId === docId) {
-      this.events.onDocumentChange?.(doc);
-    }
-    return true;
-  }
-
-  setDocumentCpu(docId: string, cpuId: string): WorkspaceDocument | undefined {
-    const success = this.assignCpuToDocument(docId, cpuId);
-    return success ? this.docs.get(docId) : undefined;
-  }
-
-  renameDocument(docId: string, newTitle: string): boolean {
-    const doc = this.docs.get(docId);
-    if (!doc) return false;
-    const cleanTitle = newTitle.trim();
-    if (!cleanTitle) return false;
-
-    doc.title = cleanTitle;
-    doc.lastModified = Date.now();
-    this.saveToStorage();
-    this.events.onDocumentListChange?.(this.getAllDocuments());
-    return true;
-  }
-
-  getOSProjects(): OSProject[] {
-    return Array.from(this.osProjects.values());
-  }
-
-  getOSProject(id: string): OSProject | undefined {
-    return this.osProjects.get(id);
-  }
-
-  createOSProject(name?: string): OSProject {
-    const projId = `os-proj-${Date.now()}`;
-    const projName = (name && name.trim()) ? name.trim() : 'BenimOS';
-
-    // 1. Kullanıcının Yazacağı 5 Temel OS Modülü
-    const bootDoc = this.createOSFileInternal(projId, 'boot.asm', 'boot', BOOT_ASM_TEMPLATE);
-    const kernelDoc = this.createOSFileInternal(projId, 'kernel.asm', 'kernel', KERNEL_ASM_TEMPLATE);
-    const screenDoc = this.createOSFileInternal(projId, 'screen.asm', 'screen', SCREEN_ASM_TEMPLATE);
-    const keyboardDoc = this.createOSFileInternal(projId, 'keyboard.asm', 'keyboard', KEYBOARD_ASM_TEMPLATE);
-    const shellDoc = this.createOSFileInternal(projId, 'shell.asm', 'shell', SHELL_ASM_TEMPLATE);
-
-    // 2. Mimari Rehberi ve Donanım/BIOS Referans Belgeleri (İnceleme & Gözlem için Salt Okunur)
-    const guideDoc = this.createOSFileInternal(projId, '00_REHBER.asm', 'guide', OS_GUIDE_TEMPLATE);
-    const biosDoc = this.createOSFileInternal(projId, 'ref_bios_rom.asm', 'hardware_ref', REF_BIOS_ROM_TEMPLATE);
-    const ivtDoc = this.createOSFileInternal(projId, 'ref_ivt_tablosu.asm', 'hardware_ref', REF_IVT_TABLE_TEMPLATE);
-    const bdaDoc = this.createOSFileInternal(projId, 'ref_bda_donanim.asm', 'hardware_ref', REF_BDA_MAP_TEMPLATE);
-
-    const project: OSProject = {
-      id: projId,
-      name: projName,
-      createdAt: Date.now(),
-      lastModified: Date.now(),
-      isCollapsed: false,
-      activeFileId: bootDoc.id,
-      fileDocIds: [
-        bootDoc.id, 
-        kernelDoc.id, 
-        screenDoc.id, 
-        keyboardDoc.id, 
-        shellDoc.id,
-        guideDoc.id,
-        biosDoc.id, 
-        ivtDoc.id, 
-        bdaDoc.id
-      ]
-    };
-
-    this.osProjects.set(projId, project);
-    this.saveToStorage();
-    this.events.onDocumentListChange?.(this.getAllDocuments());
-    return project;
-  }
-
-  private createOSFileInternal(
-    projId: string, 
-    fileName: string, 
-    role: OSFileRole, 
-    code: string
-  ): WorkspaceDocument {
-    const docId = `doc-${projId}-${role}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const cpuInst = this.cpuManager.createInstance(`OS: ${fileName}`);
-
-    const doc: WorkspaceDocument = {
-      id: docId,
-      title: fileName,
-      type: 'os_file',
-      code: code,
-      cpuInstanceId: cpuInst.id,
-      osProjectId: projId,
-      osRole: role,
+    const newFile: WorkspaceFile = {
+      id: `file-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      name: fileName,
+      code: initialCode !== undefined ? initialCode : `; ${fileName}\nORG 2000H\n\n; Kodlarinizi buraya yazin...\n\nRET\n`,
+      isEntry: false,
       createdAt: Date.now(),
       lastModified: Date.now()
     };
 
-    this.docs.set(docId, doc);
-    return doc;
-  }
-
-  addFileToOSProject(
-    projectId: string, 
-    fileName: string, 
-    role: OSFileRole = 'custom', 
-    initialCode?: string
-  ): WorkspaceDocument | null {
-    const proj = this.osProjects.get(projectId);
-    if (!proj) return null;
-
-    const code = initialCode !== undefined ? initialCode : `; ${fileName} - ${proj.name} Modulu\nORG 1000h\n\n`;
-    const doc = this.createOSFileInternal(projectId, fileName, role, code);
-    proj.fileDocIds.push(doc.id);
-    proj.lastModified = Date.now();
-
+    this.project.files.push(newFile);
+    this.project.activeFileId = newFile.id;
+    this.openTab(newFile.id);
     this.saveToStorage();
-    this.events.onDocumentListChange?.(this.getAllDocuments());
-    return doc;
+
+    this.events.onActiveFileChange?.(newFile);
+    this.events.onProjectChange?.(this.project);
+    return newFile;
   }
 
-  renameOSProject(id: string, newName: string): boolean {
-    const proj = this.osProjects.get(id);
-    if (!proj) return false;
-    const cleanName = newName.trim();
-    if (!cleanName) return false;
-
-    proj.name = cleanName;
-    proj.lastModified = Date.now();
-    this.saveToStorage();
-    this.events.onDocumentListChange?.(this.getAllDocuments());
-    return true;
-  }
-
-  deleteOSProject(id: string): boolean {
-    const proj = this.osProjects.get(id);
-    if (!proj) return false;
-
-    // Projeye ait tüm dosyaları sil
-    for (const fileId of proj.fileDocIds) {
-      this.docs.delete(fileId);
+  deleteFile(id: string): boolean {
+    if (this.project.files.length <= 1) {
+      return false; // Don't delete the last file
     }
-    this.osProjects.delete(id);
 
-    // Eğer silinen dosyalardan biri aktifse, ana belgeye dön
-    if (!this.docs.has(this.activeId)) {
-      const remaining = this.getAllDocuments();
-      if (remaining.length > 0) {
-        this.activeId = remaining[0].id;
-        this.events.onDocumentChange?.(remaining[0]);
-      }
+    const index = this.project.files.findIndex(f => f.id === id);
+    if (index === -1) return false;
+
+    this.project.files.splice(index, 1);
+    this.closeTab(id);
+
+    // If deleted file was active, switch active file
+    if (this.project.activeFileId === id) {
+      const nextActive = this.project.files[Math.max(0, index - 1)];
+      this.project.activeFileId = nextActive.id;
+      this.openTab(nextActive.id);
+      this.events.onActiveFileChange?.(nextActive);
+    }
+
+    // If deleted file was entry, update entry
+    if (this.project.entryFileId === id) {
+      this.setEntryFile(this.project.files[0].id);
     }
 
     this.saveToStorage();
-    this.events.onDocumentListChange?.(this.getAllDocuments());
+    this.events.onProjectChange?.(this.project);
     return true;
   }
 
-  toggleOSProjectCollapse(id: string): void {
-    const proj = this.osProjects.get(id);
-    if (proj) {
-      proj.isCollapsed = !proj.isCollapsed;
+  renameFile(id: string, newName: string): void {
+    const file = this.getFile(id);
+    if (!file) return;
+    let clean = newName.trim();
+    if (!clean) return;
+    if (!clean.endsWith('.asm')) clean += '.asm';
+    file.name = clean;
+    file.lastModified = Date.now();
+    this.saveToStorage();
+    this.events.onProjectChange?.(this.project);
+  }
+
+  updateFileCode(id: string, code: string, editorScroll?: { top: number; left: number }): void {
+    const file = this.getFile(id);
+    if (!file) return;
+    file.code = code;
+    file.lastModified = Date.now();
+    if (editorScroll) {
+      file.editorScroll = editorScroll;
+    }
+    this.saveToStorage();
+  }
+
+  openTab(fileId: string): void {
+    if (!this.project.openFileIds.includes(fileId)) {
+      this.project.openFileIds.push(fileId);
       this.saveToStorage();
+      this.events.onProjectChange?.(this.project);
     }
   }
 
-  deleteOSFile(fileDocId: string): boolean {
-    const doc = this.docs.get(fileDocId);
-    if (!doc || !doc.osProjectId) return false;
-
-    const proj = this.osProjects.get(doc.osProjectId);
-    if (proj) {
-      proj.fileDocIds = proj.fileDocIds.filter(fid => fid !== fileDocId);
-      proj.lastModified = Date.now();
-    }
-
-    this.docs.delete(fileDocId);
-    if (this.activeId === fileDocId) {
-      const remaining = this.getAllDocuments();
-      if (remaining.length > 0) {
-        this.activeId = remaining[0].id;
-        this.events.onDocumentChange?.(remaining[0]);
+  closeTab(fileId: string): void {
+    const idx = this.project.openFileIds.indexOf(fileId);
+    if (idx !== -1) {
+      this.project.openFileIds.splice(idx, 1);
+      if (this.project.openFileIds.length === 0) {
+        this.project.openFileIds = [this.project.files[0].id];
+      }
+      if (this.project.activeFileId === fileId) {
+        const nextId = this.project.openFileIds[Math.max(0, idx - 1)] || this.project.openFileIds[0];
+        this.setActiveFile(nextId);
+      } else {
+        this.saveToStorage();
+        this.events.onProjectChange?.(this.project);
       }
     }
-
-    this.saveToStorage();
-    this.events.onDocumentListChange?.(this.getAllDocuments());
-    return true;
   }
 }

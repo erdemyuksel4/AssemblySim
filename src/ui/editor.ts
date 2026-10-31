@@ -65,12 +65,11 @@ export class Editor {
   }
 
   private syncScroll(): void {
-    this.gutterLayer.scrollTop = this.textarea.scrollTop;
-    if (this.gutterLayer.scrollTop !== this.textarea.scrollTop) {
-      this.textarea.scrollTop = this.gutterLayer.scrollTop;
-    }
-    this.highlightLayer.scrollTop = this.textarea.scrollTop;
-    this.highlightLayer.scrollLeft = this.textarea.scrollLeft;
+    const top = this.textarea.scrollTop;
+    const left = this.textarea.scrollLeft;
+    this.gutterLayer.scrollTop = top;
+    this.highlightLayer.scrollTop = top;
+    this.highlightLayer.scrollLeft = left;
   }
 
   private applyEdit(newVal: string, newStart: number, newEnd: number): void {
@@ -156,6 +155,13 @@ export class Editor {
 
   private attachEvents(): void {
     this.textarea.addEventListener('scroll', () => this.syncScroll());
+
+    // Mouse wheel over line numbers scrolls editor vertically
+    this.gutterLayer.addEventListener('wheel', (e: WheelEvent) => {
+      this.textarea.scrollTop += e.deltaY;
+      this.syncScroll();
+      e.preventDefault();
+    }, { passive: false });
 
     this.textarea.addEventListener('input', (e: Event) => {
       const inputEvent = e as InputEvent;
@@ -374,12 +380,10 @@ export class Editor {
   }
 
   private scrollToLine(line: number): void {
-    if (this.gutterLayer.scrollHeight > this.gutterLayer.clientHeight) {
-      const lineHeight = 22;
-      const targetScroll = (line - 1) * lineHeight - 60;
-      this.textarea.scrollTop = Math.max(0, targetScroll);
-      this.syncScroll();
-    }
+    const lineHeight = 22;
+    const targetScroll = Math.max(0, (line - 1) * lineHeight - 60);
+    this.textarea.scrollTop = targetScroll;
+    this.syncScroll();
   }
 
   private updateGutter(): void {

@@ -1,7 +1,7 @@
 import { Token, Lexer } from './lexer.js';
 import { Operand, OperandParser } from './operands.js';
 
-export type DirectiveType = 'ORG' | 'DB' | 'DW' | 'EQU' | 'PROC' | 'ENDP' | 'MODEL' | 'STACK' | 'DATA' | 'CODE' | 'ASSUME' | 'END';
+export type DirectiveType = 'ORG' | 'DB' | 'DW' | 'EQU' | 'PROC' | 'ENDP' | 'MODEL' | 'STACK' | 'DATA' | 'CODE' | 'ASSUME' | 'END' | 'TIMES';
 
 export interface DupItem {
   count: number;
@@ -25,6 +25,8 @@ export interface ParsedDirective {
   items: DataItem[];
   orgValue?: number;
   equValue?: number;
+  timesTokens?: Token[];
+  innerType?: 'DB' | 'DW';
 }
 
 export interface ParsedLine {
@@ -156,6 +158,28 @@ export class Parser {
         directive: {
           type: keyword as DirectiveType,
           items
+        }
+      };
+    }
+
+    // Check for TIMES directive (e.g. TIMES 510-($-$$) DB 0 or TIMES 64 DB 0)
+    if (keyword === 'TIMES') {
+      const remaining = tokens.slice(tokenIdx);
+      const dbIdx = remaining.findIndex(t => ['DB', 'DW'].includes(t.text.toUpperCase()));
+      if (dbIdx === -1) {
+        throw new Error(`TIMES sonrasında DB veya DW direktifi bekleniyor, satır: ${lineNumber}`);
+      }
+      const timesTokens = remaining.slice(0, dbIdx);
+      const innerKeyword = remaining[dbIdx].text.toUpperCase() as 'DB' | 'DW';
+      const items = this.parseDataItems(remaining.slice(dbIdx + 1), lineNumber);
+      return {
+        lineNumber,
+        label,
+        directive: {
+          type: 'TIMES',
+          items,
+          timesTokens,
+          innerType: innerKeyword
         }
       };
     }

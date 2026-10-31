@@ -1,30 +1,23 @@
-export type DocumentType = 'custom' | 'challenge' | 'example' | 'lecture' | 'reference' | 'os_file' | 'os_sandbox';
-
-export type OSFileRole = 'boot' | 'kernel' | 'screen' | 'keyboard' | 'shell' | 'interrupts' | 'guide' | 'hardware_ref' | 'custom';
-
-export interface OSProject {
+export interface WorkspaceFile {
   id: string;
-  name: string;
+  name: string;        // örn: 'main.asm', 'ekran.asm'
+  title?: string;      // alias for name
+  code: string;
+  isEntry?: boolean;   // CS:IP başlangıç/giriş dosyası mı?
   createdAt: number;
   lastModified: number;
-  isCollapsed?: boolean;
-  activeFileId?: string;
-  fileDocIds: string[];
+  editorScroll?: { top: number; left: number };
 }
 
-export interface WorkspaceDocument {
+export type WorkspaceDocument = WorkspaceFile;
+
+export interface WorkspaceProject {
   id: string;
-  title: string;
-  type: DocumentType;
-  code: string;
-  cpuInstanceId: string;
-  challengeId?: string;
-  milestoneId?: string;
-  referenceTab?: 'manual' | 'lectures' | 'leetcode' | 'roadmap' | 'studynotes';
-  osProjectId?: string;
-  osRole?: OSFileRole;
+  name: string;
+  entryFileId: string;
+  activeFileId: string;
+  openFileIds: string[];
+  files: WorkspaceFile[];
   createdAt: number;
   lastModified: number;
-  scrollTop?: number;
-  editorScroll?: { top: number; left: number };
 }
