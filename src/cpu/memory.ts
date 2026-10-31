@@ -167,6 +167,9 @@ export class Memory {
 
   // 20-bit physical address calculation with wrap-around
   toPhys(seg: number, off: number): number {
+    if (seg === 0 && off >= 0x10000) {
+      return off & 0xFFFFF;
+    }
     return (((seg & 0xFFFF) << 4) + (off & 0xFFFF)) & 0xFFFFF;
   }
 

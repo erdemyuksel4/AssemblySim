@@ -1,6 +1,7 @@
 import { WorkspaceFile, WorkspaceProject } from './types.js';
 
-const STORAGE_PROJECT_KEY = 'assemblysim_project_v4';
+const STORAGE_PROJECT_KEY = 'assemblysim_project_v5';
+const LEGACY_PROJECT_V4 = 'assemblysim_project_v4';
 const LEGACY_PROJECT_V3 = 'assemblysim_project_v3';
 const LEGACY_DOCS_KEY = 'assemblysim_docs_v2';
 const LEGACY_V1_KEY = 'assemblysim_workspace_docs_v1';
@@ -257,7 +258,10 @@ export class WorkspaceManager {
     }
 
     try {
-      const saved = storage.getItem(STORAGE_PROJECT_KEY);
+      let saved = storage.getItem(STORAGE_PROJECT_KEY);
+      if (!saved) {
+        saved = storage.getItem(LEGACY_PROJECT_V4);
+      }
       if (saved) {
         const parsed: WorkspaceProject = JSON.parse(saved);
         if (parsed && Array.isArray(parsed.files) && parsed.files.length > 0) {
@@ -345,8 +349,9 @@ export class WorkspaceManager {
       return;
     }
 
-    // Ensure console.asm exists in the project
-    if (!this.project.files.some(f => f.name === 'console.asm')) {
+    // Ensure console.asm exists in the project and has clean, working code
+    const existingConsole = this.project.files.find(f => f.name === 'console.asm');
+    if (!existingConsole) {
       const consoleFile: WorkspaceFile = {
         id: `file-console-${Date.now()}`,
         name: 'console.asm',
@@ -359,6 +364,8 @@ export class WorkspaceManager {
       if (!this.project.openFileIds.includes(consoleFile.id)) {
         this.project.openFileIds.push(consoleFile.id);
       }
+    } else if (existingConsole.code.includes('JMP $') || !existingConsole.code.includes('MSG_BANNER')) {
+      existingConsole.code = DEFAULT_CONSOLE_CODE;
     }
 
     // Ensure entry file exists

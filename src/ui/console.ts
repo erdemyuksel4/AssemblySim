@@ -149,8 +149,11 @@ export class ConsoleView {
       }
     }
 
-    if (waiting && input) {
-      input.focus();
+    if (waiting) {
+      this.refreshCrtScreen();
+      if (input) {
+        input.focus();
+      }
     }
   }
 

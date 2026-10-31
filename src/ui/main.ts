@@ -697,6 +697,8 @@ export class App {
     if (info.waitingForInput) {
       this.handleStop();
       this.consoleView.setWaitingForInput(true);
+      this.updateCpuViews();
+      this.consoleView.updateVram(this.cpu.mem.data);
       return;
     }
 
@@ -788,6 +790,8 @@ export class App {
         if (info.waitingForInput) {
           this.handleStop();
           this.consoleView.setWaitingForInput(true);
+          this.updateCpuViews();
+          this.consoleView.updateVram(this.cpu.mem.data);
           return;
         }
 

@@ -480,6 +480,9 @@ describe('Bare-Metal 8086 Computer & Multi-File Memory Tests', () => {
     // Should be waiting for input at INT 21h AH=01h
     expect(cpu.regs.ah).toBe(0x01);
 
+    // Verify characters were written to VRAM 0xB8000 (Row 1 starts at offset 160 due to leading CRLF)
+    expect(cpu.mem.data[0xB8000 + 160]).toBe(0x3D); // '=' from "========================================"
+
     // Feed 'V' (version command)
     cpu.feedInput('V\r');
 
