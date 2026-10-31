@@ -291,6 +291,9 @@ export class App {
       onInput: (input) => {
         this.cpu.feedInput(input);
         this.consoleView.setWaitingForInput(false);
+        if (!this.isRunning && !this.cpu.halted) {
+          this.handleRun();
+        }
       }
     });
 

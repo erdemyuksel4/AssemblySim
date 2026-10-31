@@ -1249,5 +1249,265 @@ HLT
         }
       }
     ]
+  },
+  {
+    id: 'topic-10-graphics',
+    number: 10,
+    title: 'CRT Monitör, VGA Mode 13h & Grafik Çizimi (VRAM, BIOS INT 10h)',
+    shortTitle: '10. CRT & Grafik Çizimi',
+    badge: 'GRAFİK & VRAM',
+    icon: '🎨',
+    summary: 'VGA Mode 13h (320x200, 256 Renk) başlatma, BIOS INT 10h ile piksel çizme, 0xA000 segmenti ile doğrudan VRAM erişimi ve retro geometrik şekil algoritmaları.',
+    opcodes: ['INT', 'STOSB', 'REP'],
+    mindMap: {
+      x: 65,
+      y: 85,
+      connections: ['topic-8-io-int']
+    },
+    subLessons: [
+      {
+        id: 'sub-10-mode13h-pixel',
+        number: '10.1',
+        title: 'VGA Mode 13h & BIOS INT 10h ile Piksel Çizme',
+        summary: '320x200 256 renk grafik moduna geçiş ve AH=0Ch piksel çizme kesmesi.',
+        theoryHtml: `
+          <div class="nb-section">
+            <h4 class="nb-title">VGA Mode 13h Grafik Modu ve INT 10h</h4>
+            <p>IBM PC ve uyumlu sistemlerde ekrana piksel piksel çizim yapabilmek için önce grafik moduna geçilmelidir. En popüler mod <strong>VGA Mode 13h</strong>'tır:</p>
+            <ul>
+              <li><strong>Çözünürlük:</strong> 320 yatay piksel &times; 200 dikey piksel</li>
+              <li><strong>Renk Derinliği:</strong> 256 renk (her piksel bellekte tam 1 bayt yer kaplar)</li>
+              <li><strong>VRAM Segmenti:</strong> <code>0xA000:0000</code></li>
+            </ul>
+            <div class="nb-formula-box">
+              <code>; Mode 13h'a Geçiş:<br>MOV AX, 0013h<br>INT 10h</code>
+            </div>
+            <h4 class="nb-title">BIOS Piksel Çizme Servisi (INT 10h, AH=0Ch)</h4>
+            <p>BIOS üzerinden piksel koymak için şu yazmaçlar doldurulur:</p>
+            <ul>
+              <li><code>AH = 0Ch</code> (Piksel çizme fonksiyon kodu)</li>
+              <li><code>AL = Renk Kodu</code> (0..255 palet indeksi, örn: 04h=Kırmızı, 0Fh=Beyaz)</li>
+              <li><code>CX = Sütun (X)</code> (0..319)</li>
+              <li><code>DX = Satır (Y)</code> (0..199)</li>
+              <li><code>BH = 0</code> (Sayfa numarası)</li>
+            </ul>
+            <div class="nb-callout tip">
+              💡 <code>INT 10h</code> çağrıldıktan sonra ekranın (CX, DX) noktasında AL renginde bir piksel yanar!
+            </div>
+          </div>
+        `,
+        quiz: {
+          id: 'quiz-10-1',
+          question: 'VGA Mode 13h (320x200 256 Renk) moduna geçmek ve ekrana piksel çizmek için kullanılan BIOS kesmesi ve fonksiyon numaraları hangisidir?',
+          options: [
+            'INT 10h: Mod için AX=0013h, Piksel için AH=0Ch',
+            'INT 21h: Mod için AH=09h, Piksel için AH=02h',
+            'INT 16h: Mod için AH=00h, Piksel için AL=0Ch',
+            'INT 13h: Mod için AX=0200h, Piksel için AH=01h'
+          ],
+          correctIndex: 0,
+          explanation: 'Grafik ve ekran işlemleri BIOS Video Servisi olan INT 10h ile yönetilir. AX=0013h grafik modunu açar, AH=0Ch ise AL rengindeki pikseli CX, DX koordinatına çizer.'
+        },
+        task: {
+          id: 'task-10-draw-pixel',
+          title: 'Mode 13h ile Ekrana Parlak Beyaz Piksel Koyma',
+          difficulty: 'Kolay',
+          scenario: 'Sistemi VGA Mode 13h moduna alın ve ekranın (X=100, Y=50) koordinatına parlak beyaz (0Fh) bir piksel çizin.',
+          taskPrompt: 'AX=0013h ile INT 10h çağırarak Mode 13h başlatın. Ardından CX=100, DX=50, AL=0Fh, AH=0Ch ve BH=0 ayarlayıp INT 10h ile pikseli çizin. En sonda HLT ile durdurun.',
+          starterCode: `; 10.1 BIOS ile Piksel Çizme
+ORG 100h
+
+; 1. Mode 13h'a geç:
+
+
+; 2. (X=100, Y=50) konumuna 0Fh (Beyaz) piksel çiz:
+
+
+HLT
+`,
+          solutionCode: `ORG 100h
+MOV AX, 0013h
+INT 10h
+
+MOV CX, 100
+MOV DX, 50
+MOV AL, 0Fh
+MOV AH, 0Ch
+MOV BH, 0
+INT 10h
+
+HLT
+`,
+          hints: ['MOV AX, 0013h ardından INT 10h yazın.', 'CX=100, DX=50, AL=0Fh, AH=0Ch, BH=0 yapıp tekrar INT 10h çağırın.'],
+          assertions: {
+            registers: { al: 0x0F },
+            memory: [
+              { segment: 0x0040, offset: 0x0049, expectedBytes: [0x13] },
+              { segment: 0xA000, offset: 50 * 320 + 100, expectedBytes: [0x0F] }
+            ],
+            maxSteps: 100
+          },
+          examTip: 'INT 10h AH=0Ch çağrısı arka planda fiziksel olarak 0xA0000 + (Y * 320) + X VRAM adresine AL baytını yazar.'
+        }
+      },
+      {
+        id: 'sub-10-direct-vram',
+        number: '10.2',
+        title: 'Doğrudan Grafik VRAM (0xA000:0000) Erişimi',
+        summary: 'BIOS gecikmelerini atlayarak doğrudan 0xA000 segmentine yazma ve ofset formülü: (Y * 320) + X.',
+        theoryHtml: `
+          <div class="nb-section">
+            <h4 class="nb-title">Neden Doğrudan VRAM? (Demoscene & Oyun Hızı)</h4>
+            <p>BIOS <code>INT 10h AH=0Ch</code> çağrısı güvenlidir ancak her pikselde onlarca kontrol komutu çalıştırır. 64.000 pikseli tek tek BIOS ile çizmek saniyeler alabilir!</p>
+            <p>Bu yüzden profesyonel oyun geliştiricileri ve demoscener'lar <strong>doğrudan VRAM belleğine</strong> yazar.</p>
+            <div class="nb-formula-box">
+              <code>Piksel Bellek Adresi = 0xA000:[(Y &times; 320) + X]</code>
+            </div>
+            <p>Örneğin ekranın sol üst köşesi (0,0) adresi <code>0xA000:0000h</code> adresidir. 10. satırın başı ise <code>10 &times; 320 = 3200 (0C80h)</code> adresidir.</p>
+            <div class="nb-callout tip">
+              💡 <code>MOV AX, 0A000h; MOV ES, AX; MOV BYTE PTR ES:[DI], Renk</code> kalıbı işlemcinin tek bir saat döngüsünde ekrana piksel basmasını sağlar!
+            </div>
+          </div>
+        `,
+        quiz: {
+          id: 'quiz-10-2',
+          question: 'VGA Mode 13h (320x200) modunda ekranın (X=20, Y=10) koordinatındaki pikselin 0xA000 segmenti içindeki ofseti kaçtır?',
+          options: [
+            '3220 (Ofset = 10 * 320 + 20)',
+            '2010 (Ofset = 20 * 100 + 10)',
+            '6400 (Ofset = 20 * 320)',
+            '200 (Ofset = 10 * 20)'
+          ],
+          correctIndex: 0,
+          explanation: 'Her satırda 320 piksel olduğu için Y. satıra kadar Y * 320 bayt atlanır. Üzerine X sütunu eklenir: 10 * 320 + 20 = 3200 + 20 = 3220.'
+        },
+        task: {
+          id: 'task-10-direct-vram-write',
+          title: 'Doğrudan VRAM Segmentine (0xA000) Bayt Yazma',
+          difficulty: 'Orta',
+          scenario: 'VGA grafik moduna geçin, ES yazmacını 0A000h yapın ve DI=3200 (Y=10 satır başı) ofsetine doğrudan 0Ah (Açık Yeşil) rengini yazın.',
+          taskPrompt: 'Mode 13h\'a geçin (AX=0013h, INT 10h). MOV AX, 0A000h ve MOV ES, AX ile grafik segmentini yükleyin. DI=3200 yapıp BYTE PTR ES:[DI]\'ye 0Ah yazın.',
+          starterCode: `; 10.2 Doğrudan VRAM Erişimi
+ORG 100h
+
+; 1. Mode 13h başlat:
+MOV AX, 0013h
+INT 10h
+
+; 2. ES = 0A000h grafik segmentini hazırla:
+
+
+; 3. DI = 3200 ofsetine 0Ah rengini yaz:
+
+
+HLT
+`,
+          solutionCode: `ORG 100h
+MOV AX, 0013h
+INT 10h
+
+MOV AX, 0A000h
+MOV ES, AX
+
+MOV DI, 3200
+MOV BYTE PTR ES:[DI], 0Ah
+
+HLT
+`,
+          hints: ['MOV AX, 0A000h ardından MOV ES, AX yazın.', 'MOV DI, 3200 ve MOV BYTE PTR ES:[DI], 0Ah yazın.'],
+          assertions: {
+            registers: { di: 3200 },
+            memory: [
+              { segment: 0xA000, offset: 3200, expectedBytes: [0x0A] }
+            ],
+            maxSteps: 50
+          },
+          examTip: 'Segment yazmaçlarına (DS, ES, SS) doğrudan sabit sayı (immediate value) yüklenemez; önce genel amaçlı AX gibi bir yazmaca alınıp sonra ES\'ye aktarılır.'
+        }
+      },
+      {
+        id: 'sub-10-box-loop',
+        number: '10.3',
+        title: 'Döngü ile Yatay Çizgi ve Geometrik Kutu Çizimi',
+        summary: 'CMP ve JNE ile döngü kurarak ekranda sürekli çizgiler ve dolu kutular oluşturma.',
+        theoryHtml: `
+          <div class="nb-section">
+            <h4 class="nb-title">Çizgi ve Kutu Algoritmaları</h4>
+            <p>Ekranda yatay bir çizgi çizmek, belirli bir Y satırında X koordinatını birer birer artırarak (<code>INC CX</code>) her adıma piksel koymaktan ibarettir.</p>
+            <div class="nb-formula-box">
+              <code>DX = Y Sabit<br>CX = X_Baslangic<br>Dongu:<br>&nbsp;&nbsp;Piksel_Ciz(CX, DX)<br>&nbsp;&nbsp;INC CX<br>&nbsp;&nbsp;CMP CX, X_Bitis<br>&nbsp;&nbsp;JNE Dongu</code>
+            </div>
+            <h4 class="nb-title">İçi Dolu Kutu (İç İçe Çift Döngü)</h4>
+            <p>İçi dolu bir kutu için bu yatay çizgi döngüsü bir Y satır döngüsü içine alınır: her satır çizildiğinde <code>INC DX</code> yapılır ve Y hedef yüksekliğe ulaşana kadar tekrarlanır.</p>
+            <div class="nb-callout tip">
+              💡 Bu basit döngü mimarisi oyunlardaki sprite ve pencerelerin çiziminin temel taşıdır!
+            </div>
+          </div>
+        `,
+        quiz: {
+          id: 'quiz-10-3',
+          question: 'X=50\'den başlayıp X=90\'a kadar yatay bir çizgi çizen döngüde toplam kaç adet piksel çizilir?',
+          options: [
+            '40 piksel',
+            '50 piksel',
+            '90 piksel',
+            '140 piksel'
+          ],
+          correctIndex: 0,
+          explanation: '90 - 50 = 40 piksel çizilir.'
+        },
+        task: {
+          id: 'task-10-draw-line-loop',
+          title: 'Döngü ile Ekrana Yatay Sarı Çizgi Çizme',
+          difficulty: 'Orta',
+          scenario: 'Mode 13h\'ta Y=30 satırında, X=40\'tan X=45\'e kadar parlak sarı (0Eh) yatay bir çizgi çizin.',
+          taskPrompt: 'Mode 13h\'a geçin. DX=30, CX=40 yapın. Döngü içinde INT 10h AH=0Ch ile 0Eh rengini basın, INC CX yapın ve CMP CX, 45 olunca döngüden çıkıp HLT yapın.',
+          starterCode: `; 10.3 Döngü ile Çizgi Çizme
+ORG 100h
+
+MOV AX, 0013h
+INT 10h
+
+MOV DX, 30          ; Y = 30
+MOV CX, 40          ; X = 40
+
+Cizgi_Loop:
+    ; Piksel çiz (AL=0Eh, AH=0Ch, BH=0, INT 10h):
+
+
+    ; CX'i artır ve 45 olana kadar döngüye devam et:
+
+
+HLT
+`,
+          solutionCode: `ORG 100h
+MOV AX, 0013h
+INT 10h
+
+MOV DX, 30
+MOV CX, 40
+
+Cizgi_Loop:
+    MOV AH, 0Ch
+    MOV AL, 0Eh
+    MOV BH, 0
+    INT 10h
+    INC CX
+    CMP CX, 45
+    JNE Cizgi_Loop
+
+HLT
+`,
+          hints: ['MOV AH, 0Ch; MOV AL, 0Eh; MOV BH, 0; INT 10h yazın.', 'INC CX ardından CMP CX, 45 ve JNE Cizgi_Loop yazın.'],
+          assertions: {
+            memory: [
+              { segment: 0xA000, offset: 30 * 320 + 40, expectedBytes: [0x0E, 0x0E, 0x0E, 0x0E, 0x0E] }
+            ],
+            maxSteps: 300
+          },
+          examTip: 'Döngü koşullu atlamasında JNE kullanırken döngü sayacının hedef değere ulaşacağını garanti etmelisiniz.'
+        }
+      }
+    ]
   }
 ];

@@ -58,6 +58,167 @@ HANG:
     JMP HANG            ; Bekleme dongusu
 `;
 
+export const DEFAULT_CONSOLE_CODE = `; ==========================================================
+; 8086 Etkilesimli Komut Konsolu (console.asm)
+; Basit Mini-Shell / Komut Satiri Yorumlayicisi
+; Calistirmak icin: Sag ustten 'Calistir' (F5) butonuna basin.
+; Klavyeden komut yazip Enter'a basin!
+; ==========================================================
+ORG 100H
+
+START:
+    ; Segmentleri ayarla
+    MOV AX, CS
+    MOV DS, AX
+    MOV ES, AX
+
+    ; Ekrani temizle (80x25 Renkli Standart Metin Modu)
+    MOV AX, 0003H
+    INT 10H
+
+    ; Karsilama Basligini Ekrana Bas
+    LEA DX, MSG_BANNER
+    MOV AH, 09H
+    INT 21H
+
+PROMPT_LOOP:
+    ; Komut Istemi Yaz: "8086> "
+    LEA DX, MSG_PROMPT
+    MOV AH, 09H
+    INT 21H
+
+    ; Klavyeden tek karakter oku ve ekrana bas (INT 21h, AH=01h)
+    MOV AH, 01H
+    INT 21H
+
+    ; Enter tusu kontrolu (ASCII 13 / 0Dh veya 10 / 0Ah)
+    CMP AL, 0DH
+    JE NEW_LINE
+    CMP AL, 0AH
+    JE NEW_LINE
+
+    ; Komut Karakterlerini Denetle:
+    ; 'H' veya 'h' -> HELP
+    CMP AL, 'H'
+    JE DO_HELP
+    CMP AL, 'h'
+    JE DO_HELP
+
+    ; 'C' veya 'c' -> CLS (Ekrani Temizle)
+    CMP AL, 'C'
+    JE DO_CLS
+    CMP AL, 'c'
+    JE DO_CLS
+
+    ; 'D' veya 'd' -> DRAW (VGA Mode 13h Grafik Cizimi)
+    CMP AL, 'D'
+    JE DO_DRAW
+    CMP AL, 'd'
+    JE DO_DRAW
+
+    ; 'V' veya 'v' -> VER (Surum Bilgisi)
+    CMP AL, 'V'
+    JE DO_VER
+    CMP AL, 'v'
+    JE DO_VER
+
+    ; 'Q' veya 'q' -> QUIT (HLT ile durdur)
+    CMP AL, 'Q'
+    JE DO_QUIT
+    CMP AL, 'q'
+    JE DO_QUIT
+
+    ; Tanimlanmayan bir tusa basildi:
+    LEA DX, MSG_UNKNOWN
+    MOV AH, 09H
+    INT 21H
+    JMP PROMPT_LOOP
+
+NEW_LINE:
+    LEA DX, MSG_CRLF
+    MOV AH, 09H
+    INT 21H
+    JMP PROMPT_LOOP
+
+DO_HELP:
+    LEA DX, MSG_HELP
+    MOV AH, 09H
+    INT 21H
+    JMP PROMPT_LOOP
+
+DO_VER:
+    LEA DX, MSG_VER
+    MOV AH, 09H
+    INT 21H
+    JMP PROMPT_LOOP
+
+DO_CLS:
+    MOV AX, 0003H
+    INT 10H
+    LEA DX, MSG_BANNER
+    MOV AH, 09H
+    INT 21H
+    JMP PROMPT_LOOP
+
+DO_DRAW:
+    ; VGA 320x200 256 Renk Moduna Gec
+    MOV AX, 0013H
+    INT 10H
+
+    ; Ekrana Parlak Sari Kutu Ciz (X: 120..200, Y: 80..120)
+    MOV DX, 80
+DRAW_Y:
+    MOV CX, 120
+DRAW_X:
+    MOV AH, 0CH
+    MOV AL, 0EH         ; Sari Renk
+    MOV BH, 0
+    INT 10H
+    INC CX
+    CMP CX, 200
+    JNE DRAW_X
+    INC DX
+    CMP DX, 120
+    JNE DRAW_Y
+
+    ; Konsol durum mesaji
+    LEA DX, MSG_DRAW_OK
+    MOV AH, 09H
+    INT 21H
+    JMP PROMPT_LOOP
+
+DO_QUIT:
+    LEA DX, MSG_BYE
+    MOV AH, 09H
+    INT 21H
+QUIT_HANG:
+    HLT
+    JMP QUIT_HANG
+
+; ==========================================================
+; METIN SABITLERI (DOS $-Sonlandirmali Dizgiler)
+; ==========================================================
+MSG_BANNER  DB 0DH, 0AH, "========================================", 0DH, 0AH
+            DB " 8086 INTERAKTIF KOMUT KONSOLU (v1.0)", 0DH, 0AH
+            DB " Komutlar: [H]elp, [C]ls, [D]raw, [V]er, [Q]uit", 0DH, 0AH
+            DB "========================================", 0DH, 0AH, "$"
+
+MSG_PROMPT  DB 0DH, 0AH, "8086> $"
+MSG_CRLF    DB 0DH, 0AH, "$"
+MSG_UNKNOWN DB 0DH, 0AH, " ? Bilinmeyen komut! 'H' basarak yardim alin.", 0DH, 0AH, "$"
+
+MSG_HELP    DB 0DH, 0AH, " --- YARDIM MENUSU ---", 0DH, 0AH
+            DB " H - Bu yardim menusunu listeler", 0DH, 0AH
+            DB " C - Ekrani temizler (CLS)", 0DH, 0AH
+            DB " D - VGA Mode 13h grafik cizimi yapar", 0DH, 0AH
+            DB " V - Isletim sistemi surumunu gosterir", 0DH, 0AH
+            DB " Q - Konsolu kapatir ve CPU'yu durdurur", 0DH, 0AH, "$"
+
+MSG_VER     DB 0DH, 0AH, " AssemblySim 8086 Bare-Metal Shell v1.0 [1981-2026]", 0DH, 0AH, "$"
+MSG_DRAW_OK DB 0DH, 0AH, " [VGA Mode 13h Kutu Cizildi! C basarak metne donebilirsiniz]", 0DH, 0AH, "$"
+MSG_BYE     DB 0DH, 0AH, " Konsol kapatildi. Islemci durduruldu (HLT).", 0DH, 0AH, "$"
+`;
+
 export interface WorkspaceEvents {
   onProjectChange?: (project: WorkspaceProject) => void;
   onActiveFileChange?: (file: WorkspaceFile) => void;
@@ -156,13 +317,22 @@ export class WorkspaceManager {
       lastModified: Date.now()
     };
 
+    const consoleFile: WorkspaceFile = {
+      id: 'file-console',
+      name: 'console.asm',
+      code: DEFAULT_CONSOLE_CODE,
+      isEntry: false,
+      createdAt: Date.now() + 1,
+      lastModified: Date.now() + 1
+    };
+
     this.project = {
       id: 'project-default',
       name: '8086 Bare-Metal Sistem',
       entryFileId: bootFile.id,
       activeFileId: bootFile.id,
-      openFileIds: [bootFile.id],
-      files: [bootFile],
+      openFileIds: [bootFile.id, consoleFile.id],
+      files: [bootFile, consoleFile],
       createdAt: Date.now(),
       lastModified: Date.now()
     };
@@ -173,6 +343,22 @@ export class WorkspaceManager {
     if (!this.project.files || this.project.files.length === 0) {
       this.initDefaultProject();
       return;
+    }
+
+    // Ensure console.asm exists in the project
+    if (!this.project.files.some(f => f.name === 'console.asm')) {
+      const consoleFile: WorkspaceFile = {
+        id: `file-console-${Date.now()}`,
+        name: 'console.asm',
+        code: DEFAULT_CONSOLE_CODE,
+        isEntry: false,
+        createdAt: Date.now(),
+        lastModified: Date.now()
+      };
+      this.project.files.push(consoleFile);
+      if (!this.project.openFileIds.includes(consoleFile.id)) {
+        this.project.openFileIds.push(consoleFile.id);
+      }
     }
 
     // Ensure entry file exists

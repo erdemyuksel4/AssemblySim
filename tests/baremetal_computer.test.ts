@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Assembler } from '../src/assembler/assembler.js';
 import { CPU } from '../src/cpu/cpu.js';
+import { DEFAULT_CONSOLE_CODE } from '../src/workspace/workspaceManager.js';
 
 describe('Bare-Metal 8086 Computer & Multi-File Memory Tests', () => {
   it('runs multiple files loaded into different addresses of unified 1 MB RAM', () => {
@@ -457,5 +458,48 @@ describe('Bare-Metal 8086 Computer & Multi-File Memory Tests', () => {
     // Verify red box in Mode 13h graphics VRAM
     const boxPixelPhys = 0xA0000 + 80 * 320 + 120;
     expect(cpu.mem.data[boxPixelPhys]).toBe(0x04);  // Red pixel
+  });
+
+  it('assembles and runs interactive project file console.asm', () => {
+    const res = Assembler.assemble(DEFAULT_CONSOLE_CODE);
+    expect(res.errors).toHaveLength(0);
+    expect(res.bytes.length).toBeGreaterThan(100);
+
+    const cpu = new CPU();
+    cpu.reset();
+    cpu.loadCOM(res.bytes, 0x100);
+
+    // Run until it prompts for input
+    let steps = 0;
+    while (!cpu.halted && steps < 1000) {
+      const info = cpu.step();
+      steps++;
+      if (info.waitingForInput) break;
+    }
+
+    // Should be waiting for input at INT 21h AH=01h
+    expect(cpu.regs.ah).toBe(0x01);
+
+    // Feed 'V' (version command)
+    cpu.feedInput('V\r');
+
+    // Run next cycle
+    steps = 0;
+    while (!cpu.halted && steps < 1000) {
+      const info = cpu.step();
+      steps++;
+      if (info.waitingForInput) break;
+    }
+
+    // Feed 'Q' (quit command) to halt
+    cpu.feedInput('Q\r');
+
+    steps = 0;
+    while (!cpu.halted && steps < 1000) {
+      cpu.step();
+      steps++;
+    }
+
+    expect(cpu.halted).toBe(true);
   });
 });

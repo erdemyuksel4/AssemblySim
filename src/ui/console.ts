@@ -460,11 +460,9 @@ export class ConsoleView {
     const handleSend = () => {
       if (!inputField) return;
       const val = inputField.value;
-      if (val) {
-        this.appendStdout(val + '\n');
-        this.onInput?.(val + '\r');
-        inputField.value = '';
-      }
+      this.appendStdout(val + '\n');
+      this.onInput?.(val + '\r');
+      inputField.value = '';
     };
 
     sendBtn?.addEventListener('click', handleSend);

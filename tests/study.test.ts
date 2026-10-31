@@ -5,8 +5,8 @@ import { StudyStorage } from '../src/study/studyStorage.js';
 import { Assembler } from '../src/assembler/assembler.js';
 
 describe('Study Data & Curriculum Integrity', () => {
-  it('should have all 9 primary topics in correct pedagogical order', () => {
-    expect(STUDY_TOPICS.length).toBe(9);
+  it('should have all 10 primary topics in correct pedagogical order', () => {
+    expect(STUDY_TOPICS.length).toBe(10);
     STUDY_TOPICS.forEach((topic, idx) => {
       expect(topic.number).toBe(idx + 1);
       expect(topic.title).toBeDefined();
