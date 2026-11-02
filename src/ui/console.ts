@@ -84,14 +84,32 @@ export class ConsoleView {
     this.container = container;
     this.onInput = options?.onInput;
 
-    // Initialize text VRAM with blank spaces
+    this.initBiosBanner();
+    this.render();
+    this.startBlinkTimer();
+  }
+
+  private writeStringToVram(row: number, col: number, text: string, attr: number = 0x07): void {
+    for (let i = 0; i < text.length; i++) {
+      if (col + i >= 80) break;
+      const offset = (row * 80 + col + i) * 2;
+      this.vramData[offset] = text.charCodeAt(i);
+      this.vramData[offset + 1] = attr;
+    }
+  }
+
+  private initBiosBanner(): void {
     for (let i = 0; i < 2000; i++) {
       this.vramData[i * 2] = 0x20;     // ' '
       this.vramData[i * 2 + 1] = 0x07; // Light gray on black
     }
-
-    this.render();
-    this.startBlinkTimer();
+    this.writeStringToVram(0, 0, 'IBM PC 5150 / 8086 CPU 4.77 MHz - BIOS v1.0', 0x0F);
+    this.writeStringToVram(1, 0, '640 KB Base Memory OK  |  BDA 0040h  |  VRAM 0xB800h (80x25 Metin)', 0x07);
+    this.writeStringToVram(2, 0, '----------------------------------------------------------------', 0x08);
+    this.writeStringToVram(3, 0, '8086 Web IDE hazir. F5 / RUN ile programinizi calistirabilirsiniz.', 0x0A);
+    this.writeStringToVram(5, 0, 'A:\\> ', 0x0E);
+    this.cursorRow = 5;
+    this.cursorCol = 5;
   }
 
   destroy(): void {
@@ -158,13 +176,8 @@ export class ConsoleView {
   }
 
   clear(): void {
-    for (let i = 0; i < 2000; i++) {
-      this.vramData[i * 2] = 0x20;
-      this.vramData[i * 2 + 1] = 0x07;
-    }
+    this.initBiosBanner();
     this.graphicsData.fill(0);
-    this.cursorCol = 0;
-    this.cursorRow = 0;
     this.logs = [];
     const output = this.container.querySelector('#console-output');
     if (output) output.innerHTML = '';
