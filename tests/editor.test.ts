@@ -21,6 +21,27 @@ describe('Editor Actions & History', () => {
       expect(result.newEnd).toBe(4);
     });
 
+    it('advances cursor to next tab stop (multiple of 4) when pressing Tab within code', () => {
+      // "MOV" is 3 chars, pressing Tab at index 3 advances 1 space to column 4
+      const initial = 'MOV AX, 1';
+      const result = indentSelection(initial, 3, 3);
+      expect(result.text).toBe('MOV  AX, 1');
+      expect(result.newStart).toBe(4);
+      expect(result.newEnd).toBe(4);
+
+      // "    CLI" is 7 chars, pressing Tab at index 7 advances 1 space to column 8
+      const cli = '    CLI';
+      const resultCli = indentSelection(cli, 7, 7);
+      expect(resultCli.text).toBe('    CLI ');
+      expect(resultCli.newStart).toBe(8);
+      expect(resultCli.newEnd).toBe(8);
+
+      // Column 8 (multiple of 4) advances 4 spaces to column 12
+      const res8 = indentSelection('        ', 8, 8);
+      expect(res8.text).toBe('            ');
+      expect(res8.newStart).toBe(12);
+    });
+
     it('indents multiple selected lines by 4 spaces each', () => {
       const initial = 'MOV AX, 1\nMOV BX, 2\nHLT';
       // Select lines 1 and 2
@@ -202,6 +223,13 @@ describe('Editor Actions & History', () => {
       const result = smartBackspace(code, 3, 3);
       expect(result).toBeNull();
     });
+
+    it('does not destructively delete spaces after code within a line', () => {
+      // Spaces within a line should not be bulk-deleted, allowing normal 1-char deletion
+      const code = 'MOV     AX';
+      const result = smartBackspace(code, 8, 8);
+      expect(result).toBeNull();
+    });
   });
 
   describe('Delete Line (Ctrl+Shift+K)', () => {
@@ -209,6 +237,112 @@ describe('Editor Actions & History', () => {
       const code = 'LINE 1\nLINE 2\nLINE 3';
       const result = deleteLine(code, 7, 7); // on LINE 2
       expect(result.text).toBe('LINE 1\nLINE 3');
+    });
+  });
+
+  describe('Workspace File Retention & Multi-file Editor State', () => {
+    it('preserves custom code in console.asm without destructive resets', async () => {
+      const { WorkspaceManager } = await import('../src/workspace/workspaceManager');
+      const ws = new WorkspaceManager();
+
+      const customCode = 'ORG 100H\nMOV AX, 0B800H\nMOV ES, AX\nJMP $';
+      // Find or create console.asm
+      let consoleFile = ws.getAllFiles().find(f => f.name === 'console.asm');
+      if (!consoleFile) {
+        consoleFile = ws.createFile('console.asm', customCode);
+      } else {
+        ws.updateFileCode(consoleFile.id, customCode);
+      }
+
+      // Verify it was updated
+      expect(ws.getFile(consoleFile.id)?.code).toBe(customCode);
+
+      // Trigger setActiveFile / tab switches
+      const otherFile = ws.getAllFiles().find(f => f.id !== consoleFile!.id)!;
+      ws.setActiveFile(otherFile.id);
+      expect(ws.getActiveFile().id).toBe(otherFile.id);
+
+      // Switch back
+      ws.setActiveFile(consoleFile.id);
+      expect(ws.getActiveFile().code).toBe(customCode);
+      expect(ws.getActiveFile().code).not.toContain('MSG_BANNER');
+    });
+
+    it('persists editor scroll and cursor metadata across file updates', async () => {
+      const { WorkspaceManager } = await import('../src/workspace/workspaceManager');
+      const ws = new WorkspaceManager();
+      const file = ws.getActiveFile();
+
+      ws.updateFileCode(
+        file.id,
+        'MOV AX, 1234H\nHLT',
+        { top: 120, left: 0 },
+        { start: 8, end: 12 }
+      );
+
+      const updated = ws.getFile(file.id);
+      expect(updated?.editorScroll).toEqual({ top: 120, left: 0 });
+      expect(updated?.editorCursor).toEqual({ start: 8, end: 12 });
+    });
+
+    it('initializes with a single clean main.asm without console.asm or bootloader boilerplate', async () => {
+      // Clear localStorage simulation if any
+      const { WorkspaceManager } = await import('../src/workspace/workspaceManager');
+      const ws = new WorkspaceManager();
+      const files = ws.getAllFiles();
+
+      expect(files.some(f => f.name === 'console.asm')).toBe(false);
+      expect(files[0].name).toBe('main.asm');
+      expect(files[0].code).toContain('ORG 100H');
+      expect(files[0].code).not.toContain('8086 Bare-Metal Bootloader');
+      expect(files[0].code).not.toContain('MSG_BANNER');
+    });
+
+    it('reliably preserves document changes when switching between multiple files', async () => {
+      const { WorkspaceManager } = await import('../src/workspace/workspaceManager');
+      const ws = new WorkspaceManager();
+
+      const doc1 = ws.getActiveFile();
+      ws.updateFileCode(doc1.id, 'MOV AX, 1111H\nHLT\n');
+
+      const doc2 = ws.createFile('test2.asm', 'MOV BX, 2222H\nHLT\n');
+      expect(ws.getActiveFile().id).toBe(doc2.id);
+
+      // Switch back to doc1
+      ws.setActiveFile(doc1.id);
+      expect(ws.getActiveFile().code).toBe('MOV AX, 1111H\nHLT\n');
+
+      // Edit doc1 again
+      ws.updateFileCode(doc1.id, 'MOV AX, 3333H\nHLT\n');
+
+      // Switch to doc2
+      ws.setActiveFile(doc2.id);
+      expect(ws.getActiveFile().code).toBe('MOV BX, 2222H\nHLT\n');
+
+      // Switch back to doc1
+      ws.setActiveFile(doc1.id);
+      expect(ws.getActiveFile().code).toBe('MOV AX, 3333H\nHLT\n');
+    });
+
+    it('allows deleting any file and resets to clean main.asm when deleting the last file', async () => {
+      const { WorkspaceManager } = await import('../src/workspace/workspaceManager');
+      const ws = new WorkspaceManager();
+
+      const doc2 = ws.createFile('temp.asm', 'NOP\n');
+      expect(ws.getAllFiles().length).toBeGreaterThanOrEqual(2);
+
+      // Delete the created file
+      const deleted = ws.deleteFile(doc2.id);
+      expect(deleted).toBe(true);
+      expect(ws.getAllFiles().some(f => f.id === doc2.id)).toBe(false);
+
+      // When only 1 file remains, deleting it resets to clean main.asm
+      const remainingId = ws.getAllFiles()[0].id;
+      const reset = ws.deleteFile(remainingId);
+      expect(reset).toBe(true);
+      expect(ws.getAllFiles()).toHaveLength(1);
+      expect(ws.getActiveFile().name).toBe('main.asm');
+      expect(ws.getActiveFile().code).toContain('ORG 100H');
     });
   });
 });

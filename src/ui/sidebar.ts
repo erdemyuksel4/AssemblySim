@@ -90,7 +90,7 @@ export class WorkspaceSidebar {
           <span>Proje Dosyaları</span>
         </div>
         <ul class="workspace-doc-list">
-          ${files.map(file => this.renderFileItem(file, file.id === activeFileId, file.id === project.entryFileId, files.length > 1)).join('')}
+          ${files.map(file => this.renderFileItem(file, file.id === activeFileId, true)).join('')}
         </ul>
       </div>
 
@@ -118,18 +118,14 @@ export class WorkspaceSidebar {
     this.bindEvents();
   }
 
-  private renderFileItem(file: WorkspaceFile, isActive: boolean, isEntry: boolean, canDelete: boolean): string {
+  private renderFileItem(file: WorkspaceFile, isActive: boolean, canDelete: boolean): string {
     return `
       <li class="workspace-doc-item ${isActive ? 'active' : ''}" data-file-id="${file.id}">
         <div class="doc-item-main" title="${this.escapeHtml(file.name)} (Yeniden adlandırmak için çift tıklayın)">
-          <span class="doc-icon">${isEntry ? '🚀' : '📄'}</span>
+          <span class="doc-icon">📄</span>
           <span class="doc-title">${this.escapeHtml(file.name)}</span>
-          ${isEntry ? `<span class="entry-badge" title="Bilgisayar bu dosyadan başlar (CS:IP)" style="font-size: 9px; background: #dcfce7; color: #15803d; padding: 1px 4px; border-radius: 3px; font-weight: 700; margin-left: 4px;">BAŞLANGIÇ</span>` : ''}
         </div>
         <div class="doc-item-actions" style="display: flex; gap: 2px;">
-          ${!isEntry ? `
-            <button class="btn-set-entry" data-file-id="${file.id}" title="Başlangıç Dosyası Yap (Entry Point)" style="background: none; border: none; font-size: 11px; cursor: pointer; opacity: 0.5; padding: 2px;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">🚀</button>
-          ` : ''}
           ${canDelete ? `
             <button class="btn-doc-delete" data-file-id="${file.id}" title="Dosyayı Sil">×</button>
           ` : ''}

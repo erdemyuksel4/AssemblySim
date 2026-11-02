@@ -244,12 +244,13 @@ export class App {
     this.sidebar = new WorkspaceSidebar(sidebarMount, this.workspace, {
       onFileSelect: (file) => {
         this.showEditor();
-        this.workspace.setActiveFile(file.id);
+        this.switchToFile(file.id);
       },
       onNewFile: () => {
         this.showEditor();
+        this.flushCurrentEditorState();
         const newFile = this.workspace.createFile();
-        this.loadFileToEditor(newFile);
+        this.switchToFile(newFile.id);
       },
       onSetEntryFile: (fileId) => {
         this.setDirty(true);
@@ -277,10 +278,21 @@ export class App {
     this.editor = new Editor({
       container: editorContainer,
       initialCode: '',
+      onSave: () => {
+        this.flushCurrentEditorState();
+        this.setDirty(false);
+        const active = this.workspace.getActiveFile();
+        this.consoleView.log(`💾 [${active?.name || 'Belge'}] Değişiklikler kaydedildi.`, 'info');
+      },
       onCodeChange: (code) => {
         const activeFile = this.workspace.getActiveFile();
         if (activeFile) {
-          this.workspace.updateFileCode(activeFile.id, code);
+          this.workspace.updateFileCode(
+            activeFile.id,
+            code,
+            this.editor.getScroll(),
+            this.editor.getCursor()
+          );
           this.setDirty(true);
         }
       }
@@ -307,9 +319,10 @@ export class App {
     this.instructionDoc = new InstructionDoc(this.manualViewMount, {
       onReturnToEditor: () => this.showEditor(),
       onInsertCodeToEditor: (name, code) => {
+        this.flushCurrentEditorState();
         const file = this.workspace.createFile(name, code);
         this.showEditor();
-        this.loadFileToEditor(file);
+        this.switchToFile(file.id);
       }
     });
 
@@ -359,10 +372,9 @@ export class App {
 
     this.tabsBarEl.innerHTML = openFiles.map(file => {
       const isActive = file.id === project.activeFileId;
-      const isEntry = file.id === project.entryFileId;
       return `
         <div class="editor-tab-item ${isActive ? 'active' : ''}" data-file-id="${file.id}">
-          <span class="tab-icon">${isEntry ? '🚀' : '📄'}</span>
+          <span class="tab-icon">📄</span>
           <span class="tab-name">${this.escapeHtml(file.name)}</span>
           ${openFiles.length > 1 ? `
             <button class="btn-tab-close" data-close-id="${file.id}" title="Sekmeyi Kapat">×</button>
@@ -379,7 +391,7 @@ export class App {
         if ((e.target as HTMLElement).closest('.btn-tab-close')) return;
         const fileId = tab.getAttribute('data-file-id');
         if (fileId) {
-          this.workspace.setActiveFile(fileId);
+          this.switchToFile(fileId);
         }
       });
     });
@@ -390,6 +402,8 @@ export class App {
         e.stopPropagation();
         const closeId = btn.getAttribute('data-close-id');
         if (closeId) {
+          this.flushCurrentEditorState();
+          this.editor.removeFileHistory(closeId);
           this.workspace.closeTab(closeId);
         }
       });
@@ -398,13 +412,34 @@ export class App {
     // New file tab button
     const newBtn = this.tabsBarEl.querySelector('#btn-tab-new-file');
     newBtn?.addEventListener('click', () => {
+      this.flushCurrentEditorState();
       const file = this.workspace.createFile();
-      this.loadFileToEditor(file);
+      this.switchToFile(file.id);
     });
   }
 
+  private flushCurrentEditorState(): void {
+    if (!this.workspace || !this.editor) return;
+    const current = this.workspace.getActiveFile();
+    if (current) {
+      const code = this.editor.getCode();
+      const scroll = this.editor.getScroll();
+      const cursor = this.editor.getCursor();
+      this.workspace.updateFileCode(current.id, code, scroll, cursor);
+    }
+  }
+
+  private switchToFile(fileId: string): void {
+    if (!fileId) return;
+    const current = this.workspace.getActiveFile();
+    if (current && current.id === fileId) return;
+    this.flushCurrentEditorState();
+    this.workspace.setActiveFile(fileId);
+  }
+
   private loadFileToEditor(file: WorkspaceFile): void {
-    this.editor.setCode(file.code);
+    if (!file) return;
+    this.editor.openFile(file.id, file.code, file.editorScroll, file.editorCursor);
     this.editor.clearErrors();
     this.renderTabs();
     this.sidebar?.render();
@@ -454,6 +489,15 @@ export class App {
 
     // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        this.flushCurrentEditorState();
+        this.setDirty(false);
+        const active = this.workspace.getActiveFile();
+        this.consoleView.log(`💾 [${active?.name || 'Belge'}] Değişiklikler kaydedildi.`, 'info');
+        return;
+      }
+
       if (e.key === 'F5') {
         e.preventDefault();
         if (this.isManualOpen || this.isGraphOpen || this.isStudyOpen) this.showEditor();
@@ -476,9 +520,14 @@ export class App {
         }
       }
     });
+
+    window.addEventListener('beforeunload', () => {
+      this.flushCurrentEditorState();
+    });
   }
 
   showStudy(): void {
+    this.flushCurrentEditorState();
     this.isStudyOpen = true;
     this.isGraphOpen = false;
     this.isManualOpen = false;
@@ -492,6 +541,7 @@ export class App {
   }
 
   showGraph(): void {
+    this.flushCurrentEditorState();
     this.isGraphOpen = true;
     this.isManualOpen = false;
     this.isStudyOpen = false;
@@ -505,6 +555,7 @@ export class App {
   }
 
   showManual(): void {
+    this.flushCurrentEditorState();
     this.isManualOpen = true;
     this.isGraphOpen = false;
     this.isStudyOpen = false;
@@ -561,11 +612,11 @@ export class App {
   }
 
   /**
-   * "Dosyayı değil, bilgisayarı çalıştırıyoruz."
-   * Workspace'teki tüm dosyalar kendi ORG adreslerine göre 1 MB RAM'e yazılır.
+   * 1981 IBM PC BIOS POST & Bellek Derlemesi:
+   * Projedeki tüm dosyalar kendi ORG adreslerine göre doğrudan 1 MB RAM'e yazılır.
+   * BIOS önyüklemesi gerçekleştirilir (0000:7C00h bootloader landing).
    */
   private handleCompileWorkspace(): boolean {
-    // 1. Editördeki en güncel kodu aktif dosyaya kaydet (Kopyala-yapıştır yapıldığında kaybolmasın!)
     const currentActiveFile = this.workspace.getActiveFile();
     if (currentActiveFile) {
       const editorCode = this.editor.getCode();
@@ -578,9 +629,11 @@ export class App {
     this.addrToSourceMap.clear();
     this.cpu.reset();
 
-    // 2. Projedeki tüm dosyaları derleyip 1 MB RAM'e yaz
+    let bootFileWith7C00: { file: WorkspaceFile; origin: number } | null = null;
+    let activeFileOrigin = 0x100;
+
+    // 1. Projedeki tüm dosyaları derleyip doğrudan 1 MB RAM'e yaz
     for (const file of files) {
-      // Aktif dosya için doğrudan editörün taze metnini kullan
       const codeToAssemble = (currentActiveFile && file.id === currentActiveFile.id)
         ? this.editor.getCode()
         : file.code;
@@ -588,8 +641,9 @@ export class App {
       const res = Assembler.assemble(codeToAssemble);
 
       if (res.errors.length > 0) {
+        this.flushCurrentEditorState();
         if (this.workspace.getActiveFile().id !== file.id) {
-          this.workspace.setActiveFile(file.id);
+          this.switchToFile(file.id);
         }
         this.editor.setErrors(res.errors);
         this.consoleView.log(`❌ [${file.name}] Derleme Hatası: ${res.errors.length} hata bulundu.`, 'error');
@@ -605,11 +659,18 @@ export class App {
       if (origin === 0) {
         const hasExplicitOrg0 = /^\s*ORG\s+0+H?\b/im.test(codeToAssemble);
         if (!hasExplicitOrg0) {
-          origin = file.name.toLowerCase().includes('boot') ? 0x7C00 : 0x100;
+          origin = (file.name.toLowerCase().includes('boot') || codeToAssemble.includes('7C00')) ? 0x7C00 : 0x100;
         }
       }
 
-      // 1 MB RAM'e baytları yaz
+      if (origin === 0x7C00) {
+        bootFileWith7C00 = { file, origin };
+      }
+      if (currentActiveFile && file.id === currentActiveFile.id) {
+        activeFileOrigin = origin;
+      }
+
+      // 1 MB RAM'e doğrudan baytları yaz
       this.cpu.mem.loadBytes(this.cpu.regs.cs, origin, res.bytes, 'code');
 
       // Fiziksel adresleri kaynak koda eşle
@@ -619,43 +680,38 @@ export class App {
       }
     }
 
-    // 3. Giriş dosyasını belirle (O an üzerinde çalışılan dosya önceliklidir!)
-    let entryFile = currentActiveFile || this.workspace.getEntryFile();
-    const entryCode = (currentActiveFile && entryFile.id === currentActiveFile.id)
-      ? this.editor.getCode()
-      : entryFile.code;
-    const entryRes = Assembler.assemble(entryCode);
-
-    let entryOrigin = entryRes.origin;
-    if (entryOrigin === 0) {
-      const hasExplicitOrg0 = /^\s*ORG\s+0+H?\b/im.test(entryCode);
-      if (!hasExplicitOrg0) {
-        entryOrigin = entryFile.name.toLowerCase().includes('boot') ? 0x7C00 : 0x100;
-      }
+    // 2. BIOS POST & Önyükleme Noktası (Boot Landing)
+    let bootOrigin = activeFileOrigin;
+    if (bootFileWith7C00) {
+      bootOrigin = 0x7C00;
+      this.cpu.regs.ip = 0x7C00;
+      this.cpu.regs.sp = 0x7C00;
+      this.cpu.regs.ds = 0x0000;
+      this.cpu.regs.es = 0x0000;
+      this.cpu.regs.ss = 0x0000;
+    } else {
+      this.cpu.regs.ip = bootOrigin;
+      this.cpu.regs.sp = (bootOrigin === 0x7C00) ? 0x7C00 : 0xFFFE;
     }
-
-    this.cpu.regs.ip = entryOrigin;
-    this.cpu.regs.sp = (entryOrigin === 0x7C00) ? 0x7C00 : 0xFFFE;
     this.cpu.flags.if = true;
 
     this.editor.clearErrors();
     this.setDirty(false);
     this.isCompiled = true;
 
-    // 4. Bellek Görünümünü (MemoryView) doğrudan kodun RAM'e yazıldığı adrese odakla!
-    const startPhys = this.cpu.mem.toPhys(this.cpu.regs.cs, entryOrigin);
+    // 3. Bellek Görünümünü (MemoryView) doğrudan kodun RAM'e yazıldığı adrese odakla
+    const startPhys = this.cpu.mem.toPhys(this.cpu.regs.cs, bootOrigin);
     this.memoryView.syncOrigin(startPhys);
     this.memoryView.jumpToPhys(startPhys);
 
-    // Aktif satırı aydınlat (editör kodunu ASLA ezmeden!)
-    const startSrc = this.addrToSourceMap.get(startPhys);
-    this.editor.setActiveLine(startSrc ? startSrc.line : null);
+    // Aktif satırı aydınlat
+    this.syncEditorToCurrentIp();
 
     this.updateStepBackState();
     this.updateCpuViews();
     this.consoleView.updateVram(this.cpu.mem.data);
 
-    this.consoleView.log(`✓ Bilgisayar belleği hazırlandı. Kod RAM'e yazıldı: 0x${entryOrigin.toString(16).toUpperCase().padStart(5, '0')} (${entryFile.name})`, 'success');
+    this.consoleView.log(`✓ [BIOS POST] 1 MB RAM hazırlandı. Sistem önyüklendi: CS:${this.cpu.regs.ip.toString(16).toUpperCase().padStart(4, '0')}h (${files.length} dosya belleğe yüklendi)`, 'success');
     return true;
   }
 
@@ -721,7 +777,7 @@ export class App {
     if (srcInfo) {
       // If IP has stepped into another file, switch editor tab!
       if (this.workspace.getActiveFile().id !== srcInfo.fileId) {
-        this.workspace.setActiveFile(srcInfo.fileId);
+        this.switchToFile(srcInfo.fileId);
       }
       this.editor.setActiveLine(srcInfo.line);
     } else {

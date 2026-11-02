@@ -116,7 +116,7 @@ export class ConsoleView {
       if (this.activeViewMode === 'monitor' && this.videoMode !== 0x13) {
         const cursorEl = this.container.querySelector('.crt-hardware-cursor') as HTMLElement | null;
         if (cursorEl) {
-          cursorEl.style.opacity = this.cursorBlink ? '1' : '0';
+          cursorEl.classList.toggle('cursor-hidden', !this.cursorBlink);
         }
       }
     }, 500);
@@ -295,34 +295,26 @@ export class ConsoleView {
 
         const isCursor = (row === this.cursorRow && col === this.cursorCol);
 
-        if (isCursor) {
-          const cursorOpacity = this.cursorBlink ? '1' : '0';
-          if (isMonoGreen) {
-            rowHtml += `<span class="crt-hardware-cursor" style="color: #4ade80; background: #14532d; font-weight: 800; opacity: ${cursorOpacity}; transition: opacity 0.1s;">_</span>`;
-          } else if (isMonoAmber) {
-            rowHtml += `<span class="crt-hardware-cursor" style="color: #fbbf24; background: #78350f; font-weight: 800; opacity: ${cursorOpacity}; transition: opacity 0.1s;">_</span>`;
-          } else {
-            rowHtml += `<span class="crt-hardware-cursor" style="color: #ffffff; background: #1e3a8a; font-weight: 800; opacity: ${cursorOpacity}; transition: opacity 0.1s;">_</span>`;
-          }
+        let color = '';
+        let bg = 'transparent';
+
+        if (isMonoGreen) {
+          const isBright = (attr & 0x08) !== 0;
+          color = isBright ? '#4ade80' : '#22c55e';
+          bg = (attr & 0x70) !== 0 ? '#14532d' : 'transparent';
+        } else if (isMonoAmber) {
+          const isBright = (attr & 0x08) !== 0;
+          color = isBright ? '#fbbf24' : '#f59e0b';
+          bg = (attr & 0x70) !== 0 ? '#78350f' : 'transparent';
         } else {
-          if (isMonoGreen) {
-            const isBright = (attr & 0x08) !== 0;
-            const color = isBright ? '#4ade80' : '#22c55e';
-            const bg = (attr & 0x70) !== 0 ? '#14532d' : 'transparent';
-            rowHtml += `<span style="color: ${color}; background-color: ${bg};">${this.escapeHtml(char)}</span>`;
-          } else if (isMonoAmber) {
-            const isBright = (attr & 0x08) !== 0;
-            const color = isBright ? '#fbbf24' : '#f59e0b';
-            const bg = (attr & 0x70) !== 0 ? '#78350f' : 'transparent';
-            rowHtml += `<span style="color: ${color}; background-color: ${bg};">${this.escapeHtml(char)}</span>`;
-          } else {
-            const fg = attr & 0x0F;
-            const bg = (attr >> 4) & 0x07;
-            const fgColor = CGA_PALETTE[fg];
-            const bgColor = bg === 0 ? 'transparent' : CGA_PALETTE[bg];
-            rowHtml += `<span style="color: ${fgColor}; background-color: ${bgColor};">${this.escapeHtml(char)}</span>`;
-          }
+          const fg = attr & 0x0F;
+          const bgAttr = (attr >> 4) & 0x07;
+          color = CGA_PALETTE[fg] || '#ffffff';
+          bg = bgAttr === 0 ? 'transparent' : (CGA_PALETTE[bgAttr] || 'transparent');
         }
+
+        const cursorClass = isCursor ? ' crt-hardware-cursor' : '';
+        rowHtml += `<span class="${cursorClass.trim()}" style="color: ${color}; background-color: ${bg};">${this.escapeHtml(char)}</span>`;
       }
       output += `<div class="crt-row" style="height: 14px; white-space: pre;">${rowHtml}</div>`;
     }

@@ -1,62 +1,20 @@
 import { WorkspaceFile, WorkspaceProject } from './types.js';
 
-const STORAGE_PROJECT_KEY = 'assemblysim_project_v5';
+const STORAGE_PROJECT_KEY = 'assemblysim_project_v6';
+const LEGACY_PROJECT_V5 = 'assemblysim_project_v5';
 const LEGACY_PROJECT_V4 = 'assemblysim_project_v4';
 const LEGACY_PROJECT_V3 = 'assemblysim_project_v3';
 const LEGACY_DOCS_KEY = 'assemblysim_docs_v2';
 const LEGACY_V1_KEY = 'assemblysim_workspace_docs_v1';
 
-export const DEFAULT_MAIN_CODE = `; ==========================================================
-; 8086 Bare-Metal Bootloader (boot.asm)
-; BIOS POST sonrasi 0000:7C00h adresinde calisir.
-; 1 MB RAM: 00000h (IVT) | 00400h (BDA) | 07C00h (Boot) | B8000h (VRAM)
-; ==========================================================
-ORG 7C00H
+export const DEFAULT_MAIN_CODE = `; 8086 Assembly Program
+ORG 100H
 
 START:
-    CLI                 ; Kesmeleri gecici olarak kapat
-    XOR AX, AX
-    MOV DS, AX          ; DS = 0000h
-    MOV ES, AX          ; ES = 0000h
-    MOV SS, AX          ; SS = 0000h
-    MOV SP, 7C00H       ; Stack: 0000:7C00h altina buyur
-    STI                 ; Kesmeleri tekrar ac
+    MOV AX, 0
+    ; Kodlarinizi buraya yazin...
 
-    ; Ekrana (B800h CGA/VGA Renkli Metin VRAM) dogrudan 'BOOT OK' yaz
-    MOV AX, 0B800H
-    MOV ES, AX
-
-    ; 'B' (42h) - Sari yazi (0Eh)
-    MOV BYTE PTR ES:[0000H], 42H
-    MOV BYTE PTR ES:[0001H], 0EH
-
-    ; 'O' (4Fh)
-    MOV BYTE PTR ES:[0002H], 4FH
-    MOV BYTE PTR ES:[0003H], 0EH
-
-    ; 'O' (4Fh)
-    MOV BYTE PTR ES:[0004H], 4FH
-    MOV BYTE PTR ES:[0005H], 0EH
-
-    ; 'T' (54h)
-    MOV BYTE PTR ES:[0006H], 54H
-    MOV BYTE PTR ES:[0007H], 0EH
-
-    ; ' ' (20h)
-    MOV BYTE PTR ES:[0008H], 20H
-    MOV BYTE PTR ES:[0009H], 0EH
-
-    ; 'O' (4Fh) - Acik yesil yazi (0Ah)
-    MOV BYTE PTR ES:[000AH], 4FH
-    MOV BYTE PTR ES:[000BH], 0AH
-
-    ; 'K' (4Bh)
-    MOV BYTE PTR ES:[000CH], 4BH
-    MOV BYTE PTR ES:[000DH], 0AH
-
-HANG:
-    HLT                 ; Islemciyi durdur
-    JMP HANG            ; Bekleme dongusu
+    HLT
 `;
 
 export const DEFAULT_CONSOLE_CODE = `; ==========================================================
@@ -260,6 +218,9 @@ export class WorkspaceManager {
     try {
       let saved = storage.getItem(STORAGE_PROJECT_KEY);
       if (!saved) {
+        saved = storage.getItem(LEGACY_PROJECT_V5);
+      }
+      if (!saved) {
         saved = storage.getItem(LEGACY_PROJECT_V4);
       }
       if (saved) {
@@ -312,31 +273,22 @@ export class WorkspaceManager {
   }
 
   private initDefaultProject(): void {
-    const bootFile: WorkspaceFile = {
-      id: 'file-boot',
-      name: 'boot.asm',
+    const mainFile: WorkspaceFile = {
+      id: 'file-main',
+      name: 'main.asm',
       code: DEFAULT_MAIN_CODE,
       isEntry: true,
       createdAt: Date.now(),
       lastModified: Date.now()
     };
 
-    const consoleFile: WorkspaceFile = {
-      id: 'file-console',
-      name: 'console.asm',
-      code: DEFAULT_CONSOLE_CODE,
-      isEntry: false,
-      createdAt: Date.now() + 1,
-      lastModified: Date.now() + 1
-    };
-
     this.project = {
       id: 'project-default',
-      name: '8086 Bare-Metal Sistem',
-      entryFileId: bootFile.id,
-      activeFileId: bootFile.id,
-      openFileIds: [bootFile.id, consoleFile.id],
-      files: [bootFile, consoleFile],
+      name: '8086 Projesi',
+      entryFileId: mainFile.id,
+      activeFileId: mainFile.id,
+      openFileIds: [mainFile.id],
+      files: [mainFile],
       createdAt: Date.now(),
       lastModified: Date.now()
     };
@@ -349,23 +301,28 @@ export class WorkspaceManager {
       return;
     }
 
-    // Ensure console.asm exists in the project and has clean, working code
-    const existingConsole = this.project.files.find(f => f.name === 'console.asm');
-    if (!existingConsole) {
-      const consoleFile: WorkspaceFile = {
-        id: `file-console-${Date.now()}`,
-        name: 'console.asm',
-        code: DEFAULT_CONSOLE_CODE,
-        isEntry: false,
-        createdAt: Date.now(),
-        lastModified: Date.now()
-      };
-      this.project.files.push(consoleFile);
-      if (!this.project.openFileIds.includes(consoleFile.id)) {
-        this.project.openFileIds.push(consoleFile.id);
-      }
-    } else if (existingConsole.code.includes('JMP $') || !existingConsole.code.includes('MSG_BANNER')) {
-      existingConsole.code = DEFAULT_CONSOLE_CODE;
+    // Clean up legacy console.asm if it contains default mini-shell code
+    const legacyConsoleIdx = this.project.files.findIndex(
+      f => f.name === 'console.asm' && f.code.includes('MSG_BANNER')
+    );
+    if (legacyConsoleIdx !== -1) {
+      const consoleFile = this.project.files[legacyConsoleIdx];
+      this.project.files.splice(legacyConsoleIdx, 1);
+      this.project.openFileIds = this.project.openFileIds.filter(id => id !== consoleFile.id);
+    }
+
+    // Clean up legacy bootloader if it's the default baremetal template
+    const legacyBoot = this.project.files.find(
+      f => f.name === 'boot.asm' && f.code.includes('8086 Bare-Metal Bootloader')
+    );
+    if (legacyBoot) {
+      legacyBoot.name = 'main.asm';
+      legacyBoot.code = DEFAULT_MAIN_CODE;
+    }
+
+    if (this.project.files.length === 0) {
+      this.initDefaultProject();
+      return;
     }
 
     // Ensure entry file exists
@@ -376,7 +333,7 @@ export class WorkspaceManager {
 
     // Ensure active file exists
     if (!this.project.files.some(f => f.id === this.project.activeFileId)) {
-      this.project.activeFileId = this.project.entryFileId;
+      this.project.activeFileId = this.project.files[0].id;
     }
 
     // Ensure open file IDs are valid
@@ -478,7 +435,7 @@ export class WorkspaceManager {
     const newFile: WorkspaceFile = {
       id: `file-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       name: fileName,
-      code: initialCode !== undefined ? initialCode : `; ${fileName}\nORG 2000H\n\n; Kodlarinizi buraya yazin...\n\nRET\n`,
+      code: initialCode !== undefined ? initialCode : `; ${fileName}\nORG 100H\n\nSTART:\n    ; Kodlarinizi buraya yazin...\n\n    HLT\n`,
       isEntry: false,
       createdAt: Date.now(),
       lastModified: Date.now()
@@ -495,12 +452,20 @@ export class WorkspaceManager {
   }
 
   deleteFile(id: string): boolean {
-    if (this.project.files.length <= 1) {
-      return false; // Don't delete the last file
-    }
-
     const index = this.project.files.findIndex(f => f.id === id);
     if (index === -1) return false;
+
+    if (this.project.files.length === 1) {
+      // If deleting the only remaining file, reset it to clean main.asm
+      const file = this.project.files[0];
+      file.name = 'main.asm';
+      file.code = DEFAULT_MAIN_CODE;
+      file.lastModified = Date.now();
+      this.saveToStorage();
+      this.events.onActiveFileChange?.(file);
+      this.events.onProjectChange?.(this.project);
+      return true;
+    }
 
     this.project.files.splice(index, 1);
     this.closeTab(id);
@@ -523,8 +488,12 @@ export class WorkspaceManager {
     return true;
   }
 
+  private getInternalFile(id: string): WorkspaceFile | undefined {
+    return this.project.files.find(item => item.id === id);
+  }
+
   renameFile(id: string, newName: string): void {
-    const file = this.getFile(id);
+    const file = this.getInternalFile(id);
     if (!file) return;
     let clean = newName.trim();
     if (!clean) return;
@@ -535,13 +504,21 @@ export class WorkspaceManager {
     this.events.onProjectChange?.(this.project);
   }
 
-  updateFileCode(id: string, code: string, editorScroll?: { top: number; left: number }): void {
-    const file = this.getFile(id);
+  updateFileCode(
+    id: string,
+    code: string,
+    editorScroll?: { top: number; left: number },
+    editorCursor?: { start: number; end: number }
+  ): void {
+    const file = this.getInternalFile(id);
     if (!file) return;
     file.code = code;
     file.lastModified = Date.now();
     if (editorScroll) {
       file.editorScroll = editorScroll;
+    }
+    if (editorCursor) {
+      file.editorCursor = editorCursor;
     }
     this.saveToStorage();
   }

@@ -97,21 +97,28 @@ export class EditorHistory {
 }
 
 /**
- * Indents selected lines (or inserts 4 spaces if no selection).
+ * Indents selected lines (or inserts spaces to align to next tab stop if no selection).
  */
 export function indentSelection(
   val: string,
   start: number,
   end: number,
-  indentStr = '    '
+  indentOrTabSize: string | number = 4
 ): { text: string; newStart: number; newEnd: number } {
-  // If no selection: insert 4 spaces at cursor
+  const tabSize = typeof indentOrTabSize === 'number' ? indentOrTabSize : 4;
+  const defaultIndentStr = typeof indentOrTabSize === 'string' ? indentOrTabSize : ' '.repeat(tabSize);
+
+  // If no selection: insert spaces up to the next tab stop (multiples of tabSize)
   if (start === end) {
-    const text = val.substring(0, start) + indentStr + val.substring(end);
+    const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+    const col = start - lineStart;
+    const spacesToAdd = (col % tabSize === 0) ? tabSize : (tabSize - (col % tabSize));
+    const insertStr = ' '.repeat(spacesToAdd);
+    const text = val.substring(0, start) + insertStr + val.substring(end);
     return {
       text,
-      newStart: start + indentStr.length,
-      newEnd: start + indentStr.length
+      newStart: start + spacesToAdd,
+      newEnd: start + spacesToAdd
     };
   }
 
@@ -126,11 +133,11 @@ export function indentSelection(
   const after = val.substring(nextNewline);
 
   const lines = block.split('\n');
-  const indentedLines = lines.map(line => indentStr + line);
+  const indentedLines = lines.map(line => defaultIndentStr + line);
   const newBlock = indentedLines.join('\n');
   const text = before + newBlock + after;
 
-  const addedPerLine = indentStr.length;
+  const addedPerLine = defaultIndentStr.length;
   const totalAdded = lines.length * addedPerLine;
   const newStart = (start === firstLineStart) ? start : start + addedPerLine;
   const newEnd = end + totalAdded;
@@ -373,12 +380,14 @@ export function smartBackspace(
   const lineStart = val.lastIndexOf('\n', start - 1) + 1;
   const textBefore = val.substring(lineStart, start);
 
-  if (textBefore.length > 0 && /^ +$/.test(textBefore)) {
-    const col = textBefore.length;
-    const count = (col % tabSize === 0) ? tabSize : (col % tabSize);
-    const text = val.substring(0, start - count) + val.substring(start);
-    const newPos = start - count;
-    return { text, newPos };
+  if (textBefore.length > 0) {
+    if (/^ +$/.test(textBefore)) {
+      const col = textBefore.length;
+      const count = (col % tabSize === 0) ? tabSize : (col % tabSize);
+      const text = val.substring(0, start - count) + val.substring(start);
+      const newPos = start - count;
+      return { text, newPos };
+    }
   }
 
   return null;

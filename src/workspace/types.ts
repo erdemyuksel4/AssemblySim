@@ -7,6 +7,7 @@ export interface WorkspaceFile {
   createdAt: number;
   lastModified: number;
   editorScroll?: { top: number; left: number };
+  editorCursor?: { start: number; end: number };
 }
 
 export type WorkspaceDocument = WorkspaceFile;

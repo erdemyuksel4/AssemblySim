@@ -90,7 +90,7 @@ export const STUDY_TOPICS: MainTopic[] = [
         theoryHtml: `
           <div class="nb-section">
             <h4 class="nb-title">BIU (Bus Interface Unit) vs. EU (Execution Unit)</h4>
-            <p>8086 mikroişlemcisi, iki bağımsız donanım birimine ayrılarak ilk modern boru hattı (pipelining) mantığını kurmuştur:</p>
+            <p>8086 mikroişlemcisi, iki bağımsız donanım birimine ayrılarak ilk modern boru hattı (pipelining) mimarisini kurmuştur:</p>
             <div class="nb-grid-2">
               <div class="nb-card biu-card">
                 <h5>🚌 BIU (Veriyolu Arayüz Birimi)</h5>
@@ -112,8 +112,37 @@ export const STUDY_TOPICS: MainTopic[] = [
               </div>
             </div>
             <div class="nb-callout tip">
-              💡 <strong>Pipelining:</strong> EU bir komutu çözer veya çalıştırırken, BIU boş beklemez; sıradaki komutları getirip 6-baytlık kuyruğa doldurur.
+              💡 <strong>Pipelining:</strong> EU bir komutu çözer veya çalıştırırken, BIU boş beklemez; sıradaki komutları bellekten getirip 6-baytlık kuyruğa doldurur.
             </div>
+
+            <h4 class="nb-title" style="margin-top: 16px;">EU Genel Amaçlı Yazmaçları (AX, BX, CX, DX)</h4>
+            <p>EU birimi içinde verileri geçici olarak saklamak için 14 adet 16-bitlik yazmaç bulunur. En sık kullanılan 4 genel amaçlı yazmaç şunlardır:</p>
+            <ul>
+              <li><strong>AX (Accumulator - Akümülatör):</strong> Aritmetik, çarpma ve giriş/çıkış işlemlerinin ana yazmacıdır.</li>
+              <li><strong>BX (Base - Taban Yazmacı):</strong> Bellek adreslemede taban işaretçisi olarak kullanılır.</li>
+              <li><strong>CX (Count - Sayaç Yazmacı):</strong> Döngü ve bit kaydırma işlemlerinde donanımsal sayaçtır.</li>
+              <li><strong>DX (Data - Veri Yazmacı):</strong> Çarpma/bölme sonuçları ve G/Ç port adresleri için kullanılır.</li>
+            </ul>
+            <div class="nb-callout tip">
+              💡 <strong>Yüksek / Düşük Bayt Parçalanması:</strong> Bu 4 yazmacın her biri iki bağımsız 8-bitlik yazmaca ayrılabilir:
+              Örneğin <code>AX</code> yazmacının üst 8 biti <code>AH</code> (High), alt 8 biti ise <code>AL</code> (Low) olarak adlandırılır.
+            </div>
+
+            <h4 class="nb-title" style="margin-top: 16px;">İlk Komutumuz: MOV (Veri Kopyalama / Yükleme)</h4>
+            <p>Assembly dilinde yazmaçlara değer atamak ve veri aktarmak için <code>MOV</code> komutu kullanılır:</p>
+            <div class="nb-formula-box">
+              <code>MOV hedef, kaynak   ; kaynak verisini hedefe kopyalar</code>
+            </div>
+            <pre class="nb-code-sample">MOV AX, 1234h   ; AX yazmacına 16-bit onaltılık 1234h sayısını yükler
+MOV BX, 5678h   ; BX yazmacına 5678h yükler
+MOV CX, 0010h   ; CX yazmacına 0010h (ondalık 16) yükler</pre>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Program İskeleti: ORG 100h ve HLT</h4>
+            <p>Yazdığımız Assembly programlarının işletim sisteminde düzgün çalışması ve durması için iki temel direktif kullanılır:</p>
+            <ul>
+              <li><code>ORG 100h</code>: DOS COM dosyaları için kodun bellek ofsetinin 100h adresinden başlayacağını derleyiciye bildirir.</li>
+              <li><code>HLT (Halt)</code>: İşlemciye "artık çalışmayı durdur" emri verir. Programımızın sonuna mutlaka konmalıdır.</li>
+            </ul>
           </div>
         `,
         quiz: {
@@ -169,18 +198,27 @@ HLT
               <code>Fiziksel Adres (PA) = (Segment × 10H) + Offset = (Segment × 16) + Offset</code>
             </div>
             <p>Örneğin: <code>DS = 1230H</code> ve <code>SI = 0045H</code> ise:</p>
-            <pre class="nb-code-sample">Segment:  12300H   (Segment 1 hex basamağı sola kaydırıldı)
+            <pre class="nb-code-sample">Segment:  12300H   (Segment 1 hex basamağı sola kaydırıldı, yani x16)
 Offset:  + 0045H
 PA:        12345H   (20-Bit Fiziksel Bellek Adresi)</pre>
 
-            <h4 class="nb-title" style="margin-top: 14px;">Little-Endian Prensibi</h4>
-            <p>8086 mimarisinde çok baytlı (16-bit Word) bir veri belleğe yazılırken:</p>
+            <h4 class="nb-title" style="margin-top: 16px;">Köşeli Parantez [...] ile Belleğe Yazma</h4>
+            <p>Bir yazmaçtaki veriyi belleğin (RAM) belirli bir ofset adresine kaydetmek için köşeli parantez <code>[ofset]</code> sözdizimi kullanılır:</p>
+            <div class="nb-formula-box">
+              <code>MOV [ofset_adresi], yazmac   ; Yazmaçtaki veriyi o bellek adresine yazar</code>
+            </div>
+            <p>Örneğin <code>MOV [0200h], AX</code> komutu, AX yazmacındaki 16-bitlik veriyi belleğin <code>0200h</code> adresine depolar.</p>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Little-Endian Prensibi (Düşük Bayt Önce)</h4>
+            <p>8086 mimarisinde çok baytlı (16-bit Word) bir veri belleğe yazılırken baytlar şu sırayla yerleştirilir:</p>
             <ul>
-              <li><strong>Düşük Anlamlı Bayt (Low Byte):</strong> Düşük adrese yazılır.</li>
-              <li><strong>Yüksek Anlamlı Bayt (High Byte):</strong> Yüksek adrese (+1) yazılır.</li>
+              <li><strong>Düşük Anlamlı Bayt (Low Byte):</strong> Düşük adrese (taban adres) yazılır.</li>
+              <li><strong>Yüksek Anlamlı Bayt (High Byte):</strong> Yüksek adrese (taban + 1) yazılır.</li>
             </ul>
             <div class="nb-callout warning">
-              ⚠️ <code>MOV WORD PTR [0100H], 1234H</code> komutu çalıştırıldığında bellekte <code>0100H: 34H</code> ve <code>0101H: 12H</code> olarak saklanır!
+              🚨 <strong>Önemli Örnek:</strong> <code>AX = 4A8Fh</code> iken <code>MOV [0200h], AX</code> komutu çalıştırıldığında belleğin durumu:
+              <br>• <code>[0200h]</code> adresinde: <strong>8Fh</strong> (Düşük bayt)
+              <br>• <code>[0201h]</code> adresinde: <strong>4Ah</strong> (Yüksek bayt) saklanır!
             </div>
           </div>
         `,
@@ -259,10 +297,26 @@ HLT
               <li><strong>1. Boyut Uyumu:</strong> Her iki operand aynı boyutta olmalıdır (8-bit ile 8-bit, 16-bit ile 16-bit). <code>MOV AL, BX ; HATA!</code></li>
               <li><strong>2. Bellekten Belleğe Yasaktır:</strong> Tek bir MOV komutu ile doğrudan RAM'den RAM'e kopyalama yapılamaz. <code>MOV [0100h], [0200h] ; HATA!</code> (Araya yazmaç girmelidir).</li>
               <li><strong>3. Segment Yazmaçlarına Doğrudan Sabit Atanamaz:</strong> <code>MOV DS, 1000h ; HATA!</code> (Önce AX'e, oradan DS'ye aktarılır).</li>
-              <li><strong>4. CS Değiştirilemez & Bayraklar Etkilenmez:</strong> MOV ve XCHG hiçbir bayrağı (CF, ZF vb.) DEĞİŞTİRMEZ!</li>
+              <li><strong>4. CS Değiştirilemez & Bayraklar Etkilenmez:</strong> MOV ve XCHG komutları bayrakları (CF, ZF vb.) <strong>ASLA DEĞİŞTİRMEZ!</strong></li>
             </ul>
-            <h4 class="nb-title" style="margin-top: 14px;">XCHG (Exchange - Değer Takası)</h4>
-            <p>İki operandın değerini birbirleriyle yer değiştirir. Segment yazmaçları veya iki bellek adresiyle kullanılamaz.</p>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Bellek Boyut Belirteçleri: WORD PTR ve BYTE PTR</h4>
+            <p>Sabit bir sayıyı doğrudan bir bellek adresine yazarken derleyici belleğe 1 bayt mı yoksa 2 bayt (Word) mı yazılacağını bilemez:</p>
+            <pre class="nb-code-sample">MOV [0200h], 9999h            ; HATA! Boyut belirsiz (Ambiguous size)
+MOV WORD PTR [0200h], 9999h   ; DOĞRU: 16-bit (2 bayt) kelime yazar
+MOV BYTE PTR [0200h], 77h     ; DOĞRU: 8-bit (1 bayt) yazar</pre>
+
+            <h4 class="nb-title" style="margin-top: 16px;">XCHG (Exchange - Karşılıklı Değer Takası)</h4>
+            <p>İki operandın değerini atomik olarak birbirleriyle yer değiştirir. Üçüncü bir geçici yazmaç kullanma ihtiyacını ortadan kaldırır:</p>
+            <div class="nb-formula-box">
+              <code>XCHG operand1, operand2   ; operand1 <-> operand2 değerlerini takas eder</code>
+            </div>
+            <pre class="nb-code-sample">MOV AX, 1111h
+MOV WORD PTR [0200h], 9999h
+XCHG AX, [0200h]   ; AX artık 9999h, belleğin [0200h] adresi ise 1111h olur!</pre>
+            <div class="nb-callout tip">
+              💡 <strong>Kısıtlama:</strong> XCHG komutu iki bellek adresi arasında veya segment yazmaçlarıyla kullanılamaz.
+            </div>
           </div>
         `,
         quiz: {
@@ -329,14 +383,27 @@ HLT
                   <tr><td>3. Doğrudan (Direct)</td><td><code>MOV AX, [0100H]</code></td><td>Sabit bellek adresinden okuma.</td></tr>
                   <tr><td>4. Tabanlı (Based)</td><td><code>MOV AX, [BX]</code> veya <code>[BP]</code></td><td>BX veya BP içindeki adresi ofset alır.</td></tr>
                   <tr><td>5. İndeksli (Indexed)</td><td><code>MOV AX, [SI]</code> veya <code>[DI]</code></td><td>SI veya DI içindeki ofseti kullanır.</td></tr>
-                  <tr><td>6. Taban-İndeksli</td><td><code>MOV AX, [BX+SI]</code></td><td>BX ve SI toplanarak ofset bulunur.</td></tr>
+                  <tr><td>6. Taban-İndeksli</td><td><code>MOV AX, [BX+SI]</code></td><td>BX ve SI toplanarak nihai ofset bulunur.</td></tr>
                   <tr><td>7. Deplasmanlı</td><td><code>MOV AX, [BX+DI+4]</code></td><td>Taban, indeks ve sabit ofset toplanır.</td></tr>
                 </tbody>
               </table>
             </div>
-            <div class="nb-callout tip">
-              💡 <strong>LEA (Load Effective Address):</strong> Bellekten veri çekmez, sadece parantez içindeki ofset adresini hesaplayıp yazmaca yükler! <code>LEA BX, [SI+4]</code> komutu <code>BX = SI + 4</code> yapar.
+
+            <h4 class="nb-title" style="margin-top: 16px;">Taban-İndeksli Adresleme [BX+SI] Uygulaması</h4>
+            <p>Dizilerde gezinirken taban yazmacı (<code>BX</code>) dizinin başlangıç adresini, indeks yazmacı (<code>SI</code>) ise aranacak elemanın sırasını tutar:</p>
+            <pre class="nb-code-sample">MOV BX, 0200h               ; Taban adresi: 0200h
+MOV SI, 0004h               ; İndeks ofseti: +4 bayt
+MOV BYTE PTR [0204h], 77h   ; 0204h adresine 77h baytını yazalım
+MOV AL, [BX+SI]             ; AL = [0200h + 0004h] = [0204h] adresindeki 77h değerini okur!</pre>
+
+            <h4 class="nb-title" style="margin-top: 16px;">LEA (Load Effective Address) Komutu</h4>
+            <p><code>LEA</code> komutu köşeli parantez içindeki adres matematiksel formülünü hesaplar fakat <strong>asla RAM'e gidip okuma yapmaz</strong>; sadece hesaplanan ofset değerini yazmaca yükler:</p>
+            <div class="nb-formula-box">
+              <code>LEA yazmac, [adres_ifadesi]   ; Sadece ofset adresini hesaplar</code>
             </div>
+            <pre class="nb-code-sample">; BX = 0100H ve SI = 0020H iken:
+LEA AX, [BX+SI+5]   ; AX = 0100H + 0020H + 5 = 0125H olur! (RAM okunmaz)
+MOV AX, [BX+SI+5]   ; RAM'deki 0125H adresinde saklanan veriyi AX'e okur!</pre>
           </div>
         `,
         quiz: {
@@ -410,20 +477,40 @@ HLT
         summary: 'Elde (CF), Sıfır (ZF), İşaret (SF), Taşma (OF) bayrakları ve INC/DEC kuralı.',
         theoryHtml: `
           <div class="nb-section">
-            <h4 class="nb-title">Durum Bayrakları Tablosu</h4>
+            <h4 class="nb-title">Durum Bayrakları Tablosu (FLAGS Register)</h4>
+            <p>Aritmetik ve mantıksal işlemlerin sonucuna göre EU içindeki FLAGS yazmacında şu bayraklar otomatik güncellenir:</p>
             <ul>
-              <li><strong>CF (Carry Flag - Elde Bayrağı):</strong> İşaretsiz taşma/elde oluştuğunda 1 olur.</li>
-              <li><strong>ZF (Zero Flag - Sıfır Bayrağı):</strong> İşlem sonucu 0 olduğunda 1 olur.</li>
+              <li><strong>CF (Carry Flag - Elde/Borç Bayrağı):</strong> İşaretsiz toplamada taşma veya çıkarmada borç oluştuğunda 1 olur.</li>
+              <li><strong>ZF (Zero Flag - Sıfır Bayrağı):</strong> İşlem sonucu tam olarak 0 olduğunda 1 olur.</li>
               <li><strong>SF (Sign Flag - İşaret Bayrağı):</strong> Sonucun en yüksek biti 1 (negatif) ise 1 olur.</li>
-              <li><strong>OF (Overflow Flag - Taşma Bayrağı):</strong> İşaretli aritmetikte taşma (pozitif+pozitif=negatif) olduğunda 1 olur.</li>
+              <li><strong>OF (Overflow Flag - Taşma Bayrağı):</strong> İşaretli sayılarda kapasite taşması (örn. pozitif + pozitif = negatif) olduğunda 1 olur.</li>
             </ul>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Temel Aritmetik: ADD ve SUB Komutları</h4>
+            <p>8086'da iki sayıyı toplamak veya çıkarmak için <code>ADD</code> ve <code>SUB</code> kullanılır. Bu komutlar CF, ZF, SF, OF bayraklarının hepsini günceller:</p>
+            <div class="nb-formula-box">
+              <code>ADD hedef, kaynak   ; hedef = hedef + kaynak<br>SUB hedef, kaynak   ; hedef = hedef - kaynak</code>
+            </div>
+            <pre class="nb-code-sample">MOV AX, 10
+ADD AX, 5    ; AX = 15 olur.
+SUB AX, 15   ; AX = 0 olur &rarr; ZF = 1 kurulur!</pre>
+
             <div class="nb-callout warning">
               🚨 <strong>Çok Önemli Sınav Kuralı (INC & DEC İstisnası):</strong><br>
-              <code>INC</code> ve <code>DEC</code> komutları ZF, SF, OF, AF, PF bayraklarını günceller; fakat <strong>CF (Elde Bayrağı) ASLA DEĞİŞMEZ!</strong><br>
-              Örneğin <code>AL = 0FFH</code> iken <code>INC AL</code> yapılırsa <code>AL = 00H</code> ve <code>ZF = 1</code> olur ama <code>CF = 0</code> kalır!
+              <code>INC</code> (+1) ve <code>DEC</code> (-1) komutları ZF, SF, OF bayraklarını günceller; fakat <strong>CF (Elde Bayrağı) ASLA DEĞİŞMEZ!</strong><br>
+              Örneğin <code>AL = 0FFH</code> iken <code>INC AL</code> yapılırsa <code>AL = 00H</code> olur ve <code>ZF = 1</code> kurulur ama <strong>CF = 0</strong> kalır!
             </div>
-            <h4 class="nb-title" style="margin-top: 14px;">CMP (Compare) Komutu</h4>
-            <p><code>CMP hedef, kaynak</code> komutu arka planda <code>hedef - kaynak</code> çıkarmasını yapar. Hedefin değerini <strong>asla bozmaz</strong>, sadece bayrakları kurar.</p>
+
+            <h4 class="nb-title" style="margin-top: 16px;">CMP (Compare - Karşılaştırma) Komutu</h4>
+            <p><code>CMP hedef, kaynak</code> komutu arka planda sanal bir <code>hedef - kaynak</code> çıkarması yapar. En önemli özelliği: <strong>hedef operandın değerini ASLA DEĞİŞTİRMEZ</strong>, sadece bayrakları kurar!</p>
+            <ul>
+              <li><strong>Eğer hedef == kaynak ise:</strong> Çıkarma sonucu 0 olacağından <strong><code>ZF = 1</code></strong> ve <code>CF = 0</code> olur.</li>
+              <li><strong>Eğer hedef &lt; kaynak ise:</strong> İşaretsiz çıkarmada borç gerektiğinden <strong><code>CF = 1</code></strong> olur.</li>
+              <li><strong>Eğer hedef &gt; kaynak ise:</strong> <code>ZF = 0</code> ve <code>CF = 0</code> kalır.</li>
+            </ul>
+            <pre class="nb-code-sample">MOV AL, 50h
+MOV BL, 50h
+CMP AL, BL   ; AL ve BL eşittir. Değerler bozulmaz, ZF = 1 kurulur!</pre>
           </div>
         `,
         quiz: {
@@ -476,13 +563,13 @@ HLT
         theoryHtml: `
           <div class="nb-section">
             <h4 class="nb-title">MUL ve DIV Gizli Yazmaç Donanımı</h4>
-            <p>Çarpma ve bölmede ikinci operand komutta yazılmaz, donanımsal olarak sabittir:</p>
+            <p>8086 mimarisinde çarpma ve bölme komutlarında birinci operand komut satırında yazılmaz; donanımsal olarak akümülatör (<code>AX</code>) ve veri (<code>DX</code>) yazmaçlarına kilitlidir:</p>
             <div class="nb-grid-2">
               <div class="nb-card">
                 <h5>✖️ MUL (İşaretsiz Çarpma)</h5>
                 <ul>
-                  <li><strong>8-bit:</strong> <code>MUL BL</code> &rarr; <code>AX = AL × BL</code></li>
-                  <li><strong>16-bit:</strong> <code>MUL BX</code> &rarr; <code>DX:AX = AX × BX</code> (Yüksek 16-bit DX'e, düşük 16-bit AX'e düşer).</li>
+                  <li><strong>8-bit:</strong> <code>MUL BL</code> &rarr; <code>AX = AL × BL</code> (Çarpan AL'dedir, sonuç 16-bit AX'e yazılır).</li>
+                  <li><strong>16-bit:</strong> <code>MUL BX</code> &rarr; <code>DX:AX = AX × BX</code> (Yüksek 16 bit DX'e, düşük 16 bit AX'e yazılır).</li>
                 </ul>
               </div>
               <div class="nb-card">
@@ -492,6 +579,16 @@ HLT
                   <li><strong>16-bit:</strong> <code>DIV BX</code> &rarr; <code>DX:AX / BX</code> &rarr; Bölüm <code>AX</code>, Kalan <code>DX</code></li>
                 </ul>
               </div>
+            </div>
+
+            <h4 class="nb-title" style="margin-top: 16px;">8-Bit DIV İşleminin Adım Adım Kurulumu</h4>
+            <p>8-bit bir sayıya bölme yaparken bölünen sayıyı mutlaka 16-bitlik <code>AX</code> yazmacına, böleni ise 8-bitlik bir yazmaca (örn. <code>BL</code>) koymalısınız:</p>
+            <pre class="nb-code-sample">MOV AX, 100   ; Bölünen (100) AX yazmacına konur
+MOV BL, 7     ; Bölen (7) BL yazmacına konur
+DIV BL        ; 100 / 7 işlemi yapılır:
+              ; Sonuç: Bölüm AL = 14 (0Eh), Kalan AH = 2 (02h) olur!</pre>
+            <div class="nb-callout tip">
+              💡 <strong>Sınav Sorusu Örneği:</strong> 25 sayısını 4'e bölersek (<code>AX = 25, BL = 4, DIV BL</code>); bölüm <code>AL = 6</code>, kalan <code>AH = 1</code> olur.
             </div>
           </div>
         `,
@@ -566,11 +663,29 @@ HLT
           <div class="nb-section">
             <h4 class="nb-title">Bit Düzeyinde Mantık İşlemleri</h4>
             <ul>
-              <li><code>AND</code>: Belirli bitleri sıfırlamak (maskelemek) için kullanılır. <code>AND AL, 0FH</code> alt 4 biti korur, üst 4 biti sıfırlar.</li>
+              <li><code>AND</code>: Belirli bitleri sıfırlamak (maskelemek) için kullanılır. <code>AND AL, 0FH</code> alt 4 biti korur, üst 4 biti 0 yapar.</li>
               <li><code>OR</code>: Belirli bitleri 1 yapmak için kullanılır. <code>OR AL, 20H</code> 5. biti 1 yapar.</li>
-              <li><code>XOR</code>: Kendisiyle XOR'lanan yazmaç sıfırlanır: <code>XOR AX, AX</code> komutu <code>MOV AX, 0</code>'dan daha kısa makine kodu üretir ve daha hızlıdır!</li>
-              <li><code>TEST</code>: AND işlemi yapar ancak <strong>hedefin değerini değiştirmez</strong>; sadece bayrakları (özellikle ZF) kurar.</li>
+              <li><code>XOR</code>: Farklı bitleri 1, aynı bitleri 0 yapar. Bir yazmaç kendisiyle XOR'lanırsa (<code>XOR AX, AX</code>) yazmaç 0 olur ve <code>ZF = 1</code> kurulur.</li>
+              <li><code>TEST</code>: Mantıksal AND işlemi yapar fakat <strong>hedefin değerini ASLA DEĞİŞTİRMEZ</strong>; sadece bayrakları (özellikle ZF) günceller.</li>
             </ul>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Sınav Klasiği: TEST ile Tek/Çift Sayı Tespiti</h4>
+            <p>Bir sayının ikili (binary) tabanda tek veya çift olduğunu belirleyen tek şey <strong>en düşük bitidir (Bit 0)</strong>:</p>
+            <ul>
+              <li>Bit 0 = 0 ise sayı <strong>ÇİFT</strong>'tir.</li>
+              <li>Bit 0 = 1 ise sayı <strong>TEK</strong>'tir.</li>
+            </ul>
+            <div class="nb-formula-box">
+              <code>TEST reg, 1   ; En düşük biti test eder, reg değerini bozmaz!</code>
+            </div>
+            <p>Bu komut yürütüldüğünde:</p>
+            <ul>
+              <li>Eğer sayı <strong>ÇİFT</strong> ise: <code>0 AND 1 = 0</code> olacağından sonuç sıfırdır &rarr; <strong><code>ZF = 1</code></strong> kurulur!</li>
+              <li>Eğer sayı <strong>TEK</strong> ise: <code>1 AND 1 = 1</code> olacağından sonuç sıfır değildir &rarr; <strong><code>ZF = 0</code></strong> kalır!</li>
+            </ul>
+
+            <h4 class="nb-title" style="margin-top: 16px;">XOR ile Sıfırlama Optimizasyonu</h4>
+            <p><code>XOR AX, AX</code> komutu, <code>MOV AX, 0</code> yerine tercih edilir çünkü hem daha az bayt makine kodu üretir hem de işlemcide daha hızlı çalışır.</p>
           </div>
         `,
         quiz: {
@@ -622,14 +737,28 @@ HLT
         theoryHtml: `
           <div class="nb-section">
             <h4 class="nb-title">Bit Kaydırma ve CL Sayacı Kuralı</h4>
-            <p>1 bitten fazla kaydırma yapılacaksa kaydırma miktarı <strong>CL yazmacında</strong> tutulmalıdır:</p>
+            <p>8086 mimarisinde 1 bitten fazla kaydırma yapılacaksa kaydırma miktarı doğrudan komut içine sabit sayı olarak yazılamaz; <strong>mutlaka CL yazmacında</strong> verilmelidir:</p>
             <pre class="nb-code-sample">MOV CL, 3
-SHL AX, CL   ; AX'i 3 bit sola kaydır (2^3 = 8 ile çarp)</pre>
+SHL AX, CL   ; DOĞRU: AX'i 3 bit sola kaydır
+; SHL AX, 3  ; HATA! 8086'da 1'den büyük sabitler desteklenmez, CL şarttır.</pre>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Kaydırma Komutlarının Yönü ve Davranışı</h4>
             <ul>
-              <li><code>SHL / SAL</code>: Sola mantıksal kaydırır, sağdan 0 girer. Son çıkan bit CF'ye düşer.</li>
-              <li><code>SHR</code>: Sağa mantıksal kaydırır, soldan 0 girer (işaretsiz 2'ye bölme).</li>
-              <li><code>SAR</code>: Aritmetik sağa kaydırır; soldan <strong>işaret biti</strong> korunarak girer (negatif sayılar için bölme).</li>
+              <li><code>SHL / SAL (Shift Left)</code>: Bütün bitleri sola kaydırır. Sağdan 0 girer, en soldan çıkan bit <strong>CF (Carry Flag)</strong> bayrağına düşer.</li>
+              <li><code>SHR (Shift Right)</code>: Bütün bitleri sağa kaydırır. Soldan 0 girer (işaretsiz sayılarda 2'ye bölme).</li>
+              <li><code>SAR (Shift Arithmetic Right)</code>: Sağa kaydırırken soldan en yüksek <strong>işaret bitini (Sign bit) koruyarak</strong> girer (negatif işaretli bölme).</li>
             </ul>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Hızlı Matematik: SHL ile 2'nin Kuvvetleriyle Çarpma</h4>
+            <p>İkili tabanda sola kaydırma işlemi işlemcideki en hızlı çarpma yöntemidir:</p>
+            <ul>
+              <li>1 bit sola kaydır &rarr; <strong>&times; 2</strong> ile çarpar.</li>
+              <li>2 bit sola kaydır (<code>CL = 2</code>) &rarr; <strong>&times; 4</strong> ile çarpar. (Örn: <code>5 &times; 4 = 20</code>)</li>
+              <li>n bit sola kaydır &rarr; <strong>&times; 2<sup>n</sup></strong> ile çarpar.</li>
+            </ul>
+            <pre class="nb-code-sample">MOV AL, 5
+MOV CL, 2
+SHL AL, CL   ; 5 sayısını 2 bit sola kaydırır: AL = 20 (14h) olur!</pre>
           </div>
         `,
         quiz: {
@@ -702,28 +831,40 @@ HLT
         theoryHtml: `
           <div class="nb-section">
             <h4 class="nb-title">Sınav Klasiği: İşaretli vs. İşaretsiz Atlamalar</h4>
+            <p>8086'da karşılaştırmadan sonra atlama yapılırken sayıların türüne göre farklı komutlar kullanılır:</p>
             <div class="nb-grid-2">
               <div class="nb-card">
-                <h5>İşaretsiz (Unsigned)</h5>
+                <h5>İşaretsiz Sayılar (Unsigned)</h5>
                 <ul>
-                  <li><code>JA (Jump if Above)</code>: Büyükseniz atla (CF=0 ve ZF=0)</li>
-                  <li><code>JB (Jump if Below)</code>: Küçükseniz atla (CF=1)</li>
-                  <li><code>JAE / JBE</code>: Büyük-eşit / Küçük-eşit</li>
+                  <li><code>JA (Jump if Above)</code>: Büyükse atla (CF=0 ve ZF=0)</li>
+                  <li><code>JB (Jump if Below)</code>: Küçükse atla (CF=1)</li>
+                  <li><code>JAE (Jump if Above or Equal)</code>: Büyük veya eşitse atla (CF=0)</li>
+                  <li><code>JBE (Jump if Below or Equal)</code>: Küçük veya eşitse atla</li>
                 </ul>
               </div>
               <div class="nb-card">
-                <h5>İşaretli (Signed)</h5>
+                <h5>İşaretli Sayılar (Signed)</h5>
                 <ul>
-                  <li><code>JG (Jump if Greater)</code>: Büyükseniz atla (ZF=0 ve SF=OF)</li>
-                  <li><code>JL (Jump if Less)</code>: Küçükseniz atla (SF ≠ OF)</li>
+                  <li><code>JG (Jump if Greater)</code>: Büyükse atla (ZF=0 ve SF=OF)</li>
+                  <li><code>JL (Jump if Less)</code>: Küçükse atla (SF ≠ OF)</li>
                   <li><code>JGE / JLE</code>: Büyük-eşit / Küçük-eşit</li>
                 </ul>
               </div>
             </div>
             <div class="nb-callout tip">
-              💡 <code>JZ / JE</code>: Sonuç sıfır ise (ZF=1) atla.<br>
-              <code>JNZ / JNE</code>: Sonuç sıfır değil ise (ZF=0) atla.
+              💡 <strong>Eşitlik Komutları:</strong> Hem işaretli hem işaretsiz sayılarda ortaktır:<br>
+              <code>JZ / JE</code>: Sonuç sıfırsa / Eşitse (ZF=1) atla.<br>
+              <code>JNZ / JNE</code>: Sonuç sıfır değilse / Eşit değilse (ZF=0) atla.
             </div>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Assembly'de IF-ELSE Karar Yapısı Şablonu</h4>
+            <p>İki sayıdan büyük olanını bulmak için <code>CMP</code> komutunun ardından koşullu atlama ve bir <strong>etiket (label)</strong> kullanılır:</p>
+            <pre class="nb-code-sample">CMP AL, BL       ; AL ile BL'yi karşılaştır
+JAE AL_ZATEN_BUYUK ; AL &gt;= BL ise atla (ZF=1 veya CF=0)
+MOV AL, BL       ; Değilse BL daha büyüktür, BL'yi AL'ye kopyala
+
+AL_ZATEN_BUYUK:
+HLT              ; AL içinde daima büyük olan değer kalır!</pre>
           </div>
         `,
         quiz: {
@@ -782,13 +923,25 @@ HLT
         theoryHtml: `
           <div class="nb-section">
             <h4 class="nb-title">LOOP Komutu Nasıl Çalışır?</h4>
-            <p><code>LOOP etiket</code> komutu donanımsal olarak şu iki adımı otomatik icra eder:</p>
+            <p><code>LOOP etiket</code> komutu donanımsal olarak şu iki adımı tek komutta otomatik icra eder:</p>
             <ol>
-              <li><code>CX = CX - 1</code> yapar (Dikkat: Bayrakları DEĞİŞTİRMEZ!).</li>
-              <li>Eğer <code>CX ≠ 0</code> ise belirtilen etikete atlar. CX = 0 olunca döngüden çıkar.</li>
+              <li><code>CX = CX - 1</code> yapar (Dikkat: <strong>Bayrakları ASLA DEĞİŞTİRMEZ!</strong> ZF dahil hiçbir bayrak etkilenmez).</li>
+              <li>Eğer <code>CX ≠ 0</code> ise belirtilen etikete geri atlar. <code>CX == 0</code> olduğunda ise döngüden çıkar ve alt satıra geçer.</li>
             </ol>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Döngü ile Toplam Hesaplama Şablonu</h4>
+            <p>1'den 5'e kadar sayıları toplamak için akümülatör (<code>AX</code>) sıfırlanır, sayaç (<code>CX</code>) 5 yapılır ve döngü içinde <code>ADD AX, CX</code> çalıştırılır:</p>
+            <pre class="nb-code-sample">XOR AX, AX          ; Toplam sonucunu tutacak AX'i sıfırla (AX = 0)
+MOV CX, 5           ; Döngü sayacını 5 yap
+
+TOPLA_DONGU:
+  ADD AX, CX        ; AX = AX + CX (sırasıyla +5, +4, +3, +2, +1)
+  LOOP TOPLA_DONGU  ; CX'i 1 azalt, CX sıfır değilse döngüye devam et!
+
+HLT                 ; Döngü bitti: AX = 15 (0Fh), CX = 0 olur!</pre>
+
             <div class="nb-callout warning">
-              🚨 <strong>Tuzak:</strong> Eğer döngüye girmeden önce <code>CX = 0</code> ise, LOOP komutu CX'i bir azaltıp <code>FFFFH (65535)</code> yapar ve döngü 65535 kez döner! Bu yüzden döngü öncesinde <code>JCXZ</code> ile kontrol edilmelidir.
+              🚨 <strong>Sınav Tuzağı:</strong> Eğer döngüye girmeden önce <code>CX = 0</code> ise, LOOP komutu CX'i bir azaltıp <code>FFFFH (65535)</code> yapar ve döngü tam 65.535 kez döner! Bu yüzden gerekiyorsa döngü öncesinde <code>JCXZ</code> ile CX=0 durumu kontrol edilmelidir.
             </div>
           </div>
         `,
@@ -869,15 +1022,28 @@ HLT
         summary: 'SP yazmacının -2 azalması, 8-bit PUSH yasağı ve LIFO kuralı.',
         theoryHtml: `
           <div class="nb-section">
-            <h4 class="nb-title">Yığın (Stack) Nasıl Çalışır?</h4>
-            <p>8086'da yığın <strong>aşağıya doğru (yüksek adresten düşük adrese)</strong> büyür:</p>
+            <h4 class="nb-title">Yığın (Stack) Nasıl Çalışır? (LIFO Prensibi)</h4>
+            <p>8086 mimarisinde yığın <strong>aşağıya doğru (yüksek bellek adresinden düşük bellek adresine)</strong> büyür. Yığın göstericisi (<code>SP</code>) her zaman yığının en üstündeki elemanın ofsetini tutar:</p>
             <ul>
-              <li><code>PUSH kaynak</code>: Önce <code>SP = SP - 2</code> yapılır, ardından 16-bit veri <code>SS:SP</code> adresine yazılır.</li>
-              <li><code>POP hedef</code>: <code>SS:SP</code> adresindeki 16-bit veri okunur, ardından <code>SP = SP + 2</code> yapılır.</li>
+              <li><code>PUSH kaynak</code>: Önce <strong><code>SP = SP - 2</code></strong> yapılır (yığın 2 bayt aşağı iner), ardından 16-bitlik veri <code>SS:SP</code> adresine yazılır.</li>
+              <li><code>POP hedef</code>: <code>SS:SP</code> adresindeki 16-bitlik veri hedefe okunur, ardından <strong><code>SP = SP + 2</code></strong> yapılır (yığın 2 bayt yukarı çekilir).</li>
             </ul>
+
             <div class="nb-callout warning">
-              🚨 <strong>8-Bit Yasağı:</strong> 8086'da 8-bitlik yazmaçlar yığına itilemez! <code>PUSH AL ; HATA!</code>. Sadece 16-bit Word atılabilir.
+              🚨 <strong>8-Bit Yasağı:</strong> 8086'da 8-bitlik yazmaçlar yığına itilemez! <code>PUSH AL ; HATA!</code>. Yığına sadece 16-bit Word (yazmaç veya bellek) atılabilir.
             </div>
+
+            <h4 class="nb-title" style="margin-top: 16px;">LIFO (Son Giren İlk Çıkar) ile Yazmaç Değerlerini Takas Etme</h4>
+            <p>Yığına atılan veriler atılış sırasının <strong>tam tersi</strong> sırayla geri çıkar:</p>
+            <pre class="nb-code-sample">MOV AX, 1234h
+MOV BX, 5678h
+
+PUSH AX    ; 1. Sırada AX (1234h) yığına girdi
+PUSH BX    ; 2. Sırada BX (5678h) yığının EN ÜSTÜNE yerleşti
+
+POP AX     ; En üstteki eleman çekilir &rarr; AX = 5678h oldu!
+POP BX     ; Kalan eleman çekilir &rarr; BX = 1234h oldu!
+           ; Sonuç: AX ve BX yazmaçları birbiriyle takas edildi!</pre>
           </div>
         `,
         quiz: {
@@ -935,13 +1101,28 @@ HLT
         theoryHtml: `
           <div class="nb-section">
             <h4 class="nb-title">CALL ve RET Nasıl İletişim Kurar?</h4>
+            <p>Assembly dilinde fonksiyonlar (alt yordamlar) <code>CALL</code> ve <code>RET</code> komutlarıyla işletilir:</p>
             <ol>
-              <li><code>CALL alt_program</code>: Bir sonraki komutun adresi (<code>IP</code>) yığına atılır (<code>PUSH IP</code>) ve alt programa zıplanır.</li>
-              <li>Alt program işini bitirince <code>RET</code> komutu çağrılır.</li>
-              <li><code>RET</code>: Yığından saklanan dönüş adresi çekilir (<code>POP IP</code>) ve ana programa dönülür.</li>
+              <li><code>CALL alt_program</code>: Bir sonraki komutun adresi olan <strong>IP (Instruction Pointer)</strong> donanımsal olarak yığına atılır (<code>PUSH IP</code>) ve alt programa zıplanır.</li>
+              <li>Alt program kendi görevini icra eder.</li>
+              <li><code>RET</code>: Yığından saklanan dönüş adresi çekilir (<code>POP IP</code>) ve ana programda CALL'un hemen altındaki komuttan çalışmaya devam edilir.</li>
             </ol>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Alt Yordam (Fonksiyon) Yazım Şablonu</h4>
+            <p>Ana program akışının alt programa kendiliğinden taşmasını engellemek için ana programın bittiği yere mutlaka <code>HLT</code> konmalıdır:</p>
+            <pre class="nb-code-sample">ORG 100h
+
+MOV AL, 4         ; Parametreyi hazırla
+CALL KARE_AL      ; KARE_AL alt yordamına git (Dönüş adresi yığına yazıldı)
+HLT               ; Ana program bitti, dur! (Alt yordama düşmeyi engeller)
+
+; --- ALT YORDAM TANIMI ---
+KARE_AL:
+  MUL AL          ; AL = AL * AL = 4 * 4 = 16 (10h)
+  RET             ; Yığından adresi çekip HLT satırına geri dön!</pre>
+
             <div class="nb-callout tip">
-              💡 Alt program içinde PUSH yaptıysanız, RET komutuna gelmeden önce mutlaka aynı sayıda POP yaparak yığın dengesini (Stack Balance) korumalısınız!
+              💡 <strong>Yığın Dengesi (Stack Balance):</strong> Alt program içinde <code>PUSH</code> yaptıysanız, <code>RET</code> komutuna gelmeden önce mutlaka aynı sayıda <code>POP</code> yaparak yığın dengesini korumalısınız; aksi halde RET yanlış adrese zıplar ve program çöker!
             </div>
           </div>
         `,
@@ -1020,17 +1201,34 @@ KARE_AL:
         theoryHtml: `
           <div class="nb-section">
             <h4 class="nb-title">String Komutlarının Donanım Kuralları</h4>
+            <p>8086'da bellek blokları üzerinde hızlı işlem yapmak için donanımsal string komutları bulunur:</p>
             <ul>
-              <li><strong>Kaynak Gösterici:</strong> Her zaman <code>DS:SI</code> çiftidir.</li>
-              <li><strong>Hedef Gösterici:</strong> Her zaman <code>ES:DI</code> çiftidir.</li>
-              <li><strong>DF (Direction Flag):</strong>
+              <li><strong>Kaynak Gösterici:</strong> Her zaman <code>DS:SI</code> segment-ofset çiftidir.</li>
+              <li><strong>Hedef Gösterici:</strong> Her zaman <code>ES:DI</code> segment-ofset çiftidir.</li>
+              <li><strong>DF (Direction Flag - Yön Bayrağı):</strong>
                 <ul>
-                  <li><code>CLD (Clear Direction)</code>: DF = 0 yapar &rarr; İndeksler otomatik <strong>ARTAR</strong> (+1 bayt, +2 word).</li>
-                  <li><code>STD (Set Direction)</code>: DF = 1 yapar &rarr; İndeksler otomatik <strong>AZALIR</strong>.</li>
+                  <li><code>CLD (Clear Direction)</code>: DF = 0 yapar &rarr; İndeksler (SI, DI) her işlemde otomatik <strong>ARTAR</strong> (+1 bayt, +2 word).</li>
+                  <li><code>STD (Set Direction)</code>: DF = 1 yapar &rarr; İndeksler her işlemde otomatik <strong>AZALIR</strong>.</li>
                 </ul>
               </li>
-              <li><strong>REP Ön Eki:</strong> Komutu <code>CX</code> defa tekrarlar ve her adımda CX'i 1 azaltır.</li>
+              <li><strong>REP Ön Eki:</strong> Komutu <code>CX</code> defa tekrarlar; her adımda işlemi yapar ve CX'i 1 azaltarak sıfır olana kadar sürdürür.</li>
             </ul>
+
+            <h4 class="nb-title" style="margin-top: 16px;">String Komutları Ailesi (MOVSB, STOSB, LODSB)</h4>
+            <ul>
+              <li><code>MOVSB / MOVSW</code>: Bellekten belleğe transfer yapar (<code>[DS:SI] &rarr; [ES:DI]</code>).</li>
+              <li><code>STOSB / STOSW (Store String)</code>: <strong><code>AL</code> (veya AX)</strong> yazmacındaki veriyi hedef <strong><code>ES:DI</code></strong> bellek adresine kaydeder ve DI'yı artırır.</li>
+              <li><code>LODSB / LODSW (Load String)</code>: <code>[DS:SI]</code> adresindeki veriyi <code>AL</code> veya <code>AX</code>'e okur ve SI'yı artırır.</li>
+            </ul>
+
+            <h4 class="nb-title" style="margin-top: 16px;">REP STOSB ile Bellek Bloğu Doldurma Şablonu</h4>
+            <p>Bir bellek bölgesini sabit bir değerle doldurmak (C dilindeki <code>memset</code> işlevi) için şu kalıp kullanılır:</p>
+            <pre class="nb-code-sample">CLD             ; Yönü ileri yap (DF = 0, DI her adımda +1 artacak)
+MOV AL, 0AAh    ; Belleğe basılacak bayt değeri
+MOV DI, 0200h   ; Doldurulacak bellek bölgesinin başlangıç ofseti
+MOV CX, 4       ; Toplam 4 bayt yazılacak (sayaç)
+REP STOSB       ; 4 defa tekrarlar: [0200h]..[0203h] arasını 0AAh ile doldurur!
+HLT</pre>
           </div>
         `,
         quiz: {
@@ -1108,13 +1306,23 @@ HLT
         theoryHtml: `
           <div class="nb-section">
             <h4 class="nb-title">Giriş / Çıkış (IN / OUT) Portları</h4>
-            <p>8086 dış çevre birimleriyle (klavye, timer, ekran) portlar üzerinden konuşur:</p>
+            <p>8086 işlemcisi harici çevre birimleriyle (klavye denetleyicisi, zamanlayıcı, seri/paralel portlar) özel 64 KB'lık G/Ç port uzayı üzerinden haberleşir:</p>
             <ul>
-              <li><strong>Sabit Port Adresi (0-255):</strong> <code>IN AL, 60h</code> veya <code>OUT 20h, AL</code></li>
-              <li><strong>Geniş Port Adresi (256-65535):</strong> Port adresi mutlaka <strong>DX yazmacında</strong> olmalıdır: <code>MOV DX, 03F8h &rarr; OUT DX, AL</code></li>
+              <li><strong>Sabit Port Adresi (0 - 255):</strong> Port numarası doğrudan komuta yazılabilir: <code>IN AL, 60h</code> veya <code>OUT 20h, AL</code></li>
+              <li><strong>Geniş Port Adresi (256 - 65535):</strong> Port numarası 255'ten büyükse port adresi <strong>mutlaka DX yazmacında</strong> tutulmalıdır: <code>MOV DX, 0378h &rarr; OUT DX, AL</code></li>
             </ul>
-            <h4 class="nb-title" style="margin-top: 14px;">Kesme Vektör Tablosu (IVT)</h4>
-            <p>Belleğin ilk 1 KB'lık alanında (<code>00000H – 003FFH</code>) 256 adet kesmenin her biri için 4 baytlık (2 bayt IP, 2 bayt CS) ISR adresi bulunur.</p>
+            <div class="nb-callout tip">
+              💡 <strong>Yazmaç Kısıtlaması:</strong> G/Ç portlarından okuma yaparken hedef yazmaç 8-bit için daima <strong><code>AL</code></strong>, 16-bit için daima <strong><code>AX</code></strong> olmak zorundadır!
+            </div>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Porttan Okuma ve Veriyi Saklama Örneği</h4>
+            <p>PC mimarisinde <code>60h</code> portu klavye denetleyicisidir. Bu porttan basılan tuşu okuyup saklamak için:</p>
+            <pre class="nb-code-sample">IN AL, 60h   ; 60h portundaki veriyi AL yazmacına oku
+MOV BL, AL   ; Okunan veriyi kaybetmemek için BL yazmacına yedekle
+HLT</pre>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Kesme Vektör Tablosu (IVT - Interrupt Vector Table)</h4>
+            <p>Belleğin ilk 1 KB'lık alanında (<code>00000H – 003FFH</code>) 256 adet donanım ve yazılım kesmesinin her biri için 4 baytlık (2 bayt IP ofseti, 2 bayt CS segmenti) servis yordamı (ISR) adresi saklanır.</p>
           </div>
         `,
         quiz: {
@@ -1184,14 +1392,28 @@ HLT
         summary: 'DS:BX tablosundan AL indisindeki elemanı okuma mekanizması.',
         theoryHtml: `
           <div class="nb-section">
-            <h4 class="nb-title">XLAT Komutunun Çalışma Mantığı</h4>
-            <p><code>XLAT</code> komutu donanımsal olarak şu işlemi tek hamlede yapar:</p>
+            <h4 class="nb-title">XLAT (Translate) Komutunun Çalışma Mantığı</h4>
+            <p><code>XLAT</code> komutu hiçbir parametre almaz ve donanımsal olarak şu işlemi tek hamlede icra eder:</p>
             <div class="nb-formula-box">
-              <code>AL = [BX + AL]</code>
+              <code>AL = [BX + AL]   ; DS:[BX + AL] adresindeki baytı okuyup AL'ye yazar</code>
             </div>
-            <p>Yani <code>BX</code> yazmacı tablonun başlangıç ofsetini, <code>AL</code> ise tablodaki indisi tutar. Komut çalışınca <code>AL</code> yazmacına tablonun o indisindeki değer gelir.</p>
+            <ul>
+              <li><strong>Tablo Başlangıç Ofseti:</strong> Mutlaka <strong><code>BX</code></strong> yazmacında olmalıdır.</li>
+              <li><strong>Eleman İndisi (0..255):</strong> Mutlaka <strong><code>AL</code></strong> yazmacında olmalıdır.</li>
+              <li>Komut çalıştıktan sonra tablonun AL. indisindeki bayt doğrudan <strong><code>AL</code></strong> yazmacına yüklenir.</li>
+            </ul>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Adım Adım Tablo Okuma Örneği</h4>
+            <pre class="nb-code-sample">; 0200h adresinde 4 elemanlı bir tablo olduğunu varsayalım:
+; [0200h]=11h, [0201h]=22h, [0202h]=33h, [0203h]=44h
+
+MOV BX, 0200h   ; Tablonun başlangıç ofseti
+MOV AL, 3       ; Okunacak elemanın indisi (0'dan başlar, 3. eleman)
+XLAT            ; AL = [0200h + 3] = [0203h] adresindeki 44h değerini alır!
+HLT</pre>
+
             <div class="nb-callout tip">
-              💡 7-Segment gösterge çevrimlerinde, şifreleme ve karakter dönüşüm tablolarında çok sık kullanılır ve vize sınavlarında sorulur.
+              💡 <strong>Sınav Klasikleri:</strong> 7-segment gösterge çevrimleri (sayıyı display çizgilerine dönüştürme), ASCII-şifreleme tabloları ve matris lookup işlemlerinde soru olarak karşınıza çıkar.
             </div>
           </div>
         `,
@@ -1273,27 +1495,36 @@ HLT
         theoryHtml: `
           <div class="nb-section">
             <h4 class="nb-title">VGA Mode 13h Grafik Modu ve INT 10h</h4>
-            <p>IBM PC ve uyumlu sistemlerde ekrana piksel piksel çizim yapabilmek için önce grafik moduna geçilmelidir. En popüler mod <strong>VGA Mode 13h</strong>'tır:</p>
+            <p>IBM PC ve uyumlu sistemlerde ekrana piksel piksel çizim yapabilmek için önce grafik moduna geçilmelidir. En popüler retro grafik modu <strong>VGA Mode 13h</strong>'tır:</p>
             <ul>
               <li><strong>Çözünürlük:</strong> 320 yatay piksel &times; 200 dikey piksel</li>
               <li><strong>Renk Derinliği:</strong> 256 renk (her piksel bellekte tam 1 bayt yer kaplar)</li>
               <li><strong>VRAM Segmenti:</strong> <code>0xA000:0000</code></li>
             </ul>
-            <div class="nb-formula-box">
-              <code>; Mode 13h'a Geçiş:<br>MOV AX, 0013h<br>INT 10h</code>
-            </div>
-            <h4 class="nb-title">BIOS Piksel Çizme Servisi (INT 10h, AH=0Ch)</h4>
-            <p>BIOS üzerinden piksel koymak için şu yazmaçlar doldurulur:</p>
+
+            <h4 class="nb-title" style="margin-top: 16px;">BIOS Piksel Çizme Servisi (INT 10h, AH=0Ch)</h4>
+            <p>BIOS Video Kesmesi (<code>INT 10h</code>) üzerinden ekrana piksel koymak için şu yazmaçlar hazırlanır:</p>
             <ul>
-              <li><code>AH = 0Ch</code> (Piksel çizme fonksiyon kodu)</li>
-              <li><code>AL = Renk Kodu</code> (0..255 palet indeksi, örn: 04h=Kırmızı, 0Fh=Beyaz)</li>
-              <li><code>CX = Sütun (X)</code> (0..319)</li>
-              <li><code>DX = Satır (Y)</code> (0..199)</li>
-              <li><code>BH = 0</code> (Sayfa numarası)</li>
+              <li><code>AH = 0Ch</code> (Piksel çizme fonksiyon numarası)</li>
+              <li><code>AL = Renk Kodu</code> (0..255 palet indeksi; örn: <code>0Fh</code> = Parlak Beyaz, <code>04h</code> = Kırmızı)</li>
+              <li><code>CX = Sütun (X Koordinatı)</code> (0..319 arası)</li>
+              <li><code>DX = Satır (Y Koordinatı)</code> (0..199 arası)</li>
+              <li><code>BH = 0</code> (Video sayfası)</li>
             </ul>
-            <div class="nb-callout tip">
-              💡 <code>INT 10h</code> çağrıldıktan sonra ekranın (CX, DX) noktasında AL renginde bir piksel yanar!
-            </div>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Tam Çalışan Kod Şablonu</h4>
+            <pre class="nb-code-sample">; 1. VGA Mode 13h (320x200, 256 renk) başlat:
+MOV AX, 0013h
+INT 10h
+
+; 2. (X=100, Y=50) koordinatına 0Fh (Beyaz) piksel çiz:
+MOV CX, 100    ; X = 100
+MOV DX, 50     ; Y = 50
+MOV AL, 0Fh    ; Renk = Beyaz
+MOV AH, 0Ch    ; BIOS Piksel Çiz Fonksiyonu
+MOV BH, 0      ; Sayfa = 0
+INT 10h        ; Pikseli ekrana bas!
+HLT</pre>
           </div>
         `,
         quiz: {
@@ -1359,14 +1590,26 @@ HLT
           <div class="nb-section">
             <h4 class="nb-title">Neden Doğrudan VRAM? (Demoscene & Oyun Hızı)</h4>
             <p>BIOS <code>INT 10h AH=0Ch</code> çağrısı güvenlidir ancak her pikselde onlarca kontrol komutu çalıştırır. 64.000 pikseli tek tek BIOS ile çizmek saniyeler alabilir!</p>
-            <p>Bu yüzden profesyonel oyun geliştiricileri ve demoscener'lar <strong>doğrudan VRAM belleğine</strong> yazar.</p>
+            <p>Bu yüzden retro oyun geliştiricileri ve demoscener'lar doğrudan grafik kartının video belleğine (<strong>0xA000 segmenti</strong>) yazar:</p>
             <div class="nb-formula-box">
-              <code>Piksel Bellek Adresi = 0xA000:[(Y &times; 320) + X]</code>
+              <code>VRAM Ofset Formülü = (Y &times; 320) + X</code>
             </div>
-            <p>Örneğin ekranın sol üst köşesi (0,0) adresi <code>0xA000:0000h</code> adresidir. 10. satırın başı ise <code>10 &times; 320 = 3200 (0C80h)</code> adresidir.</p>
-            <div class="nb-callout tip">
-              💡 <code>MOV AX, 0A000h; MOV ES, AX; MOV BYTE PTR ES:[DI], Renk</code> kalıbı işlemcinin tek bir saat döngüsünde ekrana piksel basmasını sağlar!
-            </div>
+            <p>Her satırda 320 piksel bulunur. Örneğin <code>(X=20, Y=10)</code> koordinatındaki pikselin ofset adresi: <code>(10 &times; 320) + 20 = 3200 + 20 = 3220</code> olur.</p>
+
+            <h4 class="nb-title" style="margin-top: 16px;">ES Segmenti ile Doğrudan VRAM'e Yazma Kalıbı</h4>
+            <p>Segment yazmaçlarına (<code>ES</code>) doğrudan sabit değer yüklenemediği için önce <code>AX</code>'e alınıp aktarılır:</p>
+            <pre class="nb-code-sample">; 1. Mode 13h'a geç:
+MOV AX, 0013h
+INT 10h
+
+; 2. Grafik video segmentini (0A000h) ES'ye yükle:
+MOV AX, 0A000h
+MOV ES, AX
+
+; 3. DI ofsetine doğrudan renk baytını yaz:
+MOV DI, 3200                  ; Y=10 satır başı ofseti (10 * 320)
+MOV BYTE PTR ES:[DI], 0Ah     ; 0Ah (Açık Yeşil) rengindeki pikseli tek döngüde RAM'e bas!
+HLT</pre>
           </div>
         `,
         quiz: {
@@ -1432,15 +1675,32 @@ HLT
         summary: 'CMP ve JNE ile döngü kurarak ekranda sürekli çizgiler ve dolu kutular oluşturma.',
         theoryHtml: `
           <div class="nb-section">
-            <h4 class="nb-title">Çizgi ve Kutu Algoritmaları</h4>
-            <p>Ekranda yatay bir çizgi çizmek, belirli bir Y satırında X koordinatını birer birer artırarak (<code>INC CX</code>) her adıma piksel koymaktan ibarettir.</p>
+            <h4 class="nb-title">Döngü ile Çizgi ve Kutu Çizimi Algoritmaları</h4>
+            <p>Ekranda yatay bir çizgi çizmek, belirli bir <code>Y</code> satırında <code>X</code> koordinatını birer birer artırarak (<code>INC CX</code>) her adıma piksel koymaktan ibarettir:</p>
             <div class="nb-formula-box">
-              <code>DX = Y Sabit<br>CX = X_Baslangic<br>Dongu:<br>&nbsp;&nbsp;Piksel_Ciz(CX, DX)<br>&nbsp;&nbsp;INC CX<br>&nbsp;&nbsp;CMP CX, X_Bitis<br>&nbsp;&nbsp;JNE Dongu</code>
+              <code>Piksel Adedi = X_Bitiş - X_Başlangıç   ; Örneğin 90 - 50 = 40 piksel çizilir</code>
             </div>
-            <h4 class="nb-title">İçi Dolu Kutu (İç İçe Çift Döngü)</h4>
-            <p>İçi dolu bir kutu için bu yatay çizgi döngüsü bir Y satır döngüsü içine alınır: her satır çizildiğinde <code>INC DX</code> yapılır ve Y hedef yüksekliğe ulaşana kadar tekrarlanır.</p>
+
+            <h4 class="nb-title" style="margin-top: 16px;">Assembly Yatay Çizgi Döngüsü Şablonu</h4>
+            <pre class="nb-code-sample">MOV DX, 30          ; Y satırı (30. satırda sabit kalır)
+MOV CX, 40          ; X sütunu (40. sütundan başlar)
+
+Cizgi_Loop:
+    MOV AH, 0Ch     ; BIOS Piksel Çizme fonksiyon kodu
+    MOV AL, 0Eh     ; 0Eh (Parlak Sarı) rengi
+    MOV BH, 0       ; Sayfa 0
+    INT 10h         ; Pikseli çiz!
+
+    INC CX          ; Bir sonraki X koordinatına geç
+    CMP CX, 45      ; Hedef bitiş sınırına (X=45) ulaşıldı mı?
+    JNE Cizgi_Loop  ; Ulaşılmadıysa döngüye devam et!
+
+HLT</pre>
+
+            <h4 class="nb-title" style="margin-top: 16px;">İçi Dolu Kutu (İç İçe Çift Döngü)</h4>
+            <p>İçi dolu bir dikdörtgen çizmek için bu yatay çizgi döngüsü bir <code>Y</code> döngüsü içine alınır: her satır tamamlandığında <code>INC DX</code> yapılır ve Y hedef yüksekliğe ulaşana kadar tüm satırlar sırayla taranır.</p>
             <div class="nb-callout tip">
-              💡 Bu basit döngü mimarisi oyunlardaki sprite ve pencerelerin çiziminin temel taşıdır!
+              💡 Bu çift döngü mantığı retro oyunlardaki sprite ve pencere çiziminin temelidir!
             </div>
           </div>
         `,

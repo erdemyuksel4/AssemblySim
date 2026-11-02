@@ -14,6 +14,7 @@ export interface EditorOptions {
   container: HTMLElement;
   initialCode: string;
   onCodeChange?: (code: string) => void;
+  onSave?: () => void;
   onBreakpointToggle?: (line: number, active: boolean) => void;
 }
 
@@ -28,13 +29,17 @@ export class Editor {
   private breakpoints: Set<number> = new Set();
   private errors: Map<number, string> = new Map();
   private history: EditorHistory = new EditorHistory();
+  private fileHistories: Map<string, EditorHistory> = new Map();
+  private currentFileId: string | null = null;
 
   private onCodeChange?: (code: string) => void;
+  private onSave?: () => void;
   private onBreakpointToggle?: (line: number, active: boolean) => void;
 
   constructor(options: EditorOptions) {
     this.container = options.container;
     this.onCodeChange = options.onCodeChange;
+    this.onSave = options.onSave;
     this.onBreakpointToggle = options.onBreakpointToggle;
 
     this.render();
@@ -191,6 +196,13 @@ export class Editor {
       const start = this.textarea.selectionStart;
       const end = this.textarea.selectionEnd;
 
+      // 0. Save: Ctrl+S
+      if (isCtrl && !e.altKey && key === 's') {
+        e.preventDefault();
+        this.onSave?.();
+        return;
+      }
+
       // 1. Undo: Ctrl+Z (without Shift)
       if (isCtrl && !e.altKey && key === 'z' && !e.shiftKey) {
         e.preventDefault();
@@ -212,7 +224,7 @@ export class Editor {
           const res = dedentSelection(val, start, end, 4);
           this.applyEdit(res.text, res.newStart, res.newEnd);
         } else {
-          const res = indentSelection(val, start, end, '    ');
+          const res = indentSelection(val, start, end, 4);
           this.applyEdit(res.text, res.newStart, res.newEnd);
         }
         return;
@@ -289,6 +301,12 @@ export class Editor {
         if (line > 0) this.toggleBreakpoint(line);
       }
     });
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => this.syncScroll());
+      ro.observe(this.textarea);
+    }
+    window.addEventListener('resize', () => this.syncScroll());
   }
 
   getCode(): string {
@@ -299,9 +317,95 @@ export class Editor {
     const cleanCode = code.replace(/\r\n/g, '\n');
     this.textarea.value = cleanCode;
     this.history.reset(cleanCode, 0);
+    if (this.currentFileId) {
+      this.fileHistories.set(this.currentFileId, this.history);
+    }
     this.updateHighlighting();
     this.updateGutter();
     this.syncScroll();
+  }
+
+  openFile(
+    fileId: string,
+    code: string,
+    scroll?: { top: number; left: number },
+    cursor?: { start: number; end: number }
+  ): void {
+    const cleanCode = code.replace(/\r\n/g, '\n');
+
+    // If leaving a previously active file, persist its latest unsaved editor state into its history
+    if (this.currentFileId && this.currentFileId !== fileId) {
+      const curVal = this.textarea.value;
+      const curStart = this.textarea.selectionStart;
+      const curEnd = this.textarea.selectionEnd;
+      const curHist = this.fileHistories.get(this.currentFileId);
+      if (curHist) {
+        const top = curHist.getCurrent();
+        if (!top || top.value !== curVal) {
+          curHist.push({ value: curVal, selectionStart: curStart, selectionEnd: curEnd });
+        }
+      }
+    }
+
+    this.currentFileId = fileId;
+
+    let hist = this.fileHistories.get(fileId);
+    if (!hist) {
+      const initialPos = cursor ? cursor.start : 0;
+      hist = new EditorHistory(cleanCode, initialPos);
+      this.fileHistories.set(fileId, hist);
+    } else {
+      const top = hist.getCurrent();
+      if (!top || top.value !== cleanCode) {
+        hist.push({
+          value: cleanCode,
+          selectionStart: cursor?.start ?? 0,
+          selectionEnd: cursor?.end ?? 0
+        });
+      }
+    }
+
+    this.history = hist;
+    this.textarea.value = cleanCode;
+
+    if (cursor) {
+      this.textarea.selectionStart = Math.min(cursor.start, cleanCode.length);
+      this.textarea.selectionEnd = Math.min(cursor.end, cleanCode.length);
+    } else {
+      const top = hist.getCurrent();
+      if (top) {
+        this.textarea.selectionStart = Math.min(top.selectionStart, cleanCode.length);
+        this.textarea.selectionEnd = Math.min(top.selectionEnd, cleanCode.length);
+      }
+    }
+
+    this.updateHighlighting();
+    this.updateGutter();
+
+    if (scroll) {
+      this.setScroll(scroll);
+    } else {
+      this.syncScroll();
+    }
+  }
+
+  getCursor(): { start: number; end: number } {
+    return {
+      start: this.textarea.selectionStart,
+      end: this.textarea.selectionEnd
+    };
+  }
+
+  setCursor(cursor: { start: number; end: number }): void {
+    this.textarea.selectionStart = Math.min(cursor.start, this.textarea.value.length);
+    this.textarea.selectionEnd = Math.min(cursor.end, this.textarea.value.length);
+  }
+
+  removeFileHistory(fileId: string): void {
+    this.fileHistories.delete(fileId);
+    if (this.currentFileId === fileId) {
+      this.currentFileId = null;
+    }
   }
 
   setActiveLine(line: number | null): void {

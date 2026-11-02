@@ -527,11 +527,12 @@ body {
   font-style: normal;
   line-height: 22px;
   tab-size: 4;
+  -moz-tab-size: 4;
   white-space: pre;
   word-wrap: normal;
   overflow-wrap: normal;
-  letter-spacing: 0px;
-  word-spacing: 0px;
+  letter-spacing: normal;
+  word-spacing: normal;
   border: none;
   outline: none;
   font-kerning: none;
@@ -554,11 +555,11 @@ body {
   background: transparent;
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;
-  caret-color: #000000;
+  caret-color: var(--text-primary, #000000);
   resize: none;
   overflow-x: auto;
   overflow-y: auto !important;
-  scroll-behavior: smooth;
+  scroll-behavior: auto !important;
 }
 
 .editor-textarea::-webkit-scrollbar {
@@ -605,7 +606,7 @@ body {
   line-height: 22px;
   min-width: max-content;
   margin: 0;
-  padding: 0 28px 0 0;
+  padding: 0;
   border: none;
   box-sizing: border-box;
 }
@@ -617,6 +618,36 @@ body {
 .editor-line-row.error-code-line {
   background-color: rgba(239, 68, 68, 0.12);
   text-decoration: underline wavy var(--accent-red);
+}
+
+[data-theme="dark"] .editor-body {
+  background-color: var(--bg-card);
+}
+
+[data-theme="dark"] .editor-gutter {
+  background-color: #0f172a;
+  border-color: var(--border-color);
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .editor-highlight {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .editor-textarea {
+  caret-color: #f8fafc !important;
+}
+
+[data-theme="dark"] .editor-textarea::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .editor-textarea::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+[data-theme="dark"] .editor-textarea::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 /* Editor Action Floating Bar (Right side icons) */
@@ -11642,6 +11673,34 @@ body {
   font-weight: 800;
   color: inherit;
   transition: opacity 0.1s;
+}
+
+.crt-hardware-cursor {
+  position: relative;
+  display: inline-block;
+}
+
+.crt-hardware-cursor::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0px;
+  height: 2px;
+  background-color: currentColor;
+  box-shadow: 0 0 3px currentColor;
+  pointer-events: none;
+  animation: crt-cursor-blink 1s step-end infinite;
+}
+
+.crt-hardware-cursor.cursor-hidden::after {
+  opacity: 0;
+  animation: none;
+}
+
+@keyframes crt-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
 .crt-banner-text {
