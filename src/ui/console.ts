@@ -244,8 +244,8 @@ export class ConsoleView {
         </div>
 
         <!-- Body 1: Authentic Single CRT Screen (Text or Mode 13h Canvas) -->
-        <div class="crt-screen-wrapper ${this.activeViewMode === 'monitor' ? 'active' : ''}" id="crt-view-wrapper" style="flex: 1; min-height: 0; position: relative; background: #000000; overflow: hidden; display: ${this.activeViewMode === 'monitor' ? 'flex' : 'none'}; flex-direction: column;">
-          <div class="crt-screen-box ${this.colorMode}" id="crt-screen-box" tabindex="0" style="flex: 1; padding: 10px 12px; overflow: auto; position: relative; background: #010409; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-shadow: inset 0 0 30px rgba(0,0,0,0.95);">
+        <div class="crt-screen-wrapper ${this.activeViewMode === 'monitor' ? 'active' : ''}" id="crt-view-wrapper" style="flex: 1; min-height: 330px; position: relative; background: #000000; overflow: hidden; display: ${this.activeViewMode === 'monitor' ? 'flex' : 'none'}; flex-direction: column;">
+          <div class="crt-screen-box ${this.colorMode}" id="crt-screen-box" tabindex="0" style="flex: 1; min-height: 310px; padding: 10px 12px; overflow: auto; position: relative; background: #010409; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-shadow: inset 0 0 30px rgba(0,0,0,0.95);">
             <div class="crt-scanlines"></div>
             <div class="crt-glow"></div>
             <div class="crt-content" id="crt-screen-content" style="position: relative; z-index: 2; font-size: 11.5px; line-height: 1.25; letter-spacing: 0.5px; min-width: 650px; user-select: none;">
@@ -255,7 +255,7 @@ export class ConsoleView {
         </div>
 
         <!-- Body 2: Standard System & Compiler Diagnostics Log -->
-        <div class="console-body ${this.activeViewMode === 'logs' ? 'active' : ''}" id="console-output" style="flex: 1; min-height: 0; padding: 8px 12px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #020617; color: #cbd5e1; display: ${this.activeViewMode === 'logs' ? 'block' : 'none'};"></div>
+        <div class="console-body ${this.activeViewMode === 'logs' ? 'active' : ''}" id="console-output" style="flex: 1; min-height: 330px; padding: 8px 12px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #020617; color: #cbd5e1; display: ${this.activeViewMode === 'logs' ? 'block' : 'none'};"></div>
 
         <!-- Bottom Hardware Keyboard Input Bar -->
         <div class="console-input-wrap" id="console-input-wrap" style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #0f172a; border-top: 1px solid #1e293b;">

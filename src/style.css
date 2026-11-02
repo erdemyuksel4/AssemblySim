@@ -1832,6 +1832,17 @@ body {
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  min-height: 430px;
+  display: flex;
+  flex-direction: column;
+}
+
+.console-box {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 430px;
+  flex: 1;
 }
 
 .console-wrapper {
@@ -1909,7 +1920,7 @@ body {
 .crt-screen-wrapper {
   display: none;
   flex: 1;
-  min-height: 0;
+  min-height: 330px;
   background: #050505;
   padding: 6px;
   position: relative;
@@ -1923,7 +1934,7 @@ body {
 
 .crt-screen-box {
   flex: 1;
-  min-height: 0;
+  min-height: 310px;
   background: #020617;
   border: 2px solid #1e293b;
   border-radius: 6px;
