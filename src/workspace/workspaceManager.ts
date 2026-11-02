@@ -1,6 +1,8 @@
-import { WorkspaceFile, WorkspaceProject } from './types.js';
+import { WorkspaceFile, WorkspaceProject, ProjectSummary } from './types.js';
 
 const STORAGE_PROJECT_KEY = 'assemblysim_project_v6';
+const STORAGE_PROJECTS_LIST_KEY = 'assemblysim_projects_list_v6';
+const STORAGE_PROJECT_PREFIX = 'assemblysim_project_data_';
 const LEGACY_PROJECT_V5 = 'assemblysim_project_v5';
 const LEGACY_PROJECT_V4 = 'assemblysim_project_v4';
 const LEGACY_PROJECT_V3 = 'assemblysim_project_v3';
@@ -201,6 +203,7 @@ function getSafeStorage(): Storage | null {
 
 export class WorkspaceManager {
   private project!: WorkspaceProject;
+  private inMemoryProjects: Map<string, WorkspaceProject> = new Map();
   private events: WorkspaceEvents;
 
   constructor(events: WorkspaceEvents = {}) {
@@ -228,6 +231,7 @@ export class WorkspaceManager {
         if (parsed && Array.isArray(parsed.files) && parsed.files.length > 0) {
           this.project = parsed;
           this.ensureIntegrity();
+          this.syncProjectInList();
           return;
         }
       }
@@ -346,12 +350,245 @@ export class WorkspaceManager {
   }
 
   saveToStorage(): void {
+    if (this.project) {
+      this.inMemoryProjects.set(this.project.id, JSON.parse(JSON.stringify(this.project)));
+    }
     const storage = getSafeStorage();
     if (!storage) return;
     try {
       storage.setItem(STORAGE_PROJECT_KEY, JSON.stringify(this.project));
+      storage.setItem(STORAGE_PROJECT_PREFIX + this.project.id, JSON.stringify(this.project));
+      this.syncProjectInList();
     } catch {
       // storage full or disabled
+    }
+  }
+
+  private syncProjectInList(): void {
+    const storage = getSafeStorage();
+    if (!storage) return;
+    try {
+      let list: ProjectSummary[] = [];
+      const savedList = storage.getItem(STORAGE_PROJECTS_LIST_KEY);
+      if (savedList) {
+        list = JSON.parse(savedList);
+      }
+      if (!Array.isArray(list)) list = [];
+      const existingIdx = list.findIndex(p => p.id === this.project.id);
+      const summary: ProjectSummary = {
+        id: this.project.id,
+        name: this.project.name,
+        fileCount: this.project.files.length,
+        lastModified: this.project.lastModified || Date.now()
+      };
+      if (existingIdx !== -1) {
+        list[existingIdx] = summary;
+      } else {
+        list.push(summary);
+      }
+      storage.setItem(STORAGE_PROJECTS_LIST_KEY, JSON.stringify(list));
+    } catch {
+      // ignore
+    }
+  }
+
+  getProjectsList(): ProjectSummary[] {
+    const map = new Map<string, ProjectSummary>();
+
+    // 1. In-memory projects
+    for (const p of this.inMemoryProjects.values()) {
+      map.set(p.id, {
+        id: p.id,
+        name: p.name,
+        fileCount: p.files.length,
+        lastModified: p.lastModified || Date.now()
+      });
+    }
+
+    // 2. Storage projects
+    const storage = getSafeStorage();
+    if (storage) {
+      try {
+        const savedList = storage.getItem(STORAGE_PROJECTS_LIST_KEY);
+        if (savedList) {
+          const list: ProjectSummary[] = JSON.parse(savedList);
+          if (Array.isArray(list)) {
+            for (const item of list) {
+              if (item && item.id && !map.has(item.id)) {
+                map.set(item.id, item);
+              }
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (map.size === 0 && this.project) {
+      map.set(this.project.id, {
+        id: this.project.id,
+        name: this.project.name,
+        fileCount: this.project.files.length,
+        lastModified: this.project.lastModified || Date.now()
+      });
+    }
+
+    return Array.from(map.values()).map(item => ({
+      ...item,
+      isCurrent: item.id === this.project?.id
+    }));
+  }
+
+  createProject(name?: string): WorkspaceProject {
+    // 1. Current projeyi kaydet
+    this.saveToStorage();
+
+    // 2. Yeni proje oluştur
+    const count = this.getProjectsList().length + 1;
+    const projName = name && name.trim() ? name.trim() : `Proje ${count}`;
+    const mainFile: WorkspaceFile = {
+      id: `file-main-${Date.now()}`,
+      name: 'main.asm',
+      code: DEFAULT_MAIN_CODE,
+      isEntry: true,
+      createdAt: Date.now(),
+      lastModified: Date.now()
+    };
+
+    const newProject: WorkspaceProject = {
+      id: `project-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      name: projName,
+      entryFileId: mainFile.id,
+      activeFileId: mainFile.id,
+      openFileIds: [mainFile.id],
+      files: [mainFile],
+      createdAt: Date.now(),
+      lastModified: Date.now()
+    };
+
+    this.project = newProject;
+    this.saveToStorage();
+
+    this.events.onActiveFileChange?.(mainFile);
+    this.events.onProjectChange?.(this.project);
+    return this.project;
+  }
+
+  openProject(projectId: string): boolean {
+    if (this.project && projectId === this.project.id) {
+      return true;
+    }
+
+    // 1. Mevcut projeyi kaydet
+    this.saveToStorage();
+
+    // 2. Hedef projeyi bul (önce inMemory, sonra storage)
+    let targetProject = this.inMemoryProjects.get(projectId);
+    if (!targetProject) {
+      const storage = getSafeStorage();
+      if (storage) {
+        try {
+          const saved = storage.getItem(STORAGE_PROJECT_PREFIX + projectId);
+          if (saved) {
+            targetProject = JSON.parse(saved);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (targetProject && Array.isArray(targetProject.files) && targetProject.files.length > 0) {
+      this.project = JSON.parse(JSON.stringify(targetProject));
+      this.ensureIntegrity();
+      this.saveToStorage();
+      this.events.onActiveFileChange?.(this.getActiveFile());
+      this.events.onProjectChange?.(this.project);
+      return true;
+    }
+
+    return false;
+  }
+
+  deleteProject(projectId: string): boolean {
+    if (this.project && projectId === this.project.id) {
+      return false; // Aktif proje doğrudan silinemez
+    }
+
+    this.inMemoryProjects.delete(projectId);
+
+    const storage = getSafeStorage();
+    if (storage) {
+      try {
+        storage.removeItem(STORAGE_PROJECT_PREFIX + projectId);
+        let list = this.getProjectsList().filter(p => p.id !== projectId);
+        storage.setItem(STORAGE_PROJECTS_LIST_KEY, JSON.stringify(list));
+      } catch {
+        // ignore
+      }
+    }
+
+    return true;
+  }
+
+  renameCurrentProject(newName: string): void {
+    const clean = newName.trim();
+    if (!clean) return;
+    this.project.name = clean;
+    this.project.lastModified = Date.now();
+    this.saveToStorage();
+    this.events.onProjectChange?.(this.project);
+  }
+
+  exportProjectJson(): string {
+    return JSON.stringify(this.project, null, 2);
+  }
+
+  importProjectJson(jsonStr: string): boolean {
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (!parsed || !Array.isArray(parsed.files) || parsed.files.length === 0) {
+        return false;
+      }
+
+      // Mevcut projeyi kaydet
+      this.saveToStorage();
+
+      const newId = `project-${Date.now()}`;
+      const projectName = (typeof parsed.name === 'string' && parsed.name.trim()) 
+        ? parsed.name.trim() 
+        : 'İçe Aktarılan Proje';
+
+      const files: WorkspaceFile[] = parsed.files.map((f: any, idx: number) => ({
+        id: f.id || `file-${Date.now()}-${idx}`,
+        name: f.name || `file${idx + 1}.asm`,
+        code: typeof f.code === 'string' ? f.code : '',
+        isEntry: idx === 0 || f.isEntry === true,
+        createdAt: f.createdAt || Date.now(),
+        lastModified: f.lastModified || Date.now()
+      }));
+
+      const importedProject: WorkspaceProject = {
+        id: newId,
+        name: projectName,
+        entryFileId: files[0].id,
+        activeFileId: files[0].id,
+        openFileIds: files.map(f => f.id),
+        files,
+        createdAt: Date.now(),
+        lastModified: Date.now()
+      };
+
+      this.project = importedProject;
+      this.ensureIntegrity();
+      this.saveToStorage();
+
+      this.events.onActiveFileChange?.(this.getActiveFile());
+      this.events.onProjectChange?.(this.project);
+      return true;
+    } catch {
+      return false;
     }
   }
 

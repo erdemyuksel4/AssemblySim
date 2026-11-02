@@ -11,6 +11,7 @@ import { ConsoleView } from './console.js';
 import { InstructionDoc } from './instructionDoc.js';
 import { GraphView } from './graph/graphView.js';
 import { StudyView } from '../study/studyView.js';
+import { TopBar } from './topbar.js';
 
 export type ExecutionSpeed = '0.5' | '1' | '2' | 'max';
 
@@ -58,6 +59,7 @@ export class App {
   private instructionDoc!: InstructionDoc;
   private graphView!: GraphView;
   private studyView!: StudyView;
+  private topbar!: TopBar;
 
   // Computer Execution State
   private isCompiled: boolean = false;
@@ -93,6 +95,7 @@ export class App {
       onProjectChange: () => {
         this.renderTabs();
         this.sidebar?.render();
+        this.topbar?.render();
       },
       onActiveFileChange: (file) => {
         this.loadFileToEditor(file);
@@ -125,7 +128,11 @@ export class App {
     if (!appEl) throw new Error('#app element not found');
 
     appEl.innerHTML = `
-      <div class="app-layout-root">
+      <div class="app-window-wrapper">
+        <!-- VS Code Tarzı Üst Çubuk (Title & Menubar) -->
+        <div id="topbar-mount"></div>
+
+        <div class="app-layout-root">
         <!-- Sol Kenar Çubuğu (Workspace / Proje Gezgini) -->
         <div id="sidebar-mount"></div>
 
@@ -211,6 +218,7 @@ export class App {
 
           <!-- 8086 Dersler & Zihin Haritası Mount -->
           <div id="study-view-mount" class="study-view-mount" style="display: none; width: 100%; height: 100%;"></div>
+      </div>
         </div>
       </div>
     `;
@@ -239,6 +247,45 @@ export class App {
     const consoleContainer = document.getElementById('console-container')!;
     const registersContainer = document.getElementById('registers-container')!;
     const memoryContainer = document.getElementById('memory-container')!;
+
+    // 0. TopBar (VS Code Menubar)
+    const topbarMount = document.getElementById('topbar-mount')!;
+    this.topbar = new TopBar(topbarMount, this.workspace, {
+      onNewProject: () => {
+        this.resetExecutionAndCpu();
+        this.sidebar.render();
+        this.renderTabs();
+        this.showEditor();
+        this.consoleView.log(`🚀 Yeni proje oluşturuldu: [${this.workspace.getProject().name}]`, 'info');
+      },
+      onOpenProject: () => {
+        this.resetExecutionAndCpu();
+        this.sidebar.render();
+        this.renderTabs();
+        this.showEditor();
+        this.consoleView.log(`📂 Proje açıldı: [${this.workspace.getProject().name}]`, 'info');
+      },
+      onExportProject: () => {
+        this.consoleView.log(`💾 Proje dışa aktarıldı: [${this.workspace.getProject().name}.8086.json]`, 'info');
+      },
+      onImportProject: () => {
+        this.resetExecutionAndCpu();
+        this.sidebar.render();
+        this.renderTabs();
+        this.showEditor();
+        this.consoleView.log(`📥 Proje içe aktarıldı: [${this.workspace.getProject().name}]`, 'info');
+      },
+      onRenameProject: (newName) => {
+        this.sidebar.render();
+        this.consoleView.log(`✏️ Proje adı güncellendi: [${newName}]`, 'info');
+      },
+      onOpenManual: () => this.showManual(),
+      onOpenGraph: () => this.showGraph(),
+      onOpenStudy: () => this.showStudy(),
+      isManualOpen: () => this.isManualOpen,
+      isGraphOpen: () => this.isGraphOpen,
+      isStudyOpen: () => this.isStudyOpen
+    });
 
     // 1. Sidebar (Workspace Explorer)
     this.sidebar = new WorkspaceSidebar(sidebarMount, this.workspace, {
@@ -537,6 +584,7 @@ export class App {
     this.graphViewMount.style.display = 'none';
     this.studyViewMount.style.display = 'flex';
     this.studyView?.render();
+    this.topbar?.render();
     this.sidebar?.render();
   }
 
@@ -551,6 +599,7 @@ export class App {
     this.studyViewMount.style.display = 'none';
     this.graphViewMount.style.display = 'flex';
     this.graphView?.onShow();
+    this.topbar?.render();
     this.sidebar?.render();
   }
 
@@ -564,6 +613,7 @@ export class App {
     this.graphViewMount.style.display = 'none';
     this.studyViewMount.style.display = 'none';
     this.manualViewMount.style.display = 'block';
+    this.topbar?.render();
     this.sidebar?.render();
   }
 
@@ -576,6 +626,7 @@ export class App {
     this.graphViewMount.style.display = 'none';
     this.studyViewMount.style.display = 'none';
     this.mainIdeLayout.style.display = 'grid';
+    this.topbar?.render();
     this.sidebar?.render();
   }
 
@@ -882,6 +933,22 @@ export class App {
     if (this.btnStop) this.btnStop.disabled = true;
     if (this.btnCompile) this.btnCompile.disabled = false;
     this.updateStepBackState();
+  }
+
+  private resetExecutionAndCpu(): void {
+    this.handleStop();
+    this.cpu.reset();
+    this.cpu.regs.ip = 0x7C00;
+    this.cpu.regs.sp = 0x7C00;
+    this.cpu.flags.if = true;
+    this.editor.setActiveLine(null);
+    this.isCompiled = false;
+    this.setDirty(false);
+    this.addrToSourceMap.clear();
+    this.updateStepBackState();
+    this.updateCpuViews();
+    this.consoleView.clear();
+    this.consoleView.updateVram(this.cpu.mem.data);
   }
 
   private handleReset(): void {

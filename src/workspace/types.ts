@@ -22,3 +22,12 @@ export interface WorkspaceProject {
   createdAt: number;
   lastModified: number;
 }
+
+export interface ProjectSummary {
+  id: string;
+  name: string;
+  fileCount: number;
+  lastModified: number;
+  isCurrent?: boolean;
+}
+
