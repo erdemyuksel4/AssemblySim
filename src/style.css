@@ -1887,6 +1887,29 @@ body {
   border-color: #6366f1;
 }
 
+.btn-vmode {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-vmode:hover {
+  background: #334155;
+  color: #f8fafc;
+}
+
+.btn-vmode.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #3b82f6;
+}
+
 .crt-mini-palettes {
   display: flex;
   align-items: center;

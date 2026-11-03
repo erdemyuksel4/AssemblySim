@@ -99,6 +99,7 @@ export class ConsoleView {
   }
 
   private initBiosBanner(): void {
+    this.videoMode = 0x03;
     for (let i = 0; i < 2000; i++) {
       this.vramData[i * 2] = 0x20;     // ' '
       this.vramData[i * 2 + 1] = 0x07; // Light gray on black
@@ -249,6 +250,16 @@ export class ConsoleView {
               </button>
               <button class="btn-mon-tab ${this.activeViewMode === 'logs' ? 'active' : ''}" data-mode="logs" title="Sistem ve Derleyici Logları">
                 📋 Sistem Logları
+              </button>
+            </div>
+
+            <!-- Mode Switcher (80x25 Metin vs 320x200 Grafik) -->
+            <div class="video-mode-group" style="display: inline-flex; background: #0f172a; padding: 2px; border-radius: 6px; gap: 2px; border: 1px solid #334155; margin-left: 6px;">
+              <button class="btn-vmode ${this.videoMode !== 0x13 ? 'active' : ''}" id="btn-vmode-text" data-vmode="03" title="80x25 IBM PC Standart Metin Ekranı (0xB800)">
+                📟 Metin (80x25)
+              </button>
+              <button class="btn-vmode ${this.videoMode === 0x13 ? 'active' : ''}" id="btn-vmode-gfx" data-vmode="13" title="VGA 320x200 256-Renk Grafik Ekranı (0xA000)">
+                🎨 Grafik (320x200)
               </button>
             </div>
           </div>
@@ -428,6 +439,17 @@ export class ConsoleView {
         content.innerHTML = this.renderCrtContent();
       }
     }
+
+    this.updateVmodeButtons();
+  }
+
+  private updateVmodeButtons(): void {
+    const btnText = this.container.querySelector('#btn-vmode-text');
+    const btnGfx = this.container.querySelector('#btn-vmode-gfx');
+    if (btnText && btnGfx) {
+      btnText.classList.toggle('active', this.videoMode !== 0x13);
+      btnGfx.classList.toggle('active', this.videoMode === 0x13);
+    }
   }
 
   private bindMode13Events(): void {
@@ -483,6 +505,22 @@ export class ConsoleView {
             this.refreshCrtScreen();
           }
         }
+      });
+    });
+
+    // Video mode switcher buttons (80x25 Metin vs 320x200 Grafik)
+    this.container.querySelectorAll<HTMLButtonElement>('.btn-vmode').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const vmode = btn.dataset.vmode;
+        if (vmode === '03') {
+          this.videoMode = 0x03;
+          this.initBiosBanner();
+          this.refreshCrtScreen();
+        } else if (vmode === '13') {
+          this.videoMode = 0x13;
+          this.refreshCrtScreen();
+        }
+        this.updateVmodeButtons();
       });
     });
 
