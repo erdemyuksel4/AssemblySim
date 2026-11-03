@@ -18,12 +18,17 @@ export class Executor {
   private regs: Registers;
   private flags: Flags;
   readonly io: IOPortManager;
+  callDepth: number = 0;
 
   constructor(mem: Memory, regs: Registers, flags: Flags, io?: IOPortManager) {
     this.mem = mem;
     this.regs = regs;
     this.flags = flags;
     this.io = io || new IOPortManager();
+  }
+
+  reset(): void {
+    this.callDepth = 0;
   }
 
   // Helper to read operand value from ModRM (8-bit)
@@ -662,6 +667,7 @@ export class Executor {
           this.writeRM16(m, res);
         } else if (m.reg === 2) { // CALL near indirect r/m16
           const target = this.readRM16(m);
+          this.callDepth++;
           this.push(currIp);
           currIp = target;
         } else if (m.reg === 4) { // JMP near indirect r/m16
@@ -1252,20 +1258,36 @@ export class Executor {
       case 0xE8: {
         const rel = fetchWord();
         const signedRel = (rel & 0x8000) ? (rel - 65536) : rel;
+        this.callDepth++;
         this.push(currIp);
         currIp = (currIp + signedRel) & 0xFFFF;
         break;
       }
       // RET near
       case 0xC3: {
-        currIp = this.pop();
+        if (this.callDepth > 0) {
+          this.callDepth--;
+          currIp = this.pop();
+        } else {
+          // Top-level RET (COM file / root procedure exit convention)
+          halted = true;
+          currIp = initialIp;
+          consoleText = '[Program RET komutuyla başarıyla sonlandı]';
+        }
         break;
       }
       // RET near imm16
       case 0xC2: {
         const imm = fetchWord();
-        currIp = this.pop();
-        this.regs.sp = (this.regs.sp + imm) & 0xFFFF;
+        if (this.callDepth > 0) {
+          this.callDepth--;
+          currIp = this.pop();
+          this.regs.sp = (this.regs.sp + imm) & 0xFFFF;
+        } else {
+          halted = true;
+          currIp = initialIp;
+          consoleText = '[Program RET komutuyla başarıyla sonlandı]';
+        }
         break;
       }
       // IRET (Interrupt Return: POP IP, POP CS, POPF)

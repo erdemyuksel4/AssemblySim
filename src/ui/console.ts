@@ -154,6 +154,10 @@ export class ConsoleView {
     }
   }
 
+  isWaitingForInput(): boolean {
+    return this.isWaiting;
+  }
+
   setWaitingForInput(waiting: boolean, hint?: string): void {
     this.isWaiting = waiting;
     const badge = this.container.querySelector('#console-status-badge');

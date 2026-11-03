@@ -34,12 +34,12 @@ export function getSpeedBatchSize(speed: ExecutionSpeed): number {
     case '0.5':
       return 1;
     case '2':
-      return 50;
+      return 100;
     case 'max':
-      return 500; // 500 instructions every 10ms = 50,000 instructions per second!
+      return 1000;
     case '1':
     default:
-      return 10;
+      return 50;
   }
 }
 
@@ -564,6 +564,22 @@ export class App {
           this.handleStop();
         } else if (this.isManualOpen || this.isGraphOpen || this.isStudyOpen) {
           this.showEditor();
+        }
+        return;
+      }
+
+      // Direct keystroke feed when CPU is waiting for input (e.g. INT 16h / INT 21h)
+      if (this.consoleView.isWaitingForInput()) {
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+        const isEditingCode = activeTag === 'textarea' || (document.activeElement && document.activeElement.id === 'editor-textarea');
+        if (!isEditingCode && !e.ctrlKey && !e.altKey && !e.metaKey && e.key !== 'F5' && e.key !== 'F10' && e.key !== 'F12') {
+          e.preventDefault();
+          const charToSend = e.key === 'Enter' ? '\r' : (e.key.length === 1 ? e.key : ' ');
+          this.cpu.feedInput(charToSend);
+          this.consoleView.setWaitingForInput(false);
+          if (!this.isRunning && !this.cpu.halted) {
+            this.handleRun();
+          }
         }
       }
     });

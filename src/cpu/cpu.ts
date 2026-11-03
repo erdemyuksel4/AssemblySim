@@ -56,6 +56,7 @@ export class CPU {
     this.regs.resetCOM();
     this.flags.reset();
     this.io.reset();
+    this.executor.reset();
     this.halted = false;
     this.lastError = undefined;
     this.consoleBuffer = '';
