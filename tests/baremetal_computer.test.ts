@@ -505,4 +505,79 @@ describe('Bare-Metal 8086 Computer & Multi-File Memory Tests', () => {
 
     expect(cpu.halted).toBe(true);
   });
+
+  it('runs user program with Mode 13h line drawing, INT 16h input wait, and clean top-level RET', () => {
+    const userCode = `
+      org 500h
+
+      mov ah, 00h
+      mov al, 13h
+      int 10h
+
+      mov cx, 50
+      mov dx, 100
+      mov al, 0Eh
+
+      cizim_dongusu:
+      mov ah, 0Ch
+      mov bh, 00h
+      int 10h
+
+      inc cx
+      cmp cx, 250
+      jne cizim_dongusu
+
+      mov ah, 00h
+      int 16h
+
+      mov ah, 00h
+      mov al, 03h
+      int 10h
+
+      ret
+    `;
+
+    const res = Assembler.assemble(userCode);
+    expect(res.errors).toHaveLength(0);
+    expect(res.origin).toBe(0x500);
+
+    const cpu = new CPU();
+    cpu.reset();
+    cpu.loadCOM(res.bytes, res.origin);
+
+    // Step until INT 16h waits for key input
+    let steps = 0;
+    let waiting = false;
+    while (!cpu.halted && steps < 2000) {
+      const info = cpu.step();
+      steps++;
+      if (info.waitingForInput) {
+        waiting = true;
+        break;
+      }
+    }
+
+    expect(waiting).toBe(true);
+    // Verify Mode 13h is set in BDA
+    expect(cpu.mem.data[0x0449]).toBe(0x13);
+
+    // Verify yellow pixels drawn in Mode 13h VRAM (0xA0000 + 100 * 320 + X)
+    for (let x = 50; x < 250; x++) {
+      const pixelOffset = 0xA0000 + (100 * 320 + x);
+      expect(cpu.mem.data[pixelOffset]).toBe(0x0E); // Yellow color
+    }
+
+    // Now user presses a key (e.g. Enter or Space)
+    cpu.feedInput('\r');
+
+    // Run remaining steps to switch back to mode 3 and hit RET
+    while (!cpu.halted && steps < 2500) {
+      cpu.step();
+      steps++;
+    }
+
+    expect(cpu.halted).toBe(true);
+    // Mode should be back to 03h
+    expect(cpu.mem.data[0x0449]).toBe(0x03);
+  });
 });
