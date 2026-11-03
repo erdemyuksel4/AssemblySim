@@ -1887,29 +1887,6 @@ body {
   border-color: #6366f1;
 }
 
-.btn-vmode {
-  background: #1e293b;
-  border: 1px solid #334155;
-  color: #94a3b8;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-vmode:hover {
-  background: #334155;
-  color: #f8fafc;
-}
-
-.btn-vmode.active {
-  background: #2563eb;
-  color: #ffffff;
-  border-color: #3b82f6;
-}
-
 .crt-mini-palettes {
   display: flex;
   align-items: center;
@@ -1943,14 +1920,16 @@ body {
 /* CRT Screen Wrapper */
 .crt-screen-wrapper {
   display: flex !important;
-  height: 380px !important;
-  min-height: 380px !important;
-  max-height: 380px !important;
-  background: #050505;
-  padding: 6px;
-  position: relative;
-  overflow: hidden;
+  flex: 1 1 396px !important;
+  height: 396px !important;
+  min-height: 396px !important;
+  max-height: 396px !important;
+  background: #000000 !important;
+  padding: 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
   flex-direction: column !important;
+  box-sizing: border-box !important;
 }
 
 .crt-screen-wrapper.hidden {
@@ -1963,20 +1942,24 @@ body {
 }
 
 .crt-screen-box {
-  height: 368px !important;
-  min-height: 368px !important;
-  background: #020617;
-  border: 2px solid #1e293b;
-  border-radius: 6px;
-  padding: 10px 14px;
+  flex: 1 1 100% !important;
+  height: 100% !important;
+  min-height: 396px !important;
+  max-height: 396px !important;
+  background: #010409 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 10px 14px !important;
   overflow: auto !important;
-  position: relative;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  line-height: 1.45;
-  outline: none;
-  cursor: text;
-  box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.9);
+  position: relative !important;
+  font-family: 'JetBrains Mono', Consolas, monospace !important;
+  font-size: 11.5px !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0.5px !important;
+  outline: none !important;
+  cursor: text !important;
+  box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.98) !important;
+  box-sizing: border-box !important;
 }
 
 .crt-screen-box:focus {

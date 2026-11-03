@@ -235,31 +235,21 @@ export class ConsoleView {
     const modeTitle = isGraphics ? 'IBM CRT MONİTÖR (Mod 13h: 320x200 Grafik)' : 'IBM 5153 CRT MONİTÖR (80x25 Metin)';
 
     this.container.innerHTML = `
-      <div class="console-box" style="display: flex; flex-direction: column; height: 480px; min-height: 480px; background: #0f172a; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-dark);">
+      <div class="console-box" style="display: flex; flex-direction: column; height: 480px; min-height: 480px; max-height: 480px; background: #0f172a; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-dark); box-sizing: border-box;">
         <!-- Top Monitor Toolbar Bar -->
-        <div class="console-header-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; height: 42px; min-height: 42px; flex-shrink: 0; background: #1e293b; border-bottom: 1px solid #334155;">
+        <div class="console-header-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; height: 42px; min-height: 42px; flex-shrink: 0; background: #1e293b; border-bottom: 1px solid #334155; box-sizing: border-box;">
           <div class="console-header-left" style="display: flex; align-items: center; gap: 8px;">
             <span class="console-terminal-icon" style="font-size: 15px;">🖥️</span>
             <span class="console-title" id="crt-monitor-title" style="font-size: 12px; font-weight: 700; color: #f8fafc; letter-spacing: 0.5px;">${modeTitle}</span>
             <span class="console-status-badge ready" id="console-status-badge" style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #059669; color: #ffffff; font-weight: 700;">HAZIR</span>
 
-            <!-- View Switcher -->
+            <!-- View Switcher (Monitör vs Sistem Logları) -->
             <div class="monitor-tab-group" style="display: inline-flex; background: #0f172a; padding: 2px; border-radius: 6px; gap: 2px; border: 1px solid #334155; margin-left: 6px;">
-              <button class="btn-mon-tab ${this.activeViewMode === 'monitor' ? 'active' : ''}" data-mode="monitor" title="Tek ve Orijinal CRT Monitörü">
-                🖥️ CRT Monitör
+              <button class="btn-mon-tab ${this.activeViewMode === 'monitor' ? 'active' : ''}" data-mode="monitor" title="Orijinal CRT Monitörü">
+                🖥️ Monitör
               </button>
               <button class="btn-mon-tab ${this.activeViewMode === 'logs' ? 'active' : ''}" data-mode="logs" title="Sistem ve Derleyici Logları">
                 📋 Sistem Logları
-              </button>
-            </div>
-
-            <!-- Mode Switcher (80x25 Metin vs 320x200 Grafik) -->
-            <div class="video-mode-group" style="display: inline-flex; background: #0f172a; padding: 2px; border-radius: 6px; gap: 2px; border: 1px solid #334155; margin-left: 6px;">
-              <button class="btn-vmode ${this.videoMode !== 0x13 ? 'active' : ''}" id="btn-vmode-text" data-vmode="03" title="80x25 IBM PC Standart Metin Ekranı (0xB800)">
-                📟 Metin (80x25)
-              </button>
-              <button class="btn-vmode ${this.videoMode === 0x13 ? 'active' : ''}" id="btn-vmode-gfx" data-vmode="13" title="VGA 320x200 256-Renk Grafik Ekranı (0xA000)">
-                🎨 Grafik (320x200)
               </button>
             </div>
           </div>
@@ -275,9 +265,9 @@ export class ConsoleView {
           </div>
         </div>
 
-        <!-- Body 1: Authentic Single CRT Screen (Text or Mode 13h Canvas) -->
-        <div class="crt-screen-wrapper ${this.activeViewMode === 'monitor' ? 'active' : 'hidden'}" id="crt-view-wrapper" style="height: 388px; min-height: 388px; max-height: 388px; position: relative; background: #000000; overflow: hidden; display: ${this.activeViewMode === 'monitor' ? 'flex' : 'none'}; flex-direction: column;">
-          <div class="crt-screen-box ${this.colorMode}" id="crt-screen-box" tabindex="0" style="height: 388px; min-height: 388px; padding: 10px 12px; overflow: auto; position: relative; background: #010409; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-shadow: inset 0 0 30px rgba(0,0,0,0.95);">
+        <!-- Body 1: Authentic Physical CRT Screen (80x25 Text or Mode 13h Canvas) -->
+        <div class="crt-screen-wrapper ${this.activeViewMode === 'monitor' ? 'active' : 'hidden'}" id="crt-view-wrapper" style="flex: 1 1 396px; height: 396px; min-height: 396px; max-height: 396px; position: relative; background: #000000; overflow: hidden; display: ${this.activeViewMode === 'monitor' ? 'flex' : 'none'}; flex-direction: column; box-sizing: border-box;">
+          <div class="crt-screen-box ${this.colorMode}" id="crt-screen-box" tabindex="0" style="flex: 1 1 100%; height: 100%; min-height: 396px; max-height: 396px; padding: 10px 14px; overflow: auto; position: relative; background: #010409; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-shadow: inset 0 0 35px rgba(0,0,0,0.98); box-sizing: border-box;">
             <div class="crt-scanlines"></div>
             <div class="crt-glow"></div>
             <div class="crt-content" id="crt-screen-content" style="position: relative; z-index: 2; font-size: 11.5px; line-height: 1.25; letter-spacing: 0.5px; min-width: 650px; user-select: none;">
@@ -287,10 +277,10 @@ export class ConsoleView {
         </div>
 
         <!-- Body 2: Standard System & Compiler Diagnostics Log -->
-        <div class="console-body ${this.activeViewMode === 'logs' ? 'active' : 'hidden'}" id="console-output" style="height: 388px; min-height: 388px; max-height: 388px; padding: 8px 12px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #020617; color: #cbd5e1; display: ${this.activeViewMode === 'logs' ? 'block' : 'none'};"></div>
+        <div class="console-body ${this.activeViewMode === 'logs' ? 'active' : 'hidden'}" id="console-output" style="flex: 1 1 396px; height: 396px; min-height: 396px; max-height: 396px; padding: 8px 12px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #020617; color: #cbd5e1; display: ${this.activeViewMode === 'logs' ? 'block' : 'none'}; box-sizing: border-box;"></div>
 
         <!-- Bottom Hardware Keyboard Input Bar -->
-        <div class="console-input-wrap" id="console-input-wrap" style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; height: 42px; min-height: 42px; flex-shrink: 0; background: #0f172a; border-top: 1px solid #1e293b;">
+        <div class="console-input-wrap" id="console-input-wrap" style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; height: 42px; min-height: 42px; flex-shrink: 0; background: #0f172a; border-top: 1px solid #1e293b; box-sizing: border-box;">
           <span class="console-prompt-sym" style="color: #38bdf8; font-weight: 700; font-size: 13px;">❯</span>
           <input type="text" id="console-input-field" class="console-input-field" placeholder="Klavye girdisi (Port 60h / INT 16h / INT 21h)..." autocomplete="off" style="flex: 1; background: #020617; border: 1px solid #334155; border-radius: 4px; padding: 4px 8px; color: #f8fafc; font-size: 12px; font-family: 'JetBrains Mono', monospace; outline: none;" />
           <button id="btn-console-send" class="btn-console-send" title="Gönder" style="padding: 4px 10px; font-size: 11px; font-weight: 600; background: #2563eb; color: #ffffff; border: none; border-radius: 4px; cursor: pointer;">Gönder</button>
@@ -307,28 +297,10 @@ export class ConsoleView {
   private renderCrtContent(): string {
     if (this.videoMode === 0x13) {
       return `
-        <div class="crt-graphics-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; min-height: 350px; padding: 4px; box-sizing: border-box;">
-          <!-- HUD Header Bar -->
-          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 640px; margin-bottom: 6px; padding: 5px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; box-sizing: border-box;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e;"></span>
-              <span style="color: #38bdf8; font-weight: 700; font-size: 11px; letter-spacing: 0.5px;">VGA 320x200 (Mod 13h) • 256 Renk • VRAM 0xA0000</span>
-            </div>
-            <button id="btn-switch-text-mode" style="background: #1e293b; border: 1px solid #475569; color: #cbd5e1; font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 4px; cursor: pointer; transition: all 0.15s ease;" title="80x25 Standart Metin Moduna Geri Dön">
-              Metin Moduna (03h) Dön ↩
-            </button>
-          </div>
-
-          <!-- The Screen Canvas with authentic retro bezel -->
-          <div style="position: relative; width: 100%; max-width: 640px; aspect-ratio: 320/200; background: #000000; border: 2px solid #38bdf8; border-radius: 6px; overflow: hidden; box-shadow: 0 0 25px rgba(56, 189, 248, 0.25), inset 0 0 15px rgba(0, 0, 0, 0.9); box-sizing: border-box;">
+        <div class="crt-graphics-wrapper" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-height: 360px; box-sizing: border-box;">
+          <div style="position: relative; width: 100%; max-width: 580px; aspect-ratio: 320/200; background: #000000; border: 2px solid #334155; border-radius: 6px; overflow: hidden; box-shadow: 0 0 25px rgba(0, 0, 0, 0.9), inset 0 0 15px rgba(0, 0, 0, 0.95); box-sizing: border-box;">
             <canvas id="crt-graphics-canvas" width="320" height="200" style="width: 100%; height: 100%; image-rendering: pixelated; display: block; background: #000000;"></canvas>
             <div class="crt-scanlines" style="pointer-events: none;"></div>
-          </div>
-
-          <!-- Bottom Status Helper -->
-          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 640px; margin-top: 6px; font-size: 10.5px; color: #64748b; box-sizing: border-box;">
-            <span>X: 0..319 | Y: 0..199 | Renk: 0..255 (VGA DAC)</span>
-            <span style="color: #94a3b8;">INT 10h (AH=0Ch) veya ES:[DI] ile çizim yapılır</span>
           </div>
         </div>
       `;
@@ -431,7 +403,6 @@ export class ConsoleView {
         content.innerHTML = this.renderCrtContent();
         this.canvasCtx = null;
         this.canvasImgData = null;
-        this.bindMode13Events();
       }
       this.paintGraphicsCanvas();
     } else {
@@ -439,26 +410,6 @@ export class ConsoleView {
         content.innerHTML = this.renderCrtContent();
       }
     }
-
-    this.updateVmodeButtons();
-  }
-
-  private updateVmodeButtons(): void {
-    const btnText = this.container.querySelector('#btn-vmode-text');
-    const btnGfx = this.container.querySelector('#btn-vmode-gfx');
-    if (btnText && btnGfx) {
-      btnText.classList.toggle('active', this.videoMode !== 0x13);
-      btnGfx.classList.toggle('active', this.videoMode === 0x13);
-    }
-  }
-
-  private bindMode13Events(): void {
-    const btn = this.container.querySelector('#btn-switch-text-mode');
-    btn?.addEventListener('click', () => {
-      this.videoMode = 0x03;
-      this.initBiosBanner();
-      this.refreshCrtScreen();
-    });
   }
 
   private appendLog(text: string, level: LogLevel, time: string): void {
@@ -505,22 +456,6 @@ export class ConsoleView {
             this.refreshCrtScreen();
           }
         }
-      });
-    });
-
-    // Video mode switcher buttons (80x25 Metin vs 320x200 Grafik)
-    this.container.querySelectorAll<HTMLButtonElement>('.btn-vmode').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const vmode = btn.dataset.vmode;
-        if (vmode === '03') {
-          this.videoMode = 0x03;
-          this.initBiosBanner();
-          this.refreshCrtScreen();
-        } else if (vmode === '13') {
-          this.videoMode = 0x13;
-          this.refreshCrtScreen();
-        }
-        this.updateVmodeButtons();
       });
     });
 
