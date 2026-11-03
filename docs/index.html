@@ -328,11 +328,11 @@ START:
         </div>
 
         \x3C!-- Body 1: Authentic Physical CRT Screen (80x25 Text or Mode 13h Canvas) -->
-        <div class="crt-screen-wrapper ${this.activeViewMode==="monitor"?"active":"hidden"}" id="crt-view-wrapper" style="flex: 1 1 396px; height: 396px; min-height: 396px; max-height: 396px; position: relative; background: #000000; overflow: hidden; display: ${this.activeViewMode==="monitor"?"flex":"none"}; flex-direction: column; box-sizing: border-box;">
-          <div class="crt-screen-box ${this.colorMode}" id="crt-screen-box" tabindex="0" style="flex: 1 1 100%; height: 100%; min-height: 396px; max-height: 396px; padding: 10px 14px; overflow: auto; position: relative; background: #010409; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-shadow: inset 0 0 35px rgba(0,0,0,0.98); box-sizing: border-box;">
+        <div class="crt-screen-wrapper ${this.activeViewMode==="monitor"?"active":"hidden"}" id="crt-view-wrapper" style="flex: 1 1 396px !important; height: 396px !important; min-height: 396px !important; max-height: 396px !important; position: relative; background: #000000; overflow: hidden; display: ${this.activeViewMode==="monitor"?"flex":"none"} !important; flex-direction: column; box-sizing: border-box;">
+          <div class="crt-screen-box ${this.colorMode}" id="crt-screen-box" tabindex="0" style="flex: 1 1 100% !important; height: 100% !important; min-height: 396px !important; max-height: 396px !important; padding: 10px 14px; overflow: auto; position: relative; background: #010409; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-shadow: inset 0 0 35px rgba(0,0,0,0.98); box-sizing: border-box;">
             <div class="crt-scanlines"></div>
             <div class="crt-glow"></div>
-            <div class="crt-content" id="crt-screen-content" style="position: relative; z-index: 2; font-size: 11.5px; line-height: 1.25; letter-spacing: 0.5px; min-width: 650px; user-select: none;">
+            <div class="crt-content" id="crt-screen-content" style="position: relative; z-index: 2; font-size: 11.5px; line-height: 1.25; letter-spacing: 0.5px; min-width: 650px; min-height: 360px; user-select: none;">
               ${this.renderCrtContent()}
             </div>
           </div>
