@@ -158,6 +158,20 @@ export class ConsoleView {
     return this.isWaiting;
   }
 
+  setRunningState(running: boolean): void {
+    if (this.isWaiting) return;
+    const badge = this.container.querySelector('#console-status-badge');
+    if (badge) {
+      if (running) {
+        badge.textContent = 'ÇALIŞIYOR';
+        badge.className = 'console-status-badge running';
+      } else {
+        badge.textContent = 'HAZIR';
+        badge.className = 'console-status-badge ready';
+      }
+    }
+  }
+
   setWaitingForInput(waiting: boolean, hint?: string): void {
     this.isWaiting = waiting;
     const badge = this.container.querySelector('#console-status-badge');
@@ -176,7 +190,12 @@ export class ConsoleView {
     if (waiting) {
       this.refreshCrtScreen();
       if (input) {
+        input.placeholder = hint || 'Klavyeden bir tuşa basın...';
         input.focus();
+      }
+    } else {
+      if (input) {
+        input.placeholder = 'Klavye girdisi (Port 60h / INT 16h / INT 21h)...';
       }
     }
   }

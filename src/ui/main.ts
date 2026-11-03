@@ -32,14 +32,14 @@ export function getSpeedDelayMs(speed: ExecutionSpeed): number {
 export function getSpeedBatchSize(speed: ExecutionSpeed): number {
   switch (speed) {
     case '0.5':
-      return 1;
+      return 5;
     case '2':
-      return 100;
+      return 500;
     case 'max':
-      return 1000;
+      return 2000;
     case '1':
     default:
-      return 50;
+      return 200;
   }
 }
 
@@ -570,9 +570,7 @@ export class App {
 
       // Direct keystroke feed when CPU is waiting for input (e.g. INT 16h / INT 21h)
       if (this.consoleView.isWaitingForInput()) {
-        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-        const isEditingCode = activeTag === 'textarea' || (document.activeElement && document.activeElement.id === 'editor-textarea');
-        if (!isEditingCode && !e.ctrlKey && !e.altKey && !e.metaKey && e.key !== 'F5' && e.key !== 'F10' && e.key !== 'F12') {
+        if (!e.ctrlKey && !e.altKey && !e.metaKey && e.key !== 'F5' && e.key !== 'F10' && e.key !== 'F12') {
           e.preventDefault();
           const charToSend = e.key === 'Enter' ? '\r' : (e.key.length === 1 ? e.key : ' ');
           this.cpu.feedInput(charToSend);
@@ -830,9 +828,10 @@ export class App {
 
     this.updateCpuViews();
     this.updateStepBackState();
+    this.consoleView.updateVram(this.cpu.mem.data);
 
     if (this.cpu.halted) {
-      this.consoleView.log('İşlemci HLT komutuyla durdu.', 'info');
+      this.consoleView.log('İşlemci durduruldu.', 'info');
       this.handleStop();
     }
   }
@@ -859,7 +858,7 @@ export class App {
     }
 
     if (this.cpu.halted) {
-      this.consoleView.log('İşlemci zaten HLT durumunda. RESET ile baştan başlatın.', 'warn');
+      this.consoleView.log('İşlemci zaten durduruldu. RESET ile baştan başlatın.', 'warn');
       return;
     }
 
@@ -868,6 +867,7 @@ export class App {
     this.btnNext.disabled = true;
     this.btnStop.disabled = false;
     this.btnCompile.disabled = true;
+    this.consoleView.setRunningState(true);
 
     const stepLoop = () => {
       if (!this.isRunning) return;
@@ -882,6 +882,7 @@ export class App {
           this.syncEditorToCurrentIp();
           this.updateCpuViews();
           this.updateStepBackState();
+          this.consoleView.updateVram(this.cpu.mem.data);
           this.handleStop();
           return;
         }
@@ -912,7 +913,8 @@ export class App {
 
         if (info.waitingForInput) {
           this.handleStop();
-          this.consoleView.setWaitingForInput(true);
+          this.consoleView.setWaitingForInput(true, 'TUŞ BEKLENİYOR (Bir tuşa basın)');
+          (document.activeElement as HTMLElement)?.blur?.();
           this.updateCpuViews();
           this.consoleView.updateVram(this.cpu.mem.data);
           return;
@@ -924,9 +926,11 @@ export class App {
       this.syncEditorToCurrentIp();
       this.updateCpuViews();
       this.updateStepBackState();
+      this.consoleView.updateVram(this.cpu.mem.data);
 
       if (this.cpu.halted) {
-        this.consoleView.log('İşlemci HLT komutuyla durdu.', 'info');
+        this.consoleView.updateVram(this.cpu.mem.data);
+        this.consoleView.log('İşlemci durduruldu.', 'info');
         this.handleStop();
         return;
       }
@@ -939,6 +943,7 @@ export class App {
 
   private handleStop(): void {
     this.isRunning = false;
+    this.consoleView.setRunningState(false);
     if (this.runTimer !== null) {
       clearTimeout(this.runTimer);
       this.runTimer = null;
