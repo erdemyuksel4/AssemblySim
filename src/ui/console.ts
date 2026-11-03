@@ -104,14 +104,8 @@ export class ConsoleView {
       this.vramData[i * 2] = 0x20;     // ' '
       this.vramData[i * 2 + 1] = 0x07; // Light gray on black
     }
-    this.writeStringToVram(0, 0, 'IBM Personal Computer (Model 5150) - BIOS v1.0', 0x0F);
-    this.writeStringToVram(1, 0, '8086 CPU 4.77 MHz  |  640 KB Base Memory OK', 0x07);
-    this.writeStringToVram(2, 0, 'CGA/VGA Renkli Bagdastirici  |  VRAM 0xB800h (80x25 Metin)', 0x03);
-    this.writeStringToVram(3, 0, '----------------------------------------------------------------', 0x08);
-    this.writeStringToVram(4, 0, '8086 Bare-Metal IDE Hazir. F5: RUN (Calistir)  |  F10: NEXT (Adim)', 0x0A);
-    this.writeStringToVram(6, 0, 'A:\\> ', 0x0E);
-    this.cursorRow = 6;
-    this.cursorCol = 5;
+    this.cursorRow = 0;
+    this.cursorCol = 0;
   }
 
   destroy(): void {
@@ -176,6 +170,7 @@ export class ConsoleView {
     this.isWaiting = waiting;
     const badge = this.container.querySelector('#console-status-badge');
     const input = this.container.querySelector('#console-input-field') as HTMLInputElement | null;
+    const inputWrap = this.container.querySelector('#console-input-wrap') as HTMLElement | null;
 
     if (badge) {
       if (waiting) {
@@ -185,6 +180,10 @@ export class ConsoleView {
         badge.textContent = 'HAZIR';
         badge.className = 'console-status-badge ready';
       }
+    }
+
+    if (inputWrap) {
+      inputWrap.style.display = (waiting || this.activeViewMode === 'logs') ? 'flex' : 'none';
     }
 
     if (waiting) {
@@ -304,8 +303,8 @@ export class ConsoleView {
         <!-- Body 2: Standard System & Compiler Diagnostics Log -->
         <div class="console-body" id="console-output" style="flex: 1 1 278px; height: 278px; min-height: 250px; padding: 8px 12px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #020617; color: #cbd5e1; display: ${this.activeViewMode === 'logs' ? 'block' : 'none'}; box-sizing: border-box;"></div>
 
-        <!-- Bottom Hardware Keyboard Input Bar -->
-        <div class="console-input-wrap" id="console-input-wrap" style="display: flex; align-items: center; gap: 8px; padding: 3px 10px; height: 36px; min-height: 36px; flex-shrink: 0; background: #0c1017; border-top: 1px solid #1e293b; box-sizing: border-box;">
+        <!-- Bottom Hardware Keyboard Input Bar (Only visible when input is explicitly requested or in logs view) -->
+        <div class="console-input-wrap" id="console-input-wrap" style="display: ${this.isWaiting || this.activeViewMode === 'logs' ? 'flex' : 'none'}; align-items: center; gap: 8px; padding: 3px 10px; height: 36px; min-height: 36px; flex-shrink: 0; background: #0c1017; border-top: 1px solid #1e293b; box-sizing: border-box;">
           <span class="console-prompt-sym" style="color: #38bdf8; font-weight: 700; font-size: 12px;">❯</span>
           <input type="text" id="console-input-field" class="console-input-field" placeholder="Klavye girdisi (Port 60h / INT 16h / INT 21h)..." autocomplete="off" style="flex: 1; background: #020617; border: 1px solid #243044; border-radius: 4px; padding: 3px 8px; color: #f8fafc; font-size: 11px; font-family: 'JetBrains Mono', monospace; outline: none;" />
           <button id="btn-console-send" class="btn-console-send" title="Gönder" style="padding: 2px 10px; font-size: 11px; font-weight: 600; background: #2563eb; color: #ffffff; border: none; border-radius: 4px; cursor: pointer;">Gönder</button>
@@ -477,6 +476,11 @@ export class ConsoleView {
             logsOutput.style.display = mode === 'logs' ? 'block' : 'none';
             logsOutput.classList.toggle('hidden', mode !== 'logs');
             logsOutput.classList.toggle('active', mode === 'logs');
+          }
+
+          const inputWrap = this.container.querySelector('#console-input-wrap') as HTMLElement | null;
+          if (inputWrap) {
+            inputWrap.style.display = (mode === 'logs' || this.isWaiting) ? 'flex' : 'none';
           }
 
           if (mode === 'monitor') {

@@ -32,14 +32,14 @@ export function getSpeedDelayMs(speed: ExecutionSpeed): number {
 export function getSpeedBatchSize(speed: ExecutionSpeed): number {
   switch (speed) {
     case '0.5':
-      return 5;
+      return 10;
     case '2':
-      return 500;
+      return 3000;
     case 'max':
-      return 2000;
+      return 15000;
     case '1':
     default:
-      return 200;
+      return 1000;
   }
 }
 
