@@ -102,10 +102,10 @@ export class Lexer {
         continue;
       }
 
-      // Identifier or number (supports @DATA, @CODE, labels starting with @ or ., etc.)
+      // Identifier or number (supports @DATA, @CODE, labels starting with @ or ., Turkish unicode chars, etc.)
       const startCol = i + 1;
       let word = '';
-      while (i < len && /[a-zA-Z0-9_$.?@]/.test(lineText[i])) {
+      while (i < len && /[a-zA-Z0-9_$.?@\u00C0-\u017F]/.test(lineText[i])) {
         word += lineText[i];
         i++;
       }

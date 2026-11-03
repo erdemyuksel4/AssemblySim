@@ -746,17 +746,14 @@ export class App {
     }
 
     // 2. BIOS POST & Önyükleme Noktası (Boot Landing)
+    // Always boot to the active file's origin (unless user specifically has bootloader as active file)
     let bootOrigin = activeFileOrigin;
-    if (bootFileWith7C00) {
-      bootOrigin = 0x7C00;
-      this.cpu.regs.ip = 0x7C00;
-      this.cpu.regs.sp = 0x7C00;
+    this.cpu.regs.ip = bootOrigin;
+    this.cpu.regs.sp = (bootOrigin === 0x7C00) ? 0x7C00 : 0xFFFE;
+    if (bootOrigin === 0x7C00) {
       this.cpu.regs.ds = 0x0000;
       this.cpu.regs.es = 0x0000;
       this.cpu.regs.ss = 0x0000;
-    } else {
-      this.cpu.regs.ip = bootOrigin;
-      this.cpu.regs.sp = (bootOrigin === 0x7C00) ? 0x7C00 : 0xFFFE;
     }
     this.cpu.flags.if = true;
 

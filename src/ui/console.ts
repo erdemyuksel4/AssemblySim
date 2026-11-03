@@ -322,11 +322,8 @@ export class ConsoleView {
   private renderCrtContent(): string {
     if (this.videoMode === 0x13) {
       return `
-        <div class="crt-graphics-wrapper" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; box-sizing: border-box;">
-          <div style="position: relative; width: 100%; max-width: 440px; aspect-ratio: 320/200; background: #000000; border: 2px solid #243044; border-radius: 6px; overflow: hidden; box-shadow: 0 0 25px rgba(0, 0, 0, 0.9), inset 0 0 15px rgba(0, 0, 0, 0.95); box-sizing: border-box;">
-            <canvas id="crt-graphics-canvas" width="320" height="200" style="width: 100%; height: 100%; image-rendering: pixelated; display: block; background: #000000;"></canvas>
-            <div class="crt-scanlines" style="pointer-events: none;"></div>
-          </div>
+        <div class="crt-graphics-wrapper" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; box-sizing: border-box; padding: 2px;">
+          <canvas id="crt-graphics-canvas" width="320" height="200" style="height: 100%; max-height: 268px; aspect-ratio: 320/200; image-rendering: pixelated; display: block; background: #000000; border: 1.5px solid #243044; border-radius: 4px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.95);"></canvas>
         </div>
       `;
     }
@@ -420,6 +417,11 @@ export class ConsoleView {
       titleEl.textContent = this.videoMode === 0x13
         ? '13h GRAFİK (320x200)'
         : '03h METİN (80x25)';
+    }
+
+    const crtBox = this.container.querySelector('#crt-screen-box');
+    if (crtBox) {
+      crtBox.classList.toggle('graphics-mode', this.videoMode === 0x13);
     }
 
     const content = this.container.querySelector('#crt-screen-content');

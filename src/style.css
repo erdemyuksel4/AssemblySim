@@ -11694,6 +11694,10 @@ body {
   opacity: 0.6;
 }
 
+.crt-screen-box.graphics-mode .crt-scanlines {
+  display: none !important;
+}
+
 .crt-glow {
   position: absolute;
   top: 0;
