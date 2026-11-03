@@ -1832,17 +1832,18 @@ body {
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  min-height: 430px;
-  display: flex;
-  flex-direction: column;
+  height: 480px !important;
+  min-height: 480px !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .console-box {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 430px;
-  flex: 1;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 480px !important;
+  min-height: 480px !important;
+  flex: 1 1 480px !important;
 }
 
 .console-wrapper {
@@ -1918,28 +1919,34 @@ body {
 
 /* CRT Screen Wrapper */
 .crt-screen-wrapper {
-  display: none;
-  flex: 1;
-  min-height: 330px;
+  display: flex !important;
+  height: 380px !important;
+  min-height: 380px !important;
+  max-height: 380px !important;
   background: #050505;
   padding: 6px;
   position: relative;
   overflow: hidden;
+  flex-direction: column !important;
+}
+
+.crt-screen-wrapper.hidden {
+  display: none !important;
 }
 
 .crt-screen-wrapper.active {
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .crt-screen-box {
-  flex: 1;
-  min-height: 310px;
+  height: 368px !important;
+  min-height: 368px !important;
   background: #020617;
   border: 2px solid #1e293b;
   border-radius: 6px;
   padding: 10px 14px;
-  overflow-y: auto;
+  overflow: auto !important;
   position: relative;
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
