@@ -425,8 +425,8 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   position: relative;
   display: flex;
-  height: 380px;
-  min-height: 340px;
+  height: 240px;
+  min-height: 180px;
   overflow: hidden;
 }
 
@@ -1825,15 +1825,16 @@ body {
    TERMINAL & I/O CONSOLE STYLES
    ========================================================================== */
 .console-section-wrapper {
-  margin-top: 16px;
+  margin-top: 14px;
   margin-bottom: 0;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  height: 480px !important;
-  min-height: 480px !important;
+  height: 410px !important;
+  min-height: 410px !important;
+  max-height: 410px !important;
   display: flex !important;
   flex-direction: column !important;
 }
@@ -1841,9 +1842,10 @@ body {
 .console-box {
   display: flex !important;
   flex-direction: column !important;
-  height: 480px !important;
-  min-height: 480px !important;
-  flex: 1 1 480px !important;
+  height: 410px !important;
+  min-height: 410px !important;
+  max-height: 410px !important;
+  flex: 1 1 410px !important;
 }
 
 .console-wrapper {
@@ -1920,10 +1922,10 @@ body {
 /* CRT Screen Wrapper */
 .crt-screen-wrapper {
   display: flex !important;
-  flex: 1 1 396px !important;
-  height: 396px !important;
-  min-height: 396px !important;
-  max-height: 396px !important;
+  flex: 1 1 330px !important;
+  height: 330px !important;
+  min-height: 330px !important;
+  max-height: 330px !important;
   background: #000000 !important;
   padding: 0 !important;
   position: relative !important;
@@ -1944,17 +1946,17 @@ body {
 .crt-screen-box {
   flex: 1 1 100% !important;
   height: 100% !important;
-  min-height: 396px !important;
-  max-height: 396px !important;
+  min-height: 330px !important;
+  max-height: 330px !important;
   background: #010409 !important;
   border: none !important;
   border-radius: 0 !important;
-  padding: 10px 14px !important;
+  padding: 6px 12px !important;
   overflow: auto !important;
   position: relative !important;
   font-family: 'JetBrains Mono', Consolas, monospace !important;
-  font-size: 11.5px !important;
-  line-height: 1.25 !important;
+  font-size: 11px !important;
+  line-height: 1.18 !important;
   letter-spacing: 0.5px !important;
   outline: none !important;
   cursor: text !important;
