@@ -176,11 +176,19 @@ export class ConsoleView {
   }
 
   clear(): void {
+    this.videoMode = 0x03;
     this.initBiosBanner();
     this.graphicsData.fill(0);
+    this.canvasCtx = null;
+    this.canvasImgData = null;
     this.logs = [];
     const output = this.container.querySelector('#console-output');
     if (output) output.innerHTML = '';
+    this.refreshCrtScreen();
+  }
+
+  setVideoMode(mode: number): void {
+    this.videoMode = mode;
     this.refreshCrtScreen();
   }
 
@@ -288,8 +296,29 @@ export class ConsoleView {
   private renderCrtContent(): string {
     if (this.videoMode === 0x13) {
       return `
-        <div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">
-          <canvas id="crt-graphics-canvas" width="320" height="200" style="width: 100%; max-width: 640px; aspect-ratio: 320/200; image-rendering: pixelated; display: block; border-radius: 4px; box-shadow: 0 0 25px rgba(0,0,0,0.9); background: #000000;"></canvas>
+        <div class="crt-graphics-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; min-height: 350px; padding: 4px; box-sizing: border-box;">
+          <!-- HUD Header Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 640px; margin-bottom: 6px; padding: 5px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e;"></span>
+              <span style="color: #38bdf8; font-weight: 700; font-size: 11px; letter-spacing: 0.5px;">VGA 320x200 (Mod 13h) • 256 Renk • VRAM 0xA0000</span>
+            </div>
+            <button id="btn-switch-text-mode" style="background: #1e293b; border: 1px solid #475569; color: #cbd5e1; font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 4px; cursor: pointer; transition: all 0.15s ease;" title="80x25 Standart Metin Moduna Geri Dön">
+              Metin Moduna (03h) Dön ↩
+            </button>
+          </div>
+
+          <!-- The Screen Canvas with authentic retro bezel -->
+          <div style="position: relative; width: 100%; max-width: 640px; aspect-ratio: 320/200; background: #000000; border: 2px solid #38bdf8; border-radius: 6px; overflow: hidden; box-shadow: 0 0 25px rgba(56, 189, 248, 0.25), inset 0 0 15px rgba(0, 0, 0, 0.9); box-sizing: border-box;">
+            <canvas id="crt-graphics-canvas" width="320" height="200" style="width: 100%; height: 100%; image-rendering: pixelated; display: block; background: #000000;"></canvas>
+            <div class="crt-scanlines" style="pointer-events: none;"></div>
+          </div>
+
+          <!-- Bottom Status Helper -->
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 640px; margin-top: 6px; font-size: 10.5px; color: #64748b; box-sizing: border-box;">
+            <span>X: 0..319 | Y: 0..199 | Renk: 0..255 (VGA DAC)</span>
+            <span style="color: #94a3b8;">INT 10h (AH=0Ch) veya ES:[DI] ile çizim yapılır</span>
+          </div>
         </div>
       `;
     }
@@ -385,20 +414,29 @@ export class ConsoleView {
         : 'IBM 5153 CRT MONİTÖR (80x25 Metin)';
     }
 
+    const content = this.container.querySelector('#crt-screen-content');
     if (this.videoMode === 0x13) {
-      const content = this.container.querySelector('#crt-screen-content');
       if (content && !content.querySelector('#crt-graphics-canvas')) {
         content.innerHTML = this.renderCrtContent();
         this.canvasCtx = null;
         this.canvasImgData = null;
+        this.bindMode13Events();
       }
       this.paintGraphicsCanvas();
     } else {
-      const content = this.container.querySelector('#crt-screen-content');
       if (content) {
         content.innerHTML = this.renderCrtContent();
       }
     }
+  }
+
+  private bindMode13Events(): void {
+    const btn = this.container.querySelector('#btn-switch-text-mode');
+    btn?.addEventListener('click', () => {
+      this.videoMode = 0x03;
+      this.initBiosBanner();
+      this.refreshCrtScreen();
+    });
   }
 
   private appendLog(text: string, level: LogLevel, time: string): void {

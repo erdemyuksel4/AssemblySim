@@ -965,6 +965,7 @@ export class App {
 
     this.updateStepBackState();
     this.updateCpuViews();
+    this.consoleView.clear();
     this.consoleView.updateVram(this.cpu.mem.data);
     this.consoleView.log('Bilgisayar (İşlemci ve RAM) sıfırlandı.', 'info');
   }
