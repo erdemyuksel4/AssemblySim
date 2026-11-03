@@ -104,12 +104,13 @@ export class ConsoleView {
       this.vramData[i * 2] = 0x20;     // ' '
       this.vramData[i * 2 + 1] = 0x07; // Light gray on black
     }
-    this.writeStringToVram(0, 0, 'IBM PC 5150 / 8086 CPU 4.77 MHz - BIOS v1.0', 0x0F);
-    this.writeStringToVram(1, 0, '640 KB Base Memory OK  |  BDA 0040h  |  VRAM 0xB800h (80x25 Metin)', 0x07);
-    this.writeStringToVram(2, 0, '----------------------------------------------------------------', 0x08);
-    this.writeStringToVram(3, 0, '8086 Web IDE hazir. F5 / RUN ile programinizi calistirabilirsiniz.', 0x0A);
-    this.writeStringToVram(5, 0, 'A:\\> ', 0x0E);
-    this.cursorRow = 5;
+    this.writeStringToVram(0, 0, 'IBM Personal Computer (Model 5150) - BIOS v1.0', 0x0F);
+    this.writeStringToVram(1, 0, '8086 CPU 4.77 MHz  |  640 KB Base Memory OK', 0x07);
+    this.writeStringToVram(2, 0, 'CGA/VGA Renkli Bagdastirici  |  VRAM 0xB800h (80x25 Metin)', 0x03);
+    this.writeStringToVram(3, 0, '----------------------------------------------------------------', 0x08);
+    this.writeStringToVram(4, 0, '8086 Bare-Metal IDE Hazir. F5: RUN (Calistir)  |  F10: NEXT (Adim)', 0x0A);
+    this.writeStringToVram(6, 0, 'A:\\> ', 0x0E);
+    this.cursorRow = 6;
     this.cursorCol = 5;
   }
 
@@ -232,19 +233,20 @@ export class ConsoleView {
 
   private render(): void {
     const isGraphics = this.videoMode === 0x13;
-    const modeTitle = isGraphics ? 'IBM CRT MONİTÖR (Mod 13h: 320x200 Grafik)' : 'IBM 5153 CRT MONİTÖR (80x25 Metin)';
+    const modeBadge = isGraphics ? '13h GRAFİK (320x200)' : '03h METİN (80x25)';
 
     this.container.innerHTML = `
-      <div class="console-box" style="display: flex; flex-direction: column; height: 410px; min-height: 410px; max-height: 410px; background: #0f172a; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-dark); box-sizing: border-box;">
-        <!-- Top Monitor Toolbar Bar -->
-        <div class="console-header-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; height: 38px; min-height: 38px; flex-shrink: 0; background: #1e293b; border-bottom: 1px solid #334155; box-sizing: border-box;">
+      <div class="console-box" style="display: flex; flex-direction: column; height: 350px; min-height: 320px; max-height: 360px; background: #0c1017; border-radius: 8px; overflow: hidden; border: 2px solid #1e293b; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); box-sizing: border-box;">
+        <!-- IBM 5153 Monitor Bezel Header -->
+        <div class="console-header-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; height: 36px; min-height: 36px; flex-shrink: 0; background: #161f2e; border-bottom: 2px solid #243044; box-sizing: border-box;">
           <div class="console-header-left" style="display: flex; align-items: center; gap: 8px;">
-            <span class="console-terminal-icon" style="font-size: 14px;">🖥️</span>
-            <span class="console-title" id="crt-monitor-title" style="font-size: 11.5px; font-weight: 700; color: #f8fafc; letter-spacing: 0.5px;">${modeTitle}</span>
-            <span class="console-status-badge ready" id="console-status-badge" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px; background: #059669; color: #ffffff; font-weight: 700;">HAZIR</span>
+            <span class="crt-power-led" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e;"></span>
+            <span class="console-title" style="font-size: 11px; font-weight: 800; color: #f1f5f9; letter-spacing: 0.8px;">IBM 5153 CRT MONİTÖR</span>
+            <span class="crt-mode-badge" id="crt-monitor-title" style="font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 3px; background: #1e293b; color: #38bdf8; border: 1px solid #334155;">${modeBadge}</span>
+            <span class="console-status-badge ready" id="console-status-badge" style="font-size: 9.5px; padding: 1px 6px; border-radius: 3px; background: #059669; color: #ffffff; font-weight: 700;">HAZIR</span>
 
             <!-- View Switcher (Monitör vs Sistem Logları) -->
-            <div class="monitor-tab-group" style="display: inline-flex; background: #0f172a; padding: 2px; border-radius: 6px; gap: 2px; border: 1px solid #334155; margin-left: 6px;">
+            <div class="monitor-tab-group" style="display: inline-flex; background: #090d14; padding: 2px; border-radius: 5px; gap: 2px; border: 1px solid #334155; margin-left: 6px;">
               <button class="btn-mon-tab ${this.activeViewMode === 'monitor' ? 'active' : ''}" data-mode="monitor" title="Orijinal CRT Monitörü">
                 🖥️ Monitör
               </button>
@@ -254,36 +256,36 @@ export class ConsoleView {
             </div>
           </div>
 
-          <div class="console-header-right" style="display: flex; align-items: center; gap: 8px;">
+          <div class="console-header-right" style="display: flex; align-items: center; gap: 6px;">
             <!-- Phosphor Palette Selector -->
             <div class="crt-mini-palettes" style="display: inline-flex; gap: 3px;">
               <button class="btn-mini-pal ${this.colorMode === 'vga' ? 'active' : ''}" data-pal="vga" title="CGA / RGB Renkli Monitör">CGA</button>
               <button class="btn-mini-pal ${this.colorMode === 'green' ? 'active' : ''}" data-pal="green" title="IBM 5151 Yeşil Fosfor Monitör">GRN</button>
               <button class="btn-mini-pal ${this.colorMode === 'amber' ? 'active' : ''}" data-pal="amber" title="Kehribar Fosfor Monitör">AMB</button>
             </div>
-            <button id="btn-console-clear" class="btn-console-clear" title="Ekranı ve Logları Temizle" style="padding: 2px 8px; font-size: 10.5px; background: #334155; border: 1px solid #475569; color: #e2e8f0; border-radius: 4px; cursor: pointer;">Temizle</button>
+            <button id="btn-console-clear" class="btn-console-clear" title="Ekranı ve Logları Temizle" style="padding: 2px 7px; font-size: 10px; background: #243044; border: 1px solid #3b4d66; color: #e2e8f0; border-radius: 4px; cursor: pointer;">Temizle</button>
           </div>
         </div>
 
         <!-- Body 1: Authentic Physical CRT Screen (80x25 Text or Mode 13h Canvas) -->
-        <div class="crt-screen-wrapper ${this.activeViewMode === 'monitor' ? 'active' : 'hidden'}" id="crt-view-wrapper" style="flex: 1 1 334px !important; height: 334px !important; min-height: 334px !important; max-height: 334px !important; position: relative; background: #000000; overflow: hidden; display: ${this.activeViewMode === 'monitor' ? 'flex' : 'none'} !important; flex-direction: column; box-sizing: border-box;">
-          <div class="crt-screen-box ${this.colorMode}" id="crt-screen-box" tabindex="0" style="flex: 1 1 100% !important; height: 100% !important; min-height: 334px !important; max-height: 334px !important; padding: 6px 12px; overflow: auto; position: relative; background: #010409; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-shadow: inset 0 0 35px rgba(0,0,0,0.98); box-sizing: border-box;">
+        <div class="crt-screen-wrapper" id="crt-view-wrapper" style="flex: 1 1 278px; height: 278px; min-height: 250px; position: relative; background: #000000; overflow: hidden; display: ${this.activeViewMode === 'monitor' ? 'flex' : 'none'}; flex-direction: column; box-sizing: border-box;">
+          <div class="crt-screen-box ${this.colorMode}" id="crt-screen-box" tabindex="0" style="flex: 1 1 100%; height: 100%; padding: 4px 8px; overflow: hidden; position: relative; background: #020408; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-shadow: inset 0 0 35px rgba(0,0,0,0.98); box-sizing: border-box;">
             <div class="crt-scanlines"></div>
             <div class="crt-glow"></div>
-            <div class="crt-content" id="crt-screen-content" style="position: relative; z-index: 2; font-size: 11px; line-height: 1.18; letter-spacing: 0.5px; min-width: 650px; min-height: 310px; user-select: none;">
+            <div class="crt-content" id="crt-screen-content" style="position: relative; z-index: 2; font-size: 10px; line-height: 10.5px; letter-spacing: 0.3px; width: 100%; height: 100%; user-select: none;">
               ${this.renderCrtContent()}
             </div>
           </div>
         </div>
 
         <!-- Body 2: Standard System & Compiler Diagnostics Log -->
-        <div class="console-body ${this.activeViewMode === 'logs' ? 'active' : 'hidden'}" id="console-output" style="flex: 1 1 334px; height: 334px; min-height: 334px; max-height: 334px; padding: 8px 12px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #020617; color: #cbd5e1; display: ${this.activeViewMode === 'logs' ? 'block' : 'none'}; box-sizing: border-box;"></div>
+        <div class="console-body" id="console-output" style="flex: 1 1 278px; height: 278px; min-height: 250px; padding: 8px 12px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #020617; color: #cbd5e1; display: ${this.activeViewMode === 'logs' ? 'block' : 'none'}; box-sizing: border-box;"></div>
 
         <!-- Bottom Hardware Keyboard Input Bar -->
-        <div class="console-input-wrap" id="console-input-wrap" style="display: flex; align-items: center; gap: 8px; padding: 4px 10px; height: 38px; min-height: 38px; flex-shrink: 0; background: #0f172a; border-top: 1px solid #1e293b; box-sizing: border-box;">
-          <span class="console-prompt-sym" style="color: #38bdf8; font-weight: 700; font-size: 13px;">❯</span>
-          <input type="text" id="console-input-field" class="console-input-field" placeholder="Klavye girdisi (Port 60h / INT 16h / INT 21h)..." autocomplete="off" style="flex: 1; background: #020617; border: 1px solid #334155; border-radius: 4px; padding: 3px 8px; color: #f8fafc; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; outline: none;" />
-          <button id="btn-console-send" class="btn-console-send" title="Gönder" style="padding: 3px 10px; font-size: 11px; font-weight: 600; background: #2563eb; color: #ffffff; border: none; border-radius: 4px; cursor: pointer;">Gönder</button>
+        <div class="console-input-wrap" id="console-input-wrap" style="display: flex; align-items: center; gap: 8px; padding: 3px 10px; height: 36px; min-height: 36px; flex-shrink: 0; background: #0c1017; border-top: 1px solid #1e293b; box-sizing: border-box;">
+          <span class="console-prompt-sym" style="color: #38bdf8; font-weight: 700; font-size: 12px;">❯</span>
+          <input type="text" id="console-input-field" class="console-input-field" placeholder="Klavye girdisi (Port 60h / INT 16h / INT 21h)..." autocomplete="off" style="flex: 1; background: #020617; border: 1px solid #243044; border-radius: 4px; padding: 3px 8px; color: #f8fafc; font-size: 11px; font-family: 'JetBrains Mono', monospace; outline: none;" />
+          <button id="btn-console-send" class="btn-console-send" title="Gönder" style="padding: 2px 10px; font-size: 11px; font-weight: 600; background: #2563eb; color: #ffffff; border: none; border-radius: 4px; cursor: pointer;">Gönder</button>
         </div>
       </div>
     `;
@@ -297,8 +299,8 @@ export class ConsoleView {
   private renderCrtContent(): string {
     if (this.videoMode === 0x13) {
       return `
-        <div class="crt-graphics-wrapper" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-height: 360px; box-sizing: border-box;">
-          <div style="position: relative; width: 100%; max-width: 580px; aspect-ratio: 320/200; background: #000000; border: 2px solid #334155; border-radius: 6px; overflow: hidden; box-shadow: 0 0 25px rgba(0, 0, 0, 0.9), inset 0 0 15px rgba(0, 0, 0, 0.95); box-sizing: border-box;">
+        <div class="crt-graphics-wrapper" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; box-sizing: border-box;">
+          <div style="position: relative; width: 100%; max-width: 440px; aspect-ratio: 320/200; background: #000000; border: 2px solid #243044; border-radius: 6px; overflow: hidden; box-shadow: 0 0 25px rgba(0, 0, 0, 0.9), inset 0 0 15px rgba(0, 0, 0, 0.95); box-sizing: border-box;">
             <canvas id="crt-graphics-canvas" width="320" height="200" style="width: 100%; height: 100%; image-rendering: pixelated; display: block; background: #000000;"></canvas>
             <div class="crt-scanlines" style="pointer-events: none;"></div>
           </div>
@@ -341,7 +343,7 @@ export class ConsoleView {
         const cursorClass = isCursor ? ' crt-hardware-cursor' : '';
         rowHtml += `<span class="${cursorClass.trim()}" style="color: ${color}; background-color: ${bg};">${this.escapeHtml(char)}</span>`;
       }
-      output += `<div class="crt-row" style="height: 12.2px; line-height: 12.2px; white-space: pre;">${rowHtml}</div>`;
+      output += `<div class="crt-row" style="height: 10.5px; line-height: 10.5px; white-space: pre;">${rowHtml}</div>`;
     }
     return output;
   }
@@ -393,8 +395,8 @@ export class ConsoleView {
     const titleEl = this.container.querySelector('#crt-monitor-title');
     if (titleEl) {
       titleEl.textContent = this.videoMode === 0x13
-        ? 'IBM CRT MONİTÖR (Mod 13h: 320x200 Grafik)'
-        : 'IBM 5153 CRT MONİTÖR (80x25 Metin)';
+        ? '13h GRAFİK (320x200)'
+        : '03h METİN (80x25)';
     }
 
     const content = this.container.querySelector('#crt-screen-content');
