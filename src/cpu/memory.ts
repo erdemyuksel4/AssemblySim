@@ -108,7 +108,6 @@ export class Memory {
     // -------------------------------------------------------------
     // 3. CGA/VGA Text Mode VRAM at 0xB8000 - 0xBA000 (80x25 = 4000 bytes)
     // -------------------------------------------------------------
-    // Pure clean bare-metal post-BIOS state (no artificial OS or DOS prompts)
     for (let i = 0; i < 2000; i++) {
       const vramPhys = 0xB8000 + i * 2;
       this.data[vramPhys] = 0x20;     // ' '
@@ -117,9 +116,25 @@ export class Memory {
       this.cellTypes[vramPhys + 1] = 2;
     }
 
-    // Set hardware cursor at top-left (row 0, col 0) in BDA
-    this.data[0x0450] = 0;
-    this.data[0x0451] = 0;
+    const vramBanner = [
+      { text: 'IBM PC 5150 / 8086 CPU 4.77 MHz - BIOS v1.0', attr: 0x0F, row: 0 },
+      { text: '640 KB Base Memory OK  |  BDA 0040h  |  VRAM 0xB800h (80x25 Metin)', attr: 0x07, row: 1 },
+      { text: '----------------------------------------------------------------', attr: 0x08, row: 2 },
+      { text: '8086 Web IDE hazir. F5 / RUN ile programinizi calistirabilirsiniz.', attr: 0x0A, row: 3 },
+      { text: 'A:\\> ', attr: 0x0E, row: 5 }
+    ];
+
+    for (const line of vramBanner) {
+      for (let c = 0; c < line.text.length; c++) {
+        const offset = 0xB8000 + (line.row * 80 + c) * 2;
+        this.data[offset] = line.text.charCodeAt(c);
+        this.data[offset + 1] = line.attr;
+      }
+    }
+
+    // Set hardware cursor at row 5, col 5 in BDA
+    this.data[0x0450] = 5;
+    this.data[0x0451] = 5;
 
     // -------------------------------------------------------------
     // 4. ROM BIOS at 0xF0000 - 0xFFFFF (64 KB)
