@@ -259,7 +259,7 @@ export class ConsoleView {
     const modeBadge = isGraphics ? '13h GRAFİK (320x200)' : '03h METİN (80x25)';
 
     this.container.innerHTML = `
-      <div class="console-box" style="display: flex; flex-direction: column; height: 350px; min-height: 320px; max-height: 360px; background: #0c1017; border-radius: 8px; overflow: hidden; border: 2px solid #1e293b; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); box-sizing: border-box;">
+      <div class="console-box" style="display: flex; flex-direction: column; height: 350px; min-height: 320px; max-height: 360px; background: #151a24; border-radius: 8px; overflow: hidden; border: 2px solid #2a3548; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5); box-sizing: border-box;">
         <!-- IBM 5153 Monitor Bezel Header -->
         <div class="console-header-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; height: 36px; min-height: 36px; flex-shrink: 0; background: #161f2e; border-bottom: 2px solid #243044; box-sizing: border-box;">
           <div class="console-header-left" style="display: flex; align-items: center; gap: 8px;">
@@ -291,8 +291,8 @@ export class ConsoleView {
         </div>
 
         <!-- Body 1: Authentic Physical CRT Screen (80x25 Text or Mode 13h Canvas) -->
-        <div class="crt-screen-wrapper" id="crt-view-wrapper" style="flex: 1 1 278px; height: 278px; min-height: 250px; position: relative; background: #000000; overflow: hidden; display: ${this.activeViewMode === 'monitor' ? 'flex' : 'none'}; flex-direction: column; box-sizing: border-box;">
-          <div class="crt-screen-box ${this.colorMode}" id="crt-screen-box" tabindex="0" style="flex: 1 1 100%; height: 100%; padding: 4px 8px; overflow: hidden; position: relative; background: #020408; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-shadow: inset 0 0 35px rgba(0,0,0,0.98); box-sizing: border-box;">
+        <div class="crt-screen-wrapper" id="crt-view-wrapper" style="flex: 1 1 278px; height: 278px; min-height: 250px; position: relative; background: #1e293b; padding: 6px 10px; overflow: hidden; display: ${this.activeViewMode === 'monitor' ? 'flex' : 'none'}; flex-direction: column; box-sizing: border-box; border-top: 1px solid #334155; border-bottom: 1px solid #0f172a;">
+          <div class="crt-screen-box ${this.colorMode}" id="crt-screen-box" tabindex="0" style="flex: 1 1 100%; height: 100%; min-height: 238px; padding: 4px 8px; overflow: hidden; position: relative; background: #000000; border: 2px solid #0f172a; border-radius: 10px; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-shadow: inset 0 0 35px rgba(0,0,0,0.98), inset 0 0 10px rgba(56, 189, 248, 0.05); box-sizing: border-box;">
             <div class="crt-scanlines"></div>
             <div class="crt-glow"></div>
             <div class="crt-content" id="crt-screen-content" style="position: relative; z-index: 2; font-size: 10px; line-height: 10.5px; letter-spacing: 0.3px; width: 100%; height: 100%; user-select: none;">
@@ -323,7 +323,7 @@ export class ConsoleView {
     if (this.videoMode === 0x13) {
       return `
         <div class="crt-graphics-wrapper" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; box-sizing: border-box; padding: 2px;">
-          <canvas id="crt-graphics-canvas" width="320" height="200" style="height: 100%; max-height: 268px; aspect-ratio: 320/200; image-rendering: pixelated; display: block; background: #000000; border: 1.5px solid #243044; border-radius: 4px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.95);"></canvas>
+          <canvas id="crt-graphics-canvas" width="320" height="200" style="width: 420px; height: 260px; max-width: 100%; max-height: 100%; aspect-ratio: 16/10; image-rendering: pixelated; display: block; background: #000000; border: 2px solid #38bdf8; border-radius: 6px; box-shadow: 0 0 25px rgba(56, 189, 248, 0.25);"></canvas>
         </div>
       `;
     }

@@ -859,6 +859,8 @@ export class App {
       return;
     }
 
+    document.getElementById('console-container')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
     this.isRunning = true;
     this.btnRun.disabled = true;
     this.btnNext.disabled = true;
