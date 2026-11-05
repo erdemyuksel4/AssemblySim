@@ -57,12 +57,10 @@ const VGA_256_RGB: [number, number, number][] = (() => {
 })();
 
 /**
- * Gerçekçi CRT Monitör ve 800x600 Yüksek Çözünürlüklü Retro Canvas
- * Tamamen sistem belleğine (Memory / 1 MB RAM) bağlıdır.
- * - Ekran modu doğrudan BDA 0040:0049h (0x0449) adresinden okunur.
- * - Metin Modu (03h): 0xB8000 VRAM alanını ve 0x0450/0x0451 imleç koordinatlarını yansıtır.
- * - Grafik Modu (13h): 0xA0000 VRAM alanını 800x600 retro piksel tuvaline kristal netliğinde rasterize eder.
- * - Canlı Tanılama Raporlayıcı: Canvasta yapılan tüm piksel ve mod değişikliklerini hem browser console'una hem UI'a raporlar.
+ * 100% Gerçek Canvas CRT Monitör (HTML Spans Yok, crt-row Yok)
+ * Ekran daima DOM'da var olan <canvas id="myCanvas" width="800" height="600"> tuvalidir.
+ * - Metin Modu (03h): 0xB8000 VRAM alanını ve donanımsal imleci doğrudan tuvale rasterize eder.
+ * - Grafik Modu (13h): 0xA0000 VRAM alanını (320x200) doğrudan 800x600 tuvale keskin pikselleştirir.
  */
 export class ConsoleView {
   private container: HTMLElement;
@@ -75,7 +73,7 @@ export class ConsoleView {
   private cursorBlink: boolean = true;
   private blinkTimer: ReturnType<typeof setInterval> | null = null;
 
-  // Çizim tamponları (320x200 VRAM -> 800x600 Keskin Retro Canvas)
+  // Çizim tamponları (320x200 VRAM -> 800x600 Keskin Canvas)
   private canvasCtx: CanvasRenderingContext2D | null = null;
   private offscreenCanvas: HTMLCanvasElement | null = null;
   private offscreenCtx: CanvasRenderingContext2D | null = null;
@@ -135,12 +133,10 @@ export class ConsoleView {
 
     this.vramDirty = true;
     this.refreshCrtScreen();
-    this.updateDiagBar();
   }
 
   /**
    * VRAM'e yazılan her baytı yakalayıp analiz eder ve raporlar.
-   * (Doğrudan CPU bellek yazma hattından tetiklenir)
    */
   recordVramChange(phys: number, val: number): void {
     // 0xA0000 - 0xAFA00 Mode 13h Grafik VRAM Alanı (64,000 bayt)
@@ -182,7 +178,7 @@ export class ConsoleView {
         }
       }
 
-      // Çok hızlı döngülerde tarayıcının kilitlenmemesi için toplu özet log
+      // Çok hızlı döngülerde toplu özet log
       this.recentChangeCount++;
       if (!this.bulkTimer && typeof setTimeout !== 'undefined') {
         this.bulkTimer = setTimeout(() => {
@@ -198,7 +194,6 @@ export class ConsoleView {
         }, 80);
       }
 
-      // UI Tanılama Çubuğunu Güncelle
       this.updateDiagBar();
     }
   }
@@ -233,9 +228,6 @@ export class ConsoleView {
     }
   }
 
-  /**
-   * Geçmiş çizim kayıtları listesini UI'a döker.
-   */
   private renderHistoryList(): void {
     const listEl = this.container.querySelector('#crt-canvas-history-list');
     if (!listEl) return;
@@ -305,18 +297,12 @@ export class ConsoleView {
       this.blinkTimer = setInterval(() => {
         this.cursorBlink = !this.cursorBlink;
         if (this.videoMode !== 0x13) {
-          const cursorEl = this.container.querySelector?.('.crt-hardware-cursor') as HTMLElement | null;
-          if (cursorEl) {
-            cursorEl.classList.toggle('cursor-hidden', !this.cursorBlink);
-          }
+          this.refreshCrtScreen();
         }
       }, 500);
     }
   }
 
-  /**
-   * IDE sistem mesajlarını tarayıcı konsoluna yazdırır.
-   */
   log(text: string, level: LogLevel = 'info'): void {
     if (typeof console !== 'undefined') {
       if (level === 'error') {
@@ -388,11 +374,6 @@ export class ConsoleView {
     this.memory.data[0x0451] = 0; // row 0
     this.memory.data[0x0449] = 0x03; // 80x25 metin modu
 
-    this.canvasCtx = null;
-    this.offscreenCanvas = null;
-    this.offscreenCtx = null;
-    this.offscreenImgData = null;
-
     this.activePixelCount = 0;
     this.lastPixelChange = null;
     this.canvasHistory = [];
@@ -406,7 +387,6 @@ export class ConsoleView {
     }
 
     this.refreshCrtScreen();
-    this.updateDiagBar();
   }
 
   /**
@@ -459,7 +439,7 @@ export class ConsoleView {
     const modeLabel = isGraphics ? '13h GRAFİK (320x200)' : '03h METİN (80x25)';
 
     this.container.innerHTML = `
-      <div class="console-box" style="display: flex; flex-direction: column; height: 100%; min-height: 290px; background: #0c1017; border-radius: 8px; overflow: hidden; border: 1px solid #1e293b; box-sizing: border-box;">
+      <div class="console-box" style="display: flex; flex-direction: column; height: 100%; min-height: 380px; background: #0c1017; border-radius: 8px; overflow: hidden; border: 1px solid #1e293b; box-sizing: border-box;">
         <!-- Monitör Sade Donanım Başlığı -->
         <div class="console-header-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; height: 32px; min-height: 32px; flex-shrink: 0; background: #111827; border-bottom: 1px solid #1f2937; box-sizing: border-box;">
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -474,7 +454,7 @@ export class ConsoleView {
           </div>
         </div>
 
-                <!-- Canlı Canvas Tanılama ve Değişiklik Raporu Çubuğu (Göz hizasında, en üstte) -->
+        <!-- Canlı Canvas Tanılama ve Değişiklik Raporu Çubuğu -->
         <div id="crt-canvas-diag-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; height: 28px; min-height: 28px; flex-shrink: 0; background: #0f172a; border-bottom: 1px solid #1e293b; font-size: 10.5px; font-family: 'JetBrains Mono', Consolas, monospace; color: #94a3b8; user-select: none; box-sizing: border-box;">
           <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
             <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 6px #38bdf8;"></span>
@@ -492,16 +472,9 @@ export class ConsoleView {
           <div id="crt-canvas-history-list" style="display: flex; flex-direction: column; gap: 3px;"></div>
         </div>
 
-        <!-- CRT Ekranı (Doğrudan VRAM'i yansıtır) -->
-        <div class="crt-screen-wrapper" style="flex: 1 1 auto; min-height: 220px; position: relative; background: #000000; padding: 4px; overflow: hidden; display: flex; flex-direction: column; box-sizing: border-box;">
-          <div class="crt-screen-box vga" id="crt-screen-box" tabindex="0" style="flex: 1 1 100%; height: 100%; min-height: 210px; padding: 4px 6px; overflow: hidden; position: relative; background: #000000; border-radius: 4px; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-sizing: border-box; display: flex; flex-direction: column;">
-            <div class="crt-scanlines"></div>
-            <div class="crt-glow"></div>
-            <div class="crt-content" id="crt-screen-content" style="position: relative; z-index: 2; font-size: 10px; line-height: 10.5px; letter-spacing: 0.3px; width: 100%; height: 100%; min-height: 200px; flex: 1; user-select: none; display: flex; flex-direction: column;">
-              ${this.renderCrtContent()}
-            </div>
-          </div>
-        </div>
+        <!-- CRT Ekranı: DAİMA VE BİZZAT <canvas id="myCanvas"> ELEMANIDIR -->
+        <div class="crt-screen-wrapper" style="flex: 1 1 auto; min-height: 240px; position: relative; background: #000000; padding: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+          <canvas id="myCanvas" class="crt-graphics-canvas" width="800" height="600" style="width: 100%; max-width: 800px; height: auto; max-height: 280px; aspect-ratio: 4/3; object-fit: contain; image-rendering: pixelated; display: block; background: #000000; border: 2px solid #38bdf8; border-radius: 4px; box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);"></canvas>
         </div>
 
         <!-- Alt Klavye Girdi Çubuğu -->
@@ -514,60 +487,95 @@ export class ConsoleView {
     `;
 
     this.bindEvents();
-    if (this.videoMode === 0x13) {
-      this.paintGraphicsCanvas();
-    }
+    this.refreshCrtScreen();
   }
 
-  private renderCrtContent(): string {
-    if (this.videoMode === 0x13) {
-      return `
-        <div class="crt-graphics-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; min-height: 200px; flex: 1; box-sizing: border-box; overflow: hidden; padding: 2px;">
-          <canvas id="myCanvas" class="crt-graphics-canvas" width="800" height="600" style="width: auto; max-width: 100%; height: auto; max-height: 260px; aspect-ratio: 4/3; object-fit: contain; image-rendering: pixelated; display: block; background: #000000; border: 2px solid #38bdf8; border-radius: 4px; box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);"></canvas>
-        </div>
-      `;
+  private refreshCrtScreen(): void {
+    const titleEl = this.container.querySelector?.('#crt-monitor-title');
+    if (titleEl) {
+      titleEl.textContent = this.videoMode === 0x13
+        ? '13h GRAFİK (320x200)'
+        : '03h METİN (80x25)';
     }
 
-    let output = '';
-    const cursorCol = Math.min(79, this.memory.data[0x0450] || 0);
-    const cursorRow = Math.min(24, this.memory.data[0x0451] || 0);
-
-    // 80x25 Standart Metin Modu (0xB8000)
-    for (let row = 0; row < 25; row++) {
-      let rowHtml = '';
-      for (let col = 0; col < 80; col++) {
-        const offset = 0xB8000 + (row * 80 + col) * 2;
-        const charCode = this.memory.data[offset] ?? 32;
-        const attr = this.memory.data[offset + 1] ?? 0x07;
-        const char = (charCode < 32 || charCode > 126) ? (charCode === 0 ? ' ' : '•') : String.fromCharCode(charCode);
-
-        const isCursor = (row === cursorRow && col === cursorCol);
-        const fg = attr & 0x0F;
-        const bgAttr = (attr >> 4) & 0x07;
-        const color = CGA_PALETTE[fg] || '#ffffff';
-        const bg = bgAttr === 0 ? 'transparent' : (CGA_PALETTE[bgAttr] || 'transparent');
-
-        const cursorClass = isCursor ? ' crt-hardware-cursor' : '';
-        rowHtml += `<span class="${cursorClass.trim()}" style="color: ${color}; background-color: ${bg};">${this.escapeHtml(char)}</span>`;
-      }
-      output += `<div class="crt-row" style="height: 10.5px; line-height: 10.5px; white-space: pre;">${rowHtml}</div>`;
-    }
-    return output;
-  }
-
-  private paintGraphicsCanvas(): void {
     const canvas = (this.container.querySelector?.('#myCanvas') || this.container.querySelector?.('#crt-graphics-canvas')) as HTMLCanvasElement | null;
     if (!canvas) return;
 
     if (!this.canvasCtx || this.canvasCtx.canvas !== canvas) {
       this.canvasCtx = canvas.getContext?.('2d') ?? null;
     }
-    if (!this.canvasCtx) {
-      if (typeof console !== 'undefined' && console.error) {
-        console.error('[CANVAS HATA] #myCanvas 2D Context alınamadı!');
-      }
-      return;
+    if (!this.canvasCtx) return;
+
+    if (this.videoMode === 0x13) {
+      this.paintGraphicsCanvas(canvas);
+    } else {
+      this.paintTextCanvas(canvas);
     }
+
+    this.updateDiagBar();
+  }
+
+  /**
+   * 80x25 Metin Modunu doğrudan 800x600 tuval üzerine çizer.
+   * (HTML spans yok, DOM çöplüğü yok!)
+   */
+  private paintTextCanvas(canvas: HTMLCanvasElement): void {
+    const ctx = this.canvasCtx;
+    if (!ctx) return;
+
+    const cellW = 10; // 80 cols * 10 = 800px
+    const cellH = 24; // 25 rows * 24 = 600px
+
+    // Arka planı temizle
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.font = '16px "JetBrains Mono", Consolas, monospace';
+    ctx.textBaseline = 'top';
+
+    const cursorCol = Math.min(79, this.memory.data[0x0450] || 0);
+    const cursorRow = Math.min(24, this.memory.data[0x0451] || 0);
+
+    for (let row = 0; row < 25; row++) {
+      for (let col = 0; col < 80; col++) {
+        const offset = 0xB8000 + (row * 80 + col) * 2;
+        const charCode = this.memory.data[offset] ?? 32;
+        const attr = this.memory.data[offset + 1] ?? 0x07;
+
+        const fg = attr & 0x0F;
+        const bgAttr = (attr >> 4) & 0x07;
+        const fgColor = CGA_PALETTE[fg] || '#ffffff';
+        const bgColor = bgAttr === 0 ? null : (CGA_PALETTE[bgAttr] || null);
+
+        const x = col * cellW;
+        const y = row * cellH;
+
+        if (bgColor) {
+          ctx.fillStyle = bgColor;
+          ctx.fillRect(x, y, cellW, cellH);
+        }
+
+        if (charCode !== 0 && charCode !== 32) {
+          const char = (charCode < 32 || charCode > 126) ? '•' : String.fromCharCode(charCode);
+          ctx.fillStyle = fgColor;
+          ctx.fillText(char, x + 1, y + 4);
+        }
+
+        // Donanımsal imleç
+        if (row === cursorRow && col === cursorCol && this.cursorBlink) {
+          ctx.fillStyle = fgColor;
+          ctx.fillRect(x, y + cellH - 3, cellW, 3);
+        }
+      }
+    }
+  }
+
+  /**
+   * Mode 13h Grafik Modunu doğrudan 800x600 tuval üzerine rasterize eder.
+   */
+  private paintGraphicsCanvas(canvas: HTMLCanvasElement): void {
+    const ctx = this.canvasCtx;
+    if (!ctx) return;
 
     // 1. Sanal 320x200 VRAM ImageData tamponunu hazırla
     if (!this.offscreenCanvas && typeof document !== 'undefined') {
@@ -602,14 +610,14 @@ export class ConsoleView {
 
       this.offscreenCtx.putImageData(this.offscreenImgData, 0, 0);
 
-      // 2. 320x200 sanal VRAM'i 800x600 ana canvas'a pürüzsüz & kristal keskinlikte (nearest-neighbor) çiz
-      this.canvasCtx.imageSmoothingEnabled = false;
-      this.canvasCtx.drawImage(this.offscreenCanvas!, 0, 0, canvas.width, canvas.height);
+      // 2. 320x200 sanal VRAM'i 800x600 ana canvas'a pürüzsüz & kristal keskinlikte çiz
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(this.offscreenCanvas!, 0, 0, canvas.width, canvas.height);
     } else {
-      // Node/Vitest mock fallback
-      if (typeof this.canvasCtx.createImageData === 'function') {
-        const imgData = this.canvasCtx.createImageData(canvas.width, canvas.height);
-        this.canvasCtx.putImageData?.(imgData, 0, 0);
+      // Mock fallback
+      if (typeof ctx.createImageData === 'function') {
+        const imgData = ctx.createImageData(canvas.width, canvas.height);
+        ctx.putImageData?.(imgData, 0, 0);
       }
     }
 
@@ -626,36 +634,6 @@ export class ConsoleView {
         console.warn('[CANVAS UYARI] VRAM (0xA0000) tamamen 00 (boş/siyah). #myCanvas üzerinde hiçbir piksel görünmez.');
       }
     }
-
-    this.updateDiagBar();
-  }
-
-  private refreshCrtScreen(): void {
-    const titleEl = this.container.querySelector?.('#crt-monitor-title');
-    if (titleEl) {
-      titleEl.textContent = this.videoMode === 0x13
-        ? '13h GRAFİK (320x200)'
-        : '03h METİN (80x25)';
-    }
-
-    const crtBox = this.container.querySelector?.('#crt-screen-box');
-    if (crtBox) {
-      crtBox.classList.toggle('graphics-mode', this.videoMode === 0x13);
-    }
-
-    const content = this.container.querySelector?.('#crt-screen-content');
-    if (this.videoMode === 0x13) {
-      if (content && !content.querySelector('#myCanvas') && !content.querySelector('#crt-graphics-canvas')) {
-        content.innerHTML = this.renderCrtContent();
-        this.canvasCtx = null;
-      }
-      this.paintGraphicsCanvas();
-    } else {
-      if (content) {
-        content.innerHTML = this.renderCrtContent();
-      }
-    }
-    this.updateDiagBar();
   }
 
   private bindEvents(): void {
@@ -693,14 +671,5 @@ export class ConsoleView {
         handleSend();
       }
     });
-  }
-
-  private escapeHtml(str: string): string {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
   }
 }
