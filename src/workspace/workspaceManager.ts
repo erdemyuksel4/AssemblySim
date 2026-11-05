@@ -1,6 +1,7 @@
 import { WorkspaceFile, WorkspaceProject, ProjectSummary } from './types.js';
 
-const STORAGE_PROJECT_KEY = 'assemblysim_project_v6';
+const STORAGE_PROJECT_KEY = 'assemblysim_project_v7';
+const LEGACY_PROJECT_V6 = 'assemblysim_project_v6';
 const STORAGE_PROJECTS_LIST_KEY = 'assemblysim_projects_list_v6';
 const STORAGE_PROJECT_PREFIX = 'assemblysim_project_data_';
 const LEGACY_PROJECT_V5 = 'assemblysim_project_v5';
@@ -9,13 +10,30 @@ const LEGACY_PROJECT_V3 = 'assemblysim_project_v3';
 const LEGACY_DOCS_KEY = 'assemblysim_docs_v2';
 const LEGACY_V1_KEY = 'assemblysim_workspace_docs_v1';
 
-export const DEFAULT_MAIN_CODE = `; 8086 Assembly Program
+export const DEFAULT_MAIN_CODE = `; ==========================================================
+; 8086 Assembly - VGA Mode 13h (320x200 256 Renk) Cizim
+; ==========================================================
 ORG 100H
 
 START:
-    MOV AX, 0
-    ; Kodlarinizi buraya yazin...
+    ; 1. VGA Mode 13h (320x200, 256 Renk Grafik) Baslat
+    MOV AX, 0013H
+    INT 10H
 
+    ; 2. Ekrana Parlak Sari Yatay Cizgi Ciz (Y=100, X=50..250)
+    MOV DX, 100         ; Y Satir
+    MOV CX, 50          ; X Sutun Baslangic
+    MOV AL, 0EH         ; Renk (0Eh = Parlak Sari)
+
+CIZIM_DONGUSU:
+    MOV AH, 0CH         ; BIOS Piksel Ciz
+    MOV BH, 0           ; Sayfa 0
+    INT 10H
+    INC CX
+    CMP CX, 250
+    JNE CIZIM_DONGUSU
+
+    ; 3. Islemciyi durdur
     HLT
 `;
 
@@ -305,15 +323,10 @@ export class WorkspaceManager {
       return;
     }
 
-    // Clean up legacy console.asm if it contains default mini-shell code
-    const legacyConsoleIdx = this.project.files.findIndex(
-      f => f.name === 'console.asm' && f.code.includes('MSG_BANNER')
+    // Purge any legacy console.asm or artificial shell files
+    this.project.files = this.project.files.filter(
+      f => f.name !== 'console.asm' && !f.code.includes('MSG_BANNER') && !f.code.includes('8086 INTERAKTIF KOMUT KONSOLU')
     );
-    if (legacyConsoleIdx !== -1) {
-      const consoleFile = this.project.files[legacyConsoleIdx];
-      this.project.files.splice(legacyConsoleIdx, 1);
-      this.project.openFileIds = this.project.openFileIds.filter(id => id !== consoleFile.id);
-    }
 
     // Clean up legacy bootloader if it's the default baremetal template
     const legacyBoot = this.project.files.find(

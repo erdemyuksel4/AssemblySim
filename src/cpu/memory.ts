@@ -208,6 +208,7 @@ export class Memory {
     if (phys >= 0xB8000 && phys < 0xBA000) {
       this.onVramWrite?.(phys - 0xB8000, newVal);
     } else if (phys >= 0xA0000 && phys < 0xB0000) {
+      this.data[0x0449] = 0x13;
       this.onVramWrite?.(phys, newVal);
     }
     return oldVal;
@@ -220,6 +221,7 @@ export class Memory {
     if (p >= 0xB8000 && p < 0xBA000) {
       this.onVramWrite?.(p - 0xB8000, val & 0xFF);
     } else if (p >= 0xA0000 && p < 0xB0000) {
+      this.data[0x0449] = 0x13;
       this.onVramWrite?.(p, val & 0xFF);
     }
   }

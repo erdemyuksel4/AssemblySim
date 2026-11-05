@@ -2,6 +2,7 @@ export type LogLevel = 'info' | 'success' | 'warn' | 'error' | 'stdout' | 'port'
 
 export interface ConsoleOptions {
   onInput?: (input: string) => void;
+  onVideoModeChange?: (mode: number) => void;
 }
 
 const CGA_PALETTE = [
@@ -51,6 +52,7 @@ export class ConsoleView {
   private container: HTMLElement;
   private logs: { text: string; level: LogLevel; timestamp: string }[] = [];
   private onInput?: (input: string) => void;
+  private onVideoModeChange?: (mode: number) => void;
   private isWaiting: boolean = false;
 
   // View Mode: 'monitor' (Tek CRT Monitör) | 'logs' (Sistem Logları)
@@ -83,6 +85,7 @@ export class ConsoleView {
   constructor(container: HTMLElement, options?: ConsoleOptions) {
     this.container = container;
     this.onInput = options?.onInput;
+    this.onVideoModeChange = options?.onVideoModeChange;
 
     this.initBiosBanner();
     this.render();
@@ -220,8 +223,10 @@ export class ConsoleView {
    */
   updateVram(memoryAll: Uint8Array): void {
     if (memoryAll.length >= 0x0450) {
-      const mode = memoryAll[0x0449] || 0x03;
-      this.videoMode = mode;
+      const mode = memoryAll[0x0449];
+      if (mode === 0x13) {
+        this.videoMode = 0x13;
+      }
       this.cursorCol = Math.min(79, memoryAll[0x0450] || 0);
       this.cursorRow = Math.min(24, memoryAll[0x0451] || 0);
     }
@@ -233,7 +238,18 @@ export class ConsoleView {
 
     // Graphics VRAM for Mode 13h (0xA0000 - 0xAFA00, 64000 bytes)
     if (memoryAll.length >= 0xA0000 + 64000) {
-      this.graphicsData.set(memoryAll.subarray(0xA0000, 0xA0000 + 64000));
+      const newGfx = memoryAll.subarray(0xA0000, 0xA0000 + 64000);
+      this.graphicsData.set(newGfx);
+
+      // Otomatik grafik tespiti: 0xA0000 alanına piksel yazılmışsa ekranı grafiğe al
+      if (this.videoMode !== 0x13) {
+        for (let i = 0; i < 64000; i += 32) {
+          if (newGfx[i] !== 0) {
+            this.videoMode = 0x13;
+            break;
+          }
+        }
+      }
     }
 
     this.vramDirty = true;
@@ -282,6 +298,9 @@ export class ConsoleView {
               </button>
               <button class="btn-vmode ${this.videoMode === 0x13 ? 'active' : ''}" id="btn-vmode-gfx" data-vmode="13" title="320x200 256-Renk VGA Mod 13h Grafik Modu (0xA000)">
                 🎨 Grafik (320x200)
+              </button>
+              <button class="btn-vmode" id="btn-vmode-testdraw" title="Ekrana doğrudan retro test deseni çizerek grafiği doğrula">
+                ⚡ Çizim Testi
               </button>
             </div>
           </div>
@@ -379,8 +398,9 @@ export class ConsoleView {
     const canvas = this.container.querySelector('#crt-graphics-canvas') as HTMLCanvasElement | null;
     if (!canvas) return;
 
-    if (!this.canvasCtx) {
+    if (!this.canvasCtx || this.canvasCtx.canvas !== canvas) {
       this.canvasCtx = canvas.getContext('2d');
+      this.canvasImgData = null;
     }
     if (!this.canvasCtx) return;
 
@@ -511,11 +531,34 @@ export class ConsoleView {
         if (vmode === '03') {
           this.videoMode = 0x03;
           this.refreshCrtScreen();
+          this.onVideoModeChange?.(0x03);
         } else if (vmode === '13') {
           this.videoMode = 0x13;
           this.refreshCrtScreen();
+          this.onVideoModeChange?.(0x13);
         }
       });
+    });
+
+    // One-click Graphics Canvas Verification
+    const testDrawBtn = this.container.querySelector('#btn-vmode-testdraw');
+    testDrawBtn?.addEventListener('click', () => {
+      this.videoMode = 0x13;
+      for (let y = 0; y < 200; y++) {
+        for (let x = 0; x < 320; x++) {
+          const idx = y * 320 + x;
+          if (y < 40) {
+            this.graphicsData[idx] = Math.floor(x / 20) % 16;
+          } else if (y >= 60 && y < 140 && x >= 80 && x < 240) {
+            const border = (x === 80 || x === 239 || y === 60 || y === 139);
+            this.graphicsData[idx] = border ? 0x0F : (0x20 + (Math.floor(x / 4) ^ Math.floor(y / 4)) % 216);
+          } else {
+            this.graphicsData[idx] = ((x % 20 === 0) || (y % 20 === 0)) ? 0x08 : 0x00;
+          }
+        }
+      }
+      this.refreshCrtScreen();
+      this.onVideoModeChange?.(0x13);
     });
 
     // Color palette switcher (CGA, Green, Amber)

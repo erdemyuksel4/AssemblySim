@@ -353,6 +353,9 @@ export class App {
         if (!this.isRunning && !this.cpu.halted) {
           this.handleRun();
         }
+      },
+      onVideoModeChange: (mode) => {
+        this.cpu.mem.writeByte(0, 0x0449, mode, false);
       }
     });
 
@@ -735,6 +738,10 @@ export class App {
         activeFileOrigin = origin;
       }
 
+      // Aktif olmayan dosya aktif dosyanın origin adresini ezmesin
+      if (currentActiveFile && file.id !== currentActiveFile.id && origin === activeFileOrigin) {
+        continue;
+      }
       // 1 MB RAM'e doğrudan baytları yaz
       this.cpu.mem.loadBytes(this.cpu.regs.cs, origin, res.bytes, 'code');
 
