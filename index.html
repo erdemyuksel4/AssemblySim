@@ -11,9 +11,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-      // Clear lingering service workers or caches if any
+        <script>
+      // Force cache clearing and purge obsolete storage across versions
+      const APP_VERSION = '20261105_v7_clean';
       if (typeof window !== 'undefined') {
+        try {
+          const currentVer = localStorage.getItem('assemblysim_build_version');
+          if (currentVer !== APP_VERSION) {
+            localStorage.setItem('assemblysim_build_version', APP_VERSION);
+            // Purge outdated project storage so clean bare-metal Mode 13h template loads
+            localStorage.removeItem('assemblysim_project_v6');
+            localStorage.removeItem('assemblysim_project_v5');
+            localStorage.removeItem('assemblysim_project_v4');
+            localStorage.removeItem('assemblysim_docs_v2');
+            localStorage.removeItem('assemblysim_workspace_docs_v1');
+          }
+        } catch (e) {}
+
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(function(regs) {
             for (var r of regs) r.unregister();

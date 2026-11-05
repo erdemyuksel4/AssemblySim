@@ -237,13 +237,7 @@ export class WorkspaceManager {
     }
 
     try {
-      let saved = storage.getItem(STORAGE_PROJECT_KEY);
-      if (!saved) {
-        saved = storage.getItem(LEGACY_PROJECT_V5);
-      }
-      if (!saved) {
-        saved = storage.getItem(LEGACY_PROJECT_V4);
-      }
+      const saved = storage.getItem(STORAGE_PROJECT_KEY);
       if (saved) {
         const parsed: WorkspaceProject = JSON.parse(saved);
         if (parsed && Array.isArray(parsed.files) && parsed.files.length > 0) {
@@ -251,40 +245,6 @@ export class WorkspaceManager {
           this.ensureIntegrity();
           this.syncProjectInList();
           return;
-        }
-      }
-
-      // Check legacy v2 docs
-      const legacyDocs = storage.getItem(LEGACY_DOCS_KEY) || storage.getItem(LEGACY_V1_KEY);
-      if (legacyDocs) {
-        const parsedLegacy = JSON.parse(legacyDocs);
-        if (Array.isArray(parsedLegacy) && parsedLegacy.length > 0) {
-          const files: WorkspaceFile[] = parsedLegacy
-            .filter((d: any) => d && typeof d.code === 'string')
-            .map((d: any, idx: number) => ({
-              id: String(d.id || `file-${idx}`),
-              name: String(d.title || `file${idx + 1}.asm`),
-              code: String(d.code),
-              isEntry: idx === 0,
-              createdAt: Number(d.createdAt || Date.now()),
-              lastModified: Number(d.lastModified || Date.now()),
-              editorScroll: d.editorScroll
-            }));
-
-          if (files.length > 0) {
-            this.project = {
-              id: 'project-default',
-              name: '8086 Projesi',
-              entryFileId: files[0].id,
-              activeFileId: files[0].id,
-              openFileIds: files.map(f => f.id),
-              files,
-              createdAt: Date.now(),
-              lastModified: Date.now()
-            };
-            this.saveToStorage();
-            return;
-          }
         }
       }
     } catch {
@@ -321,6 +281,12 @@ export class WorkspaceManager {
     if (!this.project.files || this.project.files.length === 0) {
       this.initDefaultProject();
       return;
+    }
+
+    // Auto-upgrade empty stub to Mode 13h drawing code
+    const mainFile = this.project.files.find(f => f.name === 'main.asm' || f.isEntry);
+    if (mainFile && mainFile.code.includes('MOV AX, 0') && mainFile.code.includes('Kodlarinizi buraya yazin')) {
+      mainFile.code = DEFAULT_MAIN_CODE;
     }
 
     // Purge any legacy console.asm or artificial shell files
