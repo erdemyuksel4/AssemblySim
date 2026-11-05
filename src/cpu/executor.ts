@@ -1880,8 +1880,10 @@ export class Executor {
             this.writeTeletype(this.regs.al);
             consoleText = String.fromCharCode(this.regs.al);
           } else if (ah === 0x0C) { // Write Graphics Pixel (AL=Color, BH=Page, CX=X, DX=Y)
-            const x = this.regs.cx;
-            const y = this.regs.dx;
+            let x = this.regs.cx;
+            let y = this.regs.dx;
+            if (x >= 320) x = x % 320;
+            if (y >= 200) y = y % 200;
             if (x >= 0 && x < 320 && y >= 0 && y < 200) {
               const offset = y * 320 + x;
               const isXor = (this.regs.al & 0x80) !== 0;

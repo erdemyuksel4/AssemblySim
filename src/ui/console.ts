@@ -46,11 +46,11 @@ const VGA_256_RGB: [number, number, number][] = (() => {
 })();
 
 /**
- * Sade, Gerçekçi CRT Monitör
+ * Gerçekçi CRT Monitör ve 800x600 Yüksek Çözünürlüklü Retro Canvas
  * Tamamen sistem belleğine (Memory / 1 MB RAM) bağlıdır.
  * - Ekran modu doğrudan BDA 0040:0049h (0x0449) adresinden okunur.
  * - Metin Modu (03h): 0xB8000 VRAM alanını ve 0x0450/0x0451 imleç koordinatlarını yansıtır.
- * - Grafik Modu (13h): 0xA0000 VRAM alanını 320x200 piksel olarak canvas'a çizer.
+ * - Grafik Modu (13h): 0xA0000 VRAM alanını 800x600 retro piksel tuvaline kristal netliğinde rasterize eder.
  */
 export class ConsoleView {
   private container: HTMLElement;
@@ -63,9 +63,11 @@ export class ConsoleView {
   private cursorBlink: boolean = true;
   private blinkTimer: ReturnType<typeof setInterval> | null = null;
 
-  // Mode 13h Canvas tamponu
+  // Çizim tamponları (320x200 VRAM -> 800x600 Keskin Retro Canvas)
   private canvasCtx: CanvasRenderingContext2D | null = null;
-  private canvasImgData: ImageData | null = null;
+  private offscreenCanvas: HTMLCanvasElement | null = null;
+  private offscreenCtx: CanvasRenderingContext2D | null = null;
+  private offscreenImgData: ImageData | null = null;
 
   // Render optimizasyonu (requestAnimationFrame)
   private vramDirty: boolean = false;
@@ -154,11 +156,11 @@ export class ConsoleView {
   }
 
   log(_text: string, _level: LogLevel = 'info'): void {
-    // Monitör saf donanım ekranı olduğu için log kalabalığı ekrana basılmaz
+    // Monitör saf donanım ekranıdır
   }
 
   appendStdout(_charOrStr: string): void {
-    // Donanım düzeyinde çıktı VRAM veya I/O portları üzerinden yapılır
+    // VRAM veya I/O portları üzerinden yapılır
   }
 
   isWaitingForInput(): boolean {
@@ -215,7 +217,9 @@ export class ConsoleView {
     this.memory.data[0x0449] = 0x03; // 80x25 metin modu
 
     this.canvasCtx = null;
-    this.canvasImgData = null;
+    this.offscreenCanvas = null;
+    this.offscreenCtx = null;
+    this.offscreenImgData = null;
 
     this.refreshCrtScreen();
   }
@@ -229,7 +233,7 @@ export class ConsoleView {
       this.memory.data.set(memoryAll.subarray(0, copyLen));
     }
 
-    // 0xA0000 grafik VRAM'ine piksel yazılmışsa tek bir pikseli dahi atlamadan tam kontrol et
+    // 0xA0000 grafik VRAM'inde çizilmiş piksel var mı tam kontrol et
     if (this.videoMode !== 0x13) {
       const u32 = new Uint32Array(this.memory.data.buffer, 0xA0000, 16000);
       for (let i = 0; i < 16000; i++) {
@@ -312,7 +316,7 @@ export class ConsoleView {
     if (this.videoMode === 0x13) {
       return `
         <div class="crt-graphics-wrapper" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-height: 200px; flex: 1; box-sizing: border-box;">
-          <canvas id="crt-graphics-canvas" width="320" height="200" style="width: 320px; height: 200px; max-width: 100%; max-height: 100%; aspect-ratio: 16/10; image-rendering: pixelated; display: block; background: #000000; border: 2px solid #38bdf8; border-radius: 4px; box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);"></canvas>
+          <canvas id="myCanvas" class="crt-graphics-canvas" width="800" height="600" style="width: 100%; max-width: 800px; height: 100%; max-height: 260px; aspect-ratio: 4/3; image-rendering: pixelated; display: block; background: #000000; border: 2px solid #38bdf8; border-radius: 4px; box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);"></canvas>
         </div>
       `;
     }
@@ -345,36 +349,52 @@ export class ConsoleView {
   }
 
   private paintGraphicsCanvas(): void {
-    const canvas = this.container.querySelector?.('#crt-graphics-canvas') as HTMLCanvasElement | null;
+    const canvas = (this.container.querySelector?.('#myCanvas') || this.container.querySelector?.('#crt-graphics-canvas')) as HTMLCanvasElement | null;
     if (!canvas) return;
 
     if (!this.canvasCtx || this.canvasCtx.canvas !== canvas) {
       this.canvasCtx = canvas.getContext?.('2d') ?? null;
-      this.canvasImgData = null;
     }
     if (!this.canvasCtx) return;
 
-    if (!this.canvasImgData && typeof this.canvasCtx.createImageData === 'function') {
-      this.canvasImgData = this.canvasCtx.createImageData(320, 200);
-    }
-    if (!this.canvasImgData) return;
-
-    const data = this.canvasImgData.data;
-
-    // 0xA0000 fiziksel grafik VRAM'inden oku
-    for (let i = 0; i < 64000; i++) {
-      const colorIdx = this.memory.data[0xA0000 + i];
-      const [r, g, b] = VGA_256_RGB[colorIdx] || [0, 0, 0];
-
-      const pixelOffset = i * 4;
-      data[pixelOffset] = r;
-      data[pixelOffset + 1] = g;
-      data[pixelOffset + 2] = b;
-      data[pixelOffset + 3] = 255;
+    // 1. Sanal 320x200 VRAM ImageData tamponunu hazırla
+    if (!this.offscreenCanvas && typeof document !== 'undefined') {
+      this.offscreenCanvas = document.createElement('canvas');
+      this.offscreenCanvas.width = 320;
+      this.offscreenCanvas.height = 200;
+      this.offscreenCtx = this.offscreenCanvas.getContext('2d');
     }
 
-    if (typeof this.canvasCtx.putImageData === 'function') {
-      this.canvasCtx.putImageData(this.canvasImgData, 0, 0);
+    if (this.offscreenCtx && !this.offscreenImgData && typeof this.offscreenCtx.createImageData === 'function') {
+      this.offscreenImgData = this.offscreenCtx.createImageData(320, 200);
+    }
+
+    if (this.offscreenCtx && this.offscreenImgData) {
+      const data = this.offscreenImgData.data;
+
+      // 0xA0000 fiziksel grafik VRAM'inden oku
+      for (let i = 0; i < 64000; i++) {
+        const colorIdx = this.memory.data[0xA0000 + i];
+        const [r, g, b] = VGA_256_RGB[colorIdx] || [0, 0, 0];
+
+        const pixelOffset = i * 4;
+        data[pixelOffset] = r;
+        data[pixelOffset + 1] = g;
+        data[pixelOffset + 2] = b;
+        data[pixelOffset + 3] = 255;
+      }
+
+      this.offscreenCtx.putImageData(this.offscreenImgData, 0, 0);
+
+      // 2. 320x200 sanal VRAM'i 800x600 ana canvas'a pürüzsüz & kristal keskinlikte (nearest-neighbor) çiz
+      this.canvasCtx.imageSmoothingEnabled = false;
+      this.canvasCtx.drawImage(this.offscreenCanvas!, 0, 0, canvas.width, canvas.height);
+    } else {
+      // Node/Vitest mock fallback
+      if (typeof this.canvasCtx.createImageData === 'function') {
+        const imgData = this.canvasCtx.createImageData(canvas.width, canvas.height);
+        this.canvasCtx.putImageData?.(imgData, 0, 0);
+      }
     }
   }
 
@@ -393,10 +413,9 @@ export class ConsoleView {
 
     const content = this.container.querySelector?.('#crt-screen-content');
     if (this.videoMode === 0x13) {
-      if (content && !content.querySelector('#crt-graphics-canvas')) {
+      if (content && !content.querySelector('#myCanvas') && !content.querySelector('#crt-graphics-canvas')) {
         content.innerHTML = this.renderCrtContent();
         this.canvasCtx = null;
-        this.canvasImgData = null;
       }
       this.paintGraphicsCanvas();
     } else {
