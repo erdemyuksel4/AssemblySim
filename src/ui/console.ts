@@ -229,10 +229,11 @@ export class ConsoleView {
       this.memory.data.set(memoryAll.subarray(0, copyLen));
     }
 
-    // 0xA0000 grafik VRAM'ine piksel yazılmışsa ekranı otomatik olarak grafik moduna al
+    // 0xA0000 grafik VRAM'ine piksel yazılmışsa tek bir pikseli dahi atlamadan tam kontrol et
     if (this.videoMode !== 0x13) {
-      for (let i = 0; i < 64000; i += 64) {
-        if (this.memory.data[0xA0000 + i] !== 0) {
+      const u32 = new Uint32Array(this.memory.data.buffer, 0xA0000, 16000);
+      for (let i = 0; i < 16000; i++) {
+        if (u32[i] !== 0) {
           this.memory.data[0x0449] = 0x13;
           break;
         }
@@ -267,12 +268,12 @@ export class ConsoleView {
 
     this.container.innerHTML = `
       <div class="console-box" style="display: flex; flex-direction: column; height: 100%; min-height: 280px; background: #0c1017; border-radius: 8px; overflow: hidden; border: 1px solid #1e293b; box-sizing: border-box;">
-        <!-- Monitör Sade Üst Bilgi Başlığı -->
+        <!-- Monitör Sade Donanım Başlığı -->
         <div class="console-header-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; height: 32px; min-height: 32px; flex-shrink: 0; background: #111827; border-bottom: 1px solid #1f2937; box-sizing: border-box;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 6px #22c55e;"></span>
             <span style="font-size: 11px; font-weight: 700; color: #e2e8f0; letter-spacing: 0.5px;">MONİTÖR</span>
-            <span id="crt-monitor-title" title="Modu değiştirmek için tıklayın" style="font-size: 9.5px; font-weight: 600; padding: 1px 7px; border-radius: 4px; background: #1e293b; color: #38bdf8; cursor: pointer; user-select: none; border: 1px solid #334155;">${modeLabel}</span>
+            <span id="crt-monitor-title" style="font-size: 9.5px; font-weight: 600; padding: 1px 7px; border-radius: 4px; background: #1e293b; color: #38bdf8; user-select: none; border: 1px solid #334155;">${modeLabel}</span>
           </div>
 
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -283,10 +284,10 @@ export class ConsoleView {
 
         <!-- CRT Ekranı (Doğrudan VRAM'i yansıtır) -->
         <div class="crt-screen-wrapper" style="flex: 1 1 auto; min-height: 220px; position: relative; background: #000000; padding: 4px; overflow: hidden; display: flex; flex-direction: column; box-sizing: border-box;">
-          <div class="crt-screen-box vga" id="crt-screen-box" tabindex="0" style="flex: 1 1 100%; height: 100%; min-height: 210px; padding: 4px 6px; overflow: hidden; position: relative; background: #000000; border-radius: 4px; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-sizing: border-box;">
+          <div class="crt-screen-box vga" id="crt-screen-box" tabindex="0" style="flex: 1 1 100%; height: 100%; min-height: 210px; padding: 4px 6px; overflow: hidden; position: relative; background: #000000; border-radius: 4px; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-sizing: border-box; display: flex; flex-direction: column;">
             <div class="crt-scanlines"></div>
             <div class="crt-glow"></div>
-            <div class="crt-content" id="crt-screen-content" style="position: relative; z-index: 2; font-size: 10px; line-height: 10.5px; letter-spacing: 0.3px; width: 100%; height: 100%; user-select: none;">
+            <div class="crt-content" id="crt-screen-content" style="position: relative; z-index: 2; font-size: 10px; line-height: 10.5px; letter-spacing: 0.3px; width: 100%; height: 100%; min-height: 200px; flex: 1; user-select: none; display: flex; flex-direction: column;">
               ${this.renderCrtContent()}
             </div>
           </div>
@@ -310,8 +311,8 @@ export class ConsoleView {
   private renderCrtContent(): string {
     if (this.videoMode === 0x13) {
       return `
-        <div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; box-sizing: border-box;">
-          <canvas id="crt-graphics-canvas" width="320" height="200" style="max-width: 100%; max-height: 100%; aspect-ratio: 16/10; image-rendering: pixelated; display: block; background: #000000; border: 1px solid #1e293b; border-radius: 4px;"></canvas>
+        <div class="crt-graphics-wrapper" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-height: 200px; flex: 1; box-sizing: border-box;">
+          <canvas id="crt-graphics-canvas" width="320" height="200" style="width: 320px; height: 200px; max-width: 100%; max-height: 100%; aspect-ratio: 16/10; image-rendering: pixelated; display: block; background: #000000; border: 2px solid #38bdf8; border-radius: 4px; box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);"></canvas>
         </div>
       `;
     }
@@ -406,12 +407,6 @@ export class ConsoleView {
   }
 
   private bindEvents(): void {
-    // Başlıktaki rozete tıklayınca modu elle değiştirme (03h Metin <-> 13h Grafik)
-    const titleEl = this.container.querySelector?.('#crt-monitor-title');
-    titleEl?.addEventListener?.('click', () => {
-      this.setVideoMode(this.videoMode === 0x13 ? 0x03 : 0x13);
-    });
-
     // Temizle Butonu
     const clearBtn = this.container.querySelector?.('#btn-console-clear');
     clearBtn?.addEventListener?.('click', () => this.clear());
