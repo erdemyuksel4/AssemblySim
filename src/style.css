@@ -428,8 +428,8 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   position: relative;
   display: flex;
-  height: 170px;
-  min-height: 140px;
+  height: calc(100vh - 170px);
+  min-height: 540px;
   overflow: hidden;
 }
 

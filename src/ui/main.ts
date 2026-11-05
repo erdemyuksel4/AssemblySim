@@ -244,7 +244,8 @@ export class App {
   private initModules(): void {
     const sidebarMount = document.getElementById('sidebar-mount')!;
     const editorContainer = document.getElementById('editor-container')!;
-    const consoleContainer = document.getElementById('console-container')!;
+    // Konsol ve CRT monitör ekrandan kaldırıldı (headless container)
+    const consoleContainer = document.createElement('div');
     const registersContainer = document.getElementById('registers-container')!;
     const memoryContainer = document.getElementById('memory-container')!;
 
@@ -347,6 +348,7 @@ export class App {
 
     // 3. Console & VRAM View
     this.consoleView = new ConsoleView(consoleContainer, {
+      memory: this.cpu.mem,
       onInput: (input) => {
         this.cpu.feedInput(input);
         this.consoleView.setWaitingForInput(false);
@@ -1019,6 +1021,7 @@ export class App {
   private updateCpuViews(): void {
     this.registerPanel?.update(this.cpu.regs, this.cpu.flags);
     this.memoryView?.render(this.cpu.mem, this.cpu.regs);
+    this.consoleView?.updateVram(this.cpu.mem.data);
   }
 
   private escapeHtml(str: string): string {

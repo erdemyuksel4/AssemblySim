@@ -1,6 +1,6 @@
 import { WorkspaceFile, WorkspaceProject, ProjectSummary } from './types.js';
 
-const STORAGE_PROJECT_KEY = 'assemblysim_project_v7';
+const STORAGE_PROJECT_KEY = 'assemblysim_project_v8';
 const LEGACY_PROJECT_V6 = 'assemblysim_project_v6';
 const STORAGE_PROJECTS_LIST_KEY = 'assemblysim_projects_list_v6';
 const STORAGE_PROJECT_PREFIX = 'assemblysim_project_data_';
@@ -11,29 +11,26 @@ const LEGACY_DOCS_KEY = 'assemblysim_docs_v2';
 const LEGACY_V1_KEY = 'assemblysim_workspace_docs_v1';
 
 export const DEFAULT_MAIN_CODE = `; ==========================================================
-; 8086 Assembly - VGA Mode 13h (320x200 256 Renk) Cizim
+; 8086 Assembly Programi
+; Sag paneldeki Register (Yazmac) ve Bellek (RAM) degisimlerini izleyin.
 ; ==========================================================
 ORG 100H
 
 START:
-    ; 1. VGA Mode 13h (320x200, 256 Renk Grafik) Baslat
-    MOV AX, 0013H
-    INT 10H
+    ; 1. Yazmaclara baslangic degerleri yukle
+    MOV AX, 1000H
+    MOV BX, 0020H
+    MOV CX, 0005H       ; Dongu sayaci (5 tekrar)
 
-    ; 2. Ekrana Parlak Sari Yatay Cizgi Ciz (Y=100, X=50..250)
-    MOV DX, 100         ; Y Satir
-    MOV CX, 50          ; X Sutun Baslangic
-    MOV AL, 0EH         ; Renk (0Eh = Parlak Sari)
+TOPLAMA_DONGUSU:
+    ADD AX, BX          ; AX = AX + BX
+    DEC CX              ; Sayaci azalt
+    JNZ TOPLAMA_DONGUSU ; CX != 0 ise donguye devam et
 
-CIZIM_DONGUSU:
-    MOV AH, 0CH         ; BIOS Piksel Ciz
-    MOV BH, 0           ; Sayfa 0
-    INT 10H
-    INC CX
-    CMP CX, 250
-    JNE CIZIM_DONGUSU
+    ; 2. Hesaplanan degeri RAM'e yaz (DS:[0200h])
+    MOV [0200H], AX
 
-    ; 3. Islemciyi durdur
+    ; 3. Programi sonlandir
     HLT
 `;
 
