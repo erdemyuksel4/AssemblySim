@@ -1,21 +1,26 @@
 import fs from 'fs';
 import path from 'path';
 
-// Clean HTML template (lightweight, standard, no inlining bloat)
+const version = Date.now().toString(36);
+
+// Clean HTML template with cache-busting to prevent GitHub Pages / browser stale cache
 const htmlContent = `<!DOCTYPE html>
 <html lang="tr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>8086 Compiler & AssemblySim</title>
-    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./style.css?v=${version}" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="./app.js"></script>
+    <script type="module" src="./app.js?v=${version}"></script>
   </body>
 </html>
 `;
@@ -40,4 +45,4 @@ if (fs.existsSync('docs/app.js.map')) {
   fs.copyFileSync('docs/app.js.map', 'dist/app.js.map');
 }
 
-console.log('✓ Clean build ready in both docs/ and dist/ (index.html, style.css, app.js, sourcemap)');
+console.log(`✓ Clean build ready (version: ${version}) in both docs/ and dist/`);
