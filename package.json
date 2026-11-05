@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "start": "npm run build && node scripts/serve.mjs",
+    "serve": "node scripts/serve.mjs",
     "dev": "vite",
     "build": "npx esbuild src/ui/main.ts --bundle --outfile=docs/app.js --format=esm --sourcemap --target=es2022 && node scripts/build.mjs",
     "preview": "vite preview",
