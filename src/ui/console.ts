@@ -90,6 +90,7 @@ export class ConsoleView {
   private bulkTimer: ReturnType<typeof setTimeout> | null = null;
   private activePixelCount: number = 0;
   private isHistoryOpen: boolean = false;
+  private currentMonitorSize: 'normal' | 'large' | 'huge' = 'large';
 
   constructor(container: HTMLElement, options?: ConsoleOptions) {
     this.container = container;
@@ -439,9 +440,9 @@ export class ConsoleView {
     const modeLabel = isGraphics ? '13h GRAFİK (320x200)' : '03h METİN (80x25)';
 
     this.container.innerHTML = `
-      <div class="console-box" style="display: flex; flex-direction: column; height: 100%; min-height: 380px; background: #0c1017; border-radius: 8px; overflow: hidden; border: 1px solid #1e293b; box-sizing: border-box;">
-        <!-- Monitör Sade Donanım Başlığı -->
-        <div class="console-header-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; height: 32px; min-height: 32px; flex-shrink: 0; background: #111827; border-bottom: 1px solid #1f2937; box-sizing: border-box;">
+      <div class="console-box" style="display: flex; flex-direction: column; height: 100%; min-height: 520px; background: #0c1017; border-radius: 8px; overflow: hidden; border: 1px solid #1e293b; box-sizing: border-box;">
+        <!-- Monitör Donanım Başlığı ve Boyut Kontrolleri -->
+        <div class="console-header-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; height: 34px; min-height: 34px; flex-shrink: 0; background: #111827; border-bottom: 1px solid #1f2937; box-sizing: border-box;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 6px #22c55e;"></span>
             <span style="font-size: 11px; font-weight: 700; color: #e2e8f0; letter-spacing: 0.5px;">MONİTÖR</span>
@@ -449,8 +450,17 @@ export class ConsoleView {
           </div>
 
           <div style="display: flex; align-items: center; gap: 8px;">
+            <!-- Monitör Boyut Seçici -->
+            <div class="crt-size-selector" style="display: flex; align-items: center; gap: 2px; background: #0b0f19; padding: 2px; border-radius: 4px; border: 1px solid #1e293b;">
+              <span style="font-size: 9px; color: #64748b; padding: 0 4px; font-weight: 600;">Boyut:</span>
+              <button id="btn-size-normal" class="btn-crt-size" title="Standart Boyut (640x480)" style="padding: 2px 7px; font-size: 9.5px; font-weight: 600; background: transparent; border: none; color: #94a3b8; border-radius: 3px; cursor: pointer;">Standart</button>
+              <button id="btn-size-large" class="btn-crt-size" title="Büyük Boyut (840x630)" style="padding: 2px 7px; font-size: 9.5px; font-weight: 700; background: #2563eb; border: none; color: #ffffff; border-radius: 3px; cursor: pointer;">Büyük</button>
+              <button id="btn-size-huge" class="btn-crt-size" title="Geniş Boyut (1060x795)" style="padding: 2px 7px; font-size: 9.5px; font-weight: 600; background: transparent; border: none; color: #94a3b8; border-radius: 3px; cursor: pointer;">Geniş</button>
+              <button id="btn-size-fullscreen" class="btn-crt-size" title="Monitörü Tam Ekran Yap" style="padding: 2px 7px; font-size: 9.5px; font-weight: 600; background: transparent; border: none; color: #38bdf8; border-radius: 3px; cursor: pointer;">⛶ Tam Ekran</button>
+            </div>
+
             <span id="crt-status-text" style="font-size: 9.5px; font-weight: 600; color: #94a3b8;">HAZIR</span>
-            <button id="btn-console-clear" title="Ekranı Temizle" style="padding: 1px 6px; font-size: 9.5px; background: #1f2937; border: 1px solid #374151; color: #cbd5e1; border-radius: 3px; cursor: pointer;">Temizle</button>
+            <button id="btn-console-clear" title="Ekranı Temizle" style="padding: 2px 7px; font-size: 9.5px; background: #1f2937; border: 1px solid #374151; color: #cbd5e1; border-radius: 3px; cursor: pointer;">Temizle</button>
           </div>
         </div>
 
@@ -473,15 +483,15 @@ export class ConsoleView {
         </div>
 
         <!-- CRT Ekranı: DAİMA VE BİZZAT <canvas id="myCanvas"> ELEMANIDIR -->
-        <div class="crt-screen-wrapper" style="flex: 1 1 auto; min-height: 240px; position: relative; background: #000000; padding: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
-          <canvas id="myCanvas" class="crt-graphics-canvas" width="800" height="600" style="width: 100%; max-width: 800px; height: auto; max-height: 280px; aspect-ratio: 4/3; object-fit: contain; image-rendering: pixelated; display: block; background: #000000; border: 2px solid #38bdf8; border-radius: 4px; box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);"></canvas>
+        <div class="crt-screen-wrapper" style="flex: 1 1 auto; min-height: 520px; position: relative; background: radial-gradient(circle at center, #0b1120 0%, #020617 100%); padding: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+          <canvas id="myCanvas" class="crt-graphics-canvas" width="800" height="600" style="width: 100%; max-width: 840px; height: auto; aspect-ratio: 4/3; object-fit: contain; image-rendering: pixelated; display: block; background: #000000; border: 3px solid #38bdf8; border-radius: 8px; box-shadow: 0 0 30px rgba(56, 189, 248, 0.35);"></canvas>
         </div>
 
         <!-- Alt Klavye Girdi Çubuğu -->
-        <div class="console-input-wrap" style="display: flex; align-items: center; gap: 6px; padding: 3px 8px; height: 32px; min-height: 32px; flex-shrink: 0; background: #0b0f17; border-top: 1px solid #1e293b; box-sizing: border-box;">
+        <div class="console-input-wrap" style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; height: 34px; min-height: 34px; flex-shrink: 0; background: #0b0f17; border-top: 1px solid #1e293b; box-sizing: border-box;">
           <span style="color: #38bdf8; font-weight: 700; font-size: 11px;">❯</span>
-          <input type="text" id="console-input-field" placeholder="Klavye girdisi (Port 60h / INT 16h / INT 21h)..." autocomplete="off" style="flex: 1; background: #020617; border: 1px solid #1e293b; border-radius: 4px; padding: 2px 6px; color: #f8fafc; font-size: 11px; font-family: 'JetBrains Mono', monospace; outline: none;" />
-          <button id="btn-console-send" style="padding: 2px 8px; font-size: 10px; font-weight: 600; background: #2563eb; color: #ffffff; border: none; border-radius: 3px; cursor: pointer;">Gönder</button>
+          <input type="text" id="console-input-field" placeholder="Klavye girdisi (Port 60h / INT 16h / INT 21h)..." autocomplete="off" style="flex: 1; background: #020617; border: 1px solid #1e293b; border-radius: 4px; padding: 3px 8px; color: #f8fafc; font-size: 11px; font-family: 'JetBrains Mono', monospace; outline: none;" />
+          <button id="btn-console-send" style="padding: 3px 10px; font-size: 10.5px; font-weight: 600; background: #2563eb; color: #ffffff; border: none; border-radius: 4px; cursor: pointer;">Gönder</button>
         </div>
       </div>
     `;
@@ -669,6 +679,67 @@ export class ConsoleView {
     inputField?.addEventListener?.('keydown', (e) => {
       if (e.key === 'Enter') {
         handleSend();
+      }
+    });
+
+    // Boyut Değiştirme Butonları (Standart / Büyük / Geniş)
+    const setSize = (size: 'normal' | 'large' | 'huge') => {
+      this.currentMonitorSize = size;
+      const canvas = this.container.querySelector?.('#myCanvas') as HTMLCanvasElement | null;
+      const screenWrapper = this.container.querySelector?.('.crt-screen-wrapper') as HTMLElement | null;
+      if (!canvas || !screenWrapper) return;
+
+      const btnNormal = this.container.querySelector?.('#btn-size-normal') as HTMLElement | null;
+      const btnLarge = this.container.querySelector?.('#btn-size-large') as HTMLElement | null;
+      const btnHuge = this.container.querySelector?.('#btn-size-huge') as HTMLElement | null;
+
+      [btnNormal, btnLarge, btnHuge].forEach(b => {
+        if (b) {
+          b.style.background = 'transparent';
+          b.style.color = '#94a3b8';
+          b.style.fontWeight = '600';
+        }
+      });
+
+      if (size === 'normal') {
+        canvas.style.maxWidth = '640px';
+        screenWrapper.style.minHeight = '420px';
+        if (btnNormal) {
+          btnNormal.style.background = '#2563eb';
+          btnNormal.style.color = '#ffffff';
+          btnNormal.style.fontWeight = '700';
+        }
+      } else if (size === 'large') {
+        canvas.style.maxWidth = '840px';
+        screenWrapper.style.minHeight = '520px';
+        if (btnLarge) {
+          btnLarge.style.background = '#2563eb';
+          btnLarge.style.color = '#ffffff';
+          btnLarge.style.fontWeight = '700';
+        }
+      } else if (size === 'huge') {
+        canvas.style.maxWidth = '1060px';
+        screenWrapper.style.minHeight = '640px';
+        if (btnHuge) {
+          btnHuge.style.background = '#2563eb';
+          btnHuge.style.color = '#ffffff';
+          btnHuge.style.fontWeight = '700';
+        }
+      }
+    };
+
+    this.container.querySelector?.('#btn-size-normal')?.addEventListener?.('click', () => setSize('normal'));
+    this.container.querySelector?.('#btn-size-large')?.addEventListener?.('click', () => setSize('large'));
+    this.container.querySelector?.('#btn-size-huge')?.addEventListener?.('click', () => setSize('huge'));
+
+    // Tam Ekran Butonu
+    this.container.querySelector?.('#btn-size-fullscreen')?.addEventListener?.('click', () => {
+      const consoleBox = this.container.querySelector?.('.console-box') as HTMLElement | null;
+      if (!consoleBox) return;
+      if (!document.fullscreenElement) {
+        consoleBox.requestFullscreen?.().catch(() => {});
+      } else {
+        document.exitFullscreen?.().catch(() => {});
       }
     });
   }
