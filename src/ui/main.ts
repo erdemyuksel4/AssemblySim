@@ -244,8 +244,7 @@ export class App {
   private initModules(): void {
     const sidebarMount = document.getElementById('sidebar-mount')!;
     const editorContainer = document.getElementById('editor-container')!;
-    // Konsol ve CRT monitör ekrandan kaldırıldı (headless container)
-    const consoleContainer = document.createElement('div');
+    const consoleContainer = document.getElementById('console-container')!;
     const registersContainer = document.getElementById('registers-container')!;
     const memoryContainer = document.getElementById('memory-container')!;
 
