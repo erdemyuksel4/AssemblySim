@@ -108,7 +108,8 @@ export class App {
     this.bindEvents();
 
     // Wire VRAM writes
-    this.cpu.mem.onVramWrite = () => {
+    this.cpu.mem.onVramWrite = (phys: number, val: number) => {
+      this.consoleView.recordVramChange(phys, val);
       this.consoleView.updateVram(this.cpu.mem.data);
     };
     this.consoleView.updateVram(this.cpu.mem.data);

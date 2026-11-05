@@ -15,7 +15,7 @@ export class Memory {
   lastReads: Set<number> = new Set();
   lastWrites: Set<number> = new Set();
   lastWriteOldValues: Map<number, number> = new Map();
-  onVramWrite?: (vramOffset: number, val: number) => void;
+  onVramWrite?: (phys: number, val: number) => void;
 
   constructor() {
     this.data = new Uint8Array(this.size);

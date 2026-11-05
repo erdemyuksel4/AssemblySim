@@ -8,6 +8,17 @@ export interface ConsoleOptions {
   onVideoModeChange?: (mode: number) => void;
 }
 
+export interface CanvasPixelChange {
+  time: string;
+  x: number;
+  y: number;
+  colorIdx: number;
+  hexColor: string;
+  rgbStr: string;
+  physHex: string;
+  offset: number;
+}
+
 // Standart 16-Renk CGA / RGB Paleti
 const CGA_PALETTE = [
   '#000000', '#0000aa', '#00aa00', '#00aaaa',
@@ -51,6 +62,7 @@ const VGA_256_RGB: [number, number, number][] = (() => {
  * - Ekran modu doğrudan BDA 0040:0049h (0x0449) adresinden okunur.
  * - Metin Modu (03h): 0xB8000 VRAM alanını ve 0x0450/0x0451 imleç koordinatlarını yansıtır.
  * - Grafik Modu (13h): 0xA0000 VRAM alanını 800x600 retro piksel tuvaline kristal netliğinde rasterize eder.
+ * - Canlı Tanılama Raporlayıcı: Canvasta yapılan tüm piksel ve mod değişikliklerini hem browser console'una hem UI'a raporlar.
  */
 export class ConsoleView {
   private container: HTMLElement;
@@ -72,6 +84,14 @@ export class ConsoleView {
   // Render optimizasyonu (requestAnimationFrame)
   private vramDirty: boolean = false;
   private animFrameId: number | null = null;
+
+  // Canvas Tanılama ve Değişiklik Takip Sistemi
+  private canvasHistory: CanvasPixelChange[] = [];
+  private lastPixelChange: CanvasPixelChange | null = null;
+  private recentChangeCount: number = 0;
+  private bulkTimer: ReturnType<typeof setTimeout> | null = null;
+  private activePixelCount: number = 0;
+  private isHistoryOpen: boolean = false;
 
   constructor(container: HTMLElement, options?: ConsoleOptions) {
     this.container = container;
@@ -98,14 +118,149 @@ export class ConsoleView {
   }
 
   /**
-   * Video modunu BDA (0x0449) üzerinde günceller.
+   * Video modunu BDA (0x0449) üzerinde günceller ve konsola raporlar.
    */
   setVideoMode(mode: number): void {
     const cleanMode = mode & 0xFF;
     this.memory.data[0x0449] = cleanMode;
     this.onVideoModeChange?.(cleanMode);
+
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(
+        `%c[CANVAS VİDEO MODU]%c Mod değişti -> 0x${cleanMode.toString(16).toUpperCase().padStart(2, '0')} (${cleanMode === 0x13 ? 'Mode 13h (320x200 256 Renk Grafik)' : 'Mode 03h (80x25 Metin)'})`,
+        'background: #8b5cf6; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 11px;',
+        'color: #c084fc; font-family: monospace; font-size: 11px;'
+      );
+    }
+
     this.vramDirty = true;
     this.refreshCrtScreen();
+    this.updateDiagBar();
+  }
+
+  /**
+   * VRAM'e yazılan her baytı yakalayıp analiz eder ve raporlar.
+   * (Doğrudan CPU bellek yazma hattından tetiklenir)
+   */
+  recordVramChange(phys: number, val: number): void {
+    // 0xA0000 - 0xAFA00 Mode 13h Grafik VRAM Alanı (64,000 bayt)
+    if (phys >= 0xA0000 && phys < 0xA0000 + 64000) {
+      const offset = phys - 0xA0000;
+      const x = offset % 320;
+      const y = Math.floor(offset / 320);
+      const colorIdx = val & 0xFF;
+      const [r, g, b] = VGA_256_RGB[colorIdx] || [0, 0, 0];
+      const hexColor = colorIdx.toString(16).toUpperCase().padStart(2, '0');
+      const rgbStr = `rgb(${r}, ${g}, ${b})`;
+      const physHex = phys.toString(16).toUpperCase().padStart(5, '0');
+
+      const changeRecord: CanvasPixelChange = {
+        time: new Date().toLocaleTimeString(),
+        x,
+        y,
+        colorIdx,
+        hexColor,
+        rgbStr,
+        physHex,
+        offset
+      };
+
+      this.lastPixelChange = changeRecord;
+      this.canvasHistory.unshift(changeRecord);
+      if (this.canvasHistory.length > 50) {
+        this.canvasHistory.pop();
+      }
+
+      // 1. Tarayıcı Konsolu (DevTools Console) Raporlaması
+      if (typeof console !== 'undefined' && console.log) {
+        if (this.recentChangeCount < 30) {
+          console.log(
+            `%c[CANVAS DEĞİŞİKLİĞİ]%c (X: ${x}, Y: ${y}) pikseline 0x${hexColor} (${rgbStr}) yazıldı | Adres: 0x${physHex} | Ofset: ${offset}`,
+            'background: #0284c7; color: #ffffff; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 11px;',
+            'color: #38bdf8; font-family: monospace; font-size: 11px;'
+          );
+        }
+      }
+
+      // Çok hızlı döngülerde tarayıcının kilitlenmemesi için toplu özet log
+      this.recentChangeCount++;
+      if (!this.bulkTimer && typeof setTimeout !== 'undefined') {
+        this.bulkTimer = setTimeout(() => {
+          if (this.recentChangeCount > 30 && typeof console !== 'undefined' && console.log) {
+            console.log(
+              `%c[CANVAS TOPLU ÇİZİM]%c Toplam ${this.recentChangeCount} piksel değişikliği yapıldı. Son piksel: (X: ${this.lastPixelChange?.x}, Y: ${this.lastPixelChange?.y}) Renk: 0x${this.lastPixelChange?.hexColor}`,
+              'background: #10b981; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 11px;',
+              'color: #34d399; font-family: monospace; font-size: 11px;'
+            );
+          }
+          this.recentChangeCount = 0;
+          this.bulkTimer = null;
+        }, 80);
+      }
+
+      // UI Tanılama Çubuğunu Güncelle
+      this.updateDiagBar();
+    }
+  }
+
+  /**
+   * UI üzerindeki canlı Canvas Tanılama Çubuğunu günceller.
+   */
+  private updateDiagBar(): void {
+    if (!this.container) return;
+
+    const lastChangeEl = this.container.querySelector('#crt-diag-last-change');
+    if (lastChangeEl) {
+      if (this.lastPixelChange) {
+        lastChangeEl.innerHTML = `<span style="color: #38bdf8;">(X: ${this.lastPixelChange.x}, Y: ${this.lastPixelChange.y})</span> &rarr; Renk: <span style="display:inline-block;width:9px;height:9px;background:${this.lastPixelChange.rgbStr};border:1px solid #475569;border-radius:2px;vertical-align:middle;margin:0 3px;"></span>0x${this.lastPixelChange.hexColor} <span style="color:#64748b;">@ 0x${this.lastPixelChange.physHex}</span>`;
+      } else {
+        lastChangeEl.textContent = 'Henüz çizim yapılmadı';
+      }
+    }
+
+    const pixelCountEl = this.container.querySelector('#crt-diag-pixel-count');
+    if (pixelCountEl) {
+      pixelCountEl.textContent = `Aktif Piksel: ${this.activePixelCount} / 64,000`;
+    }
+
+    const btnHistory = this.container.querySelector('#btn-toggle-canvas-history');
+    if (btnHistory) {
+      btnHistory.textContent = `Geçmiş (${this.canvasHistory.length})`;
+    }
+
+    if (this.isHistoryOpen) {
+      this.renderHistoryList();
+    }
+  }
+
+  /**
+   * Geçmiş çizim kayıtları listesini UI'a döker.
+   */
+  private renderHistoryList(): void {
+    const listEl = this.container.querySelector('#crt-canvas-history-list');
+    if (!listEl) return;
+
+    if (this.canvasHistory.length === 0) {
+      listEl.innerHTML = '<span style="color: #64748b; font-style: italic;">Kayıtlı çizim işlemi bulunmuyor.</span>';
+      return;
+    }
+
+    let html = '';
+    for (let i = 0; i < Math.min(25, this.canvasHistory.length); i++) {
+      const item = this.canvasHistory[i];
+      html += `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #1e293b; color: #94a3b8;">
+          <span>
+            <span style="color: #38bdf8; font-weight: 600;">[${item.time}]</span>
+            (X: ${item.x}, Y: ${item.y}) &rarr; Renk:
+            <span style="display: inline-block; width: 9px; height: 9px; background: ${item.rgbStr}; border: 1px solid #475569; border-radius: 2px; vertical-align: middle; margin: 0 3px;"></span>
+            <span style="color: #f8fafc; font-weight: 600;">0x${item.hexColor}</span>
+          </span>
+          <span style="color: #64748b;">0x${item.physHex} (Ofset: ${item.offset})</span>
+        </div>
+      `;
+    }
+    listEl.innerHTML = html;
   }
 
   /**
@@ -131,6 +286,10 @@ export class ConsoleView {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
     }
+    if (this.bulkTimer !== null) {
+      clearTimeout(this.bulkTimer);
+      this.bulkTimer = null;
+    }
   }
 
   setOnInput(callback: (input: string) => void): void {
@@ -155,12 +314,25 @@ export class ConsoleView {
     }
   }
 
-  log(_text: string, _level: LogLevel = 'info'): void {
-    // Monitör saf donanım ekranıdır
+  /**
+   * IDE sistem mesajlarını tarayıcı konsoluna yazdırır.
+   */
+  log(text: string, level: LogLevel = 'info'): void {
+    if (typeof console !== 'undefined') {
+      if (level === 'error') {
+        console.error(`[AssemblySim] ${text}`);
+      } else if (level === 'warn') {
+        console.warn(`[AssemblySim] ${text}`);
+      } else {
+        console.log(`[AssemblySim] ${text}`);
+      }
+    }
   }
 
-  appendStdout(_charOrStr: string): void {
-    // VRAM veya I/O portları üzerinden yapılır
+  appendStdout(charOrStr: string): void {
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(`[AssemblySim STDOUT] ${charOrStr}`);
+    }
   }
 
   isWaitingForInput(): boolean {
@@ -221,7 +393,20 @@ export class ConsoleView {
     this.offscreenCtx = null;
     this.offscreenImgData = null;
 
+    this.activePixelCount = 0;
+    this.lastPixelChange = null;
+    this.canvasHistory = [];
+
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(
+        '%c[CANVAS TEMİZLENDİ]%c 0xA0000 Grafik VRAM ve 0xB8000 Metin VRAM sıfırlandı.',
+        'background: #ef4444; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 11px;',
+        'color: #f87171; font-family: monospace; font-size: 11px;'
+      );
+    }
+
     this.refreshCrtScreen();
+    this.updateDiagBar();
   }
 
   /**
@@ -239,6 +424,9 @@ export class ConsoleView {
       for (let i = 0; i < 16000; i++) {
         if (u32[i] !== 0) {
           this.memory.data[0x0449] = 0x13;
+          if (typeof console !== 'undefined' && console.log) {
+            console.log('%c[CANVAS OTO-MOD]%c 0xA0000 VRAM alanında veri algılandı, Mode 13h otomatik aktifleşti.', 'background: #3b82f6; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;', 'color: #60a5fa;');
+          }
           break;
         }
       }
@@ -271,7 +459,7 @@ export class ConsoleView {
     const modeLabel = isGraphics ? '13h GRAFİK (320x200)' : '03h METİN (80x25)';
 
     this.container.innerHTML = `
-      <div class="console-box" style="display: flex; flex-direction: column; height: 100%; min-height: 280px; background: #0c1017; border-radius: 8px; overflow: hidden; border: 1px solid #1e293b; box-sizing: border-box;">
+      <div class="console-box" style="display: flex; flex-direction: column; height: 100%; min-height: 290px; background: #0c1017; border-radius: 8px; overflow: hidden; border: 1px solid #1e293b; box-sizing: border-box;">
         <!-- Monitör Sade Donanım Başlığı -->
         <div class="console-header-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; height: 32px; min-height: 32px; flex-shrink: 0; background: #111827; border-bottom: 1px solid #1f2937; box-sizing: border-box;">
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -297,6 +485,24 @@ export class ConsoleView {
           </div>
         </div>
 
+        <!-- Canlı Canvas Tanılama ve Değişiklik Raporu Çubuğu -->
+        <div id="crt-canvas-diag-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 10px; height: 26px; min-height: 26px; flex-shrink: 0; background: #070b12; border-top: 1px solid #1e293b; font-size: 10px; font-family: 'JetBrains Mono', Consolas, monospace; color: #94a3b8; user-select: none; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 5px #38bdf8;"></span>
+            <span style="color: #38bdf8; font-weight: 700;">CANVAS RAPORU:</span>
+            <span id="crt-diag-last-change" style="color: #e2e8f0;">Henüz çizim yapılmadı</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+            <span id="crt-diag-pixel-count" style="color: #cbd5e1;">Aktif Piksel: 0 / 64,000</span>
+            <button id="btn-toggle-canvas-history" style="padding: 1px 7px; font-size: 9.5px; font-weight: 600; background: #1e293b; color: #38bdf8; border: 1px solid #334155; border-radius: 3px; cursor: pointer;">Geçmiş (0)</button>
+          </div>
+        </div>
+
+        <!-- Açılır Değişiklik Geçmişi Listesi -->
+        <div id="crt-canvas-history-panel" style="display: none; max-height: 110px; overflow-y: auto; background: #030712; border-top: 1px solid #1e293b; padding: 6px 10px; font-size: 9.5px; font-family: 'JetBrains Mono', monospace; box-sizing: border-box;">
+          <div id="crt-canvas-history-list" style="display: flex; flex-direction: column; gap: 2px;"></div>
+        </div>
+
         <!-- Alt Klavye Girdi Çubuğu -->
         <div class="console-input-wrap" style="display: flex; align-items: center; gap: 6px; padding: 3px 8px; height: 32px; min-height: 32px; flex-shrink: 0; background: #0b0f17; border-top: 1px solid #1e293b; box-sizing: border-box;">
           <span style="color: #38bdf8; font-weight: 700; font-size: 11px;">❯</span>
@@ -315,8 +521,8 @@ export class ConsoleView {
   private renderCrtContent(): string {
     if (this.videoMode === 0x13) {
       return `
-        <div class="crt-graphics-wrapper" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-height: 200px; flex: 1; box-sizing: border-box;">
-          <canvas id="myCanvas" class="crt-graphics-canvas" width="800" height="600" style="width: 100%; max-width: 800px; height: 100%; max-height: 260px; aspect-ratio: 4/3; image-rendering: pixelated; display: block; background: #000000; border: 2px solid #38bdf8; border-radius: 4px; box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);"></canvas>
+        <div class="crt-graphics-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; min-height: 200px; flex: 1; box-sizing: border-box; overflow: hidden; padding: 2px;">
+          <canvas id="myCanvas" class="crt-graphics-canvas" width="800" height="600" style="width: auto; max-width: 100%; height: auto; max-height: 260px; aspect-ratio: 4/3; object-fit: contain; image-rendering: pixelated; display: block; background: #000000; border: 2px solid #38bdf8; border-radius: 4px; box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);"></canvas>
         </div>
       `;
     }
@@ -355,7 +561,12 @@ export class ConsoleView {
     if (!this.canvasCtx || this.canvasCtx.canvas !== canvas) {
       this.canvasCtx = canvas.getContext?.('2d') ?? null;
     }
-    if (!this.canvasCtx) return;
+    if (!this.canvasCtx) {
+      if (typeof console !== 'undefined' && console.error) {
+        console.error('[CANVAS HATA] #myCanvas 2D Context alınamadı!');
+      }
+      return;
+    }
 
     // 1. Sanal 320x200 VRAM ImageData tamponunu hazırla
     if (!this.offscreenCanvas && typeof document !== 'undefined') {
@@ -369,12 +580,16 @@ export class ConsoleView {
       this.offscreenImgData = this.offscreenCtx.createImageData(320, 200);
     }
 
+    let activeCount = 0;
     if (this.offscreenCtx && this.offscreenImgData) {
       const data = this.offscreenImgData.data;
 
       // 0xA0000 fiziksel grafik VRAM'inden oku
       for (let i = 0; i < 64000; i++) {
         const colorIdx = this.memory.data[0xA0000 + i];
+        if (colorIdx !== 0) {
+          activeCount++;
+        }
         const [r, g, b] = VGA_256_RGB[colorIdx] || [0, 0, 0];
 
         const pixelOffset = i * 4;
@@ -396,6 +611,22 @@ export class ConsoleView {
         this.canvasCtx.putImageData?.(imgData, 0, 0);
       }
     }
+
+    this.activePixelCount = activeCount;
+
+    // 3. Render Raporu
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(
+        `%c[CANVAS RENDER]%c #myCanvas (800x600) güncellendi. Aktif piksel: ${activeCount} / 64,000`,
+        'background: #f59e0b; color: #000000; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 11px;',
+        'color: #fbbf24; font-family: monospace; font-size: 11px;'
+      );
+      if (activeCount === 0) {
+        console.warn('[CANVAS UYARI] VRAM (0xA0000) tamamen 00 (boş/siyah). #myCanvas üzerinde hiçbir piksel görünmez.');
+      }
+    }
+
+    this.updateDiagBar();
   }
 
   private refreshCrtScreen(): void {
@@ -423,12 +654,26 @@ export class ConsoleView {
         content.innerHTML = this.renderCrtContent();
       }
     }
+    this.updateDiagBar();
   }
 
   private bindEvents(): void {
     // Temizle Butonu
     const clearBtn = this.container.querySelector?.('#btn-console-clear');
     clearBtn?.addEventListener?.('click', () => this.clear());
+
+    // Geçmiş Aç/Kapa Butonu
+    const historyBtn = this.container.querySelector?.('#btn-toggle-canvas-history');
+    const historyPanel = this.container.querySelector?.('#crt-canvas-history-panel') as HTMLElement | null;
+    historyBtn?.addEventListener?.('click', () => {
+      this.isHistoryOpen = !this.isHistoryOpen;
+      if (historyPanel) {
+        historyPanel.style.display = this.isHistoryOpen ? 'block' : 'none';
+      }
+      if (this.isHistoryOpen) {
+        this.renderHistoryList();
+      }
+    });
 
     // Klavye Girişi
     const sendBtn = this.container.querySelector?.('#btn-console-send');

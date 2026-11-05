@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Assembler } from '../src/assembler/assembler.js';
 import { CPU } from '../src/cpu/cpu.js';
+import { ConsoleView } from '../src/ui/console.js';
 
 describe('Diagnostic 32000 Offset VRAM Writing', () => {
   it('checks direct segment write MOV [ES:DI], AL at offset 32000', () => {
@@ -61,5 +62,32 @@ describe('Diagnostic 32000 Offset VRAM Writing', () => {
     const physAddr = 0xA0000 + 32000; // 0xA7D00
     expect(cpu.mem.data[physAddr]).toBe(0x0F);
     expect(cpu.mem.data[0x0449]).toBe(0x13);
+  });
+
+  it('reports canvas pixel change and logs to console', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const container = typeof document !== 'undefined'
+      ? document.createElement('div')
+      : ({ innerHTML: '', querySelector: () => null, addEventListener: () => {} } as any);
+
+    const cpu = new CPU();
+    const consoleView = new ConsoleView(container, { memory: cpu.mem });
+
+    cpu.mem.onVramWrite = (phys: number, val: number) => {
+      consoleView.recordVramChange(phys, val);
+      consoleView.updateVram(cpu.mem.data);
+    };
+
+    // Simulate writing pixel at X=160, Y=100 (Offset 32160, Physical 0xA7D60) with Color 0x0F
+    const phys = 0xA0000 + (100 * 320 + 160);
+    cpu.mem.writeByte(0, phys, 0x0F, true);
+
+    expect(consoleSpy).toHaveBeenCalled();
+    const loggedCalls = consoleSpy.mock.calls.map(c => c.join(' '));
+    const matched = loggedCalls.some(str => str.includes('CANVAS DEĞİŞİKLİĞİ') && str.includes('160') && str.includes('100'));
+    expect(matched).toBe(true);
+
+    consoleView.destroy();
+    consoleSpy.mockRestore();
   });
 });
