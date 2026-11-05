@@ -474,6 +474,24 @@ export class ConsoleView {
           </div>
         </div>
 
+                <!-- Canlı Canvas Tanılama ve Değişiklik Raporu Çubuğu (Göz hizasında, en üstte) -->
+        <div id="crt-canvas-diag-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; height: 28px; min-height: 28px; flex-shrink: 0; background: #0f172a; border-bottom: 1px solid #1e293b; font-size: 10.5px; font-family: 'JetBrains Mono', Consolas, monospace; color: #94a3b8; user-select: none; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+            <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 6px #38bdf8;"></span>
+            <span style="color: #38bdf8; font-weight: 700; letter-spacing: 0.3px;">CANVAS RAPORU:</span>
+            <span id="crt-diag-last-change" style="color: #f1f5f9; font-weight: 500;">Henüz çizim yapılmadı</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+            <span id="crt-diag-pixel-count" style="color: #cbd5e1; font-weight: 600;">Aktif Piksel: 0 / 64,000</span>
+            <button id="btn-toggle-canvas-history" style="padding: 2px 8px; font-size: 9.5px; font-weight: 700; background: #1e293b; color: #38bdf8; border: 1px solid #0284c7; border-radius: 4px; cursor: pointer;">Geçmiş (0)</button>
+          </div>
+        </div>
+
+        <!-- Açılır Değişiklik Geçmişi Listesi -->
+        <div id="crt-canvas-history-panel" style="display: none; max-height: 120px; overflow-y: auto; background: #030712; border-bottom: 1px solid #1e293b; padding: 6px 12px; font-size: 9.5px; font-family: 'JetBrains Mono', monospace; box-sizing: border-box;">
+          <div id="crt-canvas-history-list" style="display: flex; flex-direction: column; gap: 3px;"></div>
+        </div>
+
         <!-- CRT Ekranı (Doğrudan VRAM'i yansıtır) -->
         <div class="crt-screen-wrapper" style="flex: 1 1 auto; min-height: 220px; position: relative; background: #000000; padding: 4px; overflow: hidden; display: flex; flex-direction: column; box-sizing: border-box;">
           <div class="crt-screen-box vga" id="crt-screen-box" tabindex="0" style="flex: 1 1 100%; height: 100%; min-height: 210px; padding: 4px 6px; overflow: hidden; position: relative; background: #000000; border-radius: 4px; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-sizing: border-box; display: flex; flex-direction: column;">
@@ -484,23 +502,6 @@ export class ConsoleView {
             </div>
           </div>
         </div>
-
-        <!-- Canlı Canvas Tanılama ve Değişiklik Raporu Çubuğu -->
-        <div id="crt-canvas-diag-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 10px; height: 26px; min-height: 26px; flex-shrink: 0; background: #070b12; border-top: 1px solid #1e293b; font-size: 10px; font-family: 'JetBrains Mono', Consolas, monospace; color: #94a3b8; user-select: none; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
-            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 5px #38bdf8;"></span>
-            <span style="color: #38bdf8; font-weight: 700;">CANVAS RAPORU:</span>
-            <span id="crt-diag-last-change" style="color: #e2e8f0;">Henüz çizim yapılmadı</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-            <span id="crt-diag-pixel-count" style="color: #cbd5e1;">Aktif Piksel: 0 / 64,000</span>
-            <button id="btn-toggle-canvas-history" style="padding: 1px 7px; font-size: 9.5px; font-weight: 600; background: #1e293b; color: #38bdf8; border: 1px solid #334155; border-radius: 3px; cursor: pointer;">Geçmiş (0)</button>
-          </div>
-        </div>
-
-        <!-- Açılır Değişiklik Geçmişi Listesi -->
-        <div id="crt-canvas-history-panel" style="display: none; max-height: 110px; overflow-y: auto; background: #030712; border-top: 1px solid #1e293b; padding: 6px 10px; font-size: 9.5px; font-family: 'JetBrains Mono', monospace; box-sizing: border-box;">
-          <div id="crt-canvas-history-list" style="display: flex; flex-direction: column; gap: 2px;"></div>
         </div>
 
         <!-- Alt Klavye Girdi Çubuğu -->

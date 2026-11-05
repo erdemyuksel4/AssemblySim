@@ -1837,8 +1837,8 @@ body {
   border-radius: 10px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
   overflow: hidden;
-  height: 350px;
-  min-height: 320px;
+  min-height: 380px;
+  height: auto;
   display: flex;
   flex-direction: column;
 }
