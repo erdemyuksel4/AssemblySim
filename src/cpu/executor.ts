@@ -1748,13 +1748,17 @@ export class Executor {
           const ah = this.regs.ah;
 
           if (ah === 0x00) { // Set Video Mode (AL = mode, e.g. 03h: 80x25 text, 13h: 320x200 graphics)
-            const mode = this.regs.al;
+            const rawMode = this.regs.al;
+            const noClear = (rawMode & 0x80) !== 0;
+            const mode = rawMode & 0x7F;
             this.mem.writeByte(0, 0x0449, mode, false); // BDA video mode
             if (mode === 0x13) {
               // Mode 13h: 320x200 256-Color Graphics Mode (VRAM at 0xA0000, 64000 bytes)
               this.mem.writeWord(0, 0x044A, 40, false); // Columns: 40
-              for (let i = 0; i < 64000; i++) {
-                this.mem.writeByte(0xA000, i, 0, false); // Clear graphics VRAM
+              if (!noClear) {
+                for (let i = 0; i < 64000; i++) {
+                  this.mem.writeByte(0xA000, i, 0, false); // Clear graphics VRAM
+                }
               }
               this.io.setCrtcCursorOffset(0);
               this.mem.onVramWrite?.(0xA0000, 0);
@@ -1762,10 +1766,13 @@ export class Executor {
             } else {
               // Text Mode (03h): 80x25 16-color text (VRAM at 0xB8000, 4000 bytes)
               this.mem.writeWord(0, 0x044A, 80, false); // Columns: 80
-              for (let i = 0; i < 2000; i++) {
-                const vramPhys = 0xB8000 + i * 2;
-                this.mem.writeByte(0, vramPhys, 0x20, false);     // ' '
-                this.mem.writeByte(0, vramPhys + 1, 0x07, false); // Light gray on black
+              // Do not wipe text VRAM when switching back unless explicitly requested with clear
+              if (!noClear && mode !== 0x03) {
+                for (let i = 0; i < 2000; i++) {
+                  const vramPhys = 0xB8000 + i * 2;
+                  this.mem.writeByte(0, vramPhys, 0x20, false);     // ' '
+                  this.mem.writeByte(0, vramPhys + 1, 0x07, false); // Light gray on black
+                }
               }
               // Reset cursor positions in BDA and CRTC
               for (let p = 0; p < 8; p++) {
@@ -1773,7 +1780,7 @@ export class Executor {
               }
               this.io.setCrtcCursorOffset(0);
               this.mem.onVramWrite?.(0xB8000, 0x20);
-              consoleText = `[INT 10h: Video Modu 0x${mode.toString(16).padStart(2, '0').toUpperCase()} ayarlandı, ekran temizlendi]`;
+              consoleText = `[INT 10h: Video Modu 0x${mode.toString(16).padStart(2, '0').toUpperCase()} ayarlandı]`;
             }
           } else if (ah === 0x01) { // Set Cursor Shape (CH = start line, CL = end line)
             this.mem.writeWord(0, 0x0460, this.regs.cx, false);

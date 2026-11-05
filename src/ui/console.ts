@@ -107,10 +107,8 @@ export class ConsoleView {
     this.writeStringToVram(0, 0, 'IBM PC 5150 / 8086 CPU 4.77 MHz - BIOS v1.0', 0x0F);
     this.writeStringToVram(1, 0, '640 KB Base Memory OK  |  BDA 0040h  |  VRAM 0xB800h (80x25 Metin)', 0x07);
     this.writeStringToVram(2, 0, '----------------------------------------------------------------', 0x08);
-    this.writeStringToVram(3, 0, '8086 Web IDE hazir. F5 / RUN ile programinizi calistirabilirsiniz.', 0x0A);
-    this.writeStringToVram(5, 0, 'A:\\> ', 0x0E);
-    this.cursorRow = 5;
-    this.cursorCol = 5;
+    this.cursorRow = 4;
+    this.cursorCol = 0;
   }
 
   destroy(): void {
@@ -300,8 +298,8 @@ export class ConsoleView {
         </div>
 
         <!-- Body 1: Authentic Physical CRT Screen (80x25 Text or Mode 13h Canvas) -->
-        <div class="crt-screen-wrapper" id="crt-view-wrapper" style="flex: 1; min-height: 250px; position: relative; background: #1e293b; padding: 6px 10px; overflow: hidden; display: ${this.activeViewMode === 'monitor' ? 'flex' : 'none'}; flex-direction: column; box-sizing: border-box; border-top: 1px solid #334155; border-bottom: 1px solid #0f172a;">
-          <div class="crt-screen-box ${this.colorMode}" id="crt-screen-box" tabindex="0" style="flex: 1; height: 100%; min-height: 238px; padding: 4px 8px; overflow: hidden; position: relative; background: #000000; border: 2px solid #0f172a; border-radius: 10px; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-shadow: inset 0 0 35px rgba(0,0,0,0.98), inset 0 0 10px rgba(56, 189, 248, 0.05); box-sizing: border-box;">
+        <div class="crt-screen-wrapper" id="crt-view-wrapper" style="flex: 1 1 268px; min-height: 260px; height: 268px; position: relative; background: #1e293b; padding: 6px 10px; overflow: hidden; display: ${this.activeViewMode === 'monitor' ? 'flex' : 'none'}; flex-direction: column; box-sizing: border-box; border-top: 1px solid #334155; border-bottom: 1px solid #0f172a;">
+          <div class="crt-screen-box ${this.colorMode}" id="crt-screen-box" tabindex="0" style="flex: 1 1 100%; height: 100%; min-height: 248px; padding: 4px 8px; overflow: hidden; position: relative; background: #000000; border: 2px solid #0f172a; border-radius: 10px; font-family: 'JetBrains Mono', Consolas, monospace; cursor: text; box-shadow: inset 0 0 35px rgba(0,0,0,0.98), inset 0 0 10px rgba(56, 189, 248, 0.05); box-sizing: border-box;">
             <div class="crt-scanlines"></div>
             <div class="crt-glow"></div>
             <div class="crt-content" id="crt-screen-content" style="position: relative; z-index: 2; font-size: 10px; line-height: 10.5px; letter-spacing: 0.3px; width: 100%; height: 100%; user-select: none;">
@@ -311,10 +309,10 @@ export class ConsoleView {
         </div>
 
         <!-- Body 2: Standard System & Compiler Diagnostics Log -->
-        <div class="console-body" id="console-output" style="flex: 1; min-height: 250px; padding: 8px 12px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #020617; color: #cbd5e1; display: ${this.activeViewMode === 'logs' ? 'block' : 'none'}; box-sizing: border-box;"></div>
+        <div class="console-body" id="console-output" style="flex: 1 1 268px; min-height: 260px; height: 268px; padding: 8px 12px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #020617; color: #cbd5e1; display: ${this.activeViewMode === 'logs' ? 'block' : 'none'}; box-sizing: border-box;"></div>
 
         <!-- Bottom Hardware Keyboard Input Bar -->
-        <div class="console-input-wrap" id="console-input-wrap" style="display: flex; align-items: center; gap: 8px; padding: 3px 10px; height: 36px; min-height: 36px; flex-shrink: 0; background: #0c1017; border-top: 1px solid #1e293b; box-sizing: border-box;">
+        <div class="console-input-wrap" id="console-input-wrap" style="display: flex; align-items: center; gap: 8px; padding: 3px 10px; height: 36px; min-height: 36px; flex-shrink: 0; margin-top: auto; background: #0c1017; border-top: 1px solid #1e293b; box-sizing: border-box;">
           <span class="console-prompt-sym" style="color: #38bdf8; font-weight: 700; font-size: 12px;">❯</span>
           <input type="text" id="console-input-field" class="console-input-field" placeholder="Klavye girdisi (Port 60h / INT 16h / INT 21h)..." autocomplete="off" style="flex: 1; background: #020617; border: 1px solid #243044; border-radius: 4px; padding: 3px 8px; color: #f8fafc; font-size: 11px; font-family: 'JetBrains Mono', monospace; outline: none;" />
           <button id="btn-console-send" class="btn-console-send" title="Gönder" style="padding: 2px 10px; font-size: 11px; font-weight: 600; background: #2563eb; color: #ffffff; border: none; border-radius: 4px; cursor: pointer;">Gönder</button>

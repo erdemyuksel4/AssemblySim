@@ -119,9 +119,7 @@ export class Memory {
     const vramBanner = [
       { text: 'IBM PC 5150 / 8086 CPU 4.77 MHz - BIOS v1.0', attr: 0x0F, row: 0 },
       { text: '640 KB Base Memory OK  |  BDA 0040h  |  VRAM 0xB800h (80x25 Metin)', attr: 0x07, row: 1 },
-      { text: '----------------------------------------------------------------', attr: 0x08, row: 2 },
-      { text: '8086 Web IDE hazir. F5 / RUN ile programinizi calistirabilirsiniz.', attr: 0x0A, row: 3 },
-      { text: 'A:\\> ', attr: 0x0E, row: 5 }
+      { text: '----------------------------------------------------------------', attr: 0x08, row: 2 }
     ];
 
     for (const line of vramBanner) {
@@ -132,9 +130,9 @@ export class Memory {
       }
     }
 
-    // Set hardware cursor at row 5, col 5 in BDA
-    this.data[0x0450] = 5;
-    this.data[0x0451] = 5;
+    // Set hardware cursor at row 4, col 0 in BDA
+    this.data[0x0450] = 0;
+    this.data[0x0451] = 4;
 
     // -------------------------------------------------------------
     // 4. ROM BIOS at 0xF0000 - 0xFFFFF (64 KB)
