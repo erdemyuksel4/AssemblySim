@@ -48,7 +48,7 @@ const VGA_256_RGB: [number, number, number][] = (() => {
 /**
  * Sade, Gerçekçi CRT Monitör
  * Tamamen sistem belleğine (Memory / 1 MB RAM) bağlıdır.
- * - Ekran modu doğrudan BDA 0040:0049h (0x0449) adresinden okunur. Elle mod seçimi yoktur.
+ * - Ekran modu doğrudan BDA 0040:0049h (0x0449) adresinden okunur.
  * - Metin Modu (03h): 0xB8000 VRAM alanını ve 0x0450/0x0451 imleç koordinatlarını yansıtır.
  * - Grafik Modu (13h): 0xA0000 VRAM alanını 320x200 piksel olarak canvas'a çizer.
  */
@@ -154,7 +154,7 @@ export class ConsoleView {
   }
 
   log(_text: string, _level: LogLevel = 'info'): void {
-    // Monitör saf ekran olduğu için log kalabalığı ekrana basılmaz, donanım durumunu korur
+    // Monitör saf donanım ekranı olduğu için log kalabalığı ekrana basılmaz
   }
 
   appendStdout(_charOrStr: string): void {
@@ -229,6 +229,16 @@ export class ConsoleView {
       this.memory.data.set(memoryAll.subarray(0, copyLen));
     }
 
+    // 0xA0000 grafik VRAM'ine piksel yazılmışsa ekranı otomatik olarak grafik moduna al
+    if (this.videoMode !== 0x13) {
+      for (let i = 0; i < 64000; i += 64) {
+        if (this.memory.data[0xA0000 + i] !== 0) {
+          this.memory.data[0x0449] = 0x13;
+          break;
+        }
+      }
+    }
+
     this.vramDirty = true;
     this.scheduleRender();
   }
@@ -262,7 +272,7 @@ export class ConsoleView {
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 6px #22c55e;"></span>
             <span style="font-size: 11px; font-weight: 700; color: #e2e8f0; letter-spacing: 0.5px;">MONİTÖR</span>
-            <span id="crt-monitor-title" style="font-size: 9.5px; font-weight: 600; padding: 1px 6px; border-radius: 3px; background: #1e293b; color: #38bdf8;">${modeLabel}</span>
+            <span id="crt-monitor-title" title="Modu değiştirmek için tıklayın" style="font-size: 9.5px; font-weight: 600; padding: 1px 7px; border-radius: 4px; background: #1e293b; color: #38bdf8; cursor: pointer; user-select: none; border: 1px solid #334155;">${modeLabel}</span>
           </div>
 
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -396,6 +406,12 @@ export class ConsoleView {
   }
 
   private bindEvents(): void {
+    // Başlıktaki rozete tıklayınca modu elle değiştirme (03h Metin <-> 13h Grafik)
+    const titleEl = this.container.querySelector?.('#crt-monitor-title');
+    titleEl?.addEventListener?.('click', () => {
+      this.setVideoMode(this.videoMode === 0x13 ? 0x03 : 0x13);
+    });
+
     // Temizle Butonu
     const clearBtn = this.container.querySelector?.('#btn-console-clear');
     clearBtn?.addEventListener?.('click', () => this.clear());
