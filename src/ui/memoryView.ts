@@ -142,7 +142,8 @@ export class MemoryView {
           <button class="mem-jump-btn ${this.currentBasePhys === 0x00000 ? 'active' : ''}" data-addr="00000" title="Kesme Vektör Tablosu (0x00000)">IVT</button>
           <button class="mem-jump-btn ${this.currentBasePhys === 0x00400 ? 'active' : ''}" data-addr="00400" title="BIOS Veri Alanı (0x00400)">BDA</button>
           <button class="mem-jump-btn ${this.currentBasePhys >= 0x00500 && this.currentBasePhys < 0xA0000 ? 'active' : ''}" data-addr="00500" title="640 KB Kişisel Alan / Kullanıcı RAM (0x00500 - 0x9FFFF)">640 KB RAM</button>
-          <button class="mem-jump-btn ${this.currentBasePhys === 0xB8000 ? 'active' : ''}" data-addr="B8000" title="CGA/VGA Renkli Metin Belleği (0xB8000)">VRAM</button>
+          <button class="mem-jump-btn ${this.currentBasePhys >= 0xA0000 && this.currentBasePhys < 0xB8000 ? 'active' : ''}" data-addr="A0000" title="VGA Mode 13h Grafik Belleği (0xA0000)">VGA (A0000)</button>
+          <button class="mem-jump-btn ${this.currentBasePhys >= 0xB8000 && this.currentBasePhys < 0xC0000 ? 'active' : ''}" data-addr="B8000" title="CGA/VGA Renkli Metin Belleği (0xB8000)">VRAM</button>
           <button class="mem-jump-btn ${this.currentBasePhys === 0xF0000 ? 'active' : ''}" data-addr="F0000" title="ROM BIOS Alanı (0xF0000)">ROM BIOS</button>
           <button class="mem-jump-btn ${this.currentBasePhys === 0xFFFF0 ? 'active' : ''}" data-addr="FFFF0" title="CPU Power-On Reset Vektörü (0xFFFF0)">Reset</button>
         </div>
