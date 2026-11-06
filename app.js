@@ -1687,11 +1687,12 @@ var Memory = class {
     this.initHardwareRomAndVectors();
   }
   /**
-   * Initializes authentic 1981 IBM PC compatible 8086 post-BIOS hardware state:
+   * Initializes authentic 1981 IBM PC compatible 8086 Real Mode 1 MB memory map:
    * 1. IVT (Interrupt Vector Table): 0x00000 - 0x003FF (256 vectors)
-   * 2. BDA (BIOS Data Area): 0x00400 - 0x004FF (Equipment, RAM size, Video mode)
-   * 3. VRAM (CGA/VGA Text Mode): 0x0B8000 - 0x0B8FA0 (80x25 blank cells)
-   * 4. ROM BIOS: 0x0F0000 - 0x0FFFFF (Handlers, Reset Vector at 0xFFFF0, Model Byte)
+   * 2. BDA (BIOS Data Area): 0x00400 - 0x004FF (Equipment, RAM size, Video mode, Keyboard ring buffer)
+   * 3. 640 KB Conventional RAM: 0x00500 - 0x9FFFF (User programs, Stack, DMA & I/O buffers)
+   * 4. VGA/CGA VRAM: 0xA0000 - 0xBFFFF (0xA0000 Mode 13h Graphics VRAM, 0xB8000 Text Mode VRAM)
+   * 5. ROM BIOS: 0xC0000 (VGA Video ROM), 0xE0000 (System Expansion ROM), 0xF0000 - 0xFFFFF (Motherboard ROM BIOS & 0xFFFF0 Reset Vector)
    */
   initHardwareRomAndVectors() {
     for (let i = 0; i < 256; i++) {
@@ -1751,6 +1752,10 @@ var Memory = class {
     this.data[1101] = 16;
     this.data[1123] = 212;
     this.data[1124] = 3;
+    this.data[1152] = 30;
+    this.data[1153] = 0;
+    this.data[1154] = 62;
+    this.data[1155] = 0;
     for (let i = 1024; i < 1280; i++) {
       this.cellTypes[i] = 2;
     }
@@ -1775,6 +1780,23 @@ var Memory = class {
     }
     this.data[1104] = 0;
     this.data[1105] = 4;
+    const vgaRomHeader = [85, 170, 64, 235, 2, 144, 203];
+    for (let i = 0; i < vgaRomHeader.length; i++) {
+      this.data[786432 + i] = vgaRomHeader[i];
+      this.cellTypes[786432 + i] = i >= 3 ? 1 : 2;
+    }
+    const vgaBanner = "IBM VGA COMPATIBLE VIDEO ROM BIOS (C0000h - A0000h VRAM)";
+    for (let i = 0; i < vgaBanner.length; i++) {
+      this.data[786448 + i] = vgaBanner.charCodeAt(i);
+      this.cellTypes[786448 + i] = 2;
+    }
+    const expRomBanner = "IBM PC/AT SYSTEM EXPANSION ROM BIOS (E0000h)";
+    for (let i = 0; i < expRomBanner.length; i++) {
+      this.data[917504 + i] = expRomBanner.charCodeAt(i);
+      this.cellTypes[917504 + i] = 2;
+    }
+    this.data[917568] = 203;
+    this.cellTypes[917568] = 1;
     const banner = "IBM COMPATIBLE 8086 ROM BIOS (C) 1981 INTEL / IBM CORPORATION";
     for (let i = 0; i < banner.length; i++) {
       this.data[983040 + i] = banner.charCodeAt(i);
@@ -1802,6 +1824,39 @@ var Memory = class {
       this.data[h] = 207;
       this.cellTypes[h] = 1;
     }
+    const postRoutine = [
+      250,
+      // CLI               (Disable interrupts during POST)
+      252,
+      // CLD               (Clear direction flag)
+      49,
+      192,
+      // XOR AX, AX        (AX = 0000h)
+      142,
+      216,
+      // MOV DS, AX        (DS = 0000h)
+      142,
+      192,
+      // MOV ES, AX        (ES = 0000h)
+      142,
+      208,
+      // MOV SS, AX        (SS = 0000h)
+      188,
+      0,
+      124,
+      // MOV SP, 7C00h     (Stack below bootloader)
+      251,
+      // STI               (Enable interrupts)
+      205,
+      25,
+      // INT 19h           (Bootstrap Loader -> jumps to 0000:7C00h)
+      244
+      // HLT               (Fallback halt)
+    ];
+    for (let i = 0; i < postRoutine.length; i++) {
+      this.data[1040475 + i] = postRoutine[i];
+      this.cellTypes[1040475 + i] = 1;
+    }
     const releaseDate = "01/01/81";
     for (let i = 0; i < releaseDate.length; i++) {
       this.data[1048565 + i] = releaseDate.charCodeAt(i);
@@ -1817,6 +1872,39 @@ var Memory = class {
     }
     this.data[1048574] = 255;
     this.cellTypes[1048574] = 2;
+  }
+  /**
+   * Pushes a keystroke (ASCII + Scancode) into the BDA circular buffer (0040:001Eh..003Dh).
+   */
+  pushKeyboardBuffer(ascii, scancode = 0) {
+    const start = 30;
+    const end = 62;
+    const head = this.data[1050] | this.data[1051] << 8 || start;
+    let tail = this.data[1052] | this.data[1053] << 8 || start;
+    if (tail < start || tail >= end) tail = start;
+    let nextTail = tail + 2;
+    if (nextTail >= end) nextTail = start;
+    this.data[1024 + tail] = ascii & 255;
+    this.data[1024 + tail + 1] = scancode & 255;
+    if (nextTail !== head) {
+      this.data[1052] = nextTail & 255;
+      this.data[1053] = nextTail >> 8 & 255;
+    }
+  }
+  /**
+   * Advances BDA keyboard circular buffer head pointer when a key is consumed by a program.
+   */
+  consumeKeyboardBuffer() {
+    const start = 30;
+    const end = 62;
+    let head = this.data[1050] | this.data[1051] << 8 || start;
+    const tail = this.data[1052] | this.data[1053] << 8 || start;
+    if (head !== tail) {
+      head += 2;
+      if (head >= end) head = start;
+      this.data[1050] = head & 255;
+      this.data[1051] = head >> 8 & 255;
+    }
   }
   clearAccessLogs() {
     this.lastReads.clear();
@@ -2540,15 +2628,34 @@ var Decoder = class {
 var IOPortManager = class {
   ports = new Uint8Array(65536);
   inputQueue = [];
+  mem;
   // Hardware emulation internal states
   pitCounter = 65535;
   crtcIndex = 0;
   crtcRegisters = new Uint8Array(32);
   cgaStatus = 8;
+  // 8237A DMA Channel 1 (Sound Card 640 KB RAM DMA)
+  dmaFlipFlop = false;
+  dmaCh1Addr = 1280;
+  dmaCh1Count = 0;
+  dmaCh1Page = 0;
+  // Sound Blaster DSP (Ports 220h - 22Eh)
+  dspResetState = 0;
+  dspReadBuffer = [];
+  dspPendingCmd = null;
+  dspCmdBytes = [];
+  speakerEnabled = false;
+  lastAudioSamples = new Uint8Array(0);
+  // Disk Sector Storage (LBA -> 512-byte Uint8Array)
+  diskSectors = /* @__PURE__ */ new Map();
   onPortWrite;
   onPortRead;
-  constructor() {
+  constructor(mem) {
+    this.mem = mem;
     this.reset();
+  }
+  attachMemory(mem) {
+    this.mem = mem;
   }
   reset() {
     this.ports.fill(0);
@@ -2557,29 +2664,49 @@ var IOPortManager = class {
     this.crtcIndex = 0;
     this.crtcRegisters.fill(0);
     this.cgaStatus = 8;
+    this.dmaFlipFlop = false;
+    this.dmaCh1Addr = 1280;
+    this.dmaCh1Count = 0;
+    this.dmaCh1Page = 0;
+    this.dspResetState = 0;
+    this.dspReadBuffer = [];
+    this.dspPendingCmd = null;
+    this.dspCmdBytes = [];
+    this.speakerEnabled = false;
+    this.lastAudioSamples = new Uint8Array(0);
+    this.diskSectors.clear();
     this.ports[33] = 252;
     this.ports[96] = 0;
     this.ports[97] = 0;
     this.ports[98] = 45;
     this.ports[100] = 0;
+    this.ports[556] = 0;
+    this.ports[558] = 0;
     this.crtcRegisters[14] = 0;
     this.crtcRegisters[15] = 0;
     this.ports[1021] = 96;
   }
   /**
    * Feed characters or bytes from user/terminal into the input queue
+   * and synchronize with BDA (0x00400) keyboard ring buffer in RAM.
    */
   feedInput(data) {
+    const pushByte = (b) => {
+      const clean = b & 255;
+      this.inputQueue.push(clean);
+      this.ports[96] = clean;
+      this.mem?.pushKeyboardBuffer(clean, 0);
+    };
     if (typeof data === "string") {
       for (let i = 0; i < data.length; i++) {
-        this.inputQueue.push(data.charCodeAt(i) & 255);
+        pushByte(data.charCodeAt(i));
       }
     } else if (Array.isArray(data)) {
       for (const b of data) {
-        this.inputQueue.push(b & 255);
+        pushByte(b);
       }
     } else {
-      this.inputQueue.push(data & 255);
+      pushByte(data);
     }
   }
   /**
@@ -2589,10 +2716,14 @@ var IOPortManager = class {
     return this.inputQueue.length > 0;
   }
   /**
-   * Consume next byte from input queue
+   * Consume next byte from input queue and advance BDA keyboard buffer head
    */
   popInput() {
-    return this.inputQueue.shift();
+    const val = this.inputQueue.shift();
+    if (val !== void 0) {
+      this.mem?.consumeKeyboardBuffer();
+    }
+    return val;
   }
   /**
    * Peek next byte without consuming
@@ -2601,12 +2732,77 @@ var IOPortManager = class {
     return this.inputQueue[0];
   }
   /**
+   * Writes 512-byte sector from 640 KB Conventional RAM (seg:off) to Disk storage
+   */
+  writeSectorFromRam(mem, lba, seg, off) {
+    const sector = new Uint8Array(512);
+    for (let i = 0; i < 512; i++) {
+      sector[i] = mem.readByte(seg, off + i & 65535, true);
+    }
+    this.diskSectors.set(lba, sector);
+  }
+  /**
+   * Reads 512-byte sector from Disk storage into 640 KB Conventional RAM (seg:off)
+   */
+  readSectorToRam(mem, lba, seg, off) {
+    const saved = this.diskSectors.get(lba);
+    if (saved) {
+      for (let i = 0; i < 512; i++) {
+        mem.writeByte(seg, off + i & 65535, saved[i], true);
+      }
+    } else if (lba === 0) {
+      for (let i = 0; i < 512; i++) {
+        const val = mem.readByte(0, 31744 + i, false);
+        mem.writeByte(seg, off + i & 65535, val, true);
+      }
+    } else {
+      for (let i = 0; i < 512; i++) {
+        mem.writeByte(seg, off + i & 65535, 0, true);
+      }
+    }
+  }
+  /**
+   * Executes Sound Card 8237 DMA transfer from 640 KB Conventional RAM
+   */
+  triggerSoundDma(lengthOverride) {
+    if (!this.mem) return new Uint8Array(0);
+    const totalBytes = lengthOverride !== void 0 ? lengthOverride : this.dmaCh1Count + 1;
+    const physBase = (this.dmaCh1Page & 15) << 16 | this.dmaCh1Addr & 65535;
+    const count = Math.max(0, Math.min(totalBytes, 65536));
+    const samples = new Uint8Array(count);
+    for (let i = 0; i < count; i++) {
+      const phys = physBase + i & 1048575;
+      const seg = phys >> 4 & 61440;
+      const off = phys & 65535;
+      samples[i] = this.mem.readByte(seg, off, true);
+    }
+    this.lastAudioSamples = samples;
+    return samples;
+  }
+  /**
+   * Gets current DMA Channel 1 physical address in 1 MB space
+   */
+  getDmaCh1PhysicalAddress() {
+    return ((this.dmaCh1Page & 15) << 16 | this.dmaCh1Addr & 65535) & 1048575;
+  }
+  /**
    * Read 8-bit byte from I/O port
    */
   readByte(port) {
     port = port & 65535;
     let val;
     switch (port) {
+      case 2:
+        val = !this.dmaFlipFlop ? this.dmaCh1Addr & 255 : this.dmaCh1Addr >> 8 & 255;
+        this.dmaFlipFlop = !this.dmaFlipFlop;
+        break;
+      case 3:
+        val = !this.dmaFlipFlop ? this.dmaCh1Count & 255 : this.dmaCh1Count >> 8 & 255;
+        this.dmaFlipFlop = !this.dmaFlipFlop;
+        break;
+      case 131:
+        val = this.dmaCh1Page;
+        break;
       case 32:
         val = this.ports[32];
         break;
@@ -2622,7 +2818,7 @@ var IOPortManager = class {
         break;
       case 96:
         if (this.inputQueue.length > 0) {
-          val = this.inputQueue.shift();
+          val = this.popInput();
         } else {
           val = this.ports[96];
         }
@@ -2632,6 +2828,22 @@ var IOPortManager = class {
         break;
       case 98:
         val = this.ports[98] || 45;
+        break;
+      case 554:
+        if (this.dspReadBuffer.length > 0) {
+          val = this.dspReadBuffer.shift();
+          if (this.dspReadBuffer.length === 0) {
+            this.ports[558] = 0;
+          }
+        } else {
+          val = this.ports[554] || 170;
+        }
+        break;
+      case 556:
+        val = 0;
+        break;
+      case 558:
+        val = this.dspReadBuffer.length > 0 ? 128 : 0;
         break;
       case 981:
         val = this.crtcRegisters[this.crtcIndex & 31] || 0;
@@ -2668,8 +2880,67 @@ var IOPortManager = class {
     val = val & 255;
     this.ports[port] = val;
     switch (port) {
+      case 2:
+        if (!this.dmaFlipFlop) {
+          this.dmaCh1Addr = this.dmaCh1Addr & 65280 | val;
+        } else {
+          this.dmaCh1Addr = this.dmaCh1Addr & 255 | val << 8;
+        }
+        this.dmaFlipFlop = !this.dmaFlipFlop;
+        break;
+      case 3:
+        if (!this.dmaFlipFlop) {
+          this.dmaCh1Count = this.dmaCh1Count & 65280 | val;
+        } else {
+          this.dmaCh1Count = this.dmaCh1Count & 255 | val << 8;
+        }
+        this.dmaFlipFlop = !this.dmaFlipFlop;
+        break;
+      case 12:
+        this.dmaFlipFlop = false;
+        break;
+      case 131:
+        this.dmaCh1Page = val & 15;
+        break;
       case 32:
         if (val === 32) {
+        }
+        break;
+      case 550:
+        if (val === 1) {
+          this.dspResetState = 1;
+        } else if (val === 0 && this.dspResetState === 1) {
+          this.dspResetState = 0;
+          this.dspReadBuffer = [170];
+          this.ports[554] = 170;
+          this.ports[558] = 128;
+        }
+        break;
+      case 556:
+        if (this.dspPendingCmd === null) {
+          if (val === 209) {
+            this.speakerEnabled = true;
+          } else if (val === 211) {
+            this.speakerEnabled = false;
+          } else if (val === 225) {
+            this.dspReadBuffer.push(2, 1);
+            this.ports[558] = 128;
+          } else if (val === 16 || val === 64 || val === 20 || val === 36) {
+            this.dspPendingCmd = val;
+            this.dspCmdBytes = [];
+          }
+        } else {
+          this.dspCmdBytes.push(val);
+          if (this.dspPendingCmd === 16 && this.dspCmdBytes.length === 1) {
+            this.lastAudioSamples = new Uint8Array([this.dspCmdBytes[0]]);
+            this.dspPendingCmd = null;
+          } else if (this.dspPendingCmd === 64 && this.dspCmdBytes.length === 1) {
+            this.dspPendingCmd = null;
+          } else if ((this.dspPendingCmd === 20 || this.dspPendingCmd === 36) && this.dspCmdBytes.length === 2) {
+            const blockLen = (this.dspCmdBytes[0] | this.dspCmdBytes[1] << 8) + 1;
+            this.triggerSoundDma(blockLen);
+            this.dspPendingCmd = null;
+          }
         }
         break;
       case 980:
@@ -3361,6 +3632,13 @@ var Executor = class {
         currIp = currIp + signedRel & 65535;
         break;
       }
+      case 234: {
+        const targetIp = fetchWord();
+        const targetCs = fetchWord();
+        this.regs.cs = targetCs;
+        currIp = targetIp;
+        break;
+      }
       case 112: {
         const rel = fetchRel8();
         if (this.flags.of) currIp = currIp + rel & 65535;
@@ -3934,6 +4212,16 @@ var Executor = class {
         currIp = currIp + signedRel & 65535;
         break;
       }
+      case 154: {
+        const targetIp = fetchWord();
+        const targetCs = fetchWord();
+        this.callDepth++;
+        this.push(this.regs.cs);
+        this.push(currIp);
+        this.regs.cs = targetCs;
+        currIp = targetIp;
+        break;
+      }
       case 195: {
         if (this.callDepth > 0) {
           this.callDepth--;
@@ -3956,6 +4244,20 @@ var Executor = class {
           currIp = initialIp;
           consoleText = "[Program RET komutuyla ba\u015Far\u0131yla sonland\u0131]";
         }
+        break;
+      }
+      case 203: {
+        if (this.callDepth > 0) this.callDepth--;
+        currIp = this.pop();
+        this.regs.cs = this.pop();
+        break;
+      }
+      case 202: {
+        const imm = fetchWord();
+        if (this.callDepth > 0) this.callDepth--;
+        currIp = this.pop();
+        this.regs.cs = this.pop();
+        this.regs.sp = this.regs.sp + imm & 65535;
         break;
       }
       case 207: {
@@ -4558,21 +4860,32 @@ var Executor = class {
             const count = this.regs.al;
             const destSeg = this.regs.es;
             const destOff = this.regs.bx;
+            const cyl = this.regs.ch;
+            const head = this.regs.dh;
+            const sec = Math.max(1, this.regs.cl & 63);
+            const baseLba = (cyl * 2 + head) * 18 + (sec - 1);
             for (let s = 0; s < count; s++) {
               const bufferBase = destOff + s * 512 & 65535;
-              if (this.regs.ch === 0 && (this.regs.cl & 63) === 1 && this.regs.dh === 0) {
-                for (let b = 0; b < 512; b++) {
-                  const val = this.mem.readByte(0, 31744 + b, false);
-                  this.mem.writeByte(destSeg, bufferBase + b & 65535, val, true);
-                }
-              }
+              this.io.readSectorToRam(this.mem, baseLba + s, destSeg, bufferBase);
             }
             this.flags.cf = false;
             this.regs.ah = 0;
-            consoleText = `[INT 13h AH=02h: ${count} Sekt\xF6r Okundu -> ${destSeg.toString(16).padStart(4, "0")}:${destOff.toString(16).padStart(4, "0")}]`;
+            consoleText = `[INT 13h AH=02h: ${count} Sekt\xF6r Diskten 640 KB RAM'e Okundu -> ${destSeg.toString(16).padStart(4, "0")}:${destOff.toString(16).padStart(4, "0")}]`;
           } else if (ah === 3) {
+            const count = this.regs.al;
+            const srcSeg = this.regs.es;
+            const srcOff = this.regs.bx;
+            const cyl = this.regs.ch;
+            const head = this.regs.dh;
+            const sec = Math.max(1, this.regs.cl & 63);
+            const baseLba = (cyl * 2 + head) * 18 + (sec - 1);
+            for (let s = 0; s < count; s++) {
+              const bufferBase = srcOff + s * 512 & 65535;
+              this.io.writeSectorFromRam(this.mem, baseLba + s, srcSeg, bufferBase);
+            }
             this.flags.cf = false;
             this.regs.ah = 0;
+            consoleText = `[INT 13h AH=03h: ${count} Sekt\xF6r 640 KB RAM'den Diske Yaz\u0131ld\u0131 <- ${srcSeg.toString(16).padStart(4, "0")}:${srcOff.toString(16).padStart(4, "0")}]`;
           } else if (ah === 8) {
             this.regs.dl = 1;
             this.regs.dh = 1;
@@ -4830,7 +5143,7 @@ var CPU = class {
     this.mem = new Memory();
     this.regs = new Registers();
     this.flags = new Flags();
-    this.io = new IOPortManager();
+    this.io = new IOPortManager(this.mem);
     this.executor = new Executor(this.mem, this.regs, this.flags, this.io);
     this.reset();
   }
@@ -4847,6 +5160,16 @@ var CPU = class {
     this.lastError = void 0;
     this.consoleBuffer = "";
     this.history = [];
+  }
+  /**
+   * Simulates hardware Power-On Reset:
+   * Motherboard controller initializes CPU at CS=FFFFh, IP=0000h (physical 0xFFFF0 Reset Vector),
+   * which executes JMP FAR F000:E05B into ROM BIOS POST and boots via INT 19h.
+   */
+  powerOnReset() {
+    this.reset();
+    this.regs.cs = 65535;
+    this.regs.ip = 0;
   }
   // Load binary at CS:origin (default origin 0x0000)
   loadCOM(bytes, origin = 0) {
@@ -4871,7 +5194,6 @@ var CPU = class {
     const oldRegs = this.regs.clone();
     const oldFlags = this.flags.clone();
     this.mem.clearAccessLogs();
-    const writesBefore = /* @__PURE__ */ new Map();
     const ipBefore = this.regs.ip;
     const result = this.executor.executeStep();
     if (result.halted) this.halted = true;
@@ -6911,11 +7233,11 @@ function getMemoryRegionLabel(phys) {
   if (p < 1024) return "IVT (Kesme Vekt\xF6r Tablosu - 0x00000)";
   if (p < 1280) return "BDA (BIOS Veri Alan\u0131 - 0x00400)";
   if (p >= 1280 && p < 655360) return "640 KB Ki\u015Fisel Alan (Konvansiyonel RAM - 0x00500 - 0x9FFFF)";
-  if (p >= 655360 && p < 753664) return "EGA/VGA Grafik Video Belle\u011Fi";
-  if (p >= 753664 && p < 786432) return "VRAM (80x25 Renkli Metin CRT Modu)";
-  if (p >= 786432 && p < 983040) return "Video BIOS & Kart Geni\u015Fleme ROM";
-  if (p >= 983040 && p < 1048560) return "ROM BIOS (Anakart Salt Okunur Belle\u011Fi)";
-  if (p >= 1048560) return "CPU Power-On Reset Vekt\xF6r\xFC (0xFFFF0)";
+  if (p >= 655360 && p < 786432) return "VGA VRAM (Video Belle\u011Fi - 0xA0000 - 0xBFFFF)";
+  if (p >= 786432 && p < 917504) return "VGA Video ROM BIOS & Kart Geni\u015Fleme ROM (0xC0000)";
+  if (p >= 917504 && p < 983040) return "Sistem Geni\u015Fleme ROM BIOS (0xE0000)";
+  if (p >= 983040 && p < 1048560) return "ROM BIOS (Anakart Salt Okunur Belle\u011Fi - 0xF0000)";
+  if (p >= 1048560) return "CPU Power-On Reset Vekt\xF6r\xFC (0xFFFF0 -> F000:E05B)";
   return "640 KB Ki\u015Fisel Alan (RAM)";
 }
 var MemoryView = class {
@@ -7026,10 +7348,10 @@ var MemoryView = class {
         <div class="memory-quick-jumps">
           <button class="mem-jump-btn ${this.currentBasePhys === 0 ? "active" : ""}" data-addr="00000" title="Kesme Vekt\xF6r Tablosu (0x00000)">IVT</button>
           <button class="mem-jump-btn ${this.currentBasePhys === 1024 ? "active" : ""}" data-addr="00400" title="BIOS Veri Alan\u0131 (0x00400)">BDA</button>
-          <button class="mem-jump-btn ${this.currentBasePhys >= 1280 && this.currentBasePhys < 655360 ? "active" : ""}" data-addr="00500" title="640 KB Ki\u015Fisel Alan / Kullan\u0131c\u0131 RAM (0x00500 - 0x9FFFF)">640 KB RAM</button>
-          <button class="mem-jump-btn ${this.currentBasePhys >= 655360 && this.currentBasePhys < 753664 ? "active" : ""}" data-addr="A0000" title="VGA Mode 13h Grafik Belle\u011Fi (0xA0000)">VGA (A0000)</button>
-          <button class="mem-jump-btn ${this.currentBasePhys >= 753664 && this.currentBasePhys < 786432 ? "active" : ""}" data-addr="B8000" title="CGA/VGA Renkli Metin Belle\u011Fi (0xB8000)">VRAM</button>
-          <button class="mem-jump-btn ${this.currentBasePhys === 983040 ? "active" : ""}" data-addr="F0000" title="ROM BIOS Alan\u0131 (0xF0000)">ROM BIOS</button>
+          <button class="mem-jump-btn ${this.currentBasePhys >= 1280 && this.currentBasePhys < 655360 ? "active" : ""}" data-addr="00500" title="640 KB Ki\u015Fisel Alan / Konvansiyonel RAM (0x00500 - 0x9FFFF)">640 KB RAM</button>
+          <button class="mem-jump-btn ${this.currentBasePhys >= 655360 && this.currentBasePhys < 786432 ? "active" : ""}" data-addr="A0000" title="VGA VRAM Video Belle\u011Fi (0xA0000 - 0xBFFFF)">VGA VRAM (A0000)</button>
+          <button class="mem-jump-btn ${this.currentBasePhys >= 786432 && this.currentBasePhys < 983040 ? "active" : ""}" data-addr="C0000" title="VGA Video ROM & Sistem Geni\u015Fleme ROM (0xC0000 / 0xE0000)">C0000/E0000</button>
+          <button class="mem-jump-btn ${this.currentBasePhys >= 983040 && this.currentBasePhys < 1048560 ? "active" : ""}" data-addr="F0000" title="Anakart ROM BIOS Alan\u0131 (0xF0000)">ROM BIOS</button>
           <button class="mem-jump-btn ${this.currentBasePhys === 1048560 ? "active" : ""}" data-addr="FFFF0" title="CPU Power-On Reset Vekt\xF6r\xFC (0xFFFF0)">Reset</button>
         </div>
 
@@ -7147,9 +7469,12 @@ var ConsoleView = class {
   onInput;
   onVideoModeChange;
   isWaiting = false;
-  // Donanımsal imleç yanıp sönme (blink) durumu
+  // Donanımsal imleç yanıp sönme (blink) durumu ve VGA Raster Tarayıcı (60 Hz)
   cursorBlink = true;
   blinkTimer = null;
+  vgaScanTimer = null;
+  lastVramHash = 0;
+  vgaScanCount = 0;
   // Çizim tamponları (320x200 VRAM -> 800x600 Keskin Canvas)
   canvasCtx = null;
   offscreenCanvas = null;
@@ -7324,6 +7649,10 @@ var ConsoleView = class {
       clearInterval(this.blinkTimer);
       this.blinkTimer = null;
     }
+    if (this.vgaScanTimer !== null) {
+      clearInterval(this.vgaScanTimer);
+      this.vgaScanTimer = null;
+    }
     if (this.animFrameId !== null && typeof cancelAnimationFrame !== "undefined") {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
@@ -7336,10 +7665,40 @@ var ConsoleView = class {
   setOnInput(callback) {
     this.onInput = callback;
   }
+  /**
+   * VGA Ekran Kartı Modülü Periyodik Tarayıcısı (Saniyede ~30-60 kez):
+   * A0000h VRAM bölgesindeki renk verilerini okuyarak değişiklik olduğunda monitöre yansıtır.
+   */
+  scanVramFrame() {
+    this.vgaScanCount++;
+    const u32 = new Uint32Array(this.memory.data.buffer, 655360, 16e3);
+    let hash = 2166136261;
+    let hasNonZeroGraphics = false;
+    for (let i = 0; i < 16e3; i++) {
+      const v = u32[i];
+      if (v !== 0) {
+        hasNonZeroGraphics = true;
+        hash = Math.imul(hash ^ v, 16777619) ^ i;
+      }
+    }
+    if (hasNonZeroGraphics && this.videoMode !== 19) {
+      this.memory.data[1097] = 19;
+    }
+    if (hash !== this.lastVramHash) {
+      this.lastVramHash = hash;
+      this.refreshCrtScreen();
+      return true;
+    }
+    return false;
+  }
   startBlinkTimer() {
     if (this.blinkTimer !== null) {
       clearInterval(this.blinkTimer);
       this.blinkTimer = null;
+    }
+    if (this.vgaScanTimer !== null) {
+      clearInterval(this.vgaScanTimer);
+      this.vgaScanTimer = null;
     }
     if (typeof setInterval === "function") {
       this.blinkTimer = setInterval(() => {
@@ -7348,6 +7707,9 @@ var ConsoleView = class {
           this.refreshCrtScreen();
         }
       }, 500);
+      this.vgaScanTimer = setInterval(() => {
+        this.scanVramFrame();
+      }, 33);
     }
   }
   log(text, level = "info") {
@@ -9419,17 +9781,17 @@ var InstructionDoc = class {
                   <span class="docs-var-badge">Varyasyon #${idx + 1}</span>
                 </div>
                 <p class="docs-var-desc">${v.description}</p>
-                <div class="docs-example-box">
-                  <div class="docs-example-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="docs-example-box" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 6px; overflow: hidden;">
+                  <div class="docs-example-header" style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; border-bottom: 1px solid #334155; padding: 6px 12px; color: #cbd5e1; font-size: 11px; font-weight: 700;">
                     <span>\xD6rnek Kullan\u0131m:</span>
                     <div style="display: flex; gap: 6px;">
-                      <button class="btn-copy-code" data-code="${this.escapeHtml(v.example)}" title="Kodu Kopyala" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-dark); background: #ffffff; cursor: pointer;">\u{1F4CB} Kopyala</button>
+                      <button class="btn-copy-code" data-code="${this.escapeHtml(v.example)}" title="Kodu Kopyala" style="font-size: 11px; padding: 3px 9px; border-radius: 4px; border: 1px solid #475569; background: #334155; color: #f8fafc; font-weight: 600; cursor: pointer;">\u{1F4CB} Kopyala</button>
                       ${this.callbacks.onInsertCodeToEditor ? `
-                        <button class="btn-use-in-editor" data-opcode="${inst.opcode}" data-code="${this.escapeHtml(v.example)}" title="Edit\xF6re G\xF6nder ve \xC7al\u0131\u015Ft\u0131r" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid #93c5fd; background: #eff6ff; color: #1d4ed8; font-weight: 600; cursor: pointer;">\u{1F4DD} Edit\xF6re Aktar</button>
+                        <button class="btn-use-in-editor" data-opcode="${inst.opcode}" data-code="${this.escapeHtml(v.example)}" title="Edit\xF6re G\xF6nder ve \xC7al\u0131\u015Ft\u0131r" style="font-size: 11px; padding: 3px 9px; border-radius: 4px; border: 1px solid #3b82f6; background: #2563eb; color: #ffffff; font-weight: 600; cursor: pointer;">\u{1F4DD} Edit\xF6re Aktar</button>
                       ` : ""}
                     </div>
                   </div>
-                  <pre class="docs-example-code"><code>${this.escapeHtml(v.example)}</code></pre>
+                  <pre class="docs-example-code" style="margin: 0; padding: 12px 14px; background: #0f172a; color: #f8fafc; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65; overflow-x: auto; white-space: pre-wrap;"><code style="color: #f8fafc; background: transparent; font-family: inherit;">${this.formatExampleCode(v.example)}</code></pre>
                 </div>
                 ${v.note ? `<div class="docs-var-note">\u{1F4A1} <em>${this.escapeHtml(v.note)}</em></div>` : ""}
               </div>
@@ -9475,24 +9837,24 @@ HLT
     if (!container) return;
     container.innerHTML = `
       <div class="theory-article">
-        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px;">\u{1F3AF} 8086 Mikroi\u015Flemcisinde 7 Temel Veri Adresleme Modu</h2>
+        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">\u{1F3AF} 8086 Mikroi\u015Flemcisinde 7 Temel Veri Adresleme Modu</h2>
         <p style="color: var(--text-secondary); margin-bottom: 20px;">
           8086 mimarisinde bir komutun kaynak veya hedef veriye nas\u0131l ula\u015Faca\u011F\u0131n\u0131 belirleyen 7 standart mod:
         </p>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
           ${ADDRESSING_MODES.map((m, idx) => `
-            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+            <div style="background: #ffffff; color: #1e293b; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <span style="font-weight: 700; font-size: 15px; color: #1e293b;">${idx + 1}. ${this.escapeHtml(m.modeName)}</span>
                 <span style="font-size: 11px; background: #eff6ff; color: #2563eb; padding: 2px 6px; border-radius: 4px; font-weight: 600;">${this.escapeHtml(m.category)}</span>
               </div>
-              <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">${this.escapeHtml(m.summary)}</p>
-              ${m.formula ? `<div style="font-family: monospace; font-size: 12px; background: #f1f5f9; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;"><strong>Form\xFCl:</strong> ${this.escapeHtml(m.formula)}</div>` : ""}
-              <div style="font-size: 12px; color: var(--text-primary); margin-bottom: 4px;"><strong>\u0130zin Verilen Yazma\xE7lar:</strong> ${this.escapeHtml(m.registersAllowed)}</div>
-              <div style="font-size: 12px; color: var(--text-primary); margin-bottom: 8px;"><strong>Varsay\u0131lan Segment:</strong> ${this.escapeHtml(m.defaultSegment)}</div>
-              <div style="background: #1e293b; color: #f8fafc; font-family: monospace; font-size: 12px; padding: 8px 10px; border-radius: 4px; margin-bottom: 6px;">${this.escapeHtml(m.example)}</div>
-              <small style="color: var(--text-muted); font-size: 11px;">\u{1F4A1} ${this.escapeHtml(m.notes)}</small>
+              <p style="font-size: 13px; color: #475569; margin-bottom: 10px;">${this.escapeHtml(m.summary)}</p>
+              ${m.formula ? `<div style="font-family: monospace; font-size: 12px; background: #f1f5f9; color: #0f172a; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;"><strong>Form\xFCl:</strong> ${this.escapeHtml(m.formula)}</div>` : ""}
+              <div style="font-size: 12px; color: #1e293b; margin-bottom: 4px;"><strong>\u0130zin Verilen Yazma\xE7lar:</strong> ${this.escapeHtml(m.registersAllowed)}</div>
+              <div style="font-size: 12px; color: #1e293b; margin-bottom: 8px;"><strong>Varsay\u0131lan Segment:</strong> ${this.escapeHtml(m.defaultSegment)}</div>
+              <pre style="background: #0f172a; color: #f8fafc; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; padding: 10px 12px; border-radius: 6px; margin: 0 0 6px 0; overflow-x: auto; white-space: pre-wrap;"><code>${this.formatExampleCode(m.example)}</code></pre>
+              <small style="color: #64748b; font-size: 11px;">\u{1F4A1} ${this.escapeHtml(m.notes)}</small>
             </div>
           `).join("")}
         </div>
@@ -9504,24 +9866,24 @@ HLT
     if (!container) return;
     container.innerHTML = `
       <div class="theory-article">
-        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px;">\u{1F4D0} ${this.escapeHtml(ARCHITECTURE_GUIDE.title)}</h2>
+        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">\u{1F4D0} ${this.escapeHtml(ARCHITECTURE_GUIDE.title)}</h2>
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 16px;">
-          <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+          <div style="background: #ffffff; color: #1e293b; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
             <h4 style="font-weight: 700; color: #2563eb; margin-bottom: 8px;">\u{1F68C} Veri Yolu Mimarisi</h4>
-            <ul style="font-size: 13px; list-style: disc; padding-left: 20px; line-height: 1.6;">
+            <ul style="font-size: 13px; list-style: disc; padding-left: 20px; line-height: 1.6; color: #334155;">
               <li><strong>Adres Yolu (Address Bus):</strong> ${ARCHITECTURE_GUIDE.busSystem.addressBus}</li>
               <li><strong>Veri Yolu (Data Bus):</strong> ${ARCHITECTURE_GUIDE.busSystem.dataBus}</li>
               <li><strong>Kontrol Yolu (Control Bus):</strong> ${ARCHITECTURE_GUIDE.busSystem.controlBus}</li>
             </ul>
           </div>
 
-          <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+          <div style="background: #ffffff; color: #1e293b; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
             <h4 style="font-weight: 700; color: #16a34a; margin-bottom: 8px;">\u{1F9E0} 20-Bit Fiziksel Adresleme</h4>
-            <p style="font-size: 13px; line-height: 1.6;">
+            <p style="font-size: 13px; line-height: 1.6; color: #334155;">
               8086, 16-bit i\u015Flemci olmas\u0131na kar\u015F\u0131n 1 MB RAM'e ula\u015Fabilmek i\xE7in <strong>Segment:Offset</strong> mimarisini kullan\u0131r:
             </p>
-            <div style="background: #f8fafc; border: 1px solid var(--border-dark); padding: 8px 12px; font-family: monospace; font-size: 13px; border-radius: 4px; margin-top: 8px; font-weight: 700;">
+            <div style="background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1; padding: 8px 12px; font-family: monospace; font-size: 13px; border-radius: 4px; margin-top: 8px; font-weight: 700;">
               Fiziksel Adres = (Segment \xD7 16) + Offset<br/>
               \xD6rn: CS:IP = 1000h:0100h \u2192 (1000h \xD7 10h) + 0100h = 10100h
             </div>
@@ -9535,38 +9897,38 @@ HLT
     if (!container) return;
     container.innerHTML = `
       <div class="theory-article">
-        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px;">\u{1F3F3}\uFE0F ${this.escapeHtml(FLAGS_GUIDE.title)}</h2>
+        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">\u{1F3F3}\uFE0F ${this.escapeHtml(FLAGS_GUIDE.title)}</h2>
         <p style="color: var(--text-secondary); margin-bottom: 16px;">
           8086 Bayrak Yazmac\u0131 (FLAGS Register) 16-bit geni\u015Fli\u011Findedir ve 9 aktif bayrak biti i\xE7erir (6 Durum Bayra\u011F\u0131, 3 Kontrol Bayra\u011F\u0131):
         </p>
 
-        <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 16px 0 8px 0;">\u{1F4CA} Durum Bayraklar\u0131 (Status Flags - Aritmetik/Mant\u0131k Sonu\xE7lar\u0131)</h3>
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 16px 0 8px 0;">\u{1F4CA} Durum Bayraklar\u0131 (Status Flags - Aritmetik/Mant\u0131k Sonu\xE7lar\u0131)</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px;">
           ${FLAGS_GUIDE.statusFlags.map((f) => `
-            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px;">
+            <div style="background: #ffffff; color: #1e293b; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <strong style="font-size: 15px; color: #1e293b;">${this.escapeHtml(f.flag)}</strong>
                 <span style="font-size: 11px; font-weight: 600; background: #eff6ff; color: #2563eb; padding: 2px 6px; border-radius: 4px;">Bit ${f.bit}</span>
               </div>
-              <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-top: 6px;">${this.escapeHtml(f.desc)}</p>
+              <p style="font-size: 12px; color: #475569; line-height: 1.5; margin-top: 6px;">${this.escapeHtml(f.desc)}</p>
             </div>
           `).join("")}
         </div>
 
-        <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 16px 0 8px 0;">\u2699\uFE0F Kontrol Bayraklar\u0131 (Control Flags - \u0130\u015Flemci Davran\u0131\u015F\u0131)</h3>
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 16px 0 8px 0;">\u2699\uFE0F Kontrol Bayraklar\u0131 (Control Flags - \u0130\u015Flemci Davran\u0131\u015F\u0131)</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px;">
           ${FLAGS_GUIDE.controlFlags.map((f) => `
-            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px;">
+            <div style="background: #ffffff; color: #1e293b; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <strong style="font-size: 15px; color: #1e293b;">${this.escapeHtml(f.flag)}</strong>
                 <span style="font-size: 11px; font-weight: 600; background: #fef3c7; color: #b45309; padding: 2px 6px; border-radius: 4px;">Bit ${f.bit}</span>
               </div>
-              <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-top: 6px;">${this.escapeHtml(f.desc)}</p>
+              <p style="font-size: 12px; color: #475569; line-height: 1.5; margin-top: 6px;">${this.escapeHtml(f.desc)}</p>
             </div>
           `).join("")}
         </div>
 
-        <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 16px 0 8px 0;">\u{1F4A1} 8086 Bayrak Alt\u0131n Kurallar\u0131</h3>
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 16px 0 8px 0;">\u{1F4A1} 8086 Bayrak Alt\u0131n Kurallar\u0131</h3>
         <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 14px;">
           <ul style="font-size: 13px; list-style: disc; padding-left: 20px; line-height: 1.6; color: #92400e;">
             ${FLAGS_GUIDE.goldenRules.map((rule) => `<li>${this.escapeHtml(rule)}</li>`).join("")}
@@ -9578,6 +9940,23 @@ HLT
   getCategoryLabel(catId) {
     const cat = CATEGORIES.find((c) => c.id === catId);
     return cat ? cat.label : catId;
+  }
+  formatExampleCode(str) {
+    return str.split("\n").map((line) => {
+      const commentIdx = line.indexOf(";");
+      const codePart = commentIdx >= 0 ? line.slice(0, commentIdx) : line;
+      const commentPart = commentIdx >= 0 ? line.slice(commentIdx) : "";
+      const match = codePart.match(/^(\s*)([A-Za-z0-9_.:]+)(.*)$/);
+      let formattedCode = "";
+      if (match) {
+        const [, leadingWs, firstToken, rest] = match;
+        formattedCode = `${this.escapeHtml(leadingWs)}<span class="ex-opcode" style="color: #38bdf8; font-weight: 700;">${this.escapeHtml(firstToken)}</span><span class="ex-operand" style="color: #f8fafc;">${this.escapeHtml(rest)}</span>`;
+      } else {
+        formattedCode = `<span class="ex-operand" style="color: #f8fafc;">${this.escapeHtml(codePart)}</span>`;
+      }
+      const formattedComment = commentPart ? `<span class="ex-comment" style="color: #86efac;">${this.escapeHtml(commentPart)}</span>` : "";
+      return formattedCode + formattedComment;
+    }).join("\n");
   }
   escapeHtml(str) {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
