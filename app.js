@@ -12624,7 +12624,135 @@ HLT
           }
         },
         "examTip": "Adres veriyolu tek y\xF6nl\xFC (unidirectional), veri veriyolu ise \xE7ift y\xF6nl\xFCd\xFCr (bidirectional). Adreslenebilir alan form\xFCl\xFC daima 2^n baytt\u0131r."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-1-1-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "Yazma\xE7 (Register) Nedir ve \u0130lk Komutumuz: MOV",
+          "titleEn": "Step 1: What is a Register and Our First Instruction: MOV",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Mikroi\u015Flemcinin (CPU) kendi i\xE7inde say\u0131lar\u0131 anl\u0131k olarak tuttu\u011Fu k\xFC\xE7\xFCk, ultra-h\u0131zl\u0131 kutucuklara <strong>Yazma\xE7 (Register)</strong> denir. En \xE7ok kullan\u0131lan 16-bitlik (2 baytl\u0131k) ana yazma\xE7 <code>AX</code>'tir.</p>\n        <p>Bir kutucu\u011Fa say\u0131 koymak i\xE7in <code>MOV hedef, kaynak</code> komutu kullan\u0131l\u0131r. \xD6rne\u011Fin <code>MOV AX, 5</code> komutu, sa\u011Fdaki <code>5</code> say\u0131s\u0131n\u0131 soldaki <code>AX</code> kutusunun i\xE7ine kopyalar.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Tiny, ultra-fast storage boxes inside the CPU are called <strong>Registers</strong>. The primary 16-bit register is <code>AX</code>. The <code>MOV destination, source</code> instruction copies the value on the right into the register on the left.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-1-1",
+            "title": "AX Yazmac\u0131na \u0130lk Say\u0131y\u0131 Y\xFCkleme (MOV)",
+            "difficulty": "Kolay",
+            "scenario": "Hi\xE7bir \xF6n bilgi gerekmez: MOV hedef, kaynak komutu sa\u011Fdaki de\u011Feri soldaki yazmaca kopyalar.",
+            "taskPrompt": "MOV komutunu kullanarak AX yazmac\u0131na 1234h de\u011Ferini y\xFCkleyin ve program\u0131 HLT ile durdurun.",
+            "starterCode": "; Ad\u0131m 1: AX i\xE7ine 1234h y\xFCkleyin\nORG 100h\n\n; Komutunuzu buraya yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 1234h\nHLT\n",
+            "hints": [
+              "MOV AX, 1234h sat\u0131r\u0131n\u0131 HLT \xF6ncesine yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4660
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-1-1-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "Veriyolu (Data Bus) ve Birden Fazla Yazmaca Veri Aktarma",
+          "titleEn": "Step 2: Data Bus and Loading Multiple Registers",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> 8086 i\u015Flemcisinde <code>AX</code> d\u0131\u015F\u0131nda <code>BX</code>, <code>CX</code> ve <code>DX</code> ad\u0131nda 16-bitlik genel ama\xE7l\u0131 kutular da vard\u0131r. Ayr\u0131ca bir yazma\xE7taki de\u011Feri ba\u015Fka bir yazmaca da kopyalayabiliriz: <code>MOV BX, AX</code> yazarsak <code>AX</code>'in i\xE7indeki de\u011Fer <code>BX</code>'e de kopyalan\u0131r.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Besides <code>AX</code>, the 8086 has 16-bit registers <code>BX</code>, <code>CX</code>, and <code>DX</code>. You can also copy one register into another using <code>MOV BX, AX</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-1-2",
+            "title": "Yazma\xE7tan Yazmaca Kopyalama",
+            "difficulty": "Kolay",
+            "scenario": "\xD6nce AX yazmac\u0131na bir de\u011Fer y\xFCkleyip ard\u0131ndan MOV ile bu de\u011Feri BX ve CX yazma\xE7lar\u0131na kopyalayaca\u011F\u0131z.",
+            "taskPrompt": "AX yazmac\u0131na 2500h y\xFCkleyin. Ard\u0131ndan MOV komutlar\u0131yla AX de\u011Ferini hem BX hem de CX yazma\xE7lar\u0131na kopyalay\u0131n.",
+            "starterCode": "; Ad\u0131m 2: AX = 2500h yap\u0131p BX ve CX i\xE7ine kopyalay\u0131n\nORG 100h\n\n; Kodunuzu buraya yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 2500h\nMOV BX, AX\nMOV CX, AX\nHLT\n",
+            "hints": [
+              "\xD6nce MOV AX, 2500h yaz\u0131n.",
+              "Sonra MOV BX, AX ve MOV CX, AX ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 9472,
+                "bx": 9472,
+                "cx": 9472
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-1-1-3",
+          "stepNumber": "Ad\u0131m 3",
+          "title": "Bellek (Memory) Nedir? K\xF6\u015Feli Parantez [adres] ile Belle\u011Fe Yazmak",
+          "titleEn": "Step 3: What is Memory? Writing to Memory with Brackets [address]",
+          "explanationHtml": `
+        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> \u0130\u015Flemcinin i\xE7indeki yazma\xE7lar \xE7ok az say\u0131dad\u0131r; binlerce veriyi saklamak i\xE7in <strong>Bellek (RAM)</strong> kullan\u0131l\u0131r. Assembly'de bir say\u0131n\u0131n etraf\u0131na <strong>k\xF6\u015Feli parantez <code>[0200h]</code></strong> koydu\u011Fumuzda i\u015Flemci bunu <em>"0200h numaral\u0131 bellek kutusu"</em> olarak anlar.</p>
+        <ul>
+          <li><code>MOV BX, 0200h</code> &rarr; <code>BX</code> yazmac\u0131na <code>0200h</code> say\u0131s\u0131n\u0131 koyar.</li>
+          <li><code>MOV [0200h], AX</code> &rarr; Bellekteki <code>0200h</code> adresli kutunun i\xE7ine <code>AX</code>'in de\u011Ferini yazar!</li>
+        </ul>
+      `,
+          "explanationHtmlEn": '\n        <p><strong>From Zero:</strong> Brackets <code>[0200h]</code> mean "the memory box at address 0200h". <code>MOV [0200h], AX</code> stores the 16-bit value of <code>AX</code> into memory at address <code>0200h</code>.</p>\n      ',
+          "task": {
+            "id": "ms-task-1-1-3",
+            "title": "Bellek H\xFCcresine Veri Yazma ve Geri Okuma",
+            "difficulty": "Kolay",
+            "scenario": "AX i\xE7indeki bir say\u0131y\u0131 belle\u011Fin [0200h] adresine kaydedip, oradan DX yazmac\u0131na geri okuyaca\u011F\u0131z.",
+            "taskPrompt": "AX yazmac\u0131na 0CAFEh y\xFCkleyin. MOV [0200h], AX ile belle\u011Fe yaz\u0131n. Ard\u0131ndan MOV DX, [0200h] ile bellekten DX yazmac\u0131na okuyun.",
+            "starterCode": "; Ad\u0131m 3: Belle\u011Fe yazma ve okuma\nORG 100h\n\nMOV AX, 0CAFEh\n; [0200h] adresine AX de\u011Ferini yaz\u0131n ve [0200h] adresinden DX i\xE7ine okuyun:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0CAFEh\nMOV [0200h], AX\nMOV DX, [0200h]\nHLT\n",
+            "hints": [
+              "MOV [0200h], AX belle\u011Fe yazar.",
+              "MOV DX, [0200h] bellekten DX yazmac\u0131na okur."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 51966,
+                "dx": 51966
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 512,
+                  "expectedBytes": [
+                    254,
+                    202
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-1-1-4",
+          "stepNumber": "Ad\u0131m 4",
+          "title": "Mikroi\u015Flemcinin Temel Aritmetik G\xF6revi: ADD ile \u0130ki Say\u0131y\u0131 Toplamak",
+          "titleEn": "Step 4: Core Microprocessor Operation: Adding Two Numbers with ADD",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Mikroi\u015Flemcinin 3 temel g\xF6revi <em>Veri Aktar\u0131m\u0131</em>, <em>Aritmetik/Mant\u0131k</em> ve <em>Karar Verme</em>'dir. <code>ADD hedef, kaynak</code> komutu iki de\u011Feri toplar ve sonucu <strong>soldaki hedef yazmac\u0131n \xFCzerine</strong> yazar (`hedef = hedef + kaynak`).</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>ADD destination, source</code> adds the two values and stores the sum in the left operand (<code>destination = destination + source</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-1-1-4",
+            "title": "ADD Komutu ile \u0130ki Yazmac\u0131 Toplama",
+            "difficulty": "Kolay",
+            "scenario": "AX yazmac\u0131na 15h, BX yazmac\u0131na 25h y\xFCkleyip ADD AX, BX ile toplam\u0131 AX i\xE7inde (3Ah) elde edece\u011Fiz.",
+            "taskPrompt": "AX yazmac\u0131na 15h, BX yazmac\u0131na 25h y\xFCkleyin. ADD AX, BX komutunu \xE7al\u0131\u015Ft\u0131rarak AX de\u011Ferinin 3Ah olmas\u0131n\u0131 sa\u011Flay\u0131n.",
+            "starterCode": "; Ad\u0131m 4: ADD AX, BX ile toplama\nORG 100h\n\n; AX = 15h, BX = 25h y\xFCkleyin ve ADD AX, BX \xE7al\u0131\u015Ft\u0131r\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 15h\nMOV BX, 25h\nADD AX, BX\nHLT\n",
+            "hints": [
+              "MOV AX, 15h ve MOV BX, 25h yazd\u0131ktan sonra ADD AX, BX ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 58,
+                "bx": 37
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-1-2-number-systems-bcd-ascii",
@@ -12977,7 +13105,88 @@ HLT
           }
         },
         "examTip": "Onalt\u0131l\u0131 say\u0131larda harfle ba\u015Flayan de\u011Ferlerin ba\u015F\u0131na (\xF6rn. A, B, C, D, E, F) daima s\u0131f\u0131r konur: 0FFh, 0DAh."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-1-2-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": '\u0130kili (Binary) Say\u0131 Sistemi: Sonuna "b" Harfi Koyarak Bit Y\xFCklemek',
+          "titleEn": 'Step 1: Binary Numbers: Loading Bits with the "b" Suffix',
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bilgisayarlar yaln\u0131zca <code>0</code> ve <code>1</code> (ikili / binary) say\u0131lar\u0131n\u0131 anlar. Assembly'de ikili bir say\u0131 yazarken sonuna <code>b</code> harfi koyar\u0131z. Sa\u011Fdan sola basamak de\u011Ferleri $1, 2, 4, 8, 16, 32, 64, 128$ \u015Feklindedir. \xD6rne\u011Fin <code>00001111b</code> say\u0131s\u0131 $8+4+2+1 = 15$ demektir.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In Assembly, binary numbers end with a <code>b</code> suffix. Place weights from right to left are $1, 2, 4, 8, 16, 32, 64, 128$. Thus <code>00001111b</code> equals $8+4+2+1 = 15$.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-2-1",
+            "title": "\u0130kili (Binary) Say\u0131 Y\xFCkleme",
+            "difficulty": "Kolay",
+            "scenario": "8-bitlik AL yazmac\u0131na ikili (binary) g\xF6sterimle 00001111b (onluk 15) say\u0131s\u0131n\u0131 y\xFCkleyece\u011Fiz.",
+            "taskPrompt": "MOV AL, 00001111b komutunu kullanarak AL yazmac\u0131na ikili 15 de\u011Ferini y\xFCkleyin.",
+            "starterCode": "; Ad\u0131m 1: AL i\xE7ine 00001111b y\xFCkleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 00001111b\nHLT\n",
+            "hints": [
+              "MOV AL, 00001111b yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 15
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-1-2-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": 'Onalt\u0131l\u0131 (Hexadecimal) Say\u0131lar ve Harfle Ba\u015Flayan Say\u0131larda "0" Kural\u0131',
+          "titleEn": 'Step 2: Hexadecimal Numbers and the Leading "0" Rule',
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Onalt\u0131l\u0131 (Hex) sistemde `0\u20139` rakamlar\u0131 ve `A(10), B(11), C(12), D(13), E(14), F(15)` harfleri kullan\u0131l\u0131r; say\u0131n\u0131n sonuna <code>h</code> konur. <strong>\xC7ok \xF6nemli kural:</strong> E\u011Fer hex say\u0131 bir harfle ba\u015Fl\u0131yorsa (\xF6rne\u011Fin <code>A5h</code> veya <code>FFh</code>), derleyicinin bunu etiket sanmamas\u0131 i\xE7in ba\u015F\u0131na mutlaka <code>0</code> yaz\u0131l\u0131r: <code>0A5h</code>, <code>0FFh</code>.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Hexadecimal numbers end with <code>h</code>. If a hex literal begins with a letter (<code>A\u2013F</code>), you must prefix it with a leading zero (e.g., <code>0A5h</code>, <code>0FFh</code>) so the assembler does not mistake it for a label name.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-2-2",
+            "title": "Harfle Ba\u015Flayan Hexadecimal Sabit Y\xFCkleme",
+            "difficulty": "Kolay",
+            "scenario": "AL yazmac\u0131na A5h ve BL yazmac\u0131na FFh de\u011Ferlerini ba\u015Flar\u0131na 0 koyarak (0A5h ve 0FFh) y\xFCkleyece\u011Fiz.",
+            "taskPrompt": "AL yazmac\u0131na 0A5h, BL yazmac\u0131na 0FFh y\xFCkleyin.",
+            "starterCode": "; Ad\u0131m 2: AL = 0A5h ve BL = 0FFh y\xFCkleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 0A5h\nMOV BL, 0FFh\nHLT\n",
+            "hints": [
+              "MOV AL, 0A5h ve MOV BL, 0FFh yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 165,
+                "bl": 255
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-1-2-3",
+          "stepNumber": "Ad\u0131m 3",
+          "title": "\u0130kiliden Onalt\u0131l\u0131ya 4-Bit (Nibble) Gruplama D\xF6n\xFC\u015F\xFCm\xFC",
+          "titleEn": "Step 3: Binary-to-Hexadecimal Conversion via 4-Bit Nibbles",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> 8-bitlik bir ikili say\u0131y\u0131 onalt\u0131l\u0131ya \xE7evirmek \xE7ok kolayd\u0131r: Say\u0131y\u0131 ortadan ikiye (4 bit + 4 bit) ay\u0131r\u0131r\u0131z!</p>\n        <ul>\n          <li>\xD6rnek: <code>1100_0011b</code> &rarr; Sol 4 bit: <code>1100b</code> ($8+4=12=	ext{C}$), Sa\u011F 4 bit: <code>0011b</code> ($2+1=3$) &rarr; Sonu\xE7: <code>0C3h</code>!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Split an 8-bit binary number into two 4-bit groups (nibbles): <code>1100_0011b</code> &rarr; <code>1100b = C</code>, <code>0011b = 3</code> &rarr; <code>0C3h</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-2-3",
+            "title": "\u0130kili Say\u0131y\u0131 Hexadecimal Olarak Y\xFCkleme",
+            "difficulty": "Kolay",
+            "scenario": "11000011b ikili say\u0131s\u0131n\u0131 4-bitlik gruplara ay\u0131rarak onalt\u0131l\u0131 kar\u015F\u0131l\u0131\u011F\u0131 olan 0C3h de\u011Ferini CL yazmac\u0131na y\xFCkleyin.",
+            "taskPrompt": "11000011b say\u0131s\u0131n\u0131n onalt\u0131l\u0131 kar\u015F\u0131l\u0131\u011F\u0131 olan 0C3h de\u011Ferini CL yazmac\u0131na y\xFCkleyin.",
+            "starterCode": "; Ad\u0131m 3: CL yazmac\u0131na 11000011b (0C3h) y\xFCkleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV CL, 0C3h\nHLT\n",
+            "hints": [
+              "MOV CL, 0C3h yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "cl": 195
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-1-3-twos-complement-and-data-formats",
@@ -13472,7 +13681,89 @@ ightarrow 0$). In one's complement, there are two distinct representations of ze
           }
         },
         "examTip": "NEG komutu hedef i\u015Flenenin 2'ye t\xFCmleyenini al\u0131r. Pozitif say\u0131y\u0131 negatife, negatif say\u0131y\u0131 pozitife \xE7evirir."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-1-3-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "Bire T\xFCmleyen (1's Complement) Nedir? NOT Komutu ile Bitleri Ters \xC7evirme",
+          "titleEn": "Step 1: One's Complement: Inverting Bits with NOT",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bir ikili say\u0131daki t\xFCm <code>0</code>'lar\u0131 <code>1</code>, t\xFCm <code>1</code>'leri <code>0</code> yapmaya <strong>Bire T\xFCmleyen (One's Complement)</strong> denir. Assembly'de bunu tek ba\u015F\u0131na <code>NOT yazma\xE7</code> komutu yapar.</p>\n        <p>\xD6rne\u011Fin <code>AL = 00001111b (0Fh)</code> iken <code>NOT AL</code> \xE7al\u0131\u015Ft\u0131r\u0131l\u0131rsa <code>AL = 11110000b (0F0h)</code> olur.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Flipping every <code>0</code> to <code>1</code> and <code>1</code> to <code>0</code> is the <strong>One's Complement</strong>. In 8086 Assembly, the <code>NOT</code> instruction performs this inversion.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-3-1",
+            "title": "NOT Komutu ile Bire T\xFCmleyen Alma",
+            "difficulty": "Kolay",
+            "scenario": "AL yazmac\u0131na 0Fh (00001111b) y\xFCkleyip NOT AL komutuyla t\xFCm bitlerini ters \xE7evirece\u011Fiz (0F0h).",
+            "taskPrompt": "AL yazmac\u0131na 0Fh y\xFCkleyin ve NOT AL komutunu \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 1: AL = 0Fh y\xFCkleyip NOT AL ile bire t\xFCmleyenini al\u0131n\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 0Fh\nNOT AL\nHLT\n",
+            "hints": [
+              "MOV AL, 0Fh ard\u0131ndan NOT AL yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 240
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-1-3-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "\u0130kiye T\xFCmleyen (2's Complement = NOT + 1) ile Negatif Say\u0131 Elde Etme",
+          "titleEn": "Step 2: Two's Complement (NOT + 1) for Negative Numbers",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bilgisayarlar negatif say\u0131lar\u0131 <strong>\u0130kiye T\xFCmleyen (Two's Complement)</strong> y\xF6ntemiyle tutar. Kural \xE7ok basittir: <em>Bire t\xFCmleyenini al (<code>NOT</code>) ve \xFCzerine <code>1</code> ekle (<code>ADD ..., 1</code> veya <code>INC</code>)!</em></p>\n        <p>\xD6rne\u011Fin $+1$ (<code>01h</code>) say\u0131s\u0131n\u0131n negatifi (<code>-1</code>): <code>NOT</code> &rarr; <code>FEh</code>, <code>+1</code> &rarr; <code>FFh</code>!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Computers represent negative numbers using <strong>Two's Complement</strong>: invert all bits (<code>NOT</code>) and add 1 (<code>ADD AL, 1</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-1-3-2",
+            "title": "NOT ve ADD ile Manuel \u0130kiye T\xFCmleyen (-1 Elde Etme)",
+            "difficulty": "Kolay",
+            "scenario": "BL yazmac\u0131na 1 y\xFCkleyip \xF6nce NOT BL, ard\u0131ndan ADD BL, 1 yaparak -1 (0FFh) de\u011Ferini ad\u0131m ad\u0131m olu\u015Fturaca\u011F\u0131z.",
+            "taskPrompt": "BL yazmac\u0131na 1 y\xFCkleyin. NOT BL ve ADD BL, 1 komutlar\u0131n\u0131 s\u0131ras\u0131yla \xE7al\u0131\u015Ft\u0131rarak BL i\xE7inde -1 (0FFh) elde edin.",
+            "starterCode": "; Ad\u0131m 2: BL = 1 yap\u0131p NOT BL ve ADD BL, 1 uygulay\u0131n\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BL, 1\nNOT BL\nADD BL, 1\nHLT\n",
+            "hints": [
+              "MOV BL, 1",
+              "NOT BL",
+              "ADD BL, 1"
+            ],
+            "assertions": {
+              "registers": {
+                "bl": 255
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-1-3-3",
+          "stepNumber": "Ad\u0131m 3",
+          "title": "ASCII Karakterleri Bellekte ve Yazma\xE7ta Saklamak ('A' = 41h, '0' = 30h)",
+          "titleEn": "Step 3: Storing ASCII Characters ('A' = 41h, '0' = 30h)",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Klavyedeki her harf ve rakam bellekte 1 baytl\u0131k bir <strong>ASCII kodu</strong> olarak tutulur: B\xFCy\xFCk <code>'A' = 41h</code> (65), k\xFC\xE7\xFCk <code>'a' = 61h</code> (97), rakam <code>'0' = 30h</code> (48). Assembly'de tek t\u0131rnak i\xE7inde <code>MOV AL, 'A'</code> yazd\u0131\u011F\u0131m\u0131zda derleyici otomatik olarak <code>41h</code> y\xFCkler.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Every character has a 1-byte ASCII code: <code>'A' = 41h</code>, <code>'a' = 61h</code>, <code>'0' = 30h</code>. Writing <code>MOV AL, 'A'</code> loads <code>41h</code> into <code>AL</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-3-3",
+            "title": "ASCII Karakter Kodlar\u0131n\u0131 Y\xFCkleme",
+            "difficulty": "Kolay",
+            "scenario": "AH yazmac\u0131na b\xFCy\xFCk 'A' (41h) karakterini, AL yazmac\u0131na ise '0' (30h) karakterini y\xFCkleyece\u011Fiz.",
+            "taskPrompt": "AH yazmac\u0131na 41h ('A'), AL yazmac\u0131na 30h ('0') y\xFCkleyin (Sonu\xE7ta AX = 4130h olacakt\u0131r).",
+            "starterCode": "; Ad\u0131m 3: AH = 41h ve AL = 30h y\xFCkleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AH, 41h\nMOV AL, 30h\nHLT\n",
+            "hints": [
+              "MOV AH, 41h ve MOV AL, 30h yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 16688
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {
@@ -14207,7 +14498,66 @@ HLT</code></pre>
           "maxSteps": 50
         },
         "examTip": "AX ve BX genel ama\xE7l\u0131 yazma\xE7lar\u0131 EU i\xE7erisinde yer al\u0131r. NOP (90h) komutu yazma\xE7 ve bayrak durumunu de\u011Fi\u015Ftirmeden 3 \xE7evrim harcar; HLT (F4h) ise i\u015Flemciyi durdurur."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-2-1-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "D\xF6rt Ana Veri Yazmac\u0131: AX (Ak\xFCm\xFClat\xF6r), BX (Taban), CX (Saya\xE7), DX (Veri)",
+          "titleEn": "Step 1: Four General Data Registers: AX, BX, CX, DX",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> \u0130\u015Flemcinin \u0130cra Birimi (EU) i\xE7inde her g\xFCn kulland\u0131\u011F\u0131m\u0131z 4 ana 16-bitlik yazma\xE7 vard\u0131r ve her birinin \xF6zel bir lakab\u0131/g\xF6revi vard\u0131r:</p>\n        <ul>\n          <li><code>AX (Accumulator)</code>: Toplama, \xE7arpma, b\xF6lme ve G/\xC7 i\u015Flemlerinin ba\u015Frol oyuncusu.</li>\n          <li><code>BX (Base)</code>: Bellekteki bir tablonun/dizinin ba\u015Flang\u0131\xE7 adresini tutabilen tek genel yazma\xE7 (<code>[BX]</code>).</li>\n          <li><code>CX (Count)</code>: D\xF6ng\xFClerde (<code>LOOP</code>) ve tekrarlarda otomatik geri sayan saya\xE7.</li>\n          <li><code>DX (Data)</code>: 16-bit \xE7arpma/b\xF6lmede \xFCst kelimeyi ve <code>IN/OUT</code> port adresini tutan yard\u0131mc\u0131.</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The 4 main 16-bit registers are <code>AX</code> (Accumulator), <code>BX</code> (Base address pointer), <code>CX</code> (Loop Counter), and <code>DX</code> (Data / I/O port pointer).</p>\n      ",
+          "task": {
+            "id": "ms-task-2-1-1",
+            "title": "AX, BX, CX ve DX Yazma\xE7lar\u0131n\u0131 \u0130lklendirme",
+            "difficulty": "Kolay",
+            "scenario": "D\xF6rt ana genel ama\xE7l\u0131 yazmaca s\u0131ras\u0131yla 100h, 200h, 300h ve 400h de\u011Ferlerini y\xFCkleyece\u011Fiz.",
+            "taskPrompt": "AX=0100h, BX=0200h, CX=0300h ve DX=0400h olacak \u015Fekilde MOV komutlar\u0131n\u0131 yaz\u0131n.",
+            "starterCode": "; Ad\u0131m 1: AX=0100h, BX=0200h, CX=0300h, DX=0400h y\xFCkleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0100h\nMOV BX, 0200h\nMOV CX, 0300h\nMOV DX, 0400h\nHLT\n",
+            "hints": [
+              "MOV AX, 0100h / MOV BX, 0200h / MOV CX, 0300h / MOV DX, 0400h yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 256,
+                "bx": 512,
+                "cx": 768,
+                "dx": 1024
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-2-1-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "\u0130\u015Faret\xE7i ve \u0130ndeks Yazma\xE7lar\u0131: SI (Kaynak), DI (Hedef) ve BP (Taban \u0130\u015Faret\xE7isi)",
+          "titleEn": "Step 2: Pointer and Index Registers: SI, DI, and BP",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> `AX, BX, CX, DX` ikiye b\xF6l\xFCnebilirken (`AH/AL` vb.), 16-bitlik <strong>\u0130ndeks ve \u0130\u015Faret\xE7i Yazma\xE7lar\u0131 (`SI, DI, BP, SP`)</strong> 8-bitlik par\xE7alara b\xF6l\xFCnemez! Hep 16-bit \u0430\u0434\u0440\u0435\u0441 ofseti tutmak i\xE7in kullan\u0131l\u0131rlar:</p>\n        <ul>\n          <li><code>SI (Source Index)</code>: Kaynak dizinin bellek ofsetini tutar.</li>\n          <li><code>DI (Destination Index)</code>: Hedef dizinin bellek ofsetini tutar.</li>\n          <li><code>BP (Base Pointer)</code>: Y\u0131\u011F\u0131n (Stack) \xFCzerindeki verilere eri\u015Fmek i\xE7in kullan\u0131l\u0131r.</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Pointer and index registers (<code>SI, DI, BP, SP</code>) are strictly 16-bit and cannot be split into 8-bit halves. They hold memory offsets.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-1-2",
+            "title": "SI ve DI \u0130ndeks Yazma\xE7lar\u0131n\u0131 Kurma",
+            "difficulty": "Kolay",
+            "scenario": "Kaynak indeks yazmac\u0131 SI i\xE7ine 0200h, hedef indeks yazmac\u0131 DI i\xE7ine 0300h ofset adresini y\xFCkleyece\u011Fiz.",
+            "taskPrompt": "SI yazmac\u0131na 0200h, DI yazmac\u0131na 0300h ve BP yazmac\u0131na 0400h de\u011Ferlerini y\xFCkleyin.",
+            "starterCode": "; Ad\u0131m 2: SI=0200h, DI=0300h, BP=0400h yap\u0131n\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SI, 0200h\nMOV DI, 0300h\nMOV BP, 0400h\nHLT\n",
+            "hints": [
+              "MOV SI, 0200h / MOV DI, 0300h / MOV BP, 0400h yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "si": 512,
+                "di": 768,
+                "bp": 1024
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-2-2-registers-flags-and-segments",
@@ -14954,7 +15304,124 @@ HLT</code></pre>
           "maxSteps": 50
         },
         "examTip": "AX = (AH << 8) | AL e\u015Fitli\u011Fi ge\xE7erlidir. AH \xFCst 8 biti (Bits 15..8), AL ise alt 8 biti (Bits 7..0) belirler."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-2-2-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "16-Bit Yazmac\u0131n Alt (Low) ve \xDCst (High) Baytlar\u0131n\u0131 Ayr\u0131 Ayr\u0131 De\u011Fi\u015Ftirmek",
+          "titleEn": "Step 1: Modifying High (H) and Low (L) Bytes of a 16-Bit Register",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> <code>AX, BX, CX, DX</code> yazma\xE7lar\u0131n\u0131n her biri 16 bittir (4 hex basamak). Sol 2 basama\u011F\u0131na <strong>High (`AH, BH, CH, DH`)</strong>, sa\u011F 2 basama\u011F\u0131na <strong>Low (`AL, BL, CL, DL`)</strong> denir. \xD6rne\u011Fin <code>BX = 1234h</code> iken sadece <code>BL = 99h</code> yaparsan\u0131z \xFCst bayt (<code>12h</code>) hi\xE7 bozulmaz ve <code>BX = 1299h</code> olur!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Each of <code>AX, BX, CX, DX</code> splits into an 8-bit High byte (<code>AH..DH</code>) and Low byte (<code>AL..DL</code>). Changing <code>BL</code> leaves <code>BH</code> untouched.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-2-1",
+            "title": "BH ve BL ile 16-Bit BX Yazmac\u0131n\u0131 Dilimleme",
+            "difficulty": "Kolay",
+            "scenario": "\xD6nce BX yazmac\u0131na 5678h y\xFCkleyece\u011Fiz, ard\u0131ndan sadece alt bayt\u0131 (BL) 00h yaparak BX de\u011Ferini 5600h haline getirece\u011Fiz.",
+            "taskPrompt": "BX yazmac\u0131na 5678h y\xFCkleyin. Ard\u0131ndan MOV BL, 00h komutuyla sadece alt bayt\u0131 s\u0131f\u0131rlay\u0131n (BX = 5600h olmal\u0131d\u0131r).",
+            "starterCode": "; Ad\u0131m 1: BX = 5678h y\xFCkleyip BL = 00h yap\u0131n\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BX, 5678h\nMOV BL, 00h\nHLT\n",
+            "hints": [
+              "MOV BX, 5678h yazd\u0131ktan sonra MOV BL, 00h ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "bx": 22016
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-2-2-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "FLAGS (Bayraklar) Nedir? S\u0131f\u0131r Bayra\u011F\u0131 (ZF) Nas\u0131l 1 Olur?",
+          "titleEn": "Step 2: What is FLAGS? How the Zero Flag (ZF) Becomes 1",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> \u0130\u015Flemci yapt\u0131\u011F\u0131 her toplama/\xE7\u0131karma i\u015Fleminin sonucuna g\xF6re <code>FLAGS</code> ad\u0131ndaki durum panosundaki \u0131\u015F\u0131klar\u0131 (bitleri) yakar. E\u011Fer bir aritmetik i\u015Flemin sonucu <strong>tam s\u0131f\u0131r (`0`)</strong> \xE7\u0131karsa, <strong>S\u0131f\u0131r Bayra\u011F\u0131 (`ZF` - Zero Flag) `1` olur</strong>! (Sonu\xE7 s\u0131f\u0131rdan farkl\u0131ysa `ZF = 0` olur).</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Whenever an arithmetic/logic operation produces a result of <strong>zero (0)</strong>, the processor sets the <strong>Zero Flag (<code>ZF = 1</code>)</strong>.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-2-2",
+            "title": "\xC7\u0131karma \u0130\u015Flemiyle Zero Flag (ZF = 1) Yakma",
+            "difficulty": "Kolay",
+            "scenario": "AX yazmac\u0131na 25h y\xFCkleyip SUB AX, 25h ile kendisinden \xE7\u0131kararak sonucu 0 yapaca\u011F\u0131z ve ZF bayra\u011F\u0131n\u0131n 1 oldu\u011Funu g\xF6rece\u011Fiz.",
+            "taskPrompt": "AX yazmac\u0131na 25h y\xFCkleyin ve SUB AX, 25h komutunu \xE7al\u0131\u015Ft\u0131rarak AX=0 ve ZF=1 olmas\u0131n\u0131 sa\u011Flay\u0131n.",
+            "starterCode": "; Ad\u0131m 2: AX = 25h yap\u0131p SUB AX, 25h ile s\u0131f\u0131rlay\u0131n\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 25h\nSUB AX, 25h\nHLT\n",
+            "hints": [
+              "MOV AX, 25h ard\u0131ndan SUB AX, 25h yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 0
+              },
+              "flags": {
+                "zf": 1
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-2-2-3",
+          "stepNumber": "Ad\u0131m 3",
+          "title": "Elde Bayra\u011F\u0131 (CF - Carry Flag) Nedir? 8-Bit Kutunun Ta\u015Fmas\u0131 (FFh + 1)",
+          "titleEn": "Step 3: Carry Flag (CF): Unsigned Overflow out of an 8-Bit Register",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> 8-bitlik bir kutu (\xF6rne\u011Fin <code>AL</code>) en fazla <code>0FFh</code> (255) alabilir. E\u011Fer <code>AL = 0FFh</code> iken \xFCzerine <code>1</code> eklerseniz (<code>ADD AL, 1</code>), sonu\xE7 8 bite s\u0131\u011Fmaz; <code>AL</code> s\u0131f\u0131rlan\u0131r (<code>00h</code>) ve d\u0131\u015Far\u0131 ta\u015Fan elde biti <strong>Carry Flag (`CF = 1`)</strong> bayra\u011F\u0131n\u0131 yakar!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> An 8-bit register holds at most <code>0FFh</code> (255). Adding 1 to <code>0FFh</code> wraps <code>AL</code> to <code>00h</code> and sets the <strong>Carry Flag (<code>CF = 1</code>)</strong>.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-2-3",
+            "title": "8-Bit Ta\u015Fma ile Carry Flag (CF = 1) Olu\u015Fturma",
+            "difficulty": "Kolay",
+            "scenario": "AL yazmac\u0131na 0FFh y\xFCkleyip ADD AL, 1 \xE7al\u0131\u015Ft\u0131rarak hem CF=1 hem de ZF=1 olu\u015Ftu\u011Funu do\u011Frulayaca\u011F\u0131z.",
+            "taskPrompt": "AL yazmac\u0131na 0FFh y\xFCkleyin ve ADD AL, 1 komutunu \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 3: AL = 0FFh y\xFCkleyip 1 ekleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 0FFh\nADD AL, 1\nHLT\n",
+            "hints": [
+              "MOV AL, 0FFh ve ADD AL, 1 yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 0
+              },
+              "flags": {
+                "cf": 1,
+                "zf": 1
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-2-2-4",
+          "stepNumber": "Ad\u0131m 4",
+          "title": "Segment Yazma\xE7lar\u0131n\u0131 (DS, ES, SS) Y\xFCklemek: Neden \xD6nce AX Kullan\u0131l\u0131r?",
+          "titleEn": "Step 4: Loading Segment Registers (DS, ES, SS) via AX",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> 8086'da bellek b\xF6lgelerini g\xF6steren 4 segment yazmac\u0131 vard\u0131r: <code>CS</code> (Kod), <code>DS</code> (Veri), <code>SS</code> (Y\u0131\u011F\u0131n/Stack) ve <code>ES</code> (Ekstra). <strong>Alt\u0131n Kural:</strong> Bir segment yazmac\u0131na do\u011Frudan say\u0131 yaz\u0131lamaz (<code>MOV DS, 1000h</code> YASAKTIR!). Say\u0131 \xF6nce <code>AX</code> gibi genel bir yazmaca y\xFCklenir, oradan segment yazmac\u0131na aktar\u0131l\u0131r:</p>\n        <pre><code>MOV AX, 1000h\nMOV DS, AX</code></pre>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> You cannot load an immediate constant directly into a segment register (<code>MOV DS, 1000h</code> is illegal). Load it into <code>AX</code> first, then <code>MOV DS, AX</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-2-4",
+            "title": "DS ve ES Segment Yazma\xE7lar\u0131na De\u011Fer Y\xFCkleme",
+            "difficulty": "Kolay",
+            "scenario": "AX yazmac\u0131n\u0131 k\xF6pr\xFC olarak kullanarak DS ve ES segment yazma\xE7lar\u0131na 0200h de\u011Ferini y\xFCkleyece\u011Fiz.",
+            "taskPrompt": "AX yazmac\u0131na 0200h y\xFCkleyin, ard\u0131ndan bu de\u011Feri DS ve ES segment yazma\xE7lar\u0131na aktar\u0131n.",
+            "starterCode": "; Ad\u0131m 4: AX \xFCzerinden DS ve ES i\xE7ine 0200h y\xFCkleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0200h\nMOV DS, AX\nMOV ES, AX\nHLT\n",
+            "hints": [
+              "MOV AX, 0200h",
+              "MOV DS, AX",
+              "MOV ES, AX"
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 512,
+                "ds": 512,
+                "es": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-2-3-real-mode-memory-addressing",
@@ -15396,7 +15863,65 @@ HLT</code></pre>
           "maxSteps": 50
         },
         "examTip": "Little-Endian kural\u0131na g\xF6re d\xFC\u015F\xFCk anlaml\u0131 bayt (34h) d\xFC\u015F\xFCk adrese (0200h / Even Bank), y\xFCksek anlaml\u0131 bayt (12h) ise y\xFCksek adrese (0201h / Odd Bank) yaz\u0131l\u0131r."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-2-3-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "Segment:Offset Mant\u0131\u011F\u0131 ve 20-Bit Fiziksel Adres Hesab\u0131 (Segment \xD7 10h + Offset)",
+          "titleEn": "Step 1: Segment:Offset and 20-Bit Physical Address Calculation",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> 8086'da yazma\xE7lar 16 bittir (en fazla 64 KB adresler), ama bellek 1 MB (20 bit = 5 hex basamak) b\xFCy\xFCkl\xFC\u011F\xFCndedir. \u0130\u015Flemci 20-bitlik ger\xE7ek (fiziksel) adresi bulmak i\xE7in <strong>Segment yazmac\u0131n\u0131n sonuna bir s\u0131f\u0131r ekler ($	imes 10	ext{h}$) ve Ofset ile toplar</strong>:</p>\n        <p>$$	ext{Fiziksel Adres} = (	ext{Segment} 	imes 10	ext{h}) + 	ext{Offset}$$</p>\n        <p>\xD6rnek: <code>DS = 1000h</code> ve <code>BX = 0250h</code> ise Fiziksel Adres = <code>10000h + 0250h = 10250h</code> olur.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The 20-bit physical address is computed by shifting the segment left by one hex digit ($	imes 10	ext{h}$) and adding the offset: $	ext{PA} = 	ext{Segment} 	imes 10	ext{h} + 	ext{Offset}$.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-3-1",
+            "title": "Segment ve Offset Toplam\u0131n\u0131 Yazma\xE7ta Hesaplama",
+            "difficulty": "Kolay",
+            "scenario": "Segment = 0100h (10h ile \xE7arp\u0131lm\u0131\u015F hali 1000h) ve Offset = 0050h verildi\u011Finde, fiziksel adresi (1050h) AX i\xE7inde ADD ile hesaplayaca\u011F\u0131z.",
+            "taskPrompt": "AX yazmac\u0131na 1000h (0100h segmentinin 10h kat\u0131), BX yazmac\u0131na 0050h (ofset) y\xFCkleyin ve ADD AX, BX ile 1050h adresini AX i\xE7inde elde edin.",
+            "starterCode": "; Ad\u0131m 1: AX = 1000h ve BX = 0050h toplayarak 1050h elde edin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 1000h\nMOV BX, 0050h\nADD AX, BX\nHLT\n",
+            "hints": [
+              "MOV AX, 1000h / MOV BX, 0050h / ADD AX, BX yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4176,
+                "bx": 80
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-2-3-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": 'Little-Endian Kural\u0131: 16-Bit Kelimenin Belle\u011Fe "D\xFC\u015F\xFCk Bayt \xD6nce" Yaz\u0131lmas\u0131',
+          "titleEn": "Step 2: Little-Endian Rule: Storing Low Byte at Lower Address",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bellekteki her adres (kutu) sadece <strong>1 bayt (8 bit)</strong> tutabilir. Peki <code>AX = 1234h</code> gibi 2 baytl\u0131k bir kelimeyi <code>MOV [0200h], AX</code> ile belle\u011Fe yazd\u0131\u011F\u0131m\u0131zda ne olur? Intel i\u015Flemciler <strong>Little-Endian (K\xFC\xE7\xFCk-Sonlu)</strong> kural\u0131n\u0131 kullan\u0131r:</p>\n        <ul>\n          <li>K\xFC\xE7\xFCk/Alt bayt (<code>AL = 34h</code>) &rarr; K\xFC\xE7\xFCk adrese (<code>[0200h]</code>) yaz\u0131l\u0131r.</li>\n          <li>B\xFCy\xFCk/\xDCst bayt (<code>AH = 12h</code>) &rarr; Bir sonraki adrese (<code>[0201h]</code>) yaz\u0131l\u0131r.</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In x86 <strong>Little-Endian</strong> byte order, storing a 16-bit word like <code>1234h</code> at <code>[0200h]</code> places the low byte (<code>34h</code>) at <code>[0200h]</code> and the high byte (<code>12h</code>) at <code>[0201h]</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-3-2",
+            "title": "Bellekteki Little-Endian Baytlar\u0131 Ayr\u0131 Ayr\u0131 Okuma",
+            "difficulty": "Kolay",
+            "scenario": "AX = 9ABCh kelimesini [0200h] adresine yaz\u0131p, [0200h] adresindeki d\xFC\u015F\xFCk bayt\u0131 (BCh) CL yazmac\u0131na, [0201h] adresindeki y\xFCksek bayt\u0131 (9Ah) CH yazmac\u0131na okuyaca\u011F\u0131z.",
+            "taskPrompt": "AX yazmac\u0131na 9ABCh y\xFCkleyip MOV [0200h], AX ile belle\u011Fe yaz\u0131n. Ard\u0131ndan MOV CL, [0200h] ve MOV CH, [0201h] ile baytlar\u0131 okuyun.",
+            "starterCode": "; Ad\u0131m 2: 9ABCh kelimesini [0200h] adresine yaz\u0131p CL ve CH i\xE7ine bayt bayt okuyun\nORG 100h\n\nMOV AX, 9ABCh\nMOV [0200h], AX\n; \u015Eimdi [0200h] adresinden CL i\xE7ine, [0201h] adresinden CH i\xE7ine okuyun:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 9ABCh\nMOV [0200h], AX\nMOV CL, [0200h]\nMOV CH, [0201h]\nHLT\n",
+            "hints": [
+              "MOV CL, [0200h] d\xFC\u015F\xFCk bayt\u0131 (BCh) okur.",
+              "MOV CH, [0201h] y\xFCksek bayt\u0131 (9Ah) okur."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 39612,
+                "cl": 188,
+                "ch": 154
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {
@@ -15783,7 +16308,93 @@ HLT</code></pre>
           "maxSteps": 50
         },
         "examTip": "Base-Plus-Index modunda sadece BX veya BP taban yazmac\u0131 ile SI veya DI indeks yazmac\u0131 toplanabilir. AX veya CX gibi yazma\xE7lar k\xF6\u015Feli parantez i\xE7inde kullan\u0131lamaz."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-3-1-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "Do\u011Frudan (Direct) vs Yazma\xE7 Dolayl\u0131 (Register Indirect [BX]) Adresleme",
+          "titleEn": "Step 1: Direct [0200h] vs Register Indirect [BX] Addressing",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bellekteki bir kutuya iki temel yolla ula\u015Fabiliriz:</p>\n        <ul>\n          <li><strong>Do\u011Frudan (Direct):</strong> Adresi komutun i\xE7ine sabit yazar\u0131z: <code>MOV AL, [0200h]</code>.</li>\n          <li><strong>Yazma\xE7 Dolayl\u0131 (Register Indirect):</strong> Adresi <code>BX</code>, <code>SI</code>, <code>DI</code> veya <code>BP</code> yazmac\u0131n\u0131n i\xE7ine koyup paranteze o yazmac\u0131 yazar\u0131z: <code>MOV BX, 0200h</code> ard\u0131ndan <code>MOV AL, [BX]</code>. (<em>Dikkat:</em> <code>[AX]</code>, <code>[CX]</code> veya <code>[DX]</code> parantez i\xE7inde KULLANILAMAZ!)</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In <strong>Register Indirect</strong> addressing, the offset address is held in <code>BX</code>, <code>SI</code>, <code>DI</code>, or <code>BP</code> (never <code>AX, CX, DX</code>): e.g., <code>MOV BX, 0200h</code> then <code>MOV AL, [BX]</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-3-1-1",
+            "title": "[BX] Yazma\xE7 Dolayl\u0131 Adresleme ile Belle\u011Fe Eri\u015Fim",
+            "difficulty": "Kolay",
+            "scenario": "BX yazmac\u0131na 0200h adresini y\xFCkleyip, [BX] \xFCzerinden belle\u011Fe 55h bayt\u0131n\u0131 yazaca\u011F\u0131z ve DL yazmac\u0131na geri okuyaca\u011F\u0131z.",
+            "taskPrompt": "BX = 0200h yap\u0131n. MOV BYTE PTR [BX], 55h ile belle\u011Fe 55h yaz\u0131n ve MOV DL, [BX] ile DL yazmac\u0131na okuyun.",
+            "starterCode": "; Ad\u0131m 1: BX = 0200h \xFCzerinden belle\u011Fe 55h yaz\u0131p DL i\xE7ine okuyun\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BX, 0200h\nMOV BYTE PTR [BX], 55h\nMOV DL, [BX]\nHLT\n",
+            "hints": [
+              "MOV BX, 0200h",
+              "MOV BYTE PTR [BX], 55h",
+              "MOV DL, [BX]"
+            ],
+            "assertions": {
+              "registers": {
+                "bx": 512,
+                "dl": 85
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-1-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "G\xF6reli (Register Relative [BX+4]) Adresleme: Dizi Elemanlar\u0131na Eri\u015Fmek",
+          "titleEn": "Step 2: Register Relative Addressing [BX+4] for Array Elements",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bellekte <code>0200h</code> adresinden ba\u015Flayan bir dizi d\xFC\u015F\xFCn\xFCn. <code>BX = 0200h</code> dizinin ba\u015F\u0131n\u0131 g\xF6sterirken: <code>[BX]</code> 0. eleman\u0131, <code>[BX+1]</code> 1. eleman\u0131, <code>[BX+2]</code> ise 2. eleman\u0131 g\xF6sterir! Buna <strong>G\xF6reli (Relative) Adresleme</strong> denir.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> If <code>BX</code> holds the base address of an array (<code>0200h</code>), then <code>[BX+2]</code> accesses the byte at <code>0200h + 2 = 0202h</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-3-1-2",
+            "title": "[BX+2] G\xF6reli Adresleme ile Dizinin 3. Eleman\u0131n\u0131 Okuma",
+            "difficulty": "Kolay",
+            "scenario": "0200h adresinden ba\u015Flayan 3 elemanl\u0131 dizinin (10h, 20h, 30h) [BX+2] adresindeki 30h eleman\u0131n\u0131 AL yazmac\u0131na okuyaca\u011F\u0131z.",
+            "taskPrompt": "BX = 0200h kurun. [BX+2] adresindeki 30h bayt\u0131n\u0131 MOV AL, [BX+2] komutu ile AL yazmac\u0131na okuyun.",
+            "starterCode": "; Ad\u0131m 2: [BX+2] adresindeki dizi eleman\u0131n\u0131 AL i\xE7ine okuyun\nORG 100h\nMOV BYTE PTR [0200h], 10h\nMOV BYTE PTR [0201h], 20h\nMOV BYTE PTR [0202h], 30h\n\n; BX = 0200h yap\u0131n ve [BX+2] eleman\u0131n\u0131 AL i\xE7ine okuyun:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BYTE PTR [0200h], 10h\nMOV BYTE PTR [0201h], 20h\nMOV BYTE PTR [0202h], 30h\nMOV BX, 0200h\nMOV AL, [BX+2]\nHLT\n",
+            "hints": [
+              "MOV BX, 0200h ard\u0131ndan MOV AL, [BX+2] yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "bx": 512,
+                "al": 48
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-1-3",
+          "stepNumber": "Ad\u0131m 3",
+          "title": "Taban Art\u0131 \u0130ndeks ([BX+SI]) ve G\xF6reli Taban+\u0130ndeks ([BX+SI+2]) Adresleme",
+          "titleEn": "Step 3: Base-Plus-Index [BX+SI] and Base Relative-Plus-Index [BX+SI+2]",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Hem bir taban yazmac\u0131 (<code>BX</code> veya <code>BP</code>) hem de bir indeks yazmac\u0131 (<code>SI</code> veya <code>DI</code>) parantez i\xE7inde toplanabilir: <code>[BX+SI]</code> veya sabit eklenerek <code>[BX+SI+2]</code>. (<em>Dikkat:</em> \u0130ki taban <code>[BX+BP]</code> veya iki indeks <code>[SI+DI]</code> yan yana toplanamaz!)</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Combine one base register (<code>BX</code> or <code>BP</code>) and one index register (<code>SI</code> or <code>DI</code>), optionally with a displacement: <code>[BX+SI+2]</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-3-1-3",
+            "title": "[BX+SI+2] ile Efektif Adresten Veri Okuma",
+            "difficulty": "Kolay",
+            "scenario": "BX = 0200h, SI = 0003h iken [BX+SI+2] (yani 0205h) adresine 99h yaz\u0131p AH yazmac\u0131na okuyaca\u011F\u0131z.",
+            "taskPrompt": "BX = 0200h ve SI = 0003h y\xFCkleyin. MOV BYTE PTR [BX+SI+2], 99h ile belle\u011Fe yaz\u0131n ve MOV AH, [BX+SI+2] ile AH yazmac\u0131na okuyun.",
+            "starterCode": "; Ad\u0131m 3: [BX+SI+2] adresleme uygulamas\u0131\nORG 100h\n\nMOV BX, 0200h\nMOV SI, 0003h\n; [BX+SI+2] adresine 99h yaz\u0131n ve AH i\xE7ine okuyun:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BX, 0200h\nMOV SI, 0003h\nMOV BYTE PTR [BX+SI+2], 99h\nMOV AH, [BX+SI+2]\nHLT\n",
+            "hints": [
+              "MOV BYTE PTR [BX+SI+2], 99h ve MOV AH, [BX+SI+2] yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "bx": 512,
+                "si": 3,
+                "ah": 153
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-3-2-indexed-relative-and-program-addressing",
@@ -16022,297 +16633,71 @@ HLT</code></pre>
           "maxSteps": 50
         },
         "examTip": "Dolayl\u0131 s\u0131\xE7ramalar C dilindeki switch-case yap\u0131lar\u0131, sanal fonksiyon tablolar\u0131 (vtable) ve fonksiyon i\u015Faret\xE7ileri i\xE7in donan\u0131msal temel olu\u015Fturur."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-3-2-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "Do\u011Frudan / G\xF6reli S\u0131\xE7rama (JMP etiket): \u0130stemedi\u011Fimiz Sat\u0131rlar\u0131 Atlamak",
+          "titleEn": "Step 1: Unconditional Jump (JMP label): Skipping Instructions",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Normalde i\u015Flemci komutlar\u0131 yukar\u0131dan a\u015Fa\u011F\u0131ya s\u0131rayla \xE7al\u0131\u015Ft\u0131r\u0131r. <code>JMP etiket</code> komutu, i\u015Flemcinin <code>IP</code> (Komut \u0130\u015Faret\xE7isi) yazmac\u0131n\u0131 do\u011Frudan <code>etiket:</code> sat\u0131r\u0131na y\xF6nlendirir ve aradaki sat\u0131rlar hi\xE7 \xE7al\u0131\u015Ft\u0131r\u0131lmaz!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>JMP label</code> updates <code>IP</code> to jump directly to <code>label:</code>, skipping any instructions in between.</p>\n      ",
+          "task": {
+            "id": "ms-task-3-2-1",
+            "title": "JMP ile Hatal\u0131 Sat\u0131r\u0131 Atlay\u0131p Hedefe S\u0131\xE7rama",
+            "difficulty": "Kolay",
+            "scenario": "AX = 0007h y\xFCklendikten sonra aradaki MOV AX, 0FFFFh sat\u0131r\u0131n\u0131 JMP kurtul ile atlayaca\u011F\u0131z.",
+            "taskPrompt": "MOV AX, 0007h sat\u0131r\u0131ndan hemen sonra JMP kurtul yazarak aradaki MOV AX, 0FFFFh sat\u0131r\u0131n\u0131 atlay\u0131n.",
+            "starterCode": "; Ad\u0131m 1: JMP kurtul ile aradaki sat\u0131r\u0131 atlay\u0131n\nORG 100h\n\nMOV AX, 0007h\n; Buraya kurtul etiketine s\u0131\xE7rama komutu yaz\u0131n:\n\n\nMOV AX, 0FFFFh\nkurtul:\nMOV BX, AX\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0007h\nJMP kurtul\nMOV AX, 0FFFFh\nkurtul:\nMOV BX, AX\nHLT\n",
+            "hints": [
+              "JMP kurtul komutunu ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 7,
+                "bx": 7
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-2-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "Dolayl\u0131 Program Adresleme (JMP BX): S\u0131\xE7ranacak Adresi Yazma\xE7tan Almak",
+          "titleEn": "Step 2: Indirect Program Addressing (JMP BX)",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> S\u0131\xE7ranacak etiketin adresini \xF6nce bir yazmaca y\xFCkleyip (<code>MOV BX, etiket</code>), sonra <code>JMP BX</code> diyerek i\u015Flemcinin <code>BX</code> i\xE7indeki adrese s\u0131\xE7ramas\u0131n\u0131 sa\u011Flayabiliriz. Buna <strong>Dolayl\u0131 S\u0131\xE7rama (Indirect Jump)</strong> denir.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In an <strong>Indirect Jump</strong>, load the target label's offset into a register (<code>MOV SI, done</code>) and execute <code>JMP SI</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-3-2-2",
+            "title": "SI Yazmac\u0131 \xDCzerinden Dolayl\u0131 S\u0131\xE7rama (JMP SI)",
+            "difficulty": "Kolay",
+            "scenario": "son_etiket adresini SI yazmac\u0131na y\xFCkleyip JMP SI ile s\u0131\xE7rayarak DX = 1234h de\u011Ferini koruyaca\u011F\u0131z.",
+            "taskPrompt": "MOV SI, son_etiket ve JMP SI komutlar\u0131n\u0131 yazarak aradaki MOV DX, 0000h sat\u0131r\u0131n\u0131 atlay\u0131n.",
+            "starterCode": "; Ad\u0131m 2: SI \xFCzerinden son_etiket adresine dolayl\u0131 s\u0131\xE7ray\u0131n\nORG 100h\n\nMOV DX, 1234h\n; SI i\xE7ine son_etiket y\xFCkleyin ve JMP SI yap\u0131n:\n\n\nMOV DX, 0000h\nson_etiket:\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV DX, 1234h\nMOV SI, son_etiket\nJMP SI\nMOV DX, 0000h\nson_etiket:\nHLT\n",
+            "hints": [
+              "MOV SI, son_etiket ard\u0131ndan JMP SI yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "dx": 4660
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-3-3-stack-addressing-and-machine-encoding",
       "number": "3.3",
-      "title": "B\xF6l\xFCm 04/05 \u2013 05/05 (Slayt 27\u201340): Y\u0131\u011F\u0131n Belle\u011Fi Adresleme (PUSH/POP Bayt Bayt), MOD-REG-R/M ve Yayg\u0131n Hatalar",
-      "titleEn": "Sections 04/05 \u2013 05/05 (Slides 27\u201340): Stack Memory Addressing (Byte-by-Byte PUSH/POP) & Putting It Together",
-      "summary": "Slayt 27\u201340: LIFO Y\u0131\u011F\u0131n mekani\u011Fi, PUSH/POP bayt bayt \xE7al\u0131\u015Fmas\u0131, fiziksel y\u0131\u011F\u0131n adresi hesab\u0131, y\u0131\u011F\u0131nla iki kaydediciyi takas etme, MOD-REG-R/M ve yayg\u0131n hatalar (Common Pitfalls).",
+      "title": "B\xF6l\xFCm 04/05 \u2013 05/05 (Slayt 27\u201340): Y\u0131\u011F\u0131n (Stack) Belle\u011Fi Adresleme (LIFO, PUSH/POP Bayt Bayt, SS:SP) ve \xD6zet",
+      "titleEn": "Sections 04/05 \u2013 05/05 (Slides 27\u201340): Stack Memory Addressing (LIFO, Byte-by-Byte PUSH/POP, SS:SP) & Putting It Together",
+      "summary": "Slayt 27\u201340: S\u0131f\u0131rdan LIFO Y\u0131\u011F\u0131n (Stack) mant\u0131\u011F\u0131, SS:SP fiziksel adres hesab\u0131, PUSH (SP-1/SP-2) ve POP (SP/SP+1) bayt bayt \xE7al\u0131\u015Fmas\u0131, POP CS yasa\u011F\u0131, CALL/RET ve Y\u0131\u011F\u0131nla iki yazmac\u0131 takas etme.",
       "summaryEn": "Slides 27\u201340: LIFO Stack, how PUSH and POP work byte by byte, physical stack address calculation, CALL/RET, swapping registers with the stack, choosing an addressing mode, and Common Pitfalls.",
-      "theoryHtml": `
-          <div class="nb-section">
-            <h4 class="nb-title">1. 8086 Makine Kodu Format\u0131 (1 ila 6 Bayt)</h4>
-            <p>
-              8086 komutlar\u0131 makine dilinde de\u011Fi\u015Fken uzunlukta (1 bayttan 6 bayta kadar) kodlan\u0131r:
-            </p>
-
-            <div class="nb-code-box">
-\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
-\u2502    Bayt 1    \u2502    Bayt 2    \u2502    Bayt 3    \u2502    Bayt 4    \u2502    Bayt 5    \u2502    Bayt 6    \u2502
-\u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524
-\u2502 Opcode \u2502 D \u2502 W\u2502 MOD\u2502 REG\u2502 R/M \u2502  Disp-Low    \u2502  Disp-High   \u2502  Data-Low    \u2502  Data-High   \u2502
-\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
-            </div>
-
-            <div class="nb-grid-2" style="margin-top: 10px;">
-              <div class="nb-card">
-                <h5>Bayt 1: Opcode, D ve W Bitleri</h5>
-                <ul>
-                  <li><strong>Opcode (6 bit):</strong> Temel i\u015Flem kodu (\xF6rn. <code>MOV reg/mem</code> i\xE7in <code>%100010</code>).</li>
-                  <li><strong>D-Biti (Direction - Y\xF6n, 1 bit):</strong>
-                    <ul>
-                      <li>$D = 1$: <code>REG</code> alan\u0131 <strong>Hedef (Destination)</strong> i\u015Flenendir (<code>MOV REG, R/M</code>).</li>
-                      <li>$D = 0$: <code>REG</code> alan\u0131 <strong>Kaynak (Source)</strong> i\u015Flenendir (<code>MOV R/M, REG</code>).</li>
-                    </ul>
-                  </li>
-                  <li><strong>W-Biti (Width - Geni\u015Flik, 1 bit):</strong>
-                    <ul>
-                      <li>$W = 0$: 8-bit Bayt (Byte) i\u015Flemi.</li>
-                      <li>$W = 1$: 16-bit Kelime (Word) i\u015Flemi.</li>
-                    </ul>
-                  </li>
-                </ul>
-              </div>
-
-              <div class="nb-card">
-                <h5>Bayt 2: MOD, REG ve R/M Alanlar\u0131</h5>
-                <ul>
-                  <li><strong>MOD (2 bit):</strong> Adresleme modunu ve arkadan ka\xE7 bayt deplasman gelece\u011Fini belirler:
-                    <ul>
-                      <li><code>00</code>: Bellek modu, deplasman yoktur (\u0130stisna: $R/M = 110$ do\u011Frudan <code>[disp16]</code> adresidir).</li>
-                      <li><code>01</code>: Bellek modu, arkadan 8-bit i\u015Faretli deplasman (<code>disp8</code>) gelir.</li>
-                      <li><code>10</code>: Bellek modu, arkadan 16-bit deplasman (<code>disp16</code>) gelir.</li>
-                      <li><code>11</code>: Yazma\xE7 Modu (Register Mode); bellek eri\u015Fimi yoktur.</li>
-                    </ul>
-                  </li>
-                  <li><strong>REG (3 bit):</strong> Do\u011Frudan i\u015Flemci yazmac\u0131n\u0131 kodlar.</li>
-                  <li><strong>R/M (3 bit):</strong> MOD alan\u0131na ba\u011Fl\u0131 olarak bellek form\xFCl\xFCn\xFC veya yazmac\u0131 kodlar.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div class="nb-section">
-            <h4 class="nb-title">2. REG Yazma\xE7 Kodlama ve Tam MOD-REG-R/M Tablosu</h4>
-            
-            <div class="nb-table-wrapper">
-              <table class="nb-table">
-                <thead>
-                  <tr>
-                    <th>3-Bit Kod</th>
-                    <th>W = 0 (8-Bit Bayt Yazmac\u0131)</th>
-                    <th>W = 1 (16-Bit Kelime Yazmac\u0131)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr><td><code>000</code></td><td>AL</td><td>AX</td></tr>
-                  <tr><td><code>001</code></td><td>CL</td><td>CX</td></tr>
-                  <tr><td><code>010</code></td><td>DL</td><td>DX</td></tr>
-                  <tr><td><code>011</code></td><td>BL</td><td>BX</td></tr>
-                  <tr><td><code>100</code></td><td>AH</td><td>SP</td></tr>
-                  <tr><td><code>101</code></td><td>CH</td><td>BP</td></tr>
-                  <tr><td><code>110</code></td><td>DH</td><td>SI</td></tr>
-                  <tr><td><code>111</code></td><td>BH</td><td>DI</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div class="nb-table-wrapper" style="margin-top: 14px;">
-              <table class="nb-table">
-                <thead>
-                  <tr>
-                    <th>R/M Kodu</th>
-                    <th>MOD = 00</th>
-                    <th>MOD = 01</th>
-                    <th>MOD = 10</th>
-                    <th>MOD = 11 (W=0)</th>
-                    <th>MOD = 11 (W=1)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr><td><code>000</code></td><td><code>[BX + SI]</code></td><td><code>[BX + SI + disp8]</code></td><td><code>[BX + SI + disp16]</code></td><td>AL</td><td>AX</td></tr>
-                  <tr><td><code>001</code></td><td><code>[BX + DI]</code></td><td><code>[BX + DI + disp8]</code></td><td><code>[BX + DI + disp16]</code></td><td>CL</td><td>CX</td></tr>
-                  <tr><td><code>010</code></td><td><code>[BP + SI]</code></td><td><code>[BP + SI + disp8]</code></td><td><code>[BP + SI + disp16]</code></td><td>DL</td><td>DX</td></tr>
-                  <tr><td><code>011</code></td><td><code>[BP + DI]</code></td><td><code>[BP + DI + disp8]</code></td><td><code>[BP + DI + disp16]</code></td><td>BL</td><td>BX</td></tr>
-                  <tr><td><code>100</code></td><td><code>[SI]</code></td><td><code>[SI + disp8]</code></td><td><code>[SI + disp16]</code></td><td>AH</td><td>SP</td></tr>
-                  <tr><td><code>101</code></td><td><code>[DI]</code></td><td><code>[DI + disp8]</code></td><td><code>[DI + disp16]</code></td><td>CH</td><td>BP</td></tr>
-                  <tr><td><code>110</code></td><td><strong style="color: var(--accent);">[disp16] (Do\u011Frudan Adres!)</strong></td><td><code>[BP + disp8]</code></td><td><code>[BP + disp16]</code></td><td>DH</td><td>SI</td></tr>
-                  <tr><td><code>111</code></td><td><code>[BX]</code></td><td><code>[BX + disp8]</code></td><td><code>[BX + disp16]</code></td><td>BH</td><td>DI</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div class="nb-callout warning" style="margin-top: 12px;">
-              \u26A0\uFE0F <strong>Kritik \u0130stisna (MOD=00, R/M=110):</strong><br>
-              <code>MOD=00</code> normalde deplasmans\u0131z bellek eri\u015Fimini ifade ederken, $R/M = 110$ durumu <code>[BP]</code> anlam\u0131na <strong>GELMEZ</strong>!
-              Bu kombinasyon donan\u0131msal olarak <strong>Do\u011Frudan 16-Bit Adresleme (Direct Addressing - <code>[disp16]</code>)</strong> i\xE7in ayr\u0131lm\u0131\u015Ft\u0131r.
-              E\u011Fer programc\u0131 <code>[BP]</code> yazarsa derleyici bunu mecburen <code>MOD=01, R/M=110, disp8=00h</code> \u015Feklinde 3 bayt olarak kodlar.
-            </div>
-          </div>
-
-          <div class="nb-section">
-            <h4 class="nb-title">3. Ad\u0131m Ad\u0131m Makine Kodu \xC7\xF6z\xFCmleme \xD6rnekleri</h4>
-            <div class="nb-grid-2">
-              <div class="nb-card">
-                <h5>\xD6rnek 1: MOV AX, BX</h5>
-                <ul>
-                  <li>Opcode: <code>%100010</code>, Hedef AX ($D=1$), 16-bit ($W=1$) &rarr; Bayt 1: <code>%10001011 = 8Bh</code>.</li>
-                  <li>Yazma\xE7 modu ($MOD=11$), AX kodu <code>000</code>, BX kodu <code>011</code> &rarr; Bayt 2: <code>%11000011 = C3h</code>.</li>
-                  <li><strong>Makine Kodu: <code>8B C3</code></strong> (2 bayt).</li>
-                </ul>
-              </div>
-
-              <div class="nb-card">
-                <h5>\xD6rnek 2: MOV [BX+SI+10h], CX</h5>
-                <ul>
-                  <li>Opcode: <code>%100010</code>, Kaynak CX ($D=0$), 16-bit ($W=1$) &rarr; Bayt 1: <code>%10001001 = 89h</code>.</li>
-                  <li>8-bit deplasman ($MOD=01$), CX kodu <code>001</code>, [BX+SI] kodu <code>000</code> &rarr; Bayt 2: <code>%01001000 = 48h</code>.</li>
-                  <li>Deplasman: <code>10h</code> (Bayt 3).</li>
-                  <li><strong>Makine Kodu: <code>89 48 10</code></strong> (3 bayt).</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div class="nb-section">
-            <h4 class="nb-title">4. CISC (x86) ve RISC (ARM) Adresleme Felsefesi Kar\u015F\u0131la\u015Ft\u0131rmas\u0131</h4>
-            <div class="nb-table-wrapper">
-              <table class="nb-table">
-                <thead>
-                  <tr>
-                    <th>\xD6zellik</th>
-                    <th>CISC (Intel x86 / 8086)</th>
-                    <th>RISC (ARM / MIPS)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><strong>Bellek Eri\u015Fimi</strong></td>
-                    <td>Bellek-Bellek veya Bellek-ALU (Do\u011Frudan bellekle i\u015Flem yap\u0131labilir).</td>
-                    <td>Saf Y\xFCkle/Sakla (Load/Store); belle\u011Fe sadece LDR/STR dokunur.</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Komut Uzunlu\u011Fu</strong></td>
-                    <td>De\u011Fi\u015Fken (1 bayttan 15 bayta kadar). \xC7\xF6zme donan\u0131m\u0131 karma\u015F\u0131kt\u0131r.</td>
-                    <td>Sabit 32-bit (4 bayt). \xC7\xF6zme son derece basit ve tek \xE7evrimdir.</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Adresleme Modlar\u0131</strong></td>
-                    <td>\xC7ok say\u0131da karma\u015F\u0131k mod (Taban+\u0130ndeks+Deplasman+Override).</td>
-                    <td>Az say\u0131da sade mod (genellikle Taban+Ofset); boru hatt\u0131 dostudur.</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Kod Yo\u011Funlu\u011Fu</strong></td>
-                    <td>Y\xFCksek (Code Density \xE7ok kompaktt\u0131r; az baytta \xE7ok i\u015F yap\u0131l\u0131r).</td>
-                    <td>D\xFC\u015F\xFCk (Ayn\u0131 i\u015Flem i\xE7in bellekten \xE7ekme, i\u015Fleme ve yazma 3 komut s\xFCrer).</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Modern Mimari</strong></td>
-                    <td>Donan\u0131msal komut \xE7\xF6z\xFCc\xFC x86 komutlar\u0131n\u0131 dahili RISC mikro-op'lar\u0131na (&mu;ops) b\xF6ler.</td>
-                    <td>Do\u011Frudan basit komut \xE7ekirde\u011Fi ile y\xFCksek saat frekans\u0131 ve d\xFC\u015F\xFCk g\xFC\xE7 t\xFCketimi.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        
-
-<div class="nb-section">
-  <div class="nb-h3">\u{1F4D1} Birebir Slayt Ak\u0131\u015F\u0131: Week 3 - Addressing Modes.pptx (Slayt 27\u201340 / 40 \u2014 Eksiksiz S\u0131ral\u0131 \u0130\xE7erik)</div>
-  <p class="nb-p">Ana klas\xF6rdeki <code>Week 3 - Addressing Modes.pptx</code> dosyas\u0131n\u0131n <strong>Slayt 27\u201340</strong> aral\u0131\u011F\u0131ndaki t\xFCm slayt ba\u015Fl\u0131klar\u0131, tablolar\u0131, \xF6rnekleri ve c\xFCmleleri a\u015Fa\u011F\u0131da <strong>slayt s\u0131ras\u0131yla (1'den 40'a eksiksiz)</strong> yer almaktad\u0131r:</p>
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 27 / 40 \u2014 04 / 05</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>04 / 05</li><li>Stack Memory Addressing</li><li>How PUSH, POP, CALL, and RET use the stack's last-in, first-out discipline</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>Section divider    26</li></ul>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 28 / 40 \u2014 The Stack: Last-In, First-Out Memory</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>\xB5P</li><li>Section 4</li><li>The Stack: Last-In, First-Out Memory</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>27</li><li>The stack plays an important role in every microprocessor. It holds data temporarily, and it stores the return addresses used by procedures.</li><li>Stack memory is LIFO: last in, first out. The most recently stored item is always the first one retrieved.</li><li>Data is placed onto the stack with PUSH, and removed with POP. CALL uses the stack to hold a return address, and RET removes that return address.</li></ul>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 29 / 40 \u2014 PUSH and POP: The Basic Operations</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>\xB5P</li><li>Section 4</li><li>PUSH and POP: The Basic Operations</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>28</li><li>PUSH</li><li>Stores a word of data onto the stack, and decrements SP so it points to the new top of the stack.</li><li>POP</li><li>Retrieves a word of data from the stack, and increments SP so it points past the retrieved word.</li><li>PUSH and POP always store or retrieve full words, never single bytes, on the 8086 family.</li></ul>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 30 / 40 \u2014 How PUSH Works, Byte by Byte</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>\xB5P</li><li>Section 4</li><li>How PUSH Works, Byte by Byte</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>29</li><li>Whenever a word of data is pushed onto the stack, the high-order 8 bits go to the location addressed by SP \u2212 1, and the low-order 8 bits go to the location addressed by SP \u2212 2.</li><li>SP is then decremented by 2, so the next PUSH stores into the next available location.</li><li>PUSH AX, where AX = 3050H</li><li>SP \u2212 1  \u2190  30H (high byte, AH)</li><li>SP \u2212 2  \u2190  50H (low byte, AL)</li><li>SP  \u2190  SP \u2212 2</li></ul>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 31 / 40 \u2014 How POP Works, Byte by Byte</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>\xB5P</li><li>Section 4</li><li>How POP Works, Byte by Byte</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>30</li><li>Whenever data is popped from the stack, the low-order 8 bits come from the location addressed by SP, and the high-order 8 bits come from the location addressed by SP + 1.</li><li>SP is then incremented by 2.</li><li>POP BX</li><li>BL  \u2190  contents at SP (low byte)</li><li>BH  \u2190  contents at SP + 1 (high byte)</li><li>SP  \u2190  SP + 2</li></ul>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 32 / 40 \u2014 Finding the Physical Stack Address</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>\xB5P</li><li>Section 4 \xB7 Worked example</li><li>Finding the Physical Stack Address</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>31</li><li>The stack is maintained by two registers: SP (stack pointer) and SS (stack segment). SP always points to a location within the stack segment.</li><li>In real mode, the physical stack address forms exactly like any other segment:offset address: SS \xD7 10H + SP.</li><li>SS = 3000H, SP = 0100H</li><li>30000H + 0100H  =  30100H</li></ul>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 33 / 40 \u2014 What Can Be Pushed and Popped</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>\xB5P</li><li>Section 4</li><li>What Can Be Pushed and Popped</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>32</li><li>Data may be popped from the stack into any general-purpose register, or any segment register, with one exception: CS.</li><li>CS cannot be the target of a POP, because CS is only part of the address of the next instruction. Changing CS alone, without also changing IP in a coordinated way, would leave the processor pointing at a meaningless combination.</li></ul>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 34 / 40 \u2014 CALL and RET: The Stack Meets Procedures</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>\xB5P</li><li>Section 4</li><li>CALL and RET: The Stack Meets Procedures</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>33</li><li>CALL pushes the address of the instruction following the CALL onto the stack, then jumps to the procedure.</li><li>RET pops that saved address back off the stack, into IP (and CS, for a far return), returning control to the instruction right after the original CALL.</li><li>This is exactly why CS cannot be popped directly: RET's automatic pop is the one safe, coordinated way the processor restores both CS and IP together.</li></ul>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 35 / 40 \u2014 Swapping Two Registers With the Stack</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>\xB5P</li><li>Section 4 \xB7 Worked example</li><li>Swapping Two Registers With the Stack</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>34</li><li>The code</li><li>MOV AX, 1000H</li><li>MOV BX, 2000H</li><li>PUSH AX</li><li>PUSH BX</li><li>POP AX</li><li>POP BX</li><li>What happens</li><li>AX = 1000H, BX = 2000H</li><li>PUSH AX: 1000H onto the stack</li><li>PUSH BX: 2000H onto the stack, on top of 1000H</li><li>POP AX: the top value, 2000H, comes back off into AX</li><li>POP BX: the remaining value, 1000H, comes off into BX</li></ul>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 36 / 40 \u2014 Tracing the Stack, Step by Step</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>\xB5P</li><li>Section 4 \xB7 Worked example</li><li>Tracing the Stack, Step by Step</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>35</li></ul>
-      <div class="nb-table-wrap"><table class="nb-table"><thead><tr><th>Instruction</th><th>Stack (top \u2192 bottom)</th><th>AX</th><th>BX</th></tr></thead><tbody><tr><td>(start)</td><td>empty</td><td>1000H</td><td>2000H</td></tr><tr><td>PUSH AX</td><td>1000H</td><td>1000H</td><td>2000H</td></tr><tr><td>PUSH BX</td><td>2000H, 1000H</td><td>1000H</td><td>2000H</td></tr><tr><td>POP AX</td><td>1000H</td><td>2000H</td><td>2000H</td></tr><tr><td>POP BX</td><td>empty</td><td>2000H</td><td>1000H</td></tr></tbody></table></div>
-      <ul class="nb-list"><li>Result: AX and BX have swapped values, using only the stack, with no third register needed.</li></ul>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 37 / 40 \u2014 05 / 05</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>05 / 05</li><li>Putting It Together</li><li>Choosing a mode, avoiding the common mistakes, and what carries into next week</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>Section divider    36</li></ul>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 38 / 40 \u2014 Choosing an Addressing Mode</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>\xB5P</li><li>Section 5</li><li>Choosing an Addressing Mode</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>37</li></ul>
-      <div class="nb-table-wrap"><table class="nb-table"><thead><tr><th>If you need to\u2026</th><th>Reach for\u2026</th></tr></thead><tbody><tr><td>Copy between two registers, fastest</td><td>Register addressing</td></tr><tr><td>Load a known constant</td><td>Immediate addressing</td></tr><tr><td>Read or write one fixed, named variable</td><td>Direct addressing</td></tr><tr><td>Walk through an array using a pointer</td><td>Register indirect, or register relative</td></tr><tr><td>Index into a 2-D structure or a table of records</td><td>Base-plus-index, or base relative-plus-index</td></tr></tbody></table></div>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 39 / 40 \u2014 Common Pitfalls</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>\xB5P</li><li>Section 5</li><li>Common Pitfalls</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>38</li><li>Forgetting that source and destination read right to left. A misread MOV silently swaps which operand is supposed to change.</li><li>Assuming MOV moves data. It copies. The source is always still there afterward.</li><li>Mismatching PUSH and POP counts. Every PUSH needs a matching POP, in reverse order, or the stack pointer drifts and the next RET reads garbage.</li><li>Trying to POP directly into CS. It cannot be done: use a far RET, or a far JMP/CALL, to change CS safely.</li></ul>
-    </div>
-  </div>
-
-  <div class="nb-card">
-    <div class="nb-card-title">Slide 40 / 40 \u2014 Key Takeaways</div>
-    <div class="nb-card-body">
-      <ul class="nb-list"><li>\xB5P</li><li>Section 5 \xB7 Summary</li><li>Key Takeaways</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>39</li><li>This week, in brief</li><li>Every instruction reads right to left: source on the right, destination on the left.</li><li>Seven data-addressing modes cover every way MOV can locate an operand, from plain registers to base relative-plus-index.</li><li>JMP and CALL locate their target directly, relative to IP, or indirectly through a register.</li><li>The stack is LIFO. PUSH decrements SP and stores; POP retrieves and increments SP.</li><li>Key formulas</li><li>Relative jump target = IP + displacement</li><li>Physical stack address = SS \xD7 10H + SP</li><li>PUSH: SP \u2190 SP \u2212 2, then store. POP: retrieve, then SP \u2190 SP + 2.</li><li>Next week: data movement instructions, in depth, building on these addressing modes.</li><li>Sources: Brey, B. B. (2008). The Intel Microprocessors (8th ed.). Prentice Hall. Course notes, BMI3121.</li></ul>
-    </div>
-  </div>
-</div>`,
+      "theoryHtml": '\n          <div class="nb-section">\n            <h4 class="nb-title">1. S\u0131f\u0131rdan Y\u0131\u011F\u0131n (Stack) Nedir? (\xDCst \xDCste Tabak Y\u0131\u011F\u0131n\u0131 Mant\u0131\u011F\u0131)</h4>\n            <p>\n              <strong>Y\u0131\u011F\u0131n (Stack)</strong>, mikroi\u015Flemcinin verileri ge\xE7ici olarak saklamak ve alt program (prosed\xFCr) d\xF6n\xFC\u015F adreslerini tutmak i\xE7in kulland\u0131\u011F\u0131 \xF6zel bir bellek b\xF6lgesidir.\n              \xC7al\u0131\u015Fma kural\u0131 <strong>LIFO (Last-In, First-Out \u2014 Son Giren \u0130lk \xC7\u0131kar)</strong> prensibidir: T\u0131pk\u0131 \xFCst \xFCste dizilen tabaklar gibi, en son koydu\u011Funuz veriyi (`PUSH`) her zaman ilk olarak geri al\u0131rs\u0131n\u0131z (`POP`).\n            </p>\n            <div class="nb-grid-2" style="margin-top: 10px;">\n              <div class="nb-card">\n                <h5>\u{1F4E5} PUSH (Y\u0131\u011F\u0131na Veri \u0130tme \u2014 16 Bit Kelime)</h5>\n                <ul>\n                  <li>Y\u0131\u011F\u0131n 8086\'da <strong>daima 16-bit kelime (Word = 2 bayt)</strong> ile \xE7al\u0131\u015F\u0131r; tek bayt (`PUSH AL`) itilemez!</li>\n                  <li><strong>Ad\u0131m 1 (\xDCst Bayt):</strong> Yazmac\u0131n \xFCst 8 biti (`AH`), `[SS : SP - 1]` adresine yaz\u0131l\u0131r.</li>\n                  <li><strong>Ad\u0131m 2 (Alt Bayt):</strong> Yazmac\u0131n alt 8 biti (`AL`), `[SS : SP - 2]` adresine yaz\u0131l\u0131r.</li>\n                  <li><strong>Ad\u0131m 3 (SP G\xFCncelleme):</strong> `SP \u2190 SP - 2` (Y\u0131\u011F\u0131n y\xFCksek adresten d\xFC\u015F\xFCk adrese do\u011Fru b\xFCy\xFCr).</li>\n                </ul>\n              </div>\n              <div class="nb-card">\n                <h5>\u{1F4E4} POP (Y\u0131\u011F\u0131ndan Veri \xC7ekme \u2014 16 Bit Kelime)</h5>\n                <ul>\n                  <li>Y\u0131\u011F\u0131n\u0131n en tepesindeki (`SS:SP`) 16-bit kelimeyi hedef yazmaca geri okur.</li>\n                  <li><strong>Ad\u0131m 1 (Alt Bayt):</strong> `[SS : SP]` adresindeki bayt yazmac\u0131n alt bayt\u0131na (`BL`) okunur.</li>\n                  <li><strong>Ad\u0131m 2 (\xDCst Bayt):</strong> `[SS : SP + 1]` adresindeki bayt yazmac\u0131n \xFCst bayt\u0131na (`BH`) okunur.</li>\n                  <li><strong>Ad\u0131m 3 (SP G\xFCncelleme):</strong> `SP \u2190 SP + 2` (Veri \xE7ekildik\xE7e SP tekrar b\xFCy\xFCr).</li>\n                </ul>\n              </div>\n            </div>\n            <div class="nb-callout tip" style="margin-top: 12px;">\n              \u{1F4A1} <strong>Fiziksel Y\u0131\u011F\u0131n Adresi ve POP CS Yasa\u011F\u0131:</strong><br>\n              \u2022 Ger\xE7ek modda y\u0131\u011F\u0131n\u0131n fiziksel adresi: <code>Fiziksel Adres = (SS \xD7 10H) + SP</code> (\xD6rn: <code>SS=3000H, SP=0100H \u2192 30100H</code>).<br>\n              \u2022 <strong>POP CS Kesinlikle Yasakt\u0131r:</strong> <code>CS</code> tek ba\u015F\u0131na de\u011Fi\u015Ftirilirse <code>IP</code> ile uyumsuz kal\u0131r ve i\u015Flemci anlams\u0131z bir adrese d\xFC\u015Fer. Hem <code>CS</code> hem <code>IP</code>\'yi koordineli de\u011Fi\u015Ftiren g\xFCvenli komut <code>CALL / RET</code> \xE7iftidir.\n            </div>\n          </div>\n\n<div class="nb-section">\n  <div class="nb-h3">\u{1F4D1} Birebir Slayt Ak\u0131\u015F\u0131: Week 3 - Addressing Modes.pptx (Slayt 27\u201340 / 40 \u2014 Eksiksiz S\u0131ral\u0131 \u0130\xE7erik)</div>\n  <p class="nb-p">Ana klas\xF6rdeki <code>Week 3 - Addressing Modes.pptx</code> dosyas\u0131n\u0131n <strong>Slayt 27\u201340</strong> aral\u0131\u011F\u0131ndaki t\xFCm slayt ba\u015Fl\u0131klar\u0131, tablolar\u0131, \xF6rnekleri ve c\xFCmleleri a\u015Fa\u011F\u0131da <strong>slayt s\u0131ras\u0131yla (1\'den 40\'a eksiksiz)</strong> yer almaktad\u0131r:</p>\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 27 / 40 \u2014 04 / 05</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>04 / 05</li><li>Stack Memory Addressing</li><li>How PUSH, POP, CALL, and RET use the stack\'s last-in, first-out discipline</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>Section divider    26</li></ul>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 28 / 40 \u2014 The Stack: Last-In, First-Out Memory</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>\xB5P</li><li>Section 4</li><li>The Stack: Last-In, First-Out Memory</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>27</li><li>The stack plays an important role in every microprocessor. It holds data temporarily, and it stores the return addresses used by procedures.</li><li>Stack memory is LIFO: last in, first out. The most recently stored item is always the first one retrieved.</li><li>Data is placed onto the stack with PUSH, and removed with POP. CALL uses the stack to hold a return address, and RET removes that return address.</li></ul>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 29 / 40 \u2014 PUSH and POP: The Basic Operations</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>\xB5P</li><li>Section 4</li><li>PUSH and POP: The Basic Operations</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>28</li><li>PUSH</li><li>Stores a word of data onto the stack, and decrements SP so it points to the new top of the stack.</li><li>POP</li><li>Retrieves a word of data from the stack, and increments SP so it points past the retrieved word.</li><li>PUSH and POP always store or retrieve full words, never single bytes, on the 8086 family.</li></ul>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 30 / 40 \u2014 How PUSH Works, Byte by Byte</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>\xB5P</li><li>Section 4</li><li>How PUSH Works, Byte by Byte</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>29</li><li>Whenever a word of data is pushed onto the stack, the high-order 8 bits go to the location addressed by SP \u2212 1, and the low-order 8 bits go to the location addressed by SP \u2212 2.</li><li>SP is then decremented by 2, so the next PUSH stores into the next available location.</li><li>PUSH AX, where AX = 3050H</li><li>SP \u2212 1  \u2190  30H (high byte, AH)</li><li>SP \u2212 2  \u2190  50H (low byte, AL)</li><li>SP  \u2190  SP \u2212 2</li></ul>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 31 / 40 \u2014 How POP Works, Byte by Byte</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>\xB5P</li><li>Section 4</li><li>How POP Works, Byte by Byte</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>30</li><li>Whenever data is popped from the stack, the low-order 8 bits come from the location addressed by SP, and the high-order 8 bits come from the location addressed by SP + 1.</li><li>SP is then incremented by 2.</li><li>POP BX</li><li>BL  \u2190  contents at SP (low byte)</li><li>BH  \u2190  contents at SP + 1 (high byte)</li><li>SP  \u2190  SP + 2</li></ul>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 32 / 40 \u2014 Finding the Physical Stack Address</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>\xB5P</li><li>Section 4 \xB7 Worked example</li><li>Finding the Physical Stack Address</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>31</li><li>The stack is maintained by two registers: SP (stack pointer) and SS (stack segment). SP always points to a location within the stack segment.</li><li>In real mode, the physical stack address forms exactly like any other segment:offset address: SS \xD7 10H + SP.</li><li>SS = 3000H, SP = 0100H</li><li>30000H + 0100H  =  30100H</li></ul>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 33 / 40 \u2014 What Can Be Pushed and Popped</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>\xB5P</li><li>Section 4</li><li>What Can Be Pushed and Popped</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>32</li><li>Data may be popped from the stack into any general-purpose register, or any segment register, with one exception: CS.</li><li>CS cannot be the target of a POP, because CS is only part of the address of the next instruction. Changing CS alone, without also changing IP in a coordinated way, would leave the processor pointing at a meaningless combination.</li></ul>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 34 / 40 \u2014 CALL and RET: The Stack Meets Procedures</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>\xB5P</li><li>Section 4</li><li>CALL and RET: The Stack Meets Procedures</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>33</li><li>CALL pushes the address of the instruction following the CALL onto the stack, then jumps to the procedure.</li><li>RET pops that saved address back off the stack, into IP (and CS, for a far return), returning control to the instruction right after the original CALL.</li><li>This is exactly why CS cannot be popped directly: RET\'s automatic pop is the one safe, coordinated way the processor restores both CS and IP together.</li></ul>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 35 / 40 \u2014 Swapping Two Registers With the Stack</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>\xB5P</li><li>Section 4 \xB7 Worked example</li><li>Swapping Two Registers With the Stack</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>34</li><li>The code</li><li>MOV AX, 1000H</li><li>MOV BX, 2000H</li><li>PUSH AX</li><li>PUSH BX</li><li>POP AX</li><li>POP BX</li><li>What happens</li><li>AX = 1000H, BX = 2000H</li><li>PUSH AX: 1000H onto the stack</li><li>PUSH BX: 2000H onto the stack, on top of 1000H</li><li>POP AX: the top value, 2000H, comes back off into AX</li><li>POP BX: the remaining value, 1000H, comes off into BX</li></ul>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 36 / 40 \u2014 Tracing the Stack, Step by Step</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>\xB5P</li><li>Section 4 \xB7 Worked example</li><li>Tracing the Stack, Step by Step</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>35</li></ul>\n      <div class="nb-table-wrap"><table class="nb-table"><thead><tr><th>Instruction</th><th>Stack (top \u2192 bottom)</th><th>AX</th><th>BX</th></tr></thead><tbody><tr><td>(start)</td><td>empty</td><td>1000H</td><td>2000H</td></tr><tr><td>PUSH AX</td><td>1000H</td><td>1000H</td><td>2000H</td></tr><tr><td>PUSH BX</td><td>2000H, 1000H</td><td>1000H</td><td>2000H</td></tr><tr><td>POP AX</td><td>1000H</td><td>2000H</td><td>2000H</td></tr><tr><td>POP BX</td><td>empty</td><td>2000H</td><td>1000H</td></tr></tbody></table></div>\n      <ul class="nb-list"><li>Result: AX and BX have swapped values, using only the stack, with no third register needed.</li></ul>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 37 / 40 \u2014 05 / 05</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>05 / 05</li><li>Putting It Together</li><li>Choosing a mode, avoiding the common mistakes, and what carries into next week</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>Section divider    36</li></ul>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 38 / 40 \u2014 Choosing an Addressing Mode</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>\xB5P</li><li>Section 5</li><li>Choosing an Addressing Mode</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>37</li></ul>\n      <div class="nb-table-wrap"><table class="nb-table"><thead><tr><th>If you need to\u2026</th><th>Reach for\u2026</th></tr></thead><tbody><tr><td>Copy between two registers, fastest</td><td>Register addressing</td></tr><tr><td>Load a known constant</td><td>Immediate addressing</td></tr><tr><td>Read or write one fixed, named variable</td><td>Direct addressing</td></tr><tr><td>Walk through an array using a pointer</td><td>Register indirect, or register relative</td></tr><tr><td>Index into a 2-D structure or a table of records</td><td>Base-plus-index, or base relative-plus-index</td></tr></tbody></table></div>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 39 / 40 \u2014 Common Pitfalls</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>\xB5P</li><li>Section 5</li><li>Common Pitfalls</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>38</li><li>Forgetting that source and destination read right to left. A misread MOV silently swaps which operand is supposed to change.</li><li>Assuming MOV moves data. It copies. The source is always still there afterward.</li><li>Mismatching PUSH and POP counts. Every PUSH needs a matching POP, in reverse order, or the stack pointer drifts and the next RET reads garbage.</li><li>Trying to POP directly into CS. It cannot be done: use a far RET, or a far JMP/CALL, to change CS safely.</li></ul>\n    </div>\n  </div>\n\n  <div class="nb-card">\n    <div class="nb-card-title">Slide 40 / 40 \u2014 Key Takeaways</div>\n    <div class="nb-card-body">\n      <ul class="nb-list"><li>\xB5P</li><li>Section 5 \xB7 Summary</li><li>Key Takeaways</li><li>Week 3 \xB7 BMI3121 Microprocessor Systems</li><li>39</li><li>This week, in brief</li><li>Every instruction reads right to left: source on the right, destination on the left.</li><li>Seven data-addressing modes cover every way MOV can locate an operand, from plain registers to base relative-plus-index.</li><li>JMP and CALL locate their target directly, relative to IP, or indirectly through a register.</li><li>The stack is LIFO. PUSH decrements SP and stores; POP retrieves and increments SP.</li><li>Key formulas</li><li>Relative jump target = IP + displacement</li><li>Physical stack address = SS \xD7 10H + SP</li><li>PUSH: SP \u2190 SP \u2212 2, then store. POP: retrieve, then SP \u2190 SP + 2.</li><li>Next week: data movement instructions, in depth, building on these addressing modes.</li><li>Sources: Brey, B. B. (2008). The Intel Microprocessors (8th ed.). Prentice Hall. Course notes, BMI3121.</li></ul>\n    </div>\n  </div>\n</div>',
       "theoryHtmlEn": `
           <div class="nb-callout info">
             <strong>\u{1F1EC}\u{1F1E7} Official Course Lecture Slide Text (Verbatim Professor Content)</strong><br>
@@ -16465,38 +16850,251 @@ HLT</code></pre>
 </div>`,
       "quiz": {
         "id": "quiz-5-3",
-        "question": "8086 makine kodunda MOD=00 ve R/M=110 ikili alan\u0131 \xE7\xF6z\xFCmlendi\u011Finde ortaya \xE7\u0131kan donan\u0131msal istisna nedir?",
+        "question": "8086 mikroi\u015Flemcisinde AX = 3050H iken PUSH AX komutu \xE7al\u0131\u015Ft\u0131r\u0131ld\u0131\u011F\u0131nda, baytlar\u0131n belle\u011Fe yerle\u015Fimi ve SP (Stack Pointer) de\u011Fi\u015Fimi nas\u0131l ger\xE7ekle\u015Fir?",
         "options": [
-          "\u0130\u015Flemcinin [BP] adresini deplasmans\u0131z okumas\u0131",
-          "Do\u011Frudan 16-bit bellek adresleme ([disp16]) yap\u0131lmas\u0131",
-          "\u0130\u015Flemin ge\xE7ersiz say\u0131larak Type 6 hatas\u0131 \xFCretmesi",
-          "Yazma\xE7 moduna (Register Mode) ge\xE7ilerek SI yazmac\u0131n\u0131n se\xE7ilmesi"
+          "SP 2 art\u0131r\u0131l\u0131r; 30H de\u011Feri [SP+1] adresine, 50H de\u011Feri [SP+2] adresine yaz\u0131l\u0131r",
+          "\xDCst bayt 30H (AH) [SP-1] adresine, alt bayt 50H (AL) [SP-2] adresine yaz\u0131l\u0131r ve SP 2 azalt\u0131l\u0131r (SP \u2190 SP - 2)",
+          "Yaln\u0131zca 50H bayt\u0131 [SP-1] adresine yaz\u0131l\u0131r ve SP 1 azalt\u0131l\u0131r",
+          "SP de\u011Fi\u015Fmez; 3050H do\u011Frudan [DS:SP] adresine yaz\u0131l\u0131r"
         ],
         "correctIndex": 1,
-        "explanation": "MOD=00 normalde deplasmans\u0131z bellek eri\u015Fimidir; ancak R/M=110 iken donan\u0131msal bir istisna olarak [BP] yerine arkadan gelen 16-bitlik do\u011Frudan adres [disp16] okunur. [BP] yi kodlamak i\xE7in derleyiciler mecburen MOD=01 ve disp8=00h \xFCretir."
+        "explanation": "Week 3 Slayt 30'da g\xF6sterildi\u011Fi gibi: PUSH AX (AX=3050H) \xE7al\u0131\u015Ft\u0131\u011F\u0131nda \xFCst bayt AH (30H) [SP-1] adresine, alt bayt AL (50H) [SP-2] adresine yaz\u0131l\u0131r ve SP 2 azalt\u0131l\u0131r (SP \u2190 SP - 2)."
       },
       "task": {
         "id": "task-5-3-reg-to-reg-code",
-        "title": "Yazma\xE7tan Yazmaca Veri Aktar\u0131m\u0131 ve Bayt E\u015Fleme",
-        "difficulty": "Kolay",
-        "scenario": "16-bitlik BX yazmac\u0131ndaki veriyi AX yazmac\u0131na kopyalay\u0131n, ard\u0131ndan AL alt bayt\u0131n\u0131 DX yazmac\u0131na s\u0131f\u0131r uzatarak (DH=0) aktar\u0131n.",
-        "taskPrompt": "BX yazmac\u0131na 55AAh y\xFCkleyin. MOV AX, BX ile AX yazmac\u0131na kopyalay\u0131n. Ard\u0131ndan DL yazmac\u0131na AL bayt\u0131n\u0131 aktar\u0131n ve DH yazmac\u0131n\u0131 00h yap\u0131n. Program\u0131 HLT ile sonland\u0131r\u0131n.",
-        "starterCode": "; 5.3 Yazma\xE7 Aktar\u0131m\u0131\nORG 100h\n\n; BX = 55AAh yap\u0131n:\n; AX'e BX'i kopyalay\u0131n (MOV AX, BX):\n; DL'ye AL'yi kopyalay\u0131n, DH'yi s\u0131f\u0131rlay\u0131n (DH = 00h):\n\n\nHLT\n",
-        "solutionCode": "ORG 100h\nMOV BX, 55AAh\nMOV AX, BX\nMOV DL, AL\nMOV DH, 00h\nHLT\n",
+        "title": "B\xF6l\xFCm 3.3 Kapsaml\u0131 Y\u0131\u011F\u0131n \xD6devi: Y\u0131\u011F\u0131nla (PUSH/POP) \xDC\xE7 Yazmac\u0131 D\xF6ng\xFCsel Kayd\u0131rma ve SP Kontrol\xFC",
+        "difficulty": "Orta",
+        "scenario": "Week 3 Slayt 28\u201336'daki t\xFCm y\u0131\u011F\u0131n kurallar\u0131n\u0131 tek bir programda birle\u015Ftirelim! SP = 0200h taban\u0131ndan ba\u015Flayarak AX = 1000h ve BX = 2000h de\u011Ferlerini y\u0131\u011F\u0131n (PUSH ve POP) kullanarak \xFC\xE7\xFCnc\xFC bir yazma\xE7 kullanmadan takas edin, ard\u0131ndan yeni AX de\u011Ferini y\u0131\u011F\u0131na itip DX yazmac\u0131na \xE7ekin.",
+        "taskPrompt": "1) MOV SP, 0200h ile y\u0131\u011F\u0131n i\u015Faret\xE7isini kurun.\n2) MOV AX, 1000h ve MOV BX, 2000h y\xFCkleyin.\n3) PUSH AX ve PUSH BX ile ikisini y\u0131\u011F\u0131na itin.\n4) POP AX ve POP BX ile LIFO s\u0131ras\u0131yla \xE7ekerek AX=2000h, BX=1000h takas\u0131n\u0131 tamamlay\u0131n.\n5) PUSH AX ve POP DX ile AX'in yeni de\u011Ferini (2000h) y\u0131\u011F\u0131n \xFCzerinden DX'e kopyalay\u0131n ve HLT ile bitirin.",
+        "starterCode": "; Week 3.3 Kapsaml\u0131 Y\u0131\u011F\u0131n (Stack) Uygulamas\u0131\nORG 100h\n\nMOV SP, 0200h\nMOV AX, 1000h\nMOV BX, 2000h\n\n; 1. AX ve BX'i y\u0131\u011F\u0131na itin (PUSH AX, PUSH BX):\n\n; 2. Y\u0131\u011F\u0131ndan \xE7ekerek AX ve BX'i takas edin (POP AX, POP BX):\n\n; 3. Yeni AX de\u011Ferini y\u0131\u011F\u0131na itip DX i\xE7ine \xE7ekin (PUSH AX, POP DX):\n\n\nHLT\n",
+        "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1000h\nMOV BX, 2000h\nPUSH AX\nPUSH BX\nPOP AX\nPOP BX\nPUSH AX\nPOP DX\nHLT\n",
         "hints": [
-          "MOV AX, BX komutu makine kodunda 8B C3 veya 89 D8 olarak kodlan\u0131r.",
-          "DL = AL yap\u0131p DH = 00h yaz\u0131n."
+          "\xD6nce PUSH AX ve PUSH BX yaz\u0131n (Y\u0131\u011F\u0131n\u0131n en tepesinde 2000h olur).",
+          "Ard\u0131ndan POP AX ve POP BX yaz\u0131n (AX=2000h, BX=1000h olur).",
+          "Son olarak PUSH AX ve POP DX yazarak DX=2000h yap\u0131n; t\xFCm PUSH ve POP say\u0131lar\u0131 e\u015Fit oldu\u011Fu i\xE7in SP tekrar 0200h olur."
         ],
         "assertions": {
           "registers": {
-            "ax": 21930,
-            "bx": 21930,
-            "dx": 170
+            "ax": 8192,
+            "bx": 4096,
+            "dx": 8192,
+            "sp": 512
           },
-          "maxSteps": 50
+          "memory": [
+            {
+              "segment": 0,
+              "offset": 510,
+              "expectedBytes": [
+                0,
+                32
+              ]
+            }
+          ],
+          "maxSteps": 60
         },
-        "examTip": "W=1 kelime (word), W=0 bayt (byte) i\u015Flemlerini g\xF6sterir. AX ve BX 16-bit iken AL ve DL 8-bitlik alt yazma\xE7lard\u0131r."
-      }
+        "examTip": "Her PUSH komutu i\xE7in e\u015Fle\u015Fen bir POP komutu \xE7al\u0131\u015Ft\u0131r\u0131ld\u0131\u011F\u0131nda y\u0131\u011F\u0131n dengelenir ve SP ba\u015Flang\u0131\xE7taki 0200h de\u011Ferine geri d\xF6ner."
+      },
+      "microSteps": [
+        {
+          "id": "ms-3-3-1",
+          "stepNumber": "Stack Ad\u0131m 1",
+          "title": "S\u0131f\u0131rdan Y\u0131\u011F\u0131n (Stack) Nedir ve \u0130lk PUSH Komutumuz Nas\u0131l \xC7al\u0131\u015F\u0131r?",
+          "titleEn": "Stack Step 1: What is the Stack from Zero and How Does PUSH Work?",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Y\u0131\u011F\u0131n (Stack), \xFCst \xFCste dizilen tabaklar gibi \xE7al\u0131\u015Fan \xF6zel bir bellek b\xF6lgesidir. Bir yazma\xE7taki 16-bitlik say\u0131y\u0131 ge\xE7ici olarak y\u0131\u011F\u0131n\u0131n en \xFCst\xFCne koymak i\xE7in <code>PUSH yazma\xE716</code> komutu kullan\u0131l\u0131r.</p>\n        <ul>\n          <li>\xD6rne\u011Fin <code>PUSH AX</code> yazd\u0131\u011F\u0131n\u0131zda, <code>AX</code> i\xE7indeki 16-bitlik de\u011Fer y\u0131\u011F\u0131n\u0131n tepesine kopyalan\u0131r (<code>AX</code>'in kendi i\xE7indeki de\u011Fer bozulmaz).</li>\n          <li><strong>Alt\u0131n Kural #1:</strong> Y\u0131\u011F\u0131na sadece <strong>16-bitlik (2 baytl\u0131k)</strong> tam yazma\xE7lar (<code>AX, BX, CX, DX, SI, DI, BP</code> veya segment yazma\xE7lar\u0131) konulabilir. 8-bitlik <code>PUSH AL</code> veya <code>PUSH BL</code> yazmak <strong>YASAKTIR!</strong></li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The <strong>Stack</strong> is a temporary memory area that works like a stack of plates. <code>PUSH reg16</code> places a copy of a 16-bit register on top of the stack. Only 16-bit words can be pushed (<code>PUSH AL</code> is illegal!).</p>\n      ",
+          "task": {
+            "id": "ms-task-3-3-1",
+            "title": "\u0130lk PUSH Komutu: AX Yazmac\u0131n\u0131 Y\u0131\u011F\u0131na Koymak",
+            "difficulty": "Kolay",
+            "scenario": "Y\u0131\u011F\u0131n i\u015Faret\xE7imiz SP = 0200h adresinde duruyor. AX yazmac\u0131na 1234h y\xFCkleyip PUSH AX komutuyla y\u0131\u011F\u0131na koyaca\u011F\u0131z.",
+            "taskPrompt": "AX yazmac\u0131na 1234h y\xFCkleyin ve PUSH AX komutu ile y\u0131\u011F\u0131na at\u0131n.",
+            "starterCode": "; Stack Ad\u0131m 1: AX i\xE7ine 1234h y\xFCkleyip PUSH AX yap\u0131n\nORG 100h\nMOV SP, 0200h\n\n; Kodunuzu buraya yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1234h\nPUSH AX\nHLT\n",
+            "hints": [
+              "MOV AX, 1234h yaz\u0131n.",
+              "Hemen alt\u0131na PUSH AX ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4660,
+                "sp": 510
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 510,
+                  "expectedBytes": [
+                    52,
+                    18
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-3-2",
+          "stepNumber": "Stack Ad\u0131m 2",
+          "title": "SP (Stack Pointer) Nedir? Her PUSH Yap\u0131ld\u0131\u011F\u0131nda SP Neden 2 Azal\u0131r?",
+          "titleEn": "Stack Step 2: What is SP? Why Does Every PUSH Decrease SP by 2?",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Y\u0131\u011F\u0131n\u0131n o anki en \xFCst noktas\u0131n\u0131 (tepesini) takip eden yazmaca <strong><code>SP</code> (Stack Pointer - Y\u0131\u011F\u0131n \u0130\u015Faret\xE7isi)</strong> denir. 8086'da y\u0131\u011F\u0131n belle\u011Fi <strong>y\xFCksek adreslerden d\xFC\u015F\xFCk adreslere do\u011Fru (a\u015Fa\u011F\u0131 y\xF6nde)</strong> b\xFCy\xFCr!</p>\n        <ul>\n          <li>Her <code>PUSH</code> komutu belle\u011Fe <strong>2 bayt (16 bit)</strong> yazd\u0131\u011F\u0131 i\xE7in, i\u015Flemci \xF6nce <code>SP = SP - 2</code> yapar, sonra veriyi yeni <code>[SP]</code> adresine yazar.</li>\n          <li>\xD6rnek: Ba\u015Flang\u0131\xE7ta <code>SP = 0200h</code> olsun:\n            <br>1. <code>PUSH AX</code> &rarr; <code>SP</code> 2 azal\u0131r ve <code>01FEh</code> olur.\n            <br>2. <code>PUSH BX</code> &rarr; <code>SP</code> 2 daha azal\u0131r ve <code>01FCh</code> olur!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <strong><code>SP</code> (Stack Pointer)</strong> points to the current top of the stack. Because the stack grows downward in memory and each word is 2 bytes, every <code>PUSH</code> executes <code>SP = SP - 2</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-3-3-2",
+            "title": "\u0130ki Kez PUSH Yaparak SP'nin 4 Azald\u0131\u011F\u0131n\u0131 (0200h -> 01FCh) G\xF6rmek",
+            "difficulty": "Kolay",
+            "scenario": "SP = 0200h iken AX = 1111h ve BX = 2222h de\u011Ferlerini art arda y\u0131\u011F\u0131na PUSH edece\u011Fiz ve SP de\u011Ferinin 01FCh oldu\u011Funu do\u011Frulayaca\u011F\u0131z.",
+            "taskPrompt": "AX yazmac\u0131na 1111h, BX yazmac\u0131na 2222h y\xFCkleyin. S\u0131ras\u0131yla PUSH AX ve PUSH BX komutlar\u0131n\u0131 \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Stack Ad\u0131m 2: \u0130ki kez PUSH yap\u0131p SP de\u011Fi\u015Fimini g\xF6zlemleyin\nORG 100h\nMOV SP, 0200h\n\n; AX=1111h, BX=2222h y\xFCkleyip PUSH AX ve PUSH BX yap\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1111h\nMOV BX, 2222h\nPUSH AX\nPUSH BX\nHLT\n",
+            "hints": [
+              "MOV AX, 1111h ve MOV BX, 2222h yaz\u0131n.",
+              "PUSH AX ve PUSH BX ekleyin. SP 0200h -> 01FEh -> 01FCh olacakt\u0131r."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4369,
+                "bx": 8738,
+                "sp": 508
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 508,
+                  "expectedBytes": [
+                    34,
+                    34,
+                    17,
+                    17
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-3-3",
+          "stepNumber": "Stack Ad\u0131m 3",
+          "title": "POP Komutu Nedir? Y\u0131\u011F\u0131n\u0131n Tepesindeki Veriyi Geri \xC7ekmek (SP = SP + 2)",
+          "titleEn": "Stack Step 3: What is POP? Pulling Data Back from the Top of the Stack",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Y\u0131\u011F\u0131n\u0131n en tepesindeki 16-bitlik veriyi al\u0131p bir yazmac\u0131n i\xE7ine koymak i\xE7in <code>POP hedef16</code> komutu kullan\u0131l\u0131r.</p>\n        <ul>\n          <li><code>POP DX</code> \xE7al\u0131\u015Ft\u0131r\u0131ld\u0131\u011F\u0131nda:\n            <br>1. \u0130\u015Flemci o anki <code>[SP]</code> adresinde duran 16-bitlik say\u0131y\u0131 okur ve <code>DX</code> yazmac\u0131na yazar.\n            <br>2. Y\u0131\u011F\u0131ndan 2 bayt eksildi\u011Fi i\xE7in <code>SP = SP + 2</code> yaparak <code>SP</code>'yi eski yerine geri \xE7\u0131kar\u0131r!</li>\n          <li>\xD6nemli: <code>PUSH AX</code> ile koydu\u011Funuz veriyi illa <code>AX</code>'e \xE7ekmek zorunda de\u011Filsiniz; <code>POP DX</code> yazarak <code>DX</code> i\xE7ine de \xE7ekebilirsiniz!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>POP dest16</code> reads the 16-bit word at the current top of the stack (<code>[SP]</code>) into <code>dest16</code>, and then increments <code>SP</code> by 2 (<code>SP = SP + 2</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-3-3-3",
+            "title": "PUSH AX ile Y\u0131\u011F\u0131na Konulan De\u011Feri POP DX ile \xC7ekmek",
+            "difficulty": "Kolay",
+            "scenario": "AX = 5678h de\u011Ferini PUSH AX ile y\u0131\u011F\u0131na koyaca\u011F\u0131z (SP 01FEh olur), ard\u0131ndan POP DX ile y\u0131\u011F\u0131n\u0131n tepesinden DX yazmac\u0131na \xE7ekece\u011Fiz (SP tekrar 0200h olur).",
+            "taskPrompt": "AX yazmac\u0131na 5678h y\xFCkleyin. PUSH AX ile y\u0131\u011F\u0131na at\u0131n, ard\u0131ndan POP DX komutuyla bu de\u011Feri DX yazmac\u0131na \xE7ekin.",
+            "starterCode": "; Stack Ad\u0131m 3: PUSH AX ve POP DX uygulamas\u0131\nORG 100h\nMOV SP, 0200h\n\n; AX = 5678h y\xFCkleyin, PUSH AX yap\u0131n ve POP DX ile DX i\xE7ine \xE7ekin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 5678h\nPUSH AX\nPOP DX\nHLT\n",
+            "hints": [
+              "MOV AX, 5678h",
+              "PUSH AX",
+              "POP DX"
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 22136,
+                "dx": 22136,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-3-4",
+          "stepNumber": "Stack Ad\u0131m 4",
+          "title": "LIFO (Son Giren \u0130lk \xC7\u0131kar) Kural\u0131: En Son PUSH Edilen \u0130lk POP Edilir!",
+          "titleEn": "Stack Step 4: LIFO (Last-In, First-Out): Last Pushed is First Popped!",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> \xDCst \xFCste koydu\u011Funuz tabaklardan en \xFCsttekini ilk al\u0131rs\u0131n\u0131z. Buna <strong>LIFO (Last-In, First-Out / Son Giren \u0130lk \xC7\u0131kar)</strong> denir!</p>\n        <pre><code>PUSH AX   ; 1. tabak (Altta: 1111h)\nPUSH BX   ; 2. tabak (En \xFCstte: 2222h)\nPOP CX    ; En \xFCstteki taba\u011F\u0131 al\u0131r! Yani CX = 2222h olur!\nPOP DX    ; \u015Eimdi alttaki taba\u011F\u0131 al\u0131r! Yani DX = 1111h olur!</code></pre>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The stack obeys <strong>LIFO (Last-In, First-Out)</strong>. If you <code>PUSH AX</code> then <code>PUSH BX</code>, the very first <code>POP</code> retrieves <code>BX</code>'s value because <code>BX</code> was pushed last!</p>\n      ",
+          "task": {
+            "id": "ms-task-3-3-4",
+            "title": "LIFO S\u0131ras\u0131n\u0131 Deneyerek G\xF6rme (Son Giren \u0130lk \xC7\u0131kar)",
+            "difficulty": "Kolay",
+            "scenario": "AX = 0AAAAh ve BX = 0BBBBh de\u011Ferlerini s\u0131rayla PUSH edece\u011Fiz. Ard\u0131ndan ilk POP CX komutunun en son giren 0BBBBh de\u011Ferini, ikinci POP DX komutunun ise ilk giren 0AAAAh de\u011Ferini ald\u0131\u011F\u0131n\u0131 g\xF6rece\u011Fiz.",
+            "taskPrompt": "AX = 0AAAAh ve BX = 0BBBBh y\xFCkleyin. S\u0131ras\u0131yla PUSH AX ve PUSH BX yap\u0131n. Ard\u0131ndan POP CX ve POP DX komutlar\u0131n\u0131 \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Stack Ad\u0131m 4: LIFO (Son Giren \u0130lk \xC7\u0131kar) deneyi\nORG 100h\nMOV SP, 0200h\nMOV AX, 0AAAAh\nMOV BX, 0BBBBh\n\n; S\u0131ras\u0131yla PUSH AX, PUSH BX, ard\u0131ndan POP CX, POP DX yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 0AAAAh\nMOV BX, 0BBBBh\nPUSH AX\nPUSH BX\nPOP CX\nPOP DX\nHLT\n",
+            "hints": [
+              "PUSH AX",
+              "PUSH BX",
+              "POP CX  ; CX = BBBBh olur",
+              "POP DX  ; DX = AAAAh olur"
+            ],
+            "assertions": {
+              "registers": {
+                "cx": 48059,
+                "dx": 43690,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-3-5",
+          "stepNumber": "Stack Ad\u0131m 5",
+          "title": "PUSH ve POP Kullanarak \u0130ki Yazmac\u0131n De\u011Ferini Takas Etmek (Swap)",
+          "titleEn": "Stack Step 5: Swapping Two Registers Using PUSH and POP",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> LIFO kural\u0131 sayesinde \xFC\xE7\xFCnc\xFC bir ge\xE7ici yazma\xE7 kullanmadan <code>AX</code> ile <code>BX</code>'in de\u011Ferlerini y\u0131\u011F\u0131n \xFCzerinde yer de\u011Fi\u015Ftirebiliriz:</p>\n        <ol>\n          <li><code>PUSH AX</code> (Altta <code>AX</code>'in eski de\u011Feri var)</li>\n          <li><code>PUSH BX</code> (En \xFCstte <code>BX</code>'in eski de\u011Feri var)</li>\n          <li><code>POP AX</code> (En \xFCstteki <code>BX</code> de\u011Feri <code>AX</code>'e \xE7ekildi!)</li>\n          <li><code>POP BX</code> (Alttaki <code>AX</code> de\u011Feri <code>BX</code>'e \xE7ekildi!)</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Because of LIFO, executing <code>PUSH AX</code>, <code>PUSH BX</code> followed by <code>POP AX</code>, <code>POP BX</code> swaps the values of <code>AX</code> and <code>BX</code>!</p>\n      ",
+          "task": {
+            "id": "ms-task-3-3-5",
+            "title": "Y\u0131\u011F\u0131n (PUSH/POP) ile AX ve BX De\u011Ferlerini Takas Etme",
+            "difficulty": "Kolay",
+            "scenario": "AX = 1000h ve BX = 9000h de\u011Ferlerini sadece PUSH ve POP komutlar\u0131n\u0131 kullanarak takas edece\u011Fiz (AX = 9000h, BX = 1000h olacak).",
+            "taskPrompt": "PUSH AX, PUSH BX ve ard\u0131ndan POP AX, POP BX komutlar\u0131n\u0131 kullanarak AX (1000h) ile BX (9000h) de\u011Ferlerini takas edin.",
+            "starterCode": "; Stack Ad\u0131m 5: PUSH ve POP ile AX ve BX takas\u0131\nORG 100h\nMOV SP, 0200h\nMOV AX, 1000h\nMOV BX, 9000h\n\n; PUSH ve POP komutlar\u0131yla AX ve BX de\u011Ferlerini takas edin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1000h\nMOV BX, 9000h\nPUSH AX\nPUSH BX\nPOP AX\nPOP BX\nHLT\n",
+            "hints": [
+              "\xD6nce PUSH AX ve PUSH BX yaz\u0131n.",
+              "Sonra ayn\u0131 s\u0131rayla POP AX ve POP BX yaz\u0131n!"
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 36864,
+                "bx": 4096,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-3-6",
+          "stepNumber": "Stack Ad\u0131m 6",
+          "title": "Y\u0131\u011F\u0131nda Little-Endian Bayt Dizilimi: [SP] D\xFC\u015F\xFCk Bayt, [SP+1] Y\xFCksek Bayt",
+          "titleEn": "Stack Step 6: Little-Endian Byte Layout on the Stack ([SP] = Low, [SP+1] = High)",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Hocan\u0131n Week 3 slaytlar\u0131nda \xF6zellikle vurgulad\u0131\u011F\u0131 detay: <code>SP = 0200h</code> iken <code>AX = 1234h</code> i\xE7in <code>PUSH AX</code> yapt\u0131\u011F\u0131m\u0131zda 2 bayt belle\u011Fe nas\u0131l yerle\u015Fir?</p>\n        <ul>\n          <li>\xDCst bayt <code>AH (12h)</code> &rarr; <code>[SP - 1] = [01FFh]</code> adresine yaz\u0131l\u0131r.</li>\n          <li>Alt bayt <code>AL (34h)</code> &rarr; <code>[SP - 2] = [01FEh]</code> (yeni <code>SP</code> tepesi) adresine yaz\u0131l\u0131r.</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> When <code>PUSH AX</code> pushes <code>1234h</code> onto the stack (with <code>SP = 0200h</code>), <code>[01FFh]</code> receives the high byte <code>12h</code> (<code>AH</code>) and <code>[01FEh]</code> (the new <code>SP</code>) receives the low byte <code>34h</code> (<code>AL</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-3-3-6",
+            "title": "Y\u0131\u011F\u0131na PUSH Edilen Kelimenin D\xFC\u015F\xFCk ve Y\xFCksek Baytlar\u0131n\u0131 Bellekten Okuma",
+            "difficulty": "Orta",
+            "scenario": "SP = 0200h iken AX = 4567h de\u011Ferini PUSH AX ile y\u0131\u011F\u0131na ataca\u011F\u0131z (Yeni SP = 01FEh olur). Ard\u0131ndan [01FEh] adresindeki d\xFC\u015F\xFCk bayt\u0131 (67h) CL yazmac\u0131na, [01FFh] adresindeki y\xFCksek bayt\u0131 (45h) CH yazmac\u0131na okuyaca\u011F\u0131z.",
+            "taskPrompt": "AX = 4567h de\u011Ferini PUSH AX ile y\u0131\u011F\u0131na at\u0131n. Ard\u0131ndan MOV CL, [01FEh] ve MOV CH, [01FFh] ile y\u0131\u011F\u0131ndaki baytlar\u0131 okuyun.",
+            "starterCode": "; Stack Ad\u0131m 6: Y\u0131\u011F\u0131ndaki Little-Endian baytlar\u0131 inceleme\nORG 100h\nMOV SP, 0200h\nMOV AX, 4567h\n\n; 1. AX yazmac\u0131n\u0131 PUSH edin:\n; 2. [01FEh] adresini CL i\xE7ine, [01FFh] adresini CH i\xE7ine okuyun:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 4567h\nPUSH AX\nMOV CL, [01FEh]\nMOV CH, [01FFh]\nHLT\n",
+            "hints": [
+              "PUSH AX yaz\u0131n.",
+              "MOV CL, [01FEh] ve MOV CH, [01FFh] ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 17767,
+                "sp": 510,
+                "cl": 103,
+                "ch": 69
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {
@@ -16670,47 +17268,6 @@ HLT</code></pre>
           </div>
         
 
-
-          <div class="nb-section">
-            <h4 class="nb-title">1. Standart Y\u0131\u011F\u0131n \xC7er\xE7evesi (Stack Frame / Activation Record)</h4>
-            <p>
-              Y\xFCksek seviyeli dillerde (C/C++, Pascal) bir fonksiyon \xE7a\u011Fr\u0131ld\u0131\u011F\u0131nda parametreler ve yerel de\u011Fi\u015Fkenler y\u0131\u011F\u0131n \xFCzerinde
-              <strong>Y\u0131\u011F\u0131n \xC7er\xE7evesi (Stack Frame)</strong> ad\u0131 verilen d\xFCzenli bir blokta organize edilir. Taban referans\u0131 olarak
-              <code>BP (Base Pointer)</code> kullan\u0131l\u0131r; \xE7\xFCnk\xFC <code>BP</code> varsay\u0131lan olarak <code>SS</code> segmentiyle e\u015Fle\u015Fir.
-            </p>
-
-            <div class="nb-code-box">
-                \u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
-   [BP + 6]     \u2502        Parametre 2 (arg2)            \u2502
-                \u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524
-   [BP + 4]     \u2502        Parametre 1 (arg1)            \u2502
-                \u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524
-   [BP + 2]     \u2502        D\xF6n\xFC\u015F Adresi (Return IP)      \u2502
-                \u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524 \u25C4\u2500\u2500 BP (Eski BP'nin sakland\u0131\u011F\u0131 yer)
-   [BP - 2]     \u2502        Yerel De\u011Fi\u015Fken 1 (var1)       \u2502
-                \u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524
-   [BP - 4]     \u2502        Yerel De\u011Fi\u015Fken 2 (var2)       \u2502
-                \u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524 \u25C4\u2500\u2500 SP (Y\u0131\u011F\u0131n\u0131n o anki tepesi)
-            </div>
-
-            <div class="nb-grid-2" style="margin-top: 10px;">
-              <div class="nb-card">
-                <h5>Standart Fonksiyon Giri\u015Fi (Prologue)</h5>
-                <pre class="nb-code-sample"><code>PUSH BP        ; 1. \xC7a\u011F\u0131ran\u0131n BP'sini sakla
-MOV BP, SP     ; 2. Y\u0131\u011F\u0131n tepesini yeni taban yap
-SUB SP, 4      ; 3. Yerel de\u011Fi\u015Fkenlere yer a\xE7</code></pre>
-                <p>Parametreler <code>[BP+4], [BP+6]</code>; yerel de\u011Fi\u015Fkenler <code>[BP-2], [BP-4]</code> ile okunur.</p>
-              </div>
-
-              <div class="nb-card">
-                <h5>Standart Fonksiyon \xC7\u0131k\u0131\u015F\u0131 (Epilogue)</h5>
-                <pre class="nb-code-sample"><code>MOV SP, BP     ; 1. Yerel de\u011Fi\u015Fkenleri temizle
-POP BP         ; 2. \xC7a\u011F\u0131ran\u0131n BP'sini geri y\xFCkle
-RET 4          ; 3. D\xF6n ve 4 bayt parametreyi at</code></pre>
-                <p><code>RET n</code> komutu hem fonksiyon d\xF6n\xFC\u015F\xFCn\xFC yapar hem de y\u0131\u011F\u0131ndaki parametreleri temizler.</p>
-              </div>
-            </div>
-          </div>
 
           <div class="nb-section">
             <h4 class="nb-title">2. Bellek \u0130\u015Faret\xE7i Komutlar\u0131: LEA vs MOV OFFSET, LDS, LES, LSS</h4>
@@ -17124,7 +17681,127 @@ RET 4          ; 3. D\xF6n ve 4 bayt parametreyi at</code></pre>
           "maxSteps": 50
         },
         "examTip": "XCHG bellek ile yap\u0131ld\u0131\u011F\u0131nda donan\u0131msal veriyolu kilidi (LOCK#) s\xFCrer ve i\u015Fletim sistemlerinde atomik kilit (mutex/semaphore) olu\u015Fturur."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-4-1-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "MOV Yasaklar\u0131 ve \xC7\xF6z\xFCm\xFC #1: Bellekten Belle\u011Fe Aktar\u0131m (MOV [mem1], [mem2] \u274C)",
+          "titleEn": "Step 1: Illegal MOV #1: Memory-to-Memory Transfer and Its Fix",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> 8086'da iki bellek kutusu aras\u0131nda tek sat\u0131rda do\u011Frudan kopyalama <strong>YASAKTIR</strong> (<code>MOV [0202h], [0200h]</code> hata verir). \xC7\xF6z\xFCm\xFC \xE7ok basittir: Veriyi \xF6nce bir yazmaca (\xF6rne\u011Fin <code>AX</code>) al\u0131r\u0131z, sonra hedef bellek kutusuna yazar\u0131z!</p>\n        <pre><code>MOV AX, [0200h]   ; 1. Bellekten AX yazmac\u0131na oku\nMOV [0202h], AX   ; 2. AX yazmac\u0131ndan hedef belle\u011Fe yaz</code></pre>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Direct memory-to-memory <code>MOV [0202h], [0200h]</code> is illegal on 8086. Load into a register first (<code>MOV AX, [0200h]</code>), then store to the destination (<code>MOV [0202h], AX</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-4-1-1",
+            "title": "AX Ara Yazmac\u0131 ile Bellekten Belle\u011Fe Kelime Kopyalama",
+            "difficulty": "Kolay",
+            "scenario": "[0200h] adresinde duran 7788h de\u011Ferini AX yazmac\u0131 \xFCzerinden [0202h] adresine kopyalayaca\u011F\u0131z.",
+            "taskPrompt": "[0200h] adresindeki 16-bitlik veriyi \xF6nce AX yazmac\u0131na okuyun, ard\u0131ndan [0202h] adresine yaz\u0131n.",
+            "starterCode": "; Ad\u0131m 1: [0200h] adresindeki veriyi AX \xFCzerinden [0202h] adresine kopyalay\u0131n\nORG 100h\nMOV WORD PTR [0200h], 7788h\n\n; Kodunuzu buraya yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV WORD PTR [0200h], 7788h\nMOV AX, [0200h]\nMOV [0202h], AX\nHLT\n",
+            "hints": [
+              "MOV AX, [0200h] ve MOV [0202h], AX yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 30600
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 514,
+                  "expectedBytes": [
+                    136,
+                    119
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-4-1-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "XCHG Komutu: 3 Sat\u0131rl\u0131k MOV Yerine Tek Sat\u0131rda De\u011Fer Takas\u0131",
+          "titleEn": "Step 2: XCHG Instruction: One-Instruction Swap Instead of Three MOVs",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> \u0130ki yazmac\u0131n de\u011Ferini yer de\u011Fi\u015Ftirmek i\xE7in ge\xE7ici bir \xFC\xE7\xFCnc\xFC yazmaca (<code>MOV CX, AX / MOV AX, BX / MOV BX, CX</code>) gerek yoktur! <code>XCHG AX, BX</code> komutu tek sat\u0131rda ikisinin de\u011Ferini an\u0131nda takas eder.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>XCHG AX, BX</code> swaps the contents of <code>AX</code> and <code>BX</code> in a single instruction without needing a third scratch register.</p>\n      ",
+          "task": {
+            "id": "ms-task-4-1-2",
+            "title": "XCHG ile CX ve DX Yazma\xE7lar\u0131n\u0131 Takas Etme",
+            "difficulty": "Kolay",
+            "scenario": "CX = 0AA00h ve DX = 00BBh de\u011Ferlerini XCHG CX, DX komutuyla tek sat\u0131rda takas edece\u011Fiz.",
+            "taskPrompt": "XCHG CX, DX komutunu kullanarak CX (0AA00h) ve DX (00BBh) yazma\xE7lar\u0131n\u0131 takas edin.",
+            "starterCode": "; Ad\u0131m 2: XCHG ile CX ve DX takas\u0131\nORG 100h\nMOV CX, 0AA00h\nMOV DX, 00BBh\n\n; XCHG komutunu buraya yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV CX, 0AA00h\nMOV DX, 00BBh\nXCHG CX, DX\nHLT\n",
+            "hints": [
+              "XCHG CX, DX yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "cx": 187,
+                "dx": 43520
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-4-1-3",
+          "stepNumber": "Ad\u0131m 3",
+          "title": "LEA (Load Effective Address): Bellekteki Veriyi De\u011Fil, Adresin Kendisini Y\xFCklemek!",
+          "titleEn": "Step 3: LEA (Load Effective Address): Loading the Address Instead of the Data",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> \xD6\u011Frencilerin en \xE7ok kar\u0131\u015Ft\u0131rd\u0131\u011F\u0131 fark:</p>\n        <ul>\n          <li><code>MOV AX, [BX+SI+4]</code> &rarr; Hesaplanan adresteki <strong>bellek kutusunun i\xE7indeki veriyi</strong> <code>AX</code>'e okur.</li>\n          <li><code>LEA AX, [BX+SI+4]</code> &rarr; Belle\u011Fe hi\xE7 gitmez! Sadece parantez i\xE7indeki <strong>adres toplam\u0131n\u0131 (`BX + SI + 4`)</strong> hesaplay\u0131p <code>AX</code>'e yazar!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>MOV AX, [BX+SI+4]</code> loads the data stored at that memory address, whereas <code>LEA AX, [BX+SI+4]</code> computes the offset expression <code>BX + SI + 4</code> and loads the address itself into <code>AX</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-4-1-3",
+            "title": "LEA ile Dinamik Adres Hesab\u0131 (BX + SI + 4)",
+            "difficulty": "Kolay",
+            "scenario": "BX = 0200h ve SI = 0030h iken LEA AX, [BX+SI+4] komutuyla efektif adresi (0234h) AX yazmac\u0131na y\xFCkleyece\u011Fiz.",
+            "taskPrompt": "BX = 0200h ve SI = 0030h kurulu iken LEA AX, [BX+SI+4] komutunu \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 3: LEA AX, [BX+SI+4] ile efektif adresi hesaplay\u0131n\nORG 100h\nMOV BX, 0200h\nMOV SI, 0030h\n\n; LEA komutunu buraya yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BX, 0200h\nMOV SI, 0030h\nLEA AX, [BX+SI+4]\nHLT\n",
+            "hints": [
+              "LEA AX, [BX+SI+4] yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 564,
+                "bx": 512,
+                "si": 48
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-4-1-4",
+          "stepNumber": "Ad\u0131m 4",
+          "title": "LDS ve LES: Bellekten Tek Komutta Hem Offset Hem Segment Y\xFCklemek (Far Pointer)",
+          "titleEn": "Step 4: LDS and LES: Loading Both Offset and Segment from a 32-Bit Far Pointer",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bellekte 4 bayt (2 kelime) olarak saklanan bir <strong>Uzak \u0130\u015Faret\xE7inin (Far Pointer)</strong> ilk kelimesi <code>Offset</code>, ikinci kelimesi <code>Segment</code>'tir. <code>LDS SI, [0200h]</code> komutu tek sat\u0131rda:</p>\n        <ul>\n          <li><code>[0200h]</code> adresindeki ilk kelimeyi <code>SI</code> (ofset) yazmac\u0131na,</li>\n          <li><code>[0202h]</code> adresindeki ikinci kelimeyi <code>DS</code> (segment) yazmac\u0131na y\xFCkler!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>LDS SI, [0200h]</code> loads a 32-bit far pointer from memory in one step: the offset word at <code>[0200h]</code> goes into <code>SI</code>, and the segment word at <code>[0202h]</code> goes into <code>DS</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-4-1-4",
+            "title": "LDS Komutu ile Uzak \u0130\u015Faret\xE7i (SI ve DS) Y\xFCkleme",
+            "difficulty": "Orta",
+            "scenario": "Belle\u011Fin [0200h] adresinde ofset 0040h, [0202h] adresinde segment 0300h kay\u0131tl\u0131d\u0131r. LDS SI, [0200h] ile ikisini tek komutta y\xFCkleyece\u011Fiz.",
+            "taskPrompt": "LDS SI, [0200h] komutunu \xE7al\u0131\u015Ft\u0131rarak SI = 0040h ve DS = 0300h olmas\u0131n\u0131 sa\u011Flay\u0131n.",
+            "starterCode": "; Ad\u0131m 4: LDS SI, [0200h] ile uzak i\u015Faret\xE7iyi y\xFCkleyin\nORG 100h\nMOV WORD PTR [0200h], 0040h ; Offset\nMOV WORD PTR [0202h], 0300h ; Segment\n\n; LDS komutunu buraya yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV WORD PTR [0200h], 0040h\nMOV WORD PTR [0202h], 0300h\nLDS SI, [0200h]\nHLT\n",
+            "hints": [
+              "LDS SI, [0200h] yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "si": 64,
+                "ds": 768
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-4-2-string-data-transfers-and-rep",
@@ -17790,38 +18467,284 @@ HLT</code></pre>
 </div>`,
       "quiz": {
         "id": "quiz-7-1",
-        "question": "8086 string operasyonlar\u0131nda hedef bellek i\u015Faret\xE7isi (Destination) hakk\u0131nda a\u015Fa\u011F\u0131daki kurallardan hangisi donan\u0131msal bir zorunluluktur?",
+        "question": "8086/80186 mimarisinde PUSHA ve POPA komutlar\u0131n\u0131n \xE7al\u0131\u015Fma s\u0131ras\u0131 ve SP (Stack Pointer) davran\u0131\u015F\u0131 hakk\u0131nda a\u015Fa\u011F\u0131dakilerden hangisi DO\u011ERUDUR?",
         "options": [
-          "Hedef i\u015Faret\xE7isi DS:DI d\u0131r ve istenirse CS \xF6neki ile de\u011Fi\u015Ftirilebilir",
-          "Hedef i\u015Faret\xE7isi daima ES:DI d\u0131r ve segment override \xF6neki ile DE\u011E\u0130\u015ET\u0130R\u0130LEMEZ",
-          "Hedef i\u015Faret\xE7isi SS:BP dir",
-          "Hedef i\xE7in hem SI hem DI serbest\xE7e se\xE7ilebilir"
+          "PUSHA yazma\xE7lar\u0131 alfabetik s\u0131rayla iter; POPA ise SP'yi y\u0131\u011F\u0131ndan okuyup do\u011Frudan SP yazmac\u0131na y\xFCkler",
+          "PUSHA s\u0131ras\u0131yla AX, CX, DX, BX, SP(orijinal), BP, SI, DI iter (16 bayt); POPA ise DI, SI, BP, (SP yuvas\u0131n\u0131 atlar), BX, DX, CX, AX s\u0131ras\u0131yla geri y\xFCkler",
+          "PUSHA yaln\u0131zca segment yazma\xE7lar\u0131n\u0131 (CS, DS, SS, ES) y\u0131\u011F\u0131na iter",
+          "POPA komutu SP yazmac\u0131n\u0131 16 azalt\u0131r"
         ],
         "correctIndex": 1,
-        "explanation": "8086 mimarisinde string primitiflerinde hedef i\u015Faret\xE7isi istisnas\u0131z daima ES:DI dir. Kaynak (DS:SI) i\xE7in segment override serbestken hedef (ES:DI) i\xE7in segment override donan\u0131msal olarak kesinlikle yasakt\u0131r."
+        "explanation": "Week 4 Slayt 19\u201322'de belirtildi\u011Fi \xFCzere PUSHA s\u0131ras\u0131yla AX, CX, DX, BX, orijinal SP, BP, SI, DI yazma\xE7lar\u0131n\u0131 iter (SP -= 16). POPA ise tam tersi s\u0131rada DI, SI, BP, (SP yuvas\u0131n\u0131 atlayarak), BX, DX, CX, AX yazma\xE7lar\u0131n\u0131 geri y\xFCkler (SP += 16)."
       },
       "task": {
         "id": "task-7-1-cld-stosb",
-        "title": "CLD ve STOSB ile Belle\u011Fe Bayt Yazma",
+        "title": "B\xF6l\xFCm 4.2 Kapsaml\u0131 Y\u0131\u011F\u0131n \xD6devi: PUSHA ve POPA ile T\xFCm Yazma\xE7lar\u0131 Y\u0131\u011F\u0131nda Koruma",
         "difficulty": "Orta",
-        "scenario": "CLD komutu ile y\xF6n bayra\u011F\u0131n\u0131 s\u0131f\u0131rlay\u0131n. AL=55h de\u011Ferini DI=0200h adresine STOSB komutu ile yaz\u0131n. DI yazmac\u0131n\u0131n otomatik olarak 0201h oldu\u011Funu ve belle\u011Fe 55h yaz\u0131ld\u0131\u011F\u0131n\u0131 do\u011Frulay\u0131n.",
-        "taskPrompt": "CLD yaz\u0131n. AL yazmac\u0131na 55h, DI yazmac\u0131na 0200h y\xFCkleyin. STOSB komutunu \xE7al\u0131\u015Ft\u0131r\u0131n ve program\u0131 HLT ile sonland\u0131r\u0131n.",
-        "starterCode": "; 7.1 CLD ve STOSB\nORG 100h\n\n; CLD \xE7al\u0131\u015Ft\u0131r\u0131n:\n; AL = 55h, DI = 0200h yap\u0131n:\n; STOSB komutunu y\xFCr\xFCt\xFCn:\n\n\nHLT\n",
-        "solutionCode": "ORG 100h\nCLD\nMOV AL, 55h\nMOV DI, 0200h\nSTOSB\nHLT\n",
+        "scenario": "Bir alt yordama girmeden \xF6nce AX=1111h, CX=2222h, DX=3333h, BX=4444h, SI=5555h, DI=6666h yazma\xE7lar\u0131n\u0131n tamam\u0131n\u0131 PUSHA ile tek komutta y\u0131\u011F\u0131na yedekleyin. Ard\u0131ndan bu yazma\xE7lar\u0131 s\u0131f\u0131rlay\u0131p POPA ile y\u0131\u011F\u0131ndan tek komutta eksiksiz geri y\xFCkleyin!",
+        "taskPrompt": "1) MOV SP, 0200h kurun ve AX=1111h, CX=2222h, DX=3333h, BX=4444h, SI=5555h, DI=6666h de\u011Ferleri zaten y\xFCkl\xFCd\xFCr.\n2) PUSHA komutu ile 8 genel yazmac\u0131 y\u0131\u011F\u0131na kaydedin (SP = 01F0h olur).\n3) MOV AX, 0 / MOV BX, 0 / MOV CX, 0 / MOV DX, 0 ile yazma\xE7lar\u0131 bozun.\n4) POPA komutu ile t\xFCm yazma\xE7lar\u0131 y\u0131\u011F\u0131ndan tek seferde geri y\xFCkleyin ve HLT ile bitirin.",
+        "starterCode": "; Week 4.2 PUSHA ve POPA ile Toplu Y\u0131\u011F\u0131n Yedekleme\nORG 100h\n\nMOV SP, 0200h\nMOV AX, 1111h\nMOV CX, 2222h\nMOV DX, 3333h\nMOV BX, 4444h\nMOV SI, 5555h\nMOV DI, 6666h\n\n; 1. PUSHA ile t\xFCm genel yazma\xE7lar\u0131 y\u0131\u011F\u0131na yedekleyin:\n\n\n; Ara i\u015Flemler yazma\xE7lar\u0131 bozuyor:\nMOV AX, 0\nMOV CX, 0\nMOV DX, 0\nMOV BX, 0\nMOV SI, 0\nMOV DI, 0\n\n; 2. POPA ile t\xFCm genel yazma\xE7lar\u0131 y\u0131\u011F\u0131ndan geri y\xFCkleyin:\n\n\nHLT\n",
+        "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1111h\nMOV CX, 2222h\nMOV DX, 3333h\nMOV BX, 4444h\nMOV SI, 5555h\nMOV DI, 6666h\nPUSHA\nMOV AX, 0\nMOV CX, 0\nMOV DX, 0\nMOV BX, 0\nMOV SI, 0\nMOV DI, 0\nPOPA\nHLT\n",
         "hints": [
-          "CLD komutunu yaz\u0131n.",
-          "MOV AL, 55h ve MOV DI, 0200h kurun.",
-          "STOSB komutu [ES:DI] adresine AL yi yazar ve DI y\u0131 1 art\u0131r\u0131r."
+          "Bozma i\u015Flemlerinden hemen \xF6nce PUSHA yaz\u0131n.",
+          "Bozma i\u015Flemlerinden hemen sonra (HLT'den \xF6nce) POPA yaz\u0131n."
         ],
         "assertions": {
           "registers": {
-            "al": 85,
-            "di": 513
+            "ax": 4369,
+            "cx": 8738,
+            "dx": 13107,
+            "bx": 17476,
+            "si": 21845,
+            "di": 26214,
+            "sp": 512
           },
-          "maxSteps": 50
+          "memory": [
+            {
+              "segment": 0,
+              "offset": 510,
+              "expectedBytes": [
+                17,
+                17
+              ]
+            },
+            {
+              "segment": 0,
+              "offset": 496,
+              "expectedBytes": [
+                102,
+                102
+              ]
+            }
+          ],
+          "maxSteps": 60
         },
-        "examTip": "STOSB komutu ES:DI adresine AL bayt\u0131n\u0131 yazar. CLD yap\u0131ld\u0131\u011F\u0131 i\xE7in DI otomatik olarak 1 artarak 0201h olur."
-      }
+        "examTip": "PUSHA s\u0131ras\u0131: AX, CX, DX, BX, SP(orijinal), BP, SI, DI (en \xFCstte DI durur). POPA ise DI'dan ba\u015Flay\u0131p AX'e do\u011Fru ters s\u0131rayla geri \xE7eker."
+      },
+      "microSteps": [
+        {
+          "id": "ms-4-2-1",
+          "stepNumber": "Stack Ad\u0131m 1",
+          "title": "Segment Yazmac\u0131n\u0131 Y\u0131\u011F\u0131na Atmak: PUSH DS ve POP ES ile Segment Kopyalama",
+          "titleEn": "Stack Step 1: Pushing Segment Registers: Copying DS to ES via PUSH DS / POP ES",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Week 3'te genel yazma\xE7lar\u0131 (<code>PUSH AX</code>) y\u0131\u011F\u0131na atmay\u0131 \xF6\u011Frendik. <code>PUSH</code> ve <code>POP</code> komutlar\u0131 <strong>Segment Yazma\xE7lar\u0131yla (<code>CS, DS, ES, SS</code>)</strong> da \xE7al\u0131\u015F\u0131r! (Yaln\u0131zca <code>POP CS</code> yasakt\u0131r).</p>\n        <p>Hat\u0131rlarsan\u0131z <code>MOV ES, DS</code> yasakt\u0131. Y\u0131\u011F\u0131n sayesinde hi\xE7bir genel yazmac\u0131 (<code>AX</code>'i) bozmadan <code>DS</code>'yi <code>ES</code>'ye kopyalayabiliriz:</p>\n        <pre><code>PUSH DS   ; DS de\u011Ferini y\u0131\u011F\u0131n\u0131n tepesine koy\nPOP ES    ; Y\u0131\u011F\u0131n\u0131n tepesindeki de\u011Feri ES i\xE7ine \xE7ek!</code></pre>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>PUSH</code> and <code>POP</code> also work with segment registers (except <code>POP CS</code>, which is illegal). Since <code>MOV ES, DS</code> is illegal, <code>PUSH DS</code> followed by <code>POP ES</code> copies <code>DS</code> into <code>ES</code> without touching <code>AX</code>!</p>\n      ",
+          "task": {
+            "id": "ms-task-4-2-1",
+            "title": "PUSH DS ve POP ES ile Segment Kopyalama",
+            "difficulty": "Kolay",
+            "scenario": "DS segment yazmac\u0131nda 0250h de\u011Feri var ve AX yazmac\u0131 dolu (9999h). AX'e hi\xE7 dokunmadan PUSH DS ve POP ES kullanarak DS de\u011Ferini ES'ye kopyalayaca\u011F\u0131z.",
+            "taskPrompt": "PUSH DS ve POP ES komutlar\u0131n\u0131 kullanarak DS (0250h) de\u011Ferini ES segment yazmac\u0131na kopyalay\u0131n.",
+            "starterCode": "; Stack Ad\u0131m 1: AX de\u011Ferini bozmadan PUSH DS ve POP ES ile DS -> ES aktar\u0131m\u0131\nORG 100h\nMOV SP, 0200h\nMOV AX, 0250h\nMOV DS, AX\nMOV AX, 9999h ; AX art\u0131k dolu, AX'i de\u011Fi\u015Ftirmeyin!\n\n; PUSH DS ve POP ES komutlar\u0131n\u0131 buraya yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 0250h\nMOV DS, AX\nMOV AX, 9999h\nPUSH DS\nPOP ES\nHLT\n",
+            "hints": [
+              "PUSH DS yaz\u0131n.",
+              "Alt\u0131na POP ES ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 39321,
+                "ds": 592,
+                "es": 592,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-4-2-2",
+          "stepNumber": "Stack Ad\u0131m 2",
+          "title": "Bellek H\xFCcresini Do\u011Frudan Y\u0131\u011F\u0131na Atmak: PUSH WORD PTR [BX]",
+          "titleEn": "Stack Step 2: Pushing a 16-Bit Memory Word Directly: PUSH WORD PTR [BX]",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bellekteki 16-bitlik bir kelimeyi y\u0131\u011F\u0131na atmak i\xE7in \xF6nce bir yazmaca y\xFCklemenize gerek yoktur! <code>PUSH WORD PTR [BX]</code> komutu do\u011Frudan bellekteki <code>[BX]</code> adresinde duran 16-bitlik kelimeyi okur ve y\u0131\u011F\u0131n\u0131n tepesine koyar.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>PUSH</code> also accepts a 16-bit memory operand directly: <code>PUSH WORD PTR [BX]</code> pushes the word stored at <code>[BX]</code> directly onto the stack.</p>\n      ",
+          "task": {
+            "id": "ms-task-4-2-2",
+            "title": "PUSH WORD PTR [BX] ve POP AX ile Bellekten Y\u0131\u011F\u0131na Aktar\u0131m",
+            "difficulty": "Kolay",
+            "scenario": "Belle\u011Fin [0220h] adresinde 4321h kelimesi duruyor. BX = 0220h iken PUSH WORD PTR [BX] ile bu kelimeyi y\u0131\u011F\u0131na at\u0131p POP AX ile AX yazmac\u0131na \xE7ekece\u011Fiz.",
+            "taskPrompt": "PUSH WORD PTR [BX] komutuyla bellekteki kelimeyi y\u0131\u011F\u0131na at\u0131n ve POP AX ile AX yazmac\u0131na \xE7ekin.",
+            "starterCode": "; Stack Ad\u0131m 2: Bellekteki kelimeyi do\u011Frudan PUSH etme\nORG 100h\nMOV SP, 0200h\nMOV BX, 0220h\nMOV WORD PTR [BX], 4321h\n\n; PUSH WORD PTR [BX] ve POP AX yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV BX, 0220h\nMOV WORD PTR [BX], 4321h\nPUSH WORD PTR [BX]\nPOP AX\nHLT\n",
+            "hints": [
+              "PUSH WORD PTR [BX] ard\u0131ndan POP AX yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 17185,
+                "bx": 544,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-4-2-3",
+          "stepNumber": "Stack Ad\u0131m 3",
+          "title": "Y\u0131\u011F\u0131nla Yazma\xE7 Koruma Deseni (Save & Restore): PUSH -> \u0130\u015Flem Yap -> POP",
+          "titleEn": "Stack Step 3: Register Preservation Pattern (Save & Restore): PUSH -> Work -> POP",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Y\u0131\u011F\u0131n\u0131n ger\xE7ek hayattaki 1 numaral\u0131 kullan\u0131m amac\u0131 <strong>yazma\xE7taki \xF6nemli bir say\u0131y\u0131 ge\xE7ici olarak yedeklemektir</strong>:</p>\n        <ol>\n          <li>\xD6nemli de\u011Feri y\u0131\u011F\u0131na yedekle: <code>PUSH AX</code></li>\n          <li><code>AX</code> yazmac\u0131n\u0131 ba\u015Fka bir i\u015F i\xE7in rahat\xE7a kullan (i\xE7eri\u011Fi de\u011Fi\u015Fsin).</li>\n          <li>\u0130\u015Fin bitince eski de\u011Feri y\u0131\u011F\u0131ndan geri kurtar: <code>POP AX</code>!</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The most common real-world use of the stack is <strong>preserving a register</strong>: <code>PUSH AX</code> before modifying <code>AX</code>, do temporary work in <code>AX</code>, then <code>POP AX</code> to restore its original value.</p>\n      ",
+          "task": {
+            "id": "ms-task-4-2-3",
+            "title": "AX De\u011Ferini PUSH ile Yedekleyip \u0130\u015Flem Sonras\u0131 POP ile Kurtarma",
+            "difficulty": "Kolay",
+            "scenario": "AX i\xE7inde \xE7ok \xF6nemli bir say\u0131 (7777h) var. \xD6nce PUSH AX ile yedekleyece\u011Fiz, sonra AX i\xE7ine 0005h koyup DX'e kopyalayaca\u011F\u0131z, en sonda POP AX ile AX'in eski 7777h de\u011Ferini geri kurtaraca\u011F\u0131z.",
+            "taskPrompt": "1) PUSH AX ile AX'i yedekleyin. 2) MOV AX, 0005h ve MOV DX, AX yap\u0131n. 3) POP AX ile AX'in ilk de\u011Ferini (7777h) geri y\xFCkleyin.",
+            "starterCode": "; Stack Ad\u0131m 3: AX yazmac\u0131n\u0131 y\u0131\u011F\u0131nda yedekleyip kurtar\u0131n\nORG 100h\nMOV SP, 0200h\nMOV AX, 7777h\n\n; 1. AX yazmac\u0131n\u0131 y\u0131\u011F\u0131na PUSH edin:\n\nMOV AX, 0005h\nMOV DX, AX\n\n; 2. AX yazmac\u0131n\u0131n eski de\u011Ferini y\u0131\u011F\u0131ndan POP edin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 7777h\nPUSH AX\nMOV AX, 0005h\nMOV DX, AX\nPOP AX\nHLT\n",
+            "hints": [
+              "\u0130lk bo\u015Flu\u011Fa PUSH AX, ikinci bo\u015Flu\u011Fa POP AX yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 30583,
+                "dx": 5,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-4-2-4",
+          "stepNumber": "Stack Ad\u0131m 4",
+          "title": "PUSHA Komutu: 8 Genel Yazmac\u0131n Hepsini Tek Sat\u0131rda Y\u0131\u011F\u0131na Kaydetmek!",
+          "titleEn": "Stack Step 4: PUSHA: Pushing All 8 General-Purpose Registers in One Instruction",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> 8 yazmac\u0131 tek tek <code>PUSH</code> etmek yerine <code>PUSHA</code> (Push All) komutu tek ba\u015F\u0131na 8 genel yazmac\u0131 (toplam $8 	imes 2 = 16$ bayt) sabit bir s\u0131rayla y\u0131\u011F\u0131na atar ve <code>SP</code>'yi <strong>16 azalt\u0131r (`10h`)</strong>!</p>\n        <p><strong>S\u0131navda \xC7\u0131kan Sabit PUSHA S\u0131ras\u0131:</strong> <code>AX &rarr; CX &rarr; DX &rarr; BX &rarr; SP(ilk hali) &rarr; BP &rarr; SI &rarr; DI</code> (Y\u0131\u011F\u0131n\u0131n en tepesinde <code>DI</code> durur).</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>PUSHA</code> pushes all 8 general-purpose registers onto the stack in one instruction in the exact order: <code>AX, CX, DX, BX, original SP, BP, SI, DI</code>, decreasing <code>SP</code> by 16 bytes (<code>10h</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-4-2-4",
+            "title": "PUSHA ile 8 Yazmac\u0131 Y\u0131\u011F\u0131na Atma ve SP'nin 16 (10h) Azalmas\u0131n\u0131 Do\u011Frulama",
+            "difficulty": "Kolay",
+            "scenario": "SP = 0200h iken AX=1, CX=2, DX=3, BX=4, SI=5, DI=6 kurup tek bir PUSHA komutu \xE7al\u0131\u015Ft\u0131raca\u011F\u0131z. SP de\u011Ferinin 16 bayt (10h) azalarak 01F0h oldu\u011Funu g\xF6rece\u011Fiz.",
+            "taskPrompt": "Yazma\xE7lar kurulduktan sonra PUSHA komutunu \xE7al\u0131\u015Ft\u0131rarak 8 yazmac\u0131n tamam\u0131n\u0131 y\u0131\u011F\u0131na kaydedin.",
+            "starterCode": "; Stack Ad\u0131m 4: PUSHA ile t\xFCm genel yazma\xE7lar\u0131 tek komutta y\u0131\u011F\u0131na kaydedin\nORG 100h\nMOV SP, 0200h\nMOV AX, 1\nMOV CX, 2\nMOV DX, 3\nMOV BX, 4\nMOV SI, 5\nMOV DI, 6\n\n; Tek komutta t\xFCm genel yazma\xE7lar\u0131 y\u0131\u011F\u0131na at\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1\nMOV CX, 2\nMOV DX, 3\nMOV BX, 4\nMOV SI, 5\nMOV DI, 6\nPUSHA\nHLT\n",
+            "hints": [
+              "PUSHA komutunu yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "sp": 496,
+                "ax": 1,
+                "di": 6
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 496,
+                  "expectedBytes": [
+                    6,
+                    0
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-4-2-5",
+          "stepNumber": "Stack Ad\u0131m 5",
+          "title": "POPA Komutu: Bozulan 8 Yazmac\u0131 Tek Sat\u0131rda Ters S\u0131rayla Geri Y\xFCklemek!",
+          "titleEn": "Stack Step 5: POPA: Restoring All 8 General-Purpose Registers in Reverse Order",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> <code>PUSHA</code> ile y\u0131\u011F\u0131na kaydetti\u011Fimiz 8 yazmac\u0131, i\u015Fimiz bitti\u011Finde tek bir <code>POPA</code> (Pop All) komutuyla tam ters s\u0131rayla geri \xE7ekeriz:</p>\n        <p><strong>Sabit POPA S\u0131ras\u0131:</strong> <code>DI &rarr; SI &rarr; BP &rarr; (SP yuvas\u0131 atlan\u0131r!) &rarr; BX &rarr; DX &rarr; CX &rarr; AX</code> ve <code>SP</code> tekrar 16 artar.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>POPA</code> pops the 8 registers in exact reverse order: <code>DI, SI, BP, (skips saved SP), BX, DX, CX, AX</code>, restoring every register and adding 16 to <code>SP</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-4-2-5",
+            "title": "PUSHA ve POPA ile Bozulan T\xFCm Yazma\xE7lar\u0131 Tek Sat\u0131rda Kurtarma",
+            "difficulty": "Kolay",
+            "scenario": "AX=1111h, BX=2222h, CX=3333h, DX=4444h de\u011Ferlerini PUSHA ile y\u0131\u011F\u0131na kaydedece\u011Fiz. Ard\u0131ndan bu yazma\xE7lar\u0131 s\u0131f\u0131rlay\u0131p POPA komutuyla hepsinin eski de\u011Ferini tek sat\u0131rda geri getirece\u011Fiz!",
+            "taskPrompt": "S\u0131f\u0131rlama komutlar\u0131ndan \xF6nce PUSHA, s\u0131f\u0131rlama komutlar\u0131ndan sonra POPA yazarak t\xFCm yazma\xE7lar\u0131 koruyun.",
+            "starterCode": "; Stack Ad\u0131m 5: PUSHA ile yedekleyin, yazma\xE7lar s\u0131f\u0131rlans\u0131n, sonra POPA ile kurtar\u0131n\nORG 100h\nMOV SP, 0200h\nMOV AX, 1111h\nMOV BX, 2222h\nMOV CX, 3333h\nMOV DX, 4444h\n\n; 1. T\xFCm yazma\xE7lar\u0131 tek komutta y\u0131\u011F\u0131na yedekleyin:\n\n\n; Yazma\xE7lar burada bozuluyor:\nMOV AX, 0\nMOV BX, 0\nMOV CX, 0\nMOV DX, 0\n\n; 2. T\xFCm yazma\xE7lar\u0131 tek komutta y\u0131\u011F\u0131ndan geri y\xFCkleyin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1111h\nMOV BX, 2222h\nMOV CX, 3333h\nMOV DX, 4444h\nPUSHA\nMOV AX, 0\nMOV BX, 0\nMOV CX, 0\nMOV DX, 0\nPOPA\nHLT\n",
+            "hints": [
+              "\u0130lk bo\u015Flu\u011Fa PUSHA, ikinci bo\u015Flu\u011Fa POPA yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4369,
+                "bx": 8738,
+                "cx": 13107,
+                "dx": 17476,
+                "sp": 512
+              },
+              "maxSteps": 40
+            }
+          }
+        },
+        {
+          "id": "ms-4-2-6",
+          "stepNumber": "Stack Ad\u0131m 6",
+          "title": "PUSHF ve POPF: Bayraklar (FLAGS) Yazmac\u0131n\u0131 Y\u0131\u011F\u0131na Kaydetmek ve Geri Y\xFCklemek",
+          "titleEn": "Stack Step 6: PUSHF and POPF: Saving and Restoring the FLAGS Register on the Stack",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Peki aritmetik i\u015Flemler <code>FLAGS</code> (durum bayraklar\u0131n\u0131: <code>CF, ZF, SF...</code>) bozmadan \xF6nce bayraklar\u0131n o anki durumunu nas\u0131l yedekleriz? \u0130\u015Fte bunun i\xE7in <code>PUSHF</code> ve <code>POPF</code> vard\u0131r:</p>\n        <ul>\n          <li><code>PUSHF (Push Flags)</code>: 16-bitlik <code>FLAGS</code> yazmac\u0131n\u0131 y\u0131\u011F\u0131na koyar (<code>SP = SP - 2</code>).</li>\n          <li><code>POPF (Pop Flags)</code>: Y\u0131\u011F\u0131n\u0131n tepesindeki 16-bitlik kelimeyi \xE7ekip <code>FLAGS</code> yazmac\u0131na geri y\xFCkler (<code>SP = SP + 2</code>).</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>PUSHF</code> pushes the entire 16-bit <code>FLAGS</code> register onto the stack, and <code>POPF</code> restores the <code>FLAGS</code> register from the top of the stack.</p>\n      ",
+          "task": {
+            "id": "ms-task-4-2-6",
+            "title": "PUSHF ve POPF ile Carry Bayra\u011F\u0131n\u0131 (CF=1) Y\u0131\u011F\u0131nda Koruma",
+            "difficulty": "Kolay",
+            "scenario": "STC ile Carry bayra\u011F\u0131n\u0131 1 yapaca\u011F\u0131z. PUSHF ile bayraklar\u0131 y\u0131\u011F\u0131na kaydedece\u011Fiz. Arada CLC ile Carry bayra\u011F\u0131 s\u0131f\u0131rlansa bile POPF \xE7al\u0131\u015Ft\u0131rarak CF=1 durumunu y\u0131\u011F\u0131ndan geri y\xFCkleyece\u011Fiz!",
+            "taskPrompt": "STC sonras\u0131 PUSHF yazarak bayraklar\u0131 y\u0131\u011F\u0131na kaydedin; CLC sonras\u0131nda ise POPF yazarak CF=1 durumunu geri y\xFCkleyin.",
+            "starterCode": "; Stack Ad\u0131m 6: PUSHF ve POPF ile FLAGS koruma\nORG 100h\nMOV SP, 0200h\nSTC          ; CF = 1 yap\u0131ld\u0131\n\n; 1. Bayraklar\u0131 y\u0131\u011F\u0131na kaydedin:\n\n\nCLC          ; CF = 0 oldu (bayrak bozuldu!)\n\n; 2. Bayraklar\u0131 y\u0131\u011F\u0131ndan geri y\xFCkleyin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nSTC\nPUSHF\nCLC\nPOPF\nHLT\n",
+            "hints": [
+              "\u0130lk bo\u015Flu\u011Fa PUSHF, ikinci bo\u015Flu\u011Fa POPF yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "sp": 512
+              },
+              "flags": {
+                "cf": 1
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-4-2-7",
+          "stepNumber": "Ad\u0131m 7",
+          "title": "Katar (String) Aktar\u0131m\u0131: CLD, STOSB ve REP MOVSB ile Blok Bellek Kopyalama",
+          "titleEn": "Step 7: String Transfers: CLD, STOSB, and Block Copy with REP MOVSB",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bellekte ard\u0131\u015F\u0131k dizileri kopyalamak veya doldurmak i\xE7in \xF6zel katar (string) komutlar\u0131 kullan\u0131l\u0131r. \xD6nce <code>CLD</code> ile ileri y\xF6n (<code>DF = 0</code>) se\xE7ilir:</p>\n        <ul>\n          <li><code>STOSB</code>: <code>AL</code> i\xE7indeki bayt\u0131 <code>[ES:DI]</code> adresine yazar ve <code>DI</code>'y\u0131 otomatik 1 art\u0131r\u0131r.</li>\n          <li><code>REP MOVSB</code>: <code>[DS:SI]</code> adresinden <code>[ES:DI]</code> adresine <code>CX</code> adet bayt\u0131 tek sat\u0131rda kopyalar!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Execute <code>CLD</code> to step forward (<code>DF = 0</code>). <code>STOSB</code> stores <code>AL</code> to <code>[ES:DI]</code> and increments <code>DI</code>; <code>REP MOVSB</code> copies <code>CX</code> bytes from <code>[DS:SI]</code> to <code>[ES:DI]</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-4-2-7",
+            "title": "CLD ve REP MOVSB ile 3 Baytl\u0131k Diziyi Kopyalama",
+            "difficulty": "Kolay",
+            "scenario": "[0200h] adresindeki 3 bayt\u0131 (11h, 22h, 33h) CLD, SI=0200h, DI=0210h, CX=3 ve REP MOVSB kullanarak [0210h] adresine kopyalayaca\u011F\u0131z.",
+            "taskPrompt": "CLD, MOV SI, 0200h, MOV DI, 0210h, MOV CX, 3 ve REP MOVSB komutlar\u0131n\u0131 \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 7: REP MOVSB ile 3 baytl\u0131k blok kopyalama\nORG 100h\nMOV BYTE PTR [0200h], 11h\nMOV BYTE PTR [0201h], 22h\nMOV BYTE PTR [0202h], 33h\n\n; CLD, SI=0200h, DI=0210h, CX=3 kurup REP MOVSB \xE7al\u0131\u015Ft\u0131r\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BYTE PTR [0200h], 11h\nMOV BYTE PTR [0201h], 22h\nMOV BYTE PTR [0202h], 33h\nCLD\nMOV SI, 0200h\nMOV DI, 0210h\nMOV CX, 3\nREP MOVSB\nHLT\n",
+            "hints": [
+              "CLD / MOV SI, 0200h / MOV DI, 0210h / MOV CX, 3 / REP MOVSB yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "cx": 0,
+                "si": 515,
+                "di": 531
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 528,
+                  "expectedBytes": [
+                    17,
+                    34,
+                    51
+                  ]
+                }
+              ],
+              "maxSteps": 40
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-4-3-xlat-movsx-bswap-and-directives",
@@ -18140,7 +19063,88 @@ HEX_TABLO DB '0123456789ABCDEF'</code></pre>
           "maxSteps": 50
         },
         "examTip": "XLAT hi\xE7bir i\u015Flenen almaz. Donan\u0131msal olarak BX tablosundan AL ofsetindeki bayt\u0131 okuyup tekrar AL ye yazar."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-4-3-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "CBW (Convert Byte to Word): 8-Bit \u0130\u015Faretli Say\u0131y\u0131 (AL) 16-Bite (AX) Geni\u015Fletmek",
+          "titleEn": "Step 1: CBW (Convert Byte to Word): Sign-Extending AL into AX",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> 8-bitlik negatif bir say\u0131 (\xF6rne\u011Fin <code>AL = -5 = 0FBh</code>, en sol i\u015Faret biti <code>1</code>) 16-bitlik <code>AX</code>'e geni\u015Fletilirken \xFCst bayt <code>AH</code> s\u0131f\u0131rla de\u011Fil, <strong>i\u015Faret bitiyle (<code>0FFh</code>)</strong> doldurulmal\u0131d\u0131r ki de\u011Feri yine <code>-5</code> (<code>0FFFBh</code>) kals\u0131n! Bunu tek ba\u015F\u0131na <code>CBW</code> komutu yapar (hi\xE7 operand almaz).</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>CBW</code> copies the sign bit (bit 7) of <code>AL</code> into all 8 bits of <code>AH</code>, widening a signed byte in <code>AL</code> into a signed word in <code>AX</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-4-3-1",
+            "title": "CBW ile Negatif AL Say\u0131s\u0131n\u0131 AX \u0130\xE7ine Geni\u015Fletme",
+            "difficulty": "Kolay",
+            "scenario": "AL yazmac\u0131na -5 (0FBh) y\xFCkleyip CBW \xE7al\u0131\u015Ft\u0131rarak AX de\u011Ferinin 0FFFBh oldu\u011Funu do\u011Frulayaca\u011F\u0131z.",
+            "taskPrompt": "AL yazmac\u0131na 0FBh y\xFCkleyin ve CBW komutunu \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 1: AL = 0FBh y\xFCkleyip CBW \xE7al\u0131\u015Ft\u0131r\u0131n\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 0FBh\nCBW\nHLT\n",
+            "hints": [
+              "MOV AL, 0FBh ard\u0131ndan CBW yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 65531
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-4-3-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "CWD (Convert Word to Doubleword): AX \u0130\u015Faretini DX Yazmac\u0131na Yaymak",
+          "titleEn": "Step 2: CWD (Convert Word to Doubleword): Sign-Extending AX into DX:AX",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> <code>CBW</code> nas\u0131l <code>AL</code>'nin i\u015Faretini <code>AH</code>'ye yay\u0131yorsa, <code>CWD</code> komutu da 16-bitlik <code>AX</code>'in i\u015Faret bitini (bit 15) 16-bitlik <code>DX</code> yazmac\u0131n\u0131n tamam\u0131na yayar (<code>AX</code> negatifse <code>DX = 0FFFFh</code>, pozitifse <code>DX = 0000h</code> olur).</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>CWD</code> extends the sign bit of <code>AX</code> into every bit of <code>DX</code>, forming a 32-bit signed value in <code>DX:AX</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-4-3-2",
+            "title": "CWD ile 16-Bit Negatif AX De\u011Ferini DX:AX \xC7iftine Geni\u015Fletme",
+            "difficulty": "Kolay",
+            "scenario": "AX yazmac\u0131na 0FFFEh (-2) y\xFCkleyip CWD \xE7al\u0131\u015Ft\u0131rarak DX yazmac\u0131n\u0131n 0FFFFh oldu\u011Funu g\xF6rece\u011Fiz.",
+            "taskPrompt": "AX yazmac\u0131na 0FFFEh y\xFCkleyin ve CWD komutunu \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 2: AX = 0FFFEh y\xFCkleyip CWD \xE7al\u0131\u015Ft\u0131r\u0131n\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0FFFEh\nCWD\nHLT\n",
+            "hints": [
+              "MOV AX, 0FFFEh ard\u0131ndan CWD yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 65534,
+                "dx": 65535
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-4-3-3",
+          "stepNumber": "Ad\u0131m 3",
+          "title": "LAHF ve SAHF: Bayraklar\u0131 AH Yazmac\u0131na Okumak ve AH'den Bayraklara Yazmak",
+          "titleEn": "Step 3: LAHF and SAHF: Copying Flags to/from AH",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> <code>LAHF</code> (Load AH from Flags) komutu, durum bayraklar\u0131n\u0131 (<code>SF, ZF, AF, PF, CF</code>) tek sat\u0131rda <code>AH</code> yazmac\u0131na kopyalar. <code>SAHF</code> ise tam tersini yapar.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>LAHF</code> copies the low byte of the <code>FLAGS</code> register into <code>AH</code>; <code>SAHF</code> stores <code>AH</code> back into the low byte of <code>FLAGS</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-4-3-3",
+            "title": "STC ve LAHF ile Bayrak Durumunu AH Yazmac\u0131na Aktarma",
+            "difficulty": "Kolay",
+            "scenario": "MOV AH, 00h sonras\u0131nda STC ile Carry bayra\u011F\u0131n\u0131 (bit 0) kurup LAHF \xE7al\u0131\u015Ft\u0131rarak AH yazmac\u0131n\u0131n en alt bitinin 1 oldu\u011Funu g\xF6rece\u011Fiz.",
+            "taskPrompt": "STC ve ard\u0131ndan LAHF komutlar\u0131n\u0131 \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 3: STC ve LAHF \xE7al\u0131\u015Ft\u0131r\u0131n\nORG 100h\nMOV AH, 00h\n\n; STC ve LAHF yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AH, 00h\nSTC\nLAHF\nHLT\n",
+            "hints": [
+              "STC ard\u0131ndan LAHF yaz\u0131n."
+            ],
+            "assertions": {
+              "flags": {
+                "cf": 1
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {
@@ -18920,7 +19924,91 @@ HLT</code></pre>
           }
         },
         "examTip": "\xC7ok kelimeli toplamalarda ilk kelime i\xE7in ADD, sonraki t\xFCm y\xFCksek anlaml\u0131 kelimeler i\xE7in ADC kullan\u0131l\u0131r."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-5-1-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "ADD ve INC: Toplama ve 1 Art\u0131rma (INC Carry Bayra\u011F\u0131na Dokunmaz!)",
+          "titleEn": "Step 1: ADD and INC: Addition and Incrementing by 1",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> <code>ADD AX, 10</code> komutu <code>AX</code>'e 10 ekler. Bir yazmac\u0131 sadece <code>1</code> art\u0131rmak i\xE7in ise <code>INC AX</code> (Increment) kullan\u0131l\u0131r. <em>S\u0131nav \u0130pucu:</em> <code>INC</code> ve <code>DEC</code> komutlar\u0131 <strong>Carry (<code>CF</code>) bayra\u011F\u0131n\u0131 de\u011Fi\u015Ftirmez!</strong></p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>ADD</code> adds two operands; <code>INC</code> adds 1 to its operand without affecting the Carry Flag (<code>CF</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-5-1-1",
+            "title": "ADD ve INC ile Toplam Hesaplama",
+            "difficulty": "Kolay",
+            "scenario": "AX yazmac\u0131na 10h y\xFCkleyip ADD AX, 20h ile 30h yapacak, ard\u0131ndan INC AX ile 31h elde edece\u011Fiz.",
+            "taskPrompt": "AX yazmac\u0131na 10h y\xFCkleyin, ADD AX, 20h ekleyin ve INC AX \xE7al\u0131\u015Ft\u0131r\u0131n (AX = 0031h).",
+            "starterCode": "; Ad\u0131m 1: AX = 10h, ADD AX, 20h ve INC AX\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 10h\nADD AX, 20h\nINC AX\nHLT\n",
+            "hints": [
+              "MOV AX, 10h / ADD AX, 20h / INC AX yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 49
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-5-1-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "ADC (Add with Carry): Elde Bayra\u011F\u0131n\u0131 (CF) \xDCst Kelimeye Eklemek",
+          "titleEn": "Step 2: ADC (Add with Carry): Adding Both Operands Plus CF",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> 32-bitlik b\xFCy\xFCk say\u0131lar\u0131 toplarken alt 16-bitlik toplamadan ta\u015Fan eldeyi (<code>CF</code>) \xFCst 16-bitlik toplamaya dahil etmek i\xE7in <code>ADC hedef, kaynak</code> (<code>hedef = hedef + kaynak + CF</code>) kullan\u0131l\u0131r.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>ADC dest, src</code> computes <code>dest = dest + src + CF</code>, allowing multi-word (32-bit) addition.</p>\n      ",
+          "task": {
+            "id": "ms-task-5-1-2",
+            "title": "STC ve ADC ile Eldeli Toplama",
+            "difficulty": "Kolay",
+            "scenario": "STC ile CF=1 kurulu iken BX = 10h \xFCzerine ADC BX, 20h uygulayarak BX = 10h + 20h + 1 = 31h elde edece\u011Fiz.",
+            "taskPrompt": "BX yazmac\u0131na 10h y\xFCkleyin, STC ile CF=1 yap\u0131n ve ADC BX, 20h \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 2: BX = 10h, STC ve ADC BX, 20h\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BX, 10h\nSTC\nADC BX, 20h\nHLT\n",
+            "hints": [
+              "MOV BX, 10h / STC / ADC BX, 20h yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "bx": 49
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-5-1-3",
+          "stepNumber": "Ad\u0131m 3",
+          "title": "SUB, DEC ve CMP: \xC7\u0131karma vs De\u011Ferleri Bozmadan Kar\u015F\u0131la\u015Ft\u0131rma (CMP)",
+          "titleEn": "Step 3: SUB, DEC, and CMP: Subtraction vs Non-Destructive Compare",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> <code>SUB AX, BX</code> komutu <code>AX - BX</code> i\u015Flemini yapar ve sonucu <code>AX</code>'in \xFCzerine yazar. <code>CMP AX, BX</code> (Compare) ise <strong>arka planda yine <code>AX - BX</code> \xE7\u0131kar\u0131m\u0131n\u0131 yap\u0131p <code>ZF, CF, SF</code> bayraklar\u0131n\u0131 kurar ama <code>AX</code>'in de\u011Ferini hi\xE7 bozmaz!</strong></p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>SUB AX, BX</code> overwrites <code>AX</code> with <code>AX - BX</code>. <code>CMP AX, BX</code> performs the same subtraction solely to set the flags, leaving <code>AX</code> unchanged!</p>\n      ",
+          "task": {
+            "id": "ms-task-5-1-3",
+            "title": "CMP ile De\u011Ferleri Bozmadan E\u015Fitlik Bayra\u011F\u0131 (ZF = 1) Kurma",
+            "difficulty": "Kolay",
+            "scenario": "AX = 0050h ve BX = 0050h y\xFCkleyip CMP AX, BX \xE7al\u0131\u015Ft\u0131raca\u011F\u0131z: AX hala 0050h kal\u0131rken ZF = 1 olacak!",
+            "taskPrompt": "AX = 0050h ve BX = 0050h y\xFCkleyin, ard\u0131ndan CMP AX, BX komutunu \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 3: AX=0050h, BX=0050h ve CMP AX, BX\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0050h\nMOV BX, 0050h\nCMP AX, BX\nHLT\n",
+            "hints": [
+              "MOV AX, 0050h / MOV BX, 0050h / CMP AX, BX yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 80,
+                "bx": 80
+              },
+              "flags": {
+                "zf": 1
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-5-2-bcd-ascii-and-basic-logic",
@@ -19926,7 +21014,94 @@ HLT</code></pre>
           }
         },
         "examTip": "XOR AX, AX, montaj dilinde MOV AX, 0 yerine standart olarak kullan\u0131lan en verimli s\u0131f\u0131rlama komutudur."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-5-2-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "MUL ve DIV: 8-Bit \xC7arpma (AX = AL \xD7 Kaynak) ve B\xF6lme (AL = B\xF6l\xFCm, AH = Kalan)",
+          "titleEn": "Step 1: 8-Bit MUL (AX = AL * src) and DIV (AL = Quotient, AH = Remainder)",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> 8086'da \xE7arpma ve b\xF6lme komutlar\u0131nda <code>AL/AX</code> gizli (implied) i\u015Flenendir:</p>\n        <ul>\n          <li><code>MUL BL</code> &rarr; <code>AL</code> ile <code>BL</code>'yi \xE7arpar, 16-bitlik sonucu <strong><code>AX</code></strong> i\xE7ine yazar! (<code>MUL BL, AL</code> yaz\u0131lmaz, sadece <code>MUL BL</code> yaz\u0131l\u0131r).</li>\n          <li><code>DIV BL</code> &rarr; 16-bitlik <code>AX</code>'i <code>BL</code>'ye b\xF6ler: <strong>B\xF6l\xFCm\xFC <code>AL</code>'ye, Kalan\u0131 <code>AH</code>'ye</strong> yazar!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>MUL BL</code> multiplies <code>AL * BL</code> into <code>AX</code>. <code>DIV BL</code> divides <code>AX / BL</code>, storing the quotient in <code>AL</code> and remainder in <code>AH</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-5-2-1",
+            "title": "MUL ve DIV ile \xC7arpma ve Kalanl\u0131 B\xF6lme",
+            "difficulty": "Kolay",
+            "scenario": "\xD6nce AL = 6 ve BL = 4 y\xFCkleyip MUL BL ile AX = 24 elde edece\u011Fiz; ard\u0131ndan CL = 5 y\xFCkleyip DIV CL ile 24 / 5 i\u015Flemini yapaca\u011F\u0131z (B\xF6l\xFCm AL = 4, Kalan AH = 4).",
+            "taskPrompt": "AL=6, BL=4 y\xFCkleyip MUL BL \xE7al\u0131\u015Ft\u0131r\u0131n. Sonra CL=5 y\xFCkleyip DIV CL \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 1: MUL BL ve ard\u0131ndan DIV CL uygulamas\u0131\nORG 100h\nMOV AL, 6\nMOV BL, 4\n; 1. MUL BL ile \xE7arp\u0131n:\n\nMOV CL, 5\n; 2. DIV CL ile 5'e b\xF6l\xFCn:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 6\nMOV BL, 4\nMUL BL\nMOV CL, 5\nDIV CL\nHLT\n",
+            "hints": [
+              "\u0130lk bo\u015Flu\u011Fa MUL BL, ikinci bo\u015Flu\u011Fa DIV CL yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 4,
+                "ah": 4,
+                "bl": 4,
+                "cl": 5
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-5-2-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "AND ile Bit Maskeleme (0'lama) ve OR ile Bit Kurma (1 Yapma)",
+          "titleEn": "Step 2: Bit Masking with AND (Clearing Bits) and OR (Setting Bits)",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bit d\xFCzeyinde (Bitwise) iki temel ara\xE7:</p>\n        <ul>\n          <li><strong><code>AND</code> (Maskeleme / Temizleme):</strong> <code>0</code> ile AND'lenen bit <code>0</code> olur, <code>1</code> ile AND'lenen bit aynen kal\u0131r. \xD6rn: ASCII rakam <code>'7' = 37h</code> iken <code>AND AL, 0Fh</code> \xFCst 4 biti siler ve saf <code>07h</code> b\u0131rak\u0131r!</li>\n          <li><strong><code>OR</code> (Bit Kurma):</strong> <code>1</code> ile OR'lanan bit zorla <code>1</code> olur. \xD6rn: <code>07h</code> say\u0131s\u0131na <code>OR AL, 30h</code> yaparsak tekrar ASCII <code>'7' (37h)</code> olur!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Use <code>AND</code> with <code>0</code>s to clear bits (e.g., <code>AND AL, 0Fh</code> converts ASCII <code>37h</code> to binary <code>07h</code>), and <code>OR</code> with <code>1</code>s to set bits.</p>\n      ",
+          "task": {
+            "id": "ms-task-5-2-2",
+            "title": "AND ile ASCII Rakam\u0131 Say\u0131ya \xC7evirme ve OR ile Bit Kurma",
+            "difficulty": "Kolay",
+            "scenario": "AL = 39h ('9' karakteri) de\u011Ferinin \xFCst 4 bitini AND AL, 0Fh ile maskeleyerek 09h elde edece\u011Fiz, BL = 05h de\u011Ferine ise OR BL, 30h uygulayarak 35h ('5') yapaca\u011F\u0131z.",
+            "taskPrompt": "AL = 39h \xFCzerinde AND AL, 0Fh; BL = 05h \xFCzerinde ise OR BL, 30h \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 2: AND AL, 0Fh ve OR BL, 30h uygulamas\u0131\nORG 100h\nMOV AL, 39h\nMOV BL, 05h\n\n; AL i\xE7in AND, BL i\xE7in OR komutlar\u0131n\u0131 yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 39h\nMOV BL, 05h\nAND AL, 0Fh\nOR BL, 30h\nHLT\n",
+            "hints": [
+              "AND AL, 0Fh ve OR BL, 30h yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 9,
+                "bl": 53
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-5-2-3",
+          "stepNumber": "Ad\u0131m 3",
+          "title": "TEST Komutu: Say\u0131y\u0131 Bozmadan AND Yap\u0131p Bit Kontrol Etmek",
+          "titleEn": "Step 3: TEST Instruction: Non-Destructive Bit Testing",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Nas\u0131l <code>CMP</code> \xE7\u0131karma yap\u0131p hedefi bozmuyorsa, <strong><code>TEST hedef, maske</code></strong> komutu da <code>AND</code> i\u015Flemini yap\u0131p <code>ZF</code> bayra\u011F\u0131n\u0131 kurar ama <strong>hedef yazmac\u0131n i\xE7indeki say\u0131y\u0131 kesinlikle bozmaz!</strong></p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>TEST dest, mask</code> performs a bitwise <code>AND</code> solely to update the flags (<code>ZF</code>) without modifying <code>dest</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-5-2-3",
+            "title": "TEST ile Veriyi Bozmadan Bit Kontrol\xFC",
+            "difficulty": "Kolay",
+            "scenario": "AL = 85h de\u011Ferinde en sa\u011Fdaki bitin (bit 0) 0 olup olmad\u0131\u011F\u0131n\u0131 kontrol etmek i\xE7in TEST AL, 02h \xE7al\u0131\u015Ft\u0131raca\u011F\u0131z (Bit 1 s\u0131f\u0131r oldu\u011Fu i\xE7in ZF=1 olur ama AL=85h bozulmaz).",
+            "taskPrompt": "AL = 85h y\xFCkl\xFC iken TEST AL, 02h komutunu \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 3: TEST AL, 02h ile AL de\u011Ferini bozmadan bit testi yap\u0131n\nORG 100h\nMOV AL, 85h\n\n; TEST komutunu buraya yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 85h\nTEST AL, 02h\nHLT\n",
+            "hints": [
+              "TEST AL, 02h yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 133
+              },
+              "flags": {
+                "zf": 1
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-5-3-shifts-rotates-and-string-comparisons",
@@ -20278,7 +21453,89 @@ RCL DX, 1     ; carry moves into DX's bottom bit</code></pre>
           }
         },
         "examTip": "SHL ve ADD kombinasyonu, MUL komutuna g\xF6re donan\u0131mda onlarca saat \xE7evrimi tasarruf sa\u011Flar."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-5-3-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "SHL (Sola Kayd\u0131rma = 2 ile \xC7arpma) ve SHR (Sa\u011Fa Kayd\u0131rma = 2'ye B\xF6lme)",
+          "titleEn": "Step 1: SHL (Multiply by 2) and SHR (Unsigned Divide by 2)",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bitleri 1 basamak sola kayd\u0131rmak (<code>SHL AX, 1</code>) say\u0131y\u0131 <strong>2 ile \xE7arpar</strong>; 1 basamak sa\u011Fa kayd\u0131rmak (<code>SHR BX, 1</code>) ise i\u015Faretsiz say\u0131y\u0131 <strong>2'ye b\xF6ler</strong>!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Shifting left by 1 bit (<code>SHL AX, 1</code>) multiplies by 2; shifting right by 1 bit (<code>SHR BX, 1</code>) divides an unsigned value by 2.</p>\n      ",
+          "task": {
+            "id": "ms-task-5-3-1",
+            "title": "SHL ile 2 Kat\u0131na \xC7\u0131karma ve SHR ile Yar\u0131ya B\xF6lme",
+            "difficulty": "Kolay",
+            "scenario": "AX = 15 de\u011Ferini SHL AX, 1 ile 30 yapaca\u011F\u0131z; BX = 40 de\u011Ferini ise SHR BX, 1 ile 20 yapaca\u011F\u0131z.",
+            "taskPrompt": "SHL AX, 1 ve SHR BX, 1 komutlar\u0131n\u0131 \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 1: AX'i 1 bit sola (SHL), BX'i 1 bit sa\u011Fa (SHR) kayd\u0131r\u0131n\nORG 100h\nMOV AX, 15\nMOV BX, 40\n\n; SHL ve SHR komutlar\u0131n\u0131 yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 15\nMOV BX, 40\nSHL AX, 1\nSHR BX, 1\nHLT\n",
+            "hints": [
+              "SHL AX, 1 ve SHR BX, 1 yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 30,
+                "bx": 20
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-5-3-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "SAR (Shift Arithmetic Right): Negatif Say\u0131n\u0131n \u0130\u015Faretini Koruyarak Sa\u011Fa Kayd\u0131rmak",
+          "titleEn": "Step 2: SAR (Shift Arithmetic Right): Sign-Preserving Right Shift",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Negatif bir say\u0131y\u0131 (en sol biti <code>1</code>) <code>SHR</code> ile sa\u011Fa kayd\u0131r\u0131rsan\u0131z soldan <code>0</code> girer ve say\u0131 pozitif olur (bozulur)! <strong><code>SAR</code></strong> komutu ise sa\u011Fa kayd\u0131r\u0131rken en sol i\u015Faret bitini korur; b\xF6ylece <code>-16 (0F0h)</code> say\u0131s\u0131 <code>SAR AL, 1</code> ile do\u011Fru \u015Fekilde <code>-8 (0F8h)</code> olur!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>SAR</code> preserves the sign bit (MSB) when shifting right, correctly dividing signed negative numbers by 2.</p>\n      ",
+          "task": {
+            "id": "ms-task-5-3-2",
+            "title": "SAR ile Negatif Say\u0131y\u0131 \u0130\u015Faretini Koruyarak 2'ye B\xF6lme",
+            "difficulty": "Kolay",
+            "scenario": "AL = 0F0h (-16) de\u011Ferini SAR AL, 1 ile 1 bit aritmetik sa\u011Fa kayd\u0131rarak -8 (0F8h) elde edece\u011Fiz.",
+            "taskPrompt": "AL = 0F0h y\xFCkl\xFC iken SAR AL, 1 komutunu \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 2: SAR AL, 1 ile i\u015Faret koruyarak sa\u011Fa kayd\u0131r\u0131n\nORG 100h\nMOV AL, 0F0h\n\n; SAR komutunu yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 0F0h\nSAR AL, 1\nHLT\n",
+            "hints": [
+              "SAR AL, 1 yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 248
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-5-3-3",
+          "stepNumber": "Ad\u0131m 3",
+          "title": "SHL + RCL \u0130kilisi ile \xC7ok Kelimeli (32-Bit DX:AX) Sola Kayd\u0131rma",
+          "titleEn": "Step 3: Multi-Word Shift Left Using SHL + RCL",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Hocan\u0131n Week 5 slaytlar\u0131ndaki klasik teknik: 32-bitlik <code>DX:AX</code> \xE7iftini 1 bit sola kayd\u0131rmak i\xE7in:</p>\n        <ol>\n          <li>Alt kelimeyi normal sola kayd\u0131r: <code>SHL AX, 1</code> (En soldan ta\u015Fan bit <code>CF</code>'ye d\xFC\u015Fer!)</li>\n          <li>\xDCst kelimeyi Elde \xFCzerinden sola d\xF6nd\xFCr: <code>RCL DX, 1</code> (<code>CF</code>'deki bit <code>DX</code>'in en sa\u011F bitine girer!)</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> To shift a 32-bit value in <code>DX:AX</code> left by 1 bit: first <code>SHL AX, 1</code> (MSB shifts into <code>CF</code>), then <code>RCL DX, 1</code> (shifts <code>CF</code> into bit 0 of <code>DX</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-5-3-3",
+            "title": "SHL AX, 1 ve RCL DX, 1 ile 32-Bit Sola Kayd\u0131rma",
+            "difficulty": "Orta",
+            "scenario": "DX = 0000h ve AX = 8000h iken SHL AX, 1 ve RCL DX, 1 \xE7al\u0131\u015Ft\u0131rarak AX'in en solundaki 1 bitinin DX'in en sa\u011F bitine (DX = 0001h, AX = 0000h) ge\xE7ti\u011Fini g\xF6rece\u011Fiz.",
+            "taskPrompt": "S\u0131ras\u0131yla SHL AX, 1 ve RCL DX, 1 komutlar\u0131n\u0131 \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 3: 32-bit DX:AX \xE7iftini 1 bit sola kayd\u0131r\u0131n\nORG 100h\nMOV DX, 0000h\nMOV AX, 8000h\n\n; SHL AX, 1 ve RCL DX, 1 yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV DX, 0000h\nMOV AX, 8000h\nSHL AX, 1\nRCL DX, 1\nHLT\n",
+            "hints": [
+              "SHL AX, 1 ard\u0131ndan RCL DX, 1 yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "dx": 1,
+                "ax": 0
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {
@@ -20517,7 +21774,61 @@ atla_uzak_degil:
           }
         },
         "examTip": "\u0130\u015Faretli say\u0131larda JL (Less) ve JG (Greater); i\u015Faretsiz say\u0131larda JB (Below) ve JA (Above) kullan\u0131l\u0131r."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-6-1-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "Ko\u015Fullu S\u0131\xE7rama Temeli: CMP Sonras\u0131 JE (E\u015Fitse S\u0131\xE7ra) ve JNE (E\u015Fit De\u011Filse S\u0131\xE7ra)",
+          "titleEn": "Step 1: Conditional Jump Basics: CMP Followed by JE / JNE",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Assembly'de <code>if (AX == BX)</code> yazman\u0131n yolu iki ad\u0131md\u0131r:</p>\n        <ol>\n          <li>\xD6nce iki say\u0131y\u0131 kar\u015F\u0131la\u015Ft\u0131r: <code>CMP AX, BX</code></li>\n          <li>E\u015Fitse s\u0131\xE7ra: <code>JE etiket</code> (Jump if Equal \u2014 <code>ZF = 1</code> ise s\u0131\xE7rar) veya e\u015Fit de\u011Filse s\u0131\xE7ra: <code>JNE etiket</code>.</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> First compare with <code>CMP AX, BX</code>, then branch with <code>JE label</code> (Jump if Equal, when <code>ZF = 1</code>) or <code>JNE label</code> (Jump if Not Equal).</p>\n      ",
+          "task": {
+            "id": "ms-task-6-1-1",
+            "title": "CMP ve JE ile E\u015Fitlik Kontrol\xFC",
+            "difficulty": "Kolay",
+            "scenario": "AX = 42h ve BX = 42h de\u011Ferlerini CMP AX, BX ile kar\u015F\u0131la\u015Ft\u0131r\u0131p JE esit_etiket komutuyla s\u0131\xE7rayarak DX = 1 yapaca\u011F\u0131z.",
+            "taskPrompt": "CMP AX, BX ve ard\u0131ndan JE esit_etiket komutlar\u0131n\u0131 yaz\u0131n.",
+            "starterCode": "; Ad\u0131m 1: AX ve BX e\u015Fitse esit_etiket sat\u0131r\u0131na s\u0131\xE7ray\u0131n\nORG 100h\nMOV AX, 42h\nMOV BX, 42h\nMOV DX, 0\n\n; CMP AX, BX ve JE esit_etiket yaz\u0131n:\n\n\nHLT\nesit_etiket:\nMOV DX, 1\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 42h\nMOV BX, 42h\nMOV DX, 0\nCMP AX, BX\nJE esit_etiket\nHLT\nesit_etiket:\nMOV DX, 1\nHLT\n",
+            "hints": [
+              "CMP AX, BX ard\u0131ndan JE esit_etiket yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "dx": 1
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-6-1-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "\u0130\u015Faretsiz (JA / JB) vs \u0130\u015Faretli (JG / JL) S\u0131\xE7rama Fark\u0131",
+          "titleEn": "Step 2: Unsigned (JA / JB) vs Signed (JG / JL) Conditional Jumps",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> S\u0131navlar\u0131n en klasik sorusu:</p>\n        <ul>\n          <li><strong>\u0130\u015Faretsiz (Unsigned 0..65535) say\u0131larda:</strong> B\xFCy\xFCkse <code>JA (Above)</code>, K\xFC\xE7\xFCkse <code>JB (Below)</code> kullan\u0131l\u0131r.</li>\n          <li><strong>\u0130\u015Faretli (Signed +/-) say\u0131larda:</strong> B\xFCy\xFCkse <code>JG (Greater)</code>, K\xFC\xE7\xFCkse <code>JL (Less)</code> kullan\u0131l\u0131r.</li>\n          <li>\xD6rne\u011Fin <code>0FFh</code> say\u0131s\u0131 i\u015Faretsiz bak\u0131ld\u0131\u011F\u0131nda <code>255</code>'tir (<code>01h</code>'den b\xFCy\xFCkt\xFCr &rarr; <code>JA</code> s\u0131\xE7rar), ama i\u015Faretli bak\u0131ld\u0131\u011F\u0131nda <code>-1</code>'dir (<code>01h</code>'den k\xFC\xE7\xFCkt\xFCr &rarr; <code>JL</code> s\u0131\xE7rar)!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Use <code>JA / JB</code> (Above / Below) for unsigned numbers, and <code>JG / JL</code> (Greater / Less) for signed two's-complement numbers.</p>\n      ",
+          "task": {
+            "id": "ms-task-6-1-2",
+            "title": "JA (Jump if Above) ile \u0130\u015Faretsiz B\xFCy\xFCk Say\u0131y\u0131 Se\xE7me",
+            "difficulty": "Kolay",
+            "scenario": "AL = 0FFh (i\u015Faretsiz 255) ve BL = 01h de\u011Ferlerini CMP AL, BL ile kar\u015F\u0131la\u015Ft\u0131r\u0131p JA daha_buyuk ile s\u0131\xE7rayarak CL = 0FFh yapaca\u011F\u0131z.",
+            "taskPrompt": "CMP AL, BL ve JA daha_buyuk komutlar\u0131n\u0131 yazarak i\u015Faretsiz kar\u015F\u0131la\u015Ft\u0131rmay\u0131 tamamlay\u0131n.",
+            "starterCode": "; Ad\u0131m 2: \u0130\u015Faretsiz AL (0FFh) > BL (01h) ise daha_buyuk etiketine s\u0131\xE7ray\u0131n\nORG 100h\nMOV AL, 0FFh\nMOV BL, 01h\nMOV CL, 0\n\n; CMP AL, BL ve JA daha_buyuk yaz\u0131n:\n\n\nHLT\ndaha_buyuk:\nMOV CL, AL\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 0FFh\nMOV BL, 01h\nMOV CL, 0\nCMP AL, BL\nJA daha_buyuk\nHLT\ndaha_buyuk:\nMOV CL, AL\nHLT\n",
+            "hints": [
+              "CMP AL, BL ard\u0131ndan JA daha_buyuk yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "cl": 255
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-6-2-loops-and-classroom-case-studies",
@@ -20987,7 +22298,64 @@ L1:
           }
         },
         "examTip": "LOOP komutunun CX yazmac\u0131n\u0131 s\u0131f\u0131rlayarak \xE7\u0131kt\u0131\u011F\u0131n\u0131 unutmay\u0131n; d\xF6ng\xFC bitti\u011Finde CX daima 0 olur."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-6-2-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "LOOP Komutu Nas\u0131l \xC7al\u0131\u015F\u0131r? (CX Sayac\u0131n\u0131 Otomatik 1 Azalt\u0131r ve CX != 0 \u0130se S\u0131\xE7rar)",
+          "titleEn": "Step 1: How LOOP Works: Decrements CX and Branches While CX != 0",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bir i\u015Flemi <code>N</code> kez tekrarlamak i\xE7in tekrar say\u0131s\u0131n\u0131 <strong><code>CX</code></strong> yazmac\u0131na koyar\u0131z. <code>LOOP etiket</code> komutu tek ba\u015F\u0131na \u015Fu iki i\u015Fi yapar:</p>\n        <ol>\n          <li><code>CX = CX - 1</code> (Sayac\u0131 1 azalt\u0131r)</li>\n          <li>E\u011Fer <code>CX != 0</code> ise <code>etiket:</code> sat\u0131r\u0131na geri s\u0131\xE7rar; <code>CX == 0</code> olduysa d\xF6ng\xFCden \xE7\u0131kar!</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Load the iteration count into <code>CX</code>. Each execution of <code>LOOP label</code> decrements <code>CX</code> by 1 and jumps to <code>label</code> if <code>CX != 0</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-6-2-1",
+            "title": "LOOP ile 4 Kez D\xF6ng\xFC \xC7al\u0131\u015Ft\u0131rma",
+            "difficulty": "Kolay",
+            "scenario": "CX = 4 kurup dongu: etiketi alt\u0131nda her ad\u0131mda AX de\u011Ferini 10 art\u0131rarak (ADD AX, 10) d\xF6ng\xFC sonunda AX = 40 elde edece\u011Fiz.",
+            "taskPrompt": "dongu: etiketi alt\u0131na ADD AX, 10 ve LOOP dongu komutlar\u0131n\u0131 yaz\u0131n.",
+            "starterCode": "; Ad\u0131m 1: 4 kez ADD AX, 10 yapan LOOP d\xF6ng\xFCs\xFC\nORG 100h\nMOV AX, 0\nMOV CX, 4\ndongu:\n; AX'e 10 ekleyin ve LOOP dongu yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0\nMOV CX, 4\ndongu:\nADD AX, 10\nLOOP dongu\nHLT\n",
+            "hints": [
+              "ADD AX, 10 ve alt\u0131na LOOP dongu yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 40,
+                "cx": 0
+              },
+              "maxSteps": 50
+            }
+          }
+        },
+        {
+          "id": "ms-6-2-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "\u0130\xE7 \u0130\xE7e D\xF6ng\xFClerde (Nested Loops) Y\u0131\u011F\u0131n Kullan\u0131m\u0131: PUSH CX ve POP CX",
+          "titleEn": "Step 2: Nested Loops and the Stack: Saving Outer CX with PUSH CX / POP CX",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Hocan\u0131n Week 6 slaytlar\u0131ndaki \xE7ok \xF6nemli kural: Hem d\u0131\u015F d\xF6ng\xFC hem de i\xE7 d\xF6ng\xFC ayn\u0131 <code>CX</code> yazmac\u0131n\u0131 kullan\u0131r! \u0130\xE7 d\xF6ng\xFC <code>CX</code>'i s\u0131f\u0131rlad\u0131\u011F\u0131 i\xE7in d\u0131\u015F d\xF6ng\xFC bozulmas\u0131n diye:</p>\n        <ol>\n          <li>D\u0131\u015F d\xF6ng\xFCn\xFCn ba\u015F\u0131nda d\u0131\u015F sayac\u0131 y\u0131\u011F\u0131na kaydet: <strong><code>PUSH CX</code></strong></li>\n          <li>\u0130\xE7 d\xF6ng\xFC i\xE7in yeni <code>CX</code> kur ve i\xE7 <code>LOOP</code>'u \xE7al\u0131\u015Ft\u0131r.</li>\n          <li>D\u0131\u015F d\xF6ng\xFCn\xFCn <code>LOOP</code> sat\u0131r\u0131ndan hemen \xF6nce d\u0131\u015F sayac\u0131 y\u0131\u011F\u0131ndan geri \xE7ek: <strong><code>POP CX</code></strong>!</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Because both outer and inner <code>LOOP</code> instructions share <code>CX</code>, a nested loop must <code>PUSH CX</code> before loading the inner count, and <code>POP CX</code> right before the outer <code>LOOP</code> instruction!</p>\n      ",
+          "task": {
+            "id": "ms-task-6-2-2",
+            "title": "PUSH CX ve POP CX ile \u0130\xE7 \u0130\xE7e D\xF6ng\xFC (2 \xD7 3 = 6 Tekrar)",
+            "difficulty": "Orta",
+            "scenario": "D\u0131\u015F d\xF6ng\xFC 2 kez, i\xE7 d\xF6ng\xFC 3 kez d\xF6necek. D\u0131\u015F sayac\u0131 PUSH CX ve POP CX ile y\u0131\u011F\u0131nda koruyarak INC AX komutunun toplam 2 \xD7 3 = 6 kez \xE7al\u0131\u015Fmas\u0131n\u0131 sa\u011Flayaca\u011F\u0131z.",
+            "taskPrompt": "1. bo\u015Flu\u011Fa PUSH CX, 2. bo\u015Flu\u011Fa POP CX yazarak i\xE7 i\xE7e d\xF6ng\xFCn\xFCn do\u011Fru \xE7al\u0131\u015Fmas\u0131n\u0131 sa\u011Flay\u0131n.",
+            "starterCode": "; Ad\u0131m 2: PUSH CX ve POP CX ile \u0130\xE7 \u0130\xE7e D\xF6ng\xFC (2 x 3 = 6)\nORG 100h\nMOV SP, 0200h\nMOV AX, 0\nMOV CX, 2          ; D\u0131\u015F d\xF6ng\xFC sayac\u0131 = 2\ndis_dongu:\n; 1. D\u0131\u015F d\xF6ng\xFC sayac\u0131n\u0131 (CX) y\u0131\u011F\u0131na kaydedin:\n\nMOV CX, 3          ; \u0130\xE7 d\xF6ng\xFC sayac\u0131 = 3\nic_dongu:\nINC AX\nLOOP ic_dongu\n\n; 2. D\u0131\u015F d\xF6ng\xFC sayac\u0131n\u0131 (CX) y\u0131\u011F\u0131ndan geri \xE7ekin:\n\nLOOP dis_dongu\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 0\nMOV CX, 2\ndis_dongu:\nPUSH CX\nMOV CX, 3\nic_dongu:\nINC AX\nLOOP ic_dongu\nPOP CX\nLOOP dis_dongu\nHLT\n",
+            "hints": [
+              "\u0130lk bo\u015Flu\u011Fa PUSH CX, ikinci bo\u015Flu\u011Fa POP CX yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 6,
+                "cx": 0,
+                "sp": 512
+              },
+              "maxSteps": 100
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-6-3-procedures-and-interrupts",
@@ -21550,7 +22918,65 @@ RET  n          ; Clean arguments and return</code></pre>
           }
         },
         "examTip": "Alt yordam yazarken RET komutunu unutursan\u0131z i\u015Flemci bellekteki rastgele baytlar\u0131 komut gibi y\xFCr\xFCtmeye devam eder."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-6-3-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "CALL ve RET Y\u0131\u011F\u0131nla (Stack) Nas\u0131l \xC7al\u0131\u015F\u0131r? (D\xF6n\xFC\u015F Adresini PUSH ve POP Etmek)",
+          "titleEn": "Step 1: How CALL and RET Use the Stack (Pushing and Popping Return IP)",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Alt yordam (fonksiyon / prosed\xFCr) \xE7a\u011F\u0131rmak i\xE7in <code>CALL yordam</code>, alt yordamdan geri d\xF6nmek i\xE7in <code>RET</code> kullan\u0131l\u0131r. Peki i\u015Flemci nereye geri d\xF6nece\u011Fini nereden bilir? <strong>Y\u0131\u011F\u0131n (Stack) sayesinde!</strong></p>\n        <ul>\n          <li><code>CALL yordam</code> &rarr; Bir sonraki sat\u0131r\u0131n adresini (<code>IP</code>) otomatik olarak y\u0131\u011F\u0131na <strong><code>PUSH</code></strong> eder ve alt yordama s\u0131\xE7rar.</li>\n          <li><code>RET</code> &rarr; Y\u0131\u011F\u0131n\u0131n tepesindeki d\xF6n\xFC\u015F adresini otomatik olarak <strong><code>POP</code></strong> edip <code>IP</code>'ye yazar ve kald\u0131\u011F\u0131 sat\u0131ra geri d\xF6ner!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>CALL proc</code> automatically pushes the return <code>IP</code> onto the stack and jumps to <code>proc</code>. <code>RET</code> pops the return <code>IP</code> from the stack to resume execution right after the <code>CALL</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-6-3-1",
+            "title": "CALL ve RET ile Alt Yordam \xC7a\u011F\u0131rma ve D\xF6nme",
+            "difficulty": "Kolay",
+            "scenario": "AX = 10h y\xFCkl\xFC iken CALL on_ekle ile alt yordam\u0131 \xE7a\u011F\u0131raca\u011F\u0131z; alt yordam ADD AX, 10h yap\u0131p RET ile geri d\xF6necek.",
+            "taskPrompt": "Ana programda CALL on_ekle, alt yordam sonunda ise RET komutunu yaz\u0131n.",
+            "starterCode": "; Ad\u0131m 1: CALL ve RET kullan\u0131m\u0131\nORG 100h\nMOV SP, 0200h\nMOV AX, 10h\n\n; 1. on_ekle alt yordam\u0131n\u0131 \xE7a\u011F\u0131r\u0131n:\n\nMOV BX, AX\nHLT\n\non_ekle:\nADD AX, 10h\n; 2. \xC7a\u011Fr\u0131ld\u0131\u011F\u0131 yere geri d\xF6n\xFCn:\n\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 10h\nCALL on_ekle\nMOV BX, AX\nHLT\non_ekle:\nADD AX, 10h\nRET\n",
+            "hints": [
+              "\u0130lk bo\u015Flu\u011Fa CALL on_ekle, ikinci bo\u015Flu\u011Fa RET yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 32,
+                "bx": 32,
+                "sp": 512
+              },
+              "maxSteps": 40
+            }
+          }
+        },
+        {
+          "id": "ms-6-3-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "Alt Yordam \u0130\xE7inde PUSH ve POP Dengesi: Neden RET'ten \xD6nce POP Yap\u0131lmal\u0131d\u0131r?",
+          "titleEn": "Step 2: Stack Balance Inside a Procedure: Why Every PUSH Must Be POPped Before RET",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bir alt yordam\u0131n i\xE7inde <code>PUSH BX</code> yaparak <code>BX</code>'i y\u0131\u011F\u0131na koydu\u011Funuzu d\xFC\u015F\xFCn\xFCn. Y\u0131\u011F\u0131n\u0131n en tepesinde art\u0131k d\xF6n\xFC\u015F adresi de\u011Fil, <code>BX</code>'in de\u011Feri duruyor! E\u011Fer <code>RET</code>'ten \xF6nce <strong><code>POP BX</code> yapmay\u0131 unutursan\u0131z</strong>, <code>RET</code> komutu d\xF6n\xFC\u015F adresi sanarak <code>BX</code>'in de\u011Ferini <code>IP</code>'ye \xE7eker ve program \xE7\xF6ker!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Any register pushed inside a procedure must be popped before <code>RET</code>! Otherwise, <code>RET</code> will pop the saved register value instead of the return <code>IP</code> address.</p>\n      ",
+          "task": {
+            "id": "ms-task-6-3-2",
+            "title": "Prosed\xFCr \u0130\xE7inde BX Yazmac\u0131n\u0131 PUSH ve POP ile Koruma",
+            "difficulty": "Orta",
+            "scenario": "Ana programda BX = 5555h de\u011Ferinin bozulmamas\u0131 gerekiyor. hesapla alt yordam\u0131 ba\u015F\u0131nda PUSH BX, sonunda ise RET'ten hemen \xF6nce POP BX yazaca\u011F\u0131z.",
+            "taskPrompt": "hesapla: alt yordam\u0131n\u0131n ba\u015F\u0131na PUSH BX, RET sat\u0131r\u0131ndan hemen \xF6ncesine ise POP BX ekleyin.",
+            "starterCode": "; Ad\u0131m 2: Alt yordam i\xE7inde PUSH BX ve POP BX dengesi\nORG 100h\nMOV SP, 0200h\nMOV AX, 10h\nMOV BX, 5555h\nCALL hesapla\nHLT\n\nhesapla:\n; 1. BX yazmac\u0131n\u0131 y\u0131\u011F\u0131nda koruyun:\n\nMOV BX, 20h\nADD AX, BX\n; 2. RET \xF6ncesinde BX yazmac\u0131n\u0131 y\u0131\u011F\u0131ndan geri y\xFCkleyin:\n\nRET\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 10h\nMOV BX, 5555h\nCALL hesapla\nHLT\nhesapla:\nPUSH BX\nMOV BX, 20h\nADD AX, BX\nPOP BX\nRET\n",
+            "hints": [
+              "\u0130lk bo\u015Flu\u011Fa PUSH BX, ikinci bo\u015Flu\u011Fa POP BX yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 48,
+                "bx": 21845,
+                "sp": 512
+              },
+              "maxSteps": 50
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {
@@ -22226,7 +23652,65 @@ _start:
           }
         },
         "examTip": "OUT komutunda hedef port ilk i\u015Flenen, kaynak yazma\xE7 ise ikinci i\u015Flenendir (OUT Port, AL)."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-7-1-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "Sabit Port (00h\u2013FFh) vs De\u011Fi\u015Fken Port (DX = 0000h\u2013FFFFh) ile OUT ve IN",
+          "titleEn": "Step 1: Fixed Port (00h\u2013FFh) vs Variable Port (DX = 0000h\u2013FFFFh) IN and OUT",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> \u0130\u015Flemci d\u0131\u015F cihazlarla (klavye, ekran, seri port) <strong>Port Numaralar\u0131</strong> \xFCzerinden konu\u015Fur:</p>\n        <ul>\n          <li>Port numaras\u0131 <code>00h\u2013FFh</code> (8-bit) aras\u0131ndaysa do\u011Frudan yaz\u0131labilir: <code>OUT 60h, AL</code> veya <code>IN AL, 60h</code>.</li>\n          <li>Port numaras\u0131 <code>0FFh</code>'den b\xFCy\xFCkse (16-bit, \xF6rn. <code>03F8h</code>), port adresi <strong>zorunlu olarak <code>DX</code> yazmac\u0131na</strong> konur: <code>MOV DX, 03F8h</code> ard\u0131ndan <code>OUT DX, AL</code>!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Ports <code>00h\u2013FFh</code> can use fixed-port <code>OUT p8, AL</code>. Any port above <code>FFh</code> (up to <code>FFFFh</code>) must place the port address in <code>DX</code> first and use <code>OUT DX, AL</code> / <code>IN AL, DX</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-7-1-1",
+            "title": "DX \xDCzerinden 16-Bitlik Porta (03F8h) Veri G\xF6nderme (OUT DX, AL)",
+            "difficulty": "Kolay",
+            "scenario": "03F8h numaral\u0131 seri porta 42h ('B') bayt\u0131n\u0131 g\xF6ndermek i\xE7in port adresini DX'e, veriyi AL'ye y\xFCkleyip OUT DX, AL \xE7al\u0131\u015Ft\u0131raca\u011F\u0131z.",
+            "taskPrompt": "DX yazmac\u0131na 03F8h, AL yazmac\u0131na 42h y\xFCkleyin ve OUT DX, AL komutunu \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 1: 03F8h portuna 42h g\xF6nderin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV DX, 03F8h\nMOV AL, 42h\nOUT DX, AL\nHLT\n",
+            "hints": [
+              "MOV DX, 03F8h / MOV AL, 42h / OUT DX, AL yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "dx": 1016,
+                "al": 66
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-7-1-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "Programl\u0131 G/\xC7 (Polling): TEST ve JZ ile Cihaz\u0131n Haz\u0131r (Ready) Bitini Beklemek",
+          "titleEn": "Step 2: Programmed I/O (Polling): Checking the Ready Bit with TEST and JZ",
+          "explanationHtml": `
+        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Programl\u0131 G/\xC7'de (Polling) i\u015Flemci cihaz\u0131n durum yazmac\u0131n\u0131 okur ve <code>TEST AL, 80h</code> komutuyla "Haz\u0131r (Ready) biti <code>1</code> oldu mu?" diye kontrol eder. E\u011Fer bit <code>0</code> ise (<code>ZF = 1</code>) cihaz hen\xFCz me\u015Fguld\xFCr; <code>1</code> oldu\u011Funda (<code>ZF = 0</code>) veri aktar\u0131l\u0131r.</p>
+      `,
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In Programmed I/O (Polling), the CPU tests the device status register bit (e.g., <code>TEST AL, 80h</code>) and branches when the Ready bit is set (<code>JNZ ready</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-7-1-2",
+            "title": "TEST AL, 80h ve JNZ ile Cihaz Haz\u0131r Kontrol\xFC",
+            "difficulty": "Kolay",
+            "scenario": "Cihaz durum bayt\u0131 AL = 80h (7. bit = 1, yani Cihaz Haz\u0131r) olarak geldi\u011Finde TEST AL, 80h ve JNZ cihaz_hazir ile s\u0131\xE7ray\u0131p BL = 1 yapaca\u011F\u0131z.",
+            "taskPrompt": "TEST AL, 80h ve JNZ cihaz_hazir komutlar\u0131n\u0131 yaz\u0131n.",
+            "starterCode": "; Ad\u0131m 2: Durum bayt\u0131nda 7. bit (80h) 1 ise cihaz_hazir etiketine s\u0131\xE7ray\u0131n\nORG 100h\nMOV AL, 80h\nMOV BL, 0\n\n; TEST AL, 80h ve JNZ cihaz_hazir yaz\u0131n:\n\n\nHLT\ncihaz_hazir:\nMOV BL, 1\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 80h\nMOV BL, 0\nTEST AL, 80h\nJNZ cihaz_hazir\nHLT\ncihaz_hazir:\nMOV BL, 1\nHLT\n",
+            "hints": [
+              "TEST AL, 80h ard\u0131ndan JNZ cihaz_hazir yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 128,
+                "bl": 1
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-7-2-interrupt-driven-io-8259a-and-8255a",
@@ -22626,7 +24110,64 @@ msg DB 'AssemblySim!$', 0</code></pre>
           }
         },
         "examTip": "8255 kontrol kelimesinde giri\u015F i\xE7in daima 1, \xE7\u0131k\u0131\u015F i\xE7in daima 0 yaz\u0131l\u0131r."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-7-2-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "Kesme G\xFCd\xFCml\xFC G/\xC7'de Y\u0131\u011F\u0131nla (PUSH / POP) Ba\u011Flam Saklama (Context Saving)",
+          "titleEn": "Step 1: Saving Context on the Stack (PUSH / POP) in an Interrupt Service Routine",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Donan\u0131m kesmesi (Interrupt) geldi\u011Finde i\u015Flemci ana program\u0131 yar\u0131da kesip ISR'a (Kesme Servis Rutinine) atlar. ISR'\u0131n ana programdaki <code>AX</code> ve <code>DX</code> yazma\xE7lar\u0131n\u0131 bozmamas\u0131 i\xE7in giri\u015Fte <strong><code>PUSH AX / PUSH DX</code></strong>, \xE7\u0131k\u0131\u015Fta ise <strong>ters s\u0131rayla <code>POP DX / POP AX</code></strong> yap\u0131l\u0131r!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> An Interrupt Service Routine (ISR) must save every register it modifies using <code>PUSH</code> on entry, and restore them in reverse LIFO order using <code>POP</code> before returning.</p>\n      ",
+          "task": {
+            "id": "ms-task-7-2-1",
+            "title": "ISR \u0130\xE7inde AX ve DX Yazma\xE7lar\u0131n\u0131 Y\u0131\u011F\u0131nda (PUSH/POP) Koruma",
+            "difficulty": "Kolay",
+            "scenario": "AX = 1234h ve DX = 5678h de\u011Ferlerini PUSH AX, PUSH DX ile y\u0131\u011F\u0131na kaydedece\u011Fiz; G/\xC7 i\u015Flemi s\u0131ras\u0131nda AX ve DX de\u011Fi\u015Fse bile sonunda POP DX, POP AX ile ikisini de kurtaraca\u011F\u0131z.",
+            "taskPrompt": "1. bo\u015Flu\u011Fa PUSH AX ve PUSH DX; 2. bo\u015Flu\u011Fa ise LIFO s\u0131ras\u0131yla POP DX ve POP AX yaz\u0131n.",
+            "starterCode": "; Ad\u0131m 1: Kesme rutininde AX ve DX yazma\xE7lar\u0131n\u0131 y\u0131\u011F\u0131nda koruyun\nORG 100h\nMOV SP, 0200h\nMOV AX, 1234h\nMOV DX, 5678h\n\n; 1. AX ve DX yazma\xE7lar\u0131n\u0131 y\u0131\u011F\u0131na PUSH edin:\n\n\n; G/\xC7 i\u015Flemi yazma\xE7lar\u0131 de\u011Fi\u015Ftiriyor:\nMOV DX, 03F8h\nMOV AL, 00h\n\n; 2. DX ve AX yazma\xE7lar\u0131n\u0131 ters s\u0131rayla (LIFO) POP edin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1234h\nMOV DX, 5678h\nPUSH AX\nPUSH DX\nMOV DX, 03F8h\nMOV AL, 00h\nPOP DX\nPOP AX\nHLT\n",
+            "hints": [
+              "\u0130lk bo\u015Flu\u011Fa PUSH AX ve PUSH DX yaz\u0131n.",
+              "\u0130kinci bo\u015Flu\u011Fa ters s\u0131rayla POP DX ve POP AX yaz\u0131n!"
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4660,
+                "dx": 22136,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-7-2-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "Intel 82C55A PPI Kontrol Kelimesi ve BSR (Bit Set/Reset) Modu",
+          "titleEn": "Step 2: Intel 82C55A PPI Control Word and BSR Mode",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> 82C55A PPI yongas\u0131nda Kontrol Yazmac\u0131na g\xF6nderilen bayt\u0131n en sol biti (<code>D7</code>) modu se\xE7er:</p>\n        <ul>\n          <li><code>D7 = 1</code> &rarr; <strong>I/O Modu</strong> (\xD6rn. <code>10000010b = 82h</code>: Port A \xC7\u0131k\u0131\u015F, Port B Giri\u015F).</li>\n          <li><code>D7 = 0</code> &rarr; <strong>BSR (Bit Set/Reset) Modu</strong>: Port C'nin tek bir pinini <code>1</code> veya <code>0</code> yapar (\xD6rn. <code>00000111b = 07h</code>: <code>PC3</code> pinini <code>1</code> yapar).</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In the 82C55A Control Word, bit <code>D7 = 1</code> selects the I/O Mode configuration, while <code>D7 = 0</code> selects Bit Set/Reset (BSR) mode for individual Port C pins.</p>\n      ",
+          "task": {
+            "id": "ms-task-7-2-2",
+            "title": "82C55A Kontrol Portuna BSR Komutu (07h) G\xF6nderme",
+            "difficulty": "Kolay",
+            "scenario": "Port C'nin PC3 pinini 1 yapmak i\xE7in BSR kontrol kelimesi olan 07h (00000111b) de\u011Ferini AL yazmac\u0131na y\xFCkleyip 63h kontrol portuna OUT 63h, AL ile g\xF6nderece\u011Fiz.",
+            "taskPrompt": "AL yazmac\u0131na 07h y\xFCkleyin ve OUT 63h, AL komutunu \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 2: 82C55A kontrol portuna (63h) 07h BSR kelimesini g\xF6nderin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 07h\nOUT 63h, AL\nHLT\n",
+            "hints": [
+              "MOV AL, 07h ard\u0131ndan OUT 63h, AL yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 7
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-7-3-direct-memory-access-dma-and-cycle-stealing",
@@ -22974,7 +24515,77 @@ ORG 100h
           ]
         },
         "examTip": "REP MOVSB komutu DMA tarz\u0131 en h\u0131zl\u0131 bellek kopyalama assembly primitifidir."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-7-3-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "DMA (Do\u011Frudan Bellek Eri\u015Fimi) Mant\u0131\u011F\u0131: Adres (MAR) ve Saya\xE7 (Count) Kurulumu",
+          "titleEn": "Step 1: DMA Fundamentals: Initializing Memory Address and Count Registers",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Programl\u0131 ve Kesme G\xFCd\xFCml\xFC G/\xC7'de her bayt i\u015Flemcinin (<code>AL</code> yazmac\u0131n\u0131n) i\xE7inden ge\xE7er. <strong>DMA (Direct Memory Access - 8237A)</strong> ise i\u015Flemciden izin isteyip (<code>HOLD &rarr; HLDA</code>) veriyolunu devral\u0131r ve <strong>veriyi do\u011Frudan G/\xC7 ile Bellek aras\u0131nda y\xFCksek h\u0131zla aktar\u0131r</strong>! \u0130\u015Flemci DMA'y\u0131 ba\u015Flat\u0131rken sadece 3 bilgi verir: <em>Ba\u015Flang\u0131\xE7 Adresi, Bayt Say\u0131s\u0131 (Count) ve Y\xF6n</em>.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In <strong>DMA</strong>, the CPU initializes the DMA controller with the starting memory address and byte count, then grants bus control via <code>HOLD / HLDA</code> so the DMAC transfers the block directly.</p>\n      ",
+          "task": {
+            "id": "ms-task-7-3-1",
+            "title": "DMA Kanal\u0131n\u0131n Ba\u015Flang\u0131\xE7 Adresini (SI) ve Transfer Sayac\u0131n\u0131 (CX) Haz\u0131rlama",
+            "difficulty": "Kolay",
+            "scenario": "Bir DMA blok transferi \xF6ncesinde kaynak bellek adresini SI = 0200h, hedef bellek adresini DI = 0220h ve transfer edilecek kelime say\u0131s\u0131n\u0131 CX = 64 (0040h) olarak kuraca\u011F\u0131z.",
+            "taskPrompt": "SI = 0200h, DI = 0220h ve CX = 0040h de\u011Ferlerini y\xFCkleyin.",
+            "starterCode": "; Ad\u0131m 1: DMA transfer parametrelerini (SI, DI, CX) kurun\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SI, 0200h\nMOV DI, 0220h\nMOV CX, 0040h\nHLT\n",
+            "hints": [
+              "MOV SI, 0200h / MOV DI, 0220h / MOV CX, 0040h yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "si": 512,
+                "di": 544,
+                "cx": 64
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-7-3-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "16-Bit Y\xFCksek H\u0131zl\u0131 Blok Bellek Aktar\u0131m\u0131 (CLD ve REP MOVSW)",
+          "titleEn": "Step 2: High-Speed 16-Bit Block Memory Transfer (CLD and REP MOVSW)",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> <code>REP MOVSW</code> komutu her ad\u0131mda 1 bayt yerine <strong>16-bit (2 baytl\u0131k kelime)</strong> kopyalar ve <code>SI</code> ile <code>DI</code>'y\u0131 iki\u015Fer art\u0131r\u0131r. B\xF6ylece bellek tamponu 2 kat h\u0131zl\u0131 ta\u015F\u0131n\u0131r!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>REP MOVSW</code> copies <code>CX</code> 16-bit words from <code>[DS:SI]</code> to <code>[ES:DI]</code>, advancing <code>SI</code> and <code>DI</code> by 2 after each word.</p>\n      ",
+          "task": {
+            "id": "ms-task-7-3-2",
+            "title": "REP MOVSW ile 2 Kelimelik (4 Bayt) Tampon Transferi",
+            "difficulty": "Kolay",
+            "scenario": "[0200h] adresindeki 2 adet 16-bit kelimeyi (1122h ve 3344h) CLD, SI=0200h, DI=0210h, CX=2 ve REP MOVSW ile [0210h] adresine aktaraca\u011F\u0131z.",
+            "taskPrompt": "CLD, MOV SI, 0200h, MOV DI, 0210h, MOV CX, 2 ve REP MOVSW komutlar\u0131n\u0131 \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Ad\u0131m 2: REP MOVSW ile 2 kelimelik blok transferi\nORG 100h\nMOV WORD PTR [0200h], 1122h\nMOV WORD PTR [0202h], 3344h\n\n; CLD, SI=0200h, DI=0210h, CX=2 ve REP MOVSW yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV WORD PTR [0200h], 1122h\nMOV WORD PTR [0202h], 3344h\nCLD\nMOV SI, 0200h\nMOV DI, 0210h\nMOV CX, 2\nREP MOVSW\nHLT\n",
+            "hints": [
+              "CLD / MOV SI, 0200h / MOV DI, 0210h / MOV CX, 2 / REP MOVSW yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "cx": 0,
+                "si": 516,
+                "di": 532
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 528,
+                  "expectedBytes": [
+                    34,
+                    17,
+                    68,
+                    51
+                  ]
+                }
+              ],
+              "maxSteps": 40
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {
@@ -24561,7 +26172,391 @@ HLT</code></pre>
           "maxSteps": 50
         },
         "examTip": "LIFO kural\u0131 gere\u011Fince y\u0131\u011F\u0131na at\u0131lan s\u0131ra A, B, C ise y\u0131\u011F\u0131ndan \xE7ekilen s\u0131ra C, B, A olur."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "step-10-1-1",
+          "stepNumber": "Ad\u0131m 1",
+          "title": "S\u0131f\u0131rdan Y\u0131\u011F\u0131n (Stack) Nedir ve \u0130lk PUSH Komutumuz Nas\u0131l \xC7al\u0131\u015F\u0131r?",
+          "titleEn": "Stack Step 1: What is the Stack from Zero and How Does PUSH Work?",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Y\u0131\u011F\u0131n (Stack), \xFCst \xFCste dizilen tabaklar gibi \xE7al\u0131\u015Fan \xF6zel bir bellek b\xF6lgesidir. Bir yazma\xE7taki 16-bitlik say\u0131y\u0131 ge\xE7ici olarak y\u0131\u011F\u0131n\u0131n en \xFCst\xFCne koymak i\xE7in <code>PUSH yazma\xE716</code> komutu kullan\u0131l\u0131r.</p>\n        <ul>\n          <li>\xD6rne\u011Fin <code>PUSH AX</code> yazd\u0131\u011F\u0131n\u0131zda, <code>AX</code> i\xE7indeki 16-bitlik de\u011Fer y\u0131\u011F\u0131n\u0131n tepesine kopyalan\u0131r (<code>AX</code>'in kendi i\xE7indeki de\u011Fer bozulmaz).</li>\n          <li><strong>Alt\u0131n Kural #1:</strong> Y\u0131\u011F\u0131na sadece <strong>16-bitlik (2 baytl\u0131k)</strong> tam yazma\xE7lar (<code>AX, BX, CX, DX, SI, DI, BP</code> veya segment yazma\xE7lar\u0131) konulabilir. 8-bitlik <code>PUSH AL</code> veya <code>PUSH BL</code> yazmak <strong>YASAKTIR!</strong></li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The <strong>Stack</strong> is a temporary memory area that works like a stack of plates. <code>PUSH reg16</code> places a copy of a 16-bit register on top of the stack. Only 16-bit words can be pushed (<code>PUSH AL</code> is illegal!).</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-1",
+            "title": "\u0130lk PUSH Komutu: AX Yazmac\u0131n\u0131 Y\u0131\u011F\u0131na Koymak",
+            "difficulty": "Kolay",
+            "scenario": "Y\u0131\u011F\u0131n i\u015Faret\xE7imiz SP = 0200h adresinde duruyor. AX yazmac\u0131na 1234h y\xFCkleyip PUSH AX komutuyla y\u0131\u011F\u0131na koyaca\u011F\u0131z.",
+            "taskPrompt": "AX yazmac\u0131na 1234h y\xFCkleyin ve PUSH AX komutu ile y\u0131\u011F\u0131na at\u0131n.",
+            "starterCode": "; Stack Ad\u0131m 1: AX i\xE7ine 1234h y\xFCkleyip PUSH AX yap\u0131n\nORG 100h\nMOV SP, 0200h\n\n; Kodunuzu buraya yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1234h\nPUSH AX\nHLT\n",
+            "hints": [
+              "MOV AX, 1234h yaz\u0131n.",
+              "Hemen alt\u0131na PUSH AX ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4660,
+                "sp": 510
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 510,
+                  "expectedBytes": [
+                    52,
+                    18
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-2",
+          "stepNumber": "Ad\u0131m 2",
+          "title": "SP (Stack Pointer) Nedir? Her PUSH Yap\u0131ld\u0131\u011F\u0131nda SP Neden 2 Azal\u0131r?",
+          "titleEn": "Stack Step 2: What is SP? Why Does Every PUSH Decrease SP by 2?",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Y\u0131\u011F\u0131n\u0131n o anki en \xFCst noktas\u0131n\u0131 (tepesini) takip eden yazmaca <strong><code>SP</code> (Stack Pointer - Y\u0131\u011F\u0131n \u0130\u015Faret\xE7isi)</strong> denir. 8086'da y\u0131\u011F\u0131n belle\u011Fi <strong>y\xFCksek adreslerden d\xFC\u015F\xFCk adreslere do\u011Fru (a\u015Fa\u011F\u0131 y\xF6nde)</strong> b\xFCy\xFCr!</p>\n        <ul>\n          <li>Her <code>PUSH</code> komutu belle\u011Fe <strong>2 bayt (16 bit)</strong> yazd\u0131\u011F\u0131 i\xE7in, i\u015Flemci \xF6nce <code>SP = SP - 2</code> yapar, sonra veriyi yeni <code>[SP]</code> adresine yazar.</li>\n          <li>\xD6rnek: Ba\u015Flang\u0131\xE7ta <code>SP = 0200h</code> olsun:\n            <br>1. <code>PUSH AX</code> &rarr; <code>SP</code> 2 azal\u0131r ve <code>01FEh</code> olur.\n            <br>2. <code>PUSH BX</code> &rarr; <code>SP</code> 2 daha azal\u0131r ve <code>01FCh</code> olur!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <strong><code>SP</code> (Stack Pointer)</strong> points to the current top of the stack. Because the stack grows downward in memory and each word is 2 bytes, every <code>PUSH</code> executes <code>SP = SP - 2</code>.</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-2",
+            "title": "\u0130ki Kez PUSH Yaparak SP'nin 4 Azald\u0131\u011F\u0131n\u0131 (0200h -> 01FCh) G\xF6rmek",
+            "difficulty": "Kolay",
+            "scenario": "SP = 0200h iken AX = 1111h ve BX = 2222h de\u011Ferlerini art arda y\u0131\u011F\u0131na PUSH edece\u011Fiz ve SP de\u011Ferinin 01FCh oldu\u011Funu do\u011Frulayaca\u011F\u0131z.",
+            "taskPrompt": "AX yazmac\u0131na 1111h, BX yazmac\u0131na 2222h y\xFCkleyin. S\u0131ras\u0131yla PUSH AX ve PUSH BX komutlar\u0131n\u0131 \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Stack Ad\u0131m 2: \u0130ki kez PUSH yap\u0131p SP de\u011Fi\u015Fimini g\xF6zlemleyin\nORG 100h\nMOV SP, 0200h\n\n; AX=1111h, BX=2222h y\xFCkleyip PUSH AX ve PUSH BX yap\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1111h\nMOV BX, 2222h\nPUSH AX\nPUSH BX\nHLT\n",
+            "hints": [
+              "MOV AX, 1111h ve MOV BX, 2222h yaz\u0131n.",
+              "PUSH AX ve PUSH BX ekleyin. SP 0200h -> 01FEh -> 01FCh olacakt\u0131r."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4369,
+                "bx": 8738,
+                "sp": 508
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 508,
+                  "expectedBytes": [
+                    34,
+                    34,
+                    17,
+                    17
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-3",
+          "stepNumber": "Ad\u0131m 3",
+          "title": "POP Komutu Nedir? Y\u0131\u011F\u0131n\u0131n Tepesindeki Veriyi Geri \xC7ekmek (SP = SP + 2)",
+          "titleEn": "Stack Step 3: What is POP? Pulling Data Back from the Top of the Stack",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Y\u0131\u011F\u0131n\u0131n en tepesindeki 16-bitlik veriyi al\u0131p bir yazmac\u0131n i\xE7ine koymak i\xE7in <code>POP hedef16</code> komutu kullan\u0131l\u0131r.</p>\n        <ul>\n          <li><code>POP DX</code> \xE7al\u0131\u015Ft\u0131r\u0131ld\u0131\u011F\u0131nda:\n            <br>1. \u0130\u015Flemci o anki <code>[SP]</code> adresinde duran 16-bitlik say\u0131y\u0131 okur ve <code>DX</code> yazmac\u0131na yazar.\n            <br>2. Y\u0131\u011F\u0131ndan 2 bayt eksildi\u011Fi i\xE7in <code>SP = SP + 2</code> yaparak <code>SP</code>'yi eski yerine geri \xE7\u0131kar\u0131r!</li>\n          <li>\xD6nemli: <code>PUSH AX</code> ile koydu\u011Funuz veriyi illa <code>AX</code>'e \xE7ekmek zorunda de\u011Filsiniz; <code>POP DX</code> yazarak <code>DX</code> i\xE7ine de \xE7ekebilirsiniz!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>POP dest16</code> reads the 16-bit word at the current top of the stack (<code>[SP]</code>) into <code>dest16</code>, and then increments <code>SP</code> by 2 (<code>SP = SP + 2</code>).</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-3",
+            "title": "PUSH AX ile Y\u0131\u011F\u0131na Konulan De\u011Feri POP DX ile \xC7ekmek",
+            "difficulty": "Kolay",
+            "scenario": "AX = 5678h de\u011Ferini PUSH AX ile y\u0131\u011F\u0131na koyaca\u011F\u0131z (SP 01FEh olur), ard\u0131ndan POP DX ile y\u0131\u011F\u0131n\u0131n tepesinden DX yazmac\u0131na \xE7ekece\u011Fiz (SP tekrar 0200h olur).",
+            "taskPrompt": "AX yazmac\u0131na 5678h y\xFCkleyin. PUSH AX ile y\u0131\u011F\u0131na at\u0131n, ard\u0131ndan POP DX komutuyla bu de\u011Feri DX yazmac\u0131na \xE7ekin.",
+            "starterCode": "; Stack Ad\u0131m 3: PUSH AX ve POP DX uygulamas\u0131\nORG 100h\nMOV SP, 0200h\n\n; AX = 5678h y\xFCkleyin, PUSH AX yap\u0131n ve POP DX ile DX i\xE7ine \xE7ekin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 5678h\nPUSH AX\nPOP DX\nHLT\n",
+            "hints": [
+              "MOV AX, 5678h",
+              "PUSH AX",
+              "POP DX"
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 22136,
+                "dx": 22136,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-4",
+          "stepNumber": "Ad\u0131m 4",
+          "title": "LIFO (Son Giren \u0130lk \xC7\u0131kar) Kural\u0131: En Son PUSH Edilen \u0130lk POP Edilir!",
+          "titleEn": "Stack Step 4: LIFO (Last-In, First-Out): Last Pushed is First Popped!",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> \xDCst \xFCste koydu\u011Funuz tabaklardan en \xFCsttekini ilk al\u0131rs\u0131n\u0131z. Buna <strong>LIFO (Last-In, First-Out / Son Giren \u0130lk \xC7\u0131kar)</strong> denir!</p>\n        <pre><code>PUSH AX   ; 1. tabak (Altta: 1111h)\nPUSH BX   ; 2. tabak (En \xFCstte: 2222h)\nPOP CX    ; En \xFCstteki taba\u011F\u0131 al\u0131r! Yani CX = 2222h olur!\nPOP DX    ; \u015Eimdi alttaki taba\u011F\u0131 al\u0131r! Yani DX = 1111h olur!</code></pre>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The stack obeys <strong>LIFO (Last-In, First-Out)</strong>. If you <code>PUSH AX</code> then <code>PUSH BX</code>, the very first <code>POP</code> retrieves <code>BX</code>'s value because <code>BX</code> was pushed last!</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-4",
+            "title": "LIFO S\u0131ras\u0131n\u0131 Deneyerek G\xF6rme (Son Giren \u0130lk \xC7\u0131kar)",
+            "difficulty": "Kolay",
+            "scenario": "AX = 0AAAAh ve BX = 0BBBBh de\u011Ferlerini s\u0131rayla PUSH edece\u011Fiz. Ard\u0131ndan ilk POP CX komutunun en son giren 0BBBBh de\u011Ferini, ikinci POP DX komutunun ise ilk giren 0AAAAh de\u011Ferini ald\u0131\u011F\u0131n\u0131 g\xF6rece\u011Fiz.",
+            "taskPrompt": "AX = 0AAAAh ve BX = 0BBBBh y\xFCkleyin. S\u0131ras\u0131yla PUSH AX ve PUSH BX yap\u0131n. Ard\u0131ndan POP CX ve POP DX komutlar\u0131n\u0131 \xE7al\u0131\u015Ft\u0131r\u0131n.",
+            "starterCode": "; Stack Ad\u0131m 4: LIFO (Son Giren \u0130lk \xC7\u0131kar) deneyi\nORG 100h\nMOV SP, 0200h\nMOV AX, 0AAAAh\nMOV BX, 0BBBBh\n\n; S\u0131ras\u0131yla PUSH AX, PUSH BX, ard\u0131ndan POP CX, POP DX yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 0AAAAh\nMOV BX, 0BBBBh\nPUSH AX\nPUSH BX\nPOP CX\nPOP DX\nHLT\n",
+            "hints": [
+              "PUSH AX",
+              "PUSH BX",
+              "POP CX  ; CX = BBBBh olur",
+              "POP DX  ; DX = AAAAh olur"
+            ],
+            "assertions": {
+              "registers": {
+                "cx": 48059,
+                "dx": 43690,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-5",
+          "stepNumber": "Ad\u0131m 5",
+          "title": "PUSH ve POP Kullanarak \u0130ki Yazmac\u0131n De\u011Ferini Takas Etmek (Swap)",
+          "titleEn": "Stack Step 5: Swapping Two Registers Using PUSH and POP",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> LIFO kural\u0131 sayesinde \xFC\xE7\xFCnc\xFC bir ge\xE7ici yazma\xE7 kullanmadan <code>AX</code> ile <code>BX</code>'in de\u011Ferlerini y\u0131\u011F\u0131n \xFCzerinde yer de\u011Fi\u015Ftirebiliriz:</p>\n        <ol>\n          <li><code>PUSH AX</code> (Altta <code>AX</code>'in eski de\u011Feri var)</li>\n          <li><code>PUSH BX</code> (En \xFCstte <code>BX</code>'in eski de\u011Feri var)</li>\n          <li><code>POP AX</code> (En \xFCstteki <code>BX</code> de\u011Feri <code>AX</code>'e \xE7ekildi!)</li>\n          <li><code>POP BX</code> (Alttaki <code>AX</code> de\u011Feri <code>BX</code>'e \xE7ekildi!)</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Because of LIFO, executing <code>PUSH AX</code>, <code>PUSH BX</code> followed by <code>POP AX</code>, <code>POP BX</code> swaps the values of <code>AX</code> and <code>BX</code>!</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-5",
+            "title": "Y\u0131\u011F\u0131n (PUSH/POP) ile AX ve BX De\u011Ferlerini Takas Etme",
+            "difficulty": "Kolay",
+            "scenario": "AX = 1000h ve BX = 9000h de\u011Ferlerini sadece PUSH ve POP komutlar\u0131n\u0131 kullanarak takas edece\u011Fiz (AX = 9000h, BX = 1000h olacak).",
+            "taskPrompt": "PUSH AX, PUSH BX ve ard\u0131ndan POP AX, POP BX komutlar\u0131n\u0131 kullanarak AX (1000h) ile BX (9000h) de\u011Ferlerini takas edin.",
+            "starterCode": "; Stack Ad\u0131m 5: PUSH ve POP ile AX ve BX takas\u0131\nORG 100h\nMOV SP, 0200h\nMOV AX, 1000h\nMOV BX, 9000h\n\n; PUSH ve POP komutlar\u0131yla AX ve BX de\u011Ferlerini takas edin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1000h\nMOV BX, 9000h\nPUSH AX\nPUSH BX\nPOP AX\nPOP BX\nHLT\n",
+            "hints": [
+              "\xD6nce PUSH AX ve PUSH BX yaz\u0131n.",
+              "Sonra ayn\u0131 s\u0131rayla POP AX ve POP BX yaz\u0131n!"
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 36864,
+                "bx": 4096,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-6",
+          "stepNumber": "Ad\u0131m 6",
+          "title": "Y\u0131\u011F\u0131nda Little-Endian Bayt Dizilimi: [SP] D\xFC\u015F\xFCk Bayt, [SP+1] Y\xFCksek Bayt",
+          "titleEn": "Stack Step 6: Little-Endian Byte Layout on the Stack ([SP] = Low, [SP+1] = High)",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Hocan\u0131n Week 3 slaytlar\u0131nda \xF6zellikle vurgulad\u0131\u011F\u0131 detay: <code>SP = 0200h</code> iken <code>AX = 1234h</code> i\xE7in <code>PUSH AX</code> yapt\u0131\u011F\u0131m\u0131zda 2 bayt belle\u011Fe nas\u0131l yerle\u015Fir?</p>\n        <ul>\n          <li>\xDCst bayt <code>AH (12h)</code> &rarr; <code>[SP - 1] = [01FFh]</code> adresine yaz\u0131l\u0131r.</li>\n          <li>Alt bayt <code>AL (34h)</code> &rarr; <code>[SP - 2] = [01FEh]</code> (yeni <code>SP</code> tepesi) adresine yaz\u0131l\u0131r.</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> When <code>PUSH AX</code> pushes <code>1234h</code> onto the stack (with <code>SP = 0200h</code>), <code>[01FFh]</code> receives the high byte <code>12h</code> (<code>AH</code>) and <code>[01FEh]</code> (the new <code>SP</code>) receives the low byte <code>34h</code> (<code>AL</code>).</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-6",
+            "title": "Y\u0131\u011F\u0131na PUSH Edilen Kelimenin D\xFC\u015F\xFCk ve Y\xFCksek Baytlar\u0131n\u0131 Bellekten Okuma",
+            "difficulty": "Orta",
+            "scenario": "SP = 0200h iken AX = 4567h de\u011Ferini PUSH AX ile y\u0131\u011F\u0131na ataca\u011F\u0131z (Yeni SP = 01FEh olur). Ard\u0131ndan [01FEh] adresindeki d\xFC\u015F\xFCk bayt\u0131 (67h) CL yazmac\u0131na, [01FFh] adresindeki y\xFCksek bayt\u0131 (45h) CH yazmac\u0131na okuyaca\u011F\u0131z.",
+            "taskPrompt": "AX = 4567h de\u011Ferini PUSH AX ile y\u0131\u011F\u0131na at\u0131n. Ard\u0131ndan MOV CL, [01FEh] ve MOV CH, [01FFh] ile y\u0131\u011F\u0131ndaki baytlar\u0131 okuyun.",
+            "starterCode": "; Stack Ad\u0131m 6: Y\u0131\u011F\u0131ndaki Little-Endian baytlar\u0131 inceleme\nORG 100h\nMOV SP, 0200h\nMOV AX, 4567h\n\n; 1. AX yazmac\u0131n\u0131 PUSH edin:\n; 2. [01FEh] adresini CL i\xE7ine, [01FFh] adresini CH i\xE7ine okuyun:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 4567h\nPUSH AX\nMOV CL, [01FEh]\nMOV CH, [01FFh]\nHLT\n",
+            "hints": [
+              "PUSH AX yaz\u0131n.",
+              "MOV CL, [01FEh] ve MOV CH, [01FFh] ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 17767,
+                "sp": 510,
+                "cl": 103,
+                "ch": 69
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-7",
+          "stepNumber": "Ad\u0131m 7",
+          "title": "Segment Yazmac\u0131n\u0131 Y\u0131\u011F\u0131na Atmak: PUSH DS ve POP ES ile Segment Kopyalama",
+          "titleEn": "Stack Step 1: Pushing Segment Registers: Copying DS to ES via PUSH DS / POP ES",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Week 3'te genel yazma\xE7lar\u0131 (<code>PUSH AX</code>) y\u0131\u011F\u0131na atmay\u0131 \xF6\u011Frendik. <code>PUSH</code> ve <code>POP</code> komutlar\u0131 <strong>Segment Yazma\xE7lar\u0131yla (<code>CS, DS, ES, SS</code>)</strong> da \xE7al\u0131\u015F\u0131r! (Yaln\u0131zca <code>POP CS</code> yasakt\u0131r).</p>\n        <p>Hat\u0131rlarsan\u0131z <code>MOV ES, DS</code> yasakt\u0131. Y\u0131\u011F\u0131n sayesinde hi\xE7bir genel yazmac\u0131 (<code>AX</code>'i) bozmadan <code>DS</code>'yi <code>ES</code>'ye kopyalayabiliriz:</p>\n        <pre><code>PUSH DS   ; DS de\u011Ferini y\u0131\u011F\u0131n\u0131n tepesine koy\nPOP ES    ; Y\u0131\u011F\u0131n\u0131n tepesindeki de\u011Feri ES i\xE7ine \xE7ek!</code></pre>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>PUSH</code> and <code>POP</code> also work with segment registers (except <code>POP CS</code>, which is illegal). Since <code>MOV ES, DS</code> is illegal, <code>PUSH DS</code> followed by <code>POP ES</code> copies <code>DS</code> into <code>ES</code> without touching <code>AX</code>!</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-7",
+            "title": "PUSH DS ve POP ES ile Segment Kopyalama",
+            "difficulty": "Kolay",
+            "scenario": "DS segment yazmac\u0131nda 0250h de\u011Feri var ve AX yazmac\u0131 dolu (9999h). AX'e hi\xE7 dokunmadan PUSH DS ve POP ES kullanarak DS de\u011Ferini ES'ye kopyalayaca\u011F\u0131z.",
+            "taskPrompt": "PUSH DS ve POP ES komutlar\u0131n\u0131 kullanarak DS (0250h) de\u011Ferini ES segment yazmac\u0131na kopyalay\u0131n.",
+            "starterCode": "; Stack Ad\u0131m 1: AX de\u011Ferini bozmadan PUSH DS ve POP ES ile DS -> ES aktar\u0131m\u0131\nORG 100h\nMOV SP, 0200h\nMOV AX, 0250h\nMOV DS, AX\nMOV AX, 9999h ; AX art\u0131k dolu, AX'i de\u011Fi\u015Ftirmeyin!\n\n; PUSH DS ve POP ES komutlar\u0131n\u0131 buraya yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 0250h\nMOV DS, AX\nMOV AX, 9999h\nPUSH DS\nPOP ES\nHLT\n",
+            "hints": [
+              "PUSH DS yaz\u0131n.",
+              "Alt\u0131na POP ES ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 39321,
+                "ds": 592,
+                "es": 592,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-8",
+          "stepNumber": "Ad\u0131m 8",
+          "title": "Bellek H\xFCcresini Do\u011Frudan Y\u0131\u011F\u0131na Atmak: PUSH WORD PTR [BX]",
+          "titleEn": "Stack Step 2: Pushing a 16-Bit Memory Word Directly: PUSH WORD PTR [BX]",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Bellekteki 16-bitlik bir kelimeyi y\u0131\u011F\u0131na atmak i\xE7in \xF6nce bir yazmaca y\xFCklemenize gerek yoktur! <code>PUSH WORD PTR [BX]</code> komutu do\u011Frudan bellekteki <code>[BX]</code> adresinde duran 16-bitlik kelimeyi okur ve y\u0131\u011F\u0131n\u0131n tepesine koyar.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>PUSH</code> also accepts a 16-bit memory operand directly: <code>PUSH WORD PTR [BX]</code> pushes the word stored at <code>[BX]</code> directly onto the stack.</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-8",
+            "title": "PUSH WORD PTR [BX] ve POP AX ile Bellekten Y\u0131\u011F\u0131na Aktar\u0131m",
+            "difficulty": "Kolay",
+            "scenario": "Belle\u011Fin [0220h] adresinde 4321h kelimesi duruyor. BX = 0220h iken PUSH WORD PTR [BX] ile bu kelimeyi y\u0131\u011F\u0131na at\u0131p POP AX ile AX yazmac\u0131na \xE7ekece\u011Fiz.",
+            "taskPrompt": "PUSH WORD PTR [BX] komutuyla bellekteki kelimeyi y\u0131\u011F\u0131na at\u0131n ve POP AX ile AX yazmac\u0131na \xE7ekin.",
+            "starterCode": "; Stack Ad\u0131m 2: Bellekteki kelimeyi do\u011Frudan PUSH etme\nORG 100h\nMOV SP, 0200h\nMOV BX, 0220h\nMOV WORD PTR [BX], 4321h\n\n; PUSH WORD PTR [BX] ve POP AX yaz\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV BX, 0220h\nMOV WORD PTR [BX], 4321h\nPUSH WORD PTR [BX]\nPOP AX\nHLT\n",
+            "hints": [
+              "PUSH WORD PTR [BX] ard\u0131ndan POP AX yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 17185,
+                "bx": 544,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-9",
+          "stepNumber": "Ad\u0131m 9",
+          "title": "Y\u0131\u011F\u0131nla Yazma\xE7 Koruma Deseni (Save & Restore): PUSH -> \u0130\u015Flem Yap -> POP",
+          "titleEn": "Stack Step 3: Register Preservation Pattern (Save & Restore): PUSH -> Work -> POP",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Y\u0131\u011F\u0131n\u0131n ger\xE7ek hayattaki 1 numaral\u0131 kullan\u0131m amac\u0131 <strong>yazma\xE7taki \xF6nemli bir say\u0131y\u0131 ge\xE7ici olarak yedeklemektir</strong>:</p>\n        <ol>\n          <li>\xD6nemli de\u011Feri y\u0131\u011F\u0131na yedekle: <code>PUSH AX</code></li>\n          <li><code>AX</code> yazmac\u0131n\u0131 ba\u015Fka bir i\u015F i\xE7in rahat\xE7a kullan (i\xE7eri\u011Fi de\u011Fi\u015Fsin).</li>\n          <li>\u0130\u015Fin bitince eski de\u011Feri y\u0131\u011F\u0131ndan geri kurtar: <code>POP AX</code>!</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The most common real-world use of the stack is <strong>preserving a register</strong>: <code>PUSH AX</code> before modifying <code>AX</code>, do temporary work in <code>AX</code>, then <code>POP AX</code> to restore its original value.</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-9",
+            "title": "AX De\u011Ferini PUSH ile Yedekleyip \u0130\u015Flem Sonras\u0131 POP ile Kurtarma",
+            "difficulty": "Kolay",
+            "scenario": "AX i\xE7inde \xE7ok \xF6nemli bir say\u0131 (7777h) var. \xD6nce PUSH AX ile yedekleyece\u011Fiz, sonra AX i\xE7ine 0005h koyup DX'e kopyalayaca\u011F\u0131z, en sonda POP AX ile AX'in eski 7777h de\u011Ferini geri kurtaraca\u011F\u0131z.",
+            "taskPrompt": "1) PUSH AX ile AX'i yedekleyin. 2) MOV AX, 0005h ve MOV DX, AX yap\u0131n. 3) POP AX ile AX'in ilk de\u011Ferini (7777h) geri y\xFCkleyin.",
+            "starterCode": "; Stack Ad\u0131m 3: AX yazmac\u0131n\u0131 y\u0131\u011F\u0131nda yedekleyip kurtar\u0131n\nORG 100h\nMOV SP, 0200h\nMOV AX, 7777h\n\n; 1. AX yazmac\u0131n\u0131 y\u0131\u011F\u0131na PUSH edin:\n\nMOV AX, 0005h\nMOV DX, AX\n\n; 2. AX yazmac\u0131n\u0131n eski de\u011Ferini y\u0131\u011F\u0131ndan POP edin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 7777h\nPUSH AX\nMOV AX, 0005h\nMOV DX, AX\nPOP AX\nHLT\n",
+            "hints": [
+              "\u0130lk bo\u015Flu\u011Fa PUSH AX, ikinci bo\u015Flu\u011Fa POP AX yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 30583,
+                "dx": 5,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-10",
+          "stepNumber": "Ad\u0131m 10",
+          "title": "PUSHA Komutu: 8 Genel Yazmac\u0131n Hepsini Tek Sat\u0131rda Y\u0131\u011F\u0131na Kaydetmek!",
+          "titleEn": "Stack Step 4: PUSHA: Pushing All 8 General-Purpose Registers in One Instruction",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> 8 yazmac\u0131 tek tek <code>PUSH</code> etmek yerine <code>PUSHA</code> (Push All) komutu tek ba\u015F\u0131na 8 genel yazmac\u0131 (toplam $8 	imes 2 = 16$ bayt) sabit bir s\u0131rayla y\u0131\u011F\u0131na atar ve <code>SP</code>'yi <strong>16 azalt\u0131r (`10h`)</strong>!</p>\n        <p><strong>S\u0131navda \xC7\u0131kan Sabit PUSHA S\u0131ras\u0131:</strong> <code>AX &rarr; CX &rarr; DX &rarr; BX &rarr; SP(ilk hali) &rarr; BP &rarr; SI &rarr; DI</code> (Y\u0131\u011F\u0131n\u0131n en tepesinde <code>DI</code> durur).</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>PUSHA</code> pushes all 8 general-purpose registers onto the stack in one instruction in the exact order: <code>AX, CX, DX, BX, original SP, BP, SI, DI</code>, decreasing <code>SP</code> by 16 bytes (<code>10h</code>).</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-10",
+            "title": "PUSHA ile 8 Yazmac\u0131 Y\u0131\u011F\u0131na Atma ve SP'nin 16 (10h) Azalmas\u0131n\u0131 Do\u011Frulama",
+            "difficulty": "Kolay",
+            "scenario": "SP = 0200h iken AX=1, CX=2, DX=3, BX=4, SI=5, DI=6 kurup tek bir PUSHA komutu \xE7al\u0131\u015Ft\u0131raca\u011F\u0131z. SP de\u011Ferinin 16 bayt (10h) azalarak 01F0h oldu\u011Funu g\xF6rece\u011Fiz.",
+            "taskPrompt": "Yazma\xE7lar kurulduktan sonra PUSHA komutunu \xE7al\u0131\u015Ft\u0131rarak 8 yazmac\u0131n tamam\u0131n\u0131 y\u0131\u011F\u0131na kaydedin.",
+            "starterCode": "; Stack Ad\u0131m 4: PUSHA ile t\xFCm genel yazma\xE7lar\u0131 tek komutta y\u0131\u011F\u0131na kaydedin\nORG 100h\nMOV SP, 0200h\nMOV AX, 1\nMOV CX, 2\nMOV DX, 3\nMOV BX, 4\nMOV SI, 5\nMOV DI, 6\n\n; Tek komutta t\xFCm genel yazma\xE7lar\u0131 y\u0131\u011F\u0131na at\u0131n:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1\nMOV CX, 2\nMOV DX, 3\nMOV BX, 4\nMOV SI, 5\nMOV DI, 6\nPUSHA\nHLT\n",
+            "hints": [
+              "PUSHA komutunu yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "sp": 496,
+                "ax": 1,
+                "di": 6
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 496,
+                  "expectedBytes": [
+                    6,
+                    0
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-11",
+          "stepNumber": "Ad\u0131m 11",
+          "title": "POPA Komutu: Bozulan 8 Yazmac\u0131 Tek Sat\u0131rda Ters S\u0131rayla Geri Y\xFCklemek!",
+          "titleEn": "Stack Step 5: POPA: Restoring All 8 General-Purpose Registers in Reverse Order",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> <code>PUSHA</code> ile y\u0131\u011F\u0131na kaydetti\u011Fimiz 8 yazmac\u0131, i\u015Fimiz bitti\u011Finde tek bir <code>POPA</code> (Pop All) komutuyla tam ters s\u0131rayla geri \xE7ekeriz:</p>\n        <p><strong>Sabit POPA S\u0131ras\u0131:</strong> <code>DI &rarr; SI &rarr; BP &rarr; (SP yuvas\u0131 atlan\u0131r!) &rarr; BX &rarr; DX &rarr; CX &rarr; AX</code> ve <code>SP</code> tekrar 16 artar.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>POPA</code> pops the 8 registers in exact reverse order: <code>DI, SI, BP, (skips saved SP), BX, DX, CX, AX</code>, restoring every register and adding 16 to <code>SP</code>.</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-11",
+            "title": "PUSHA ve POPA ile Bozulan T\xFCm Yazma\xE7lar\u0131 Tek Sat\u0131rda Kurtarma",
+            "difficulty": "Kolay",
+            "scenario": "AX=1111h, BX=2222h, CX=3333h, DX=4444h de\u011Ferlerini PUSHA ile y\u0131\u011F\u0131na kaydedece\u011Fiz. Ard\u0131ndan bu yazma\xE7lar\u0131 s\u0131f\u0131rlay\u0131p POPA komutuyla hepsinin eski de\u011Ferini tek sat\u0131rda geri getirece\u011Fiz!",
+            "taskPrompt": "S\u0131f\u0131rlama komutlar\u0131ndan \xF6nce PUSHA, s\u0131f\u0131rlama komutlar\u0131ndan sonra POPA yazarak t\xFCm yazma\xE7lar\u0131 koruyun.",
+            "starterCode": "; Stack Ad\u0131m 5: PUSHA ile yedekleyin, yazma\xE7lar s\u0131f\u0131rlans\u0131n, sonra POPA ile kurtar\u0131n\nORG 100h\nMOV SP, 0200h\nMOV AX, 1111h\nMOV BX, 2222h\nMOV CX, 3333h\nMOV DX, 4444h\n\n; 1. T\xFCm yazma\xE7lar\u0131 tek komutta y\u0131\u011F\u0131na yedekleyin:\n\n\n; Yazma\xE7lar burada bozuluyor:\nMOV AX, 0\nMOV BX, 0\nMOV CX, 0\nMOV DX, 0\n\n; 2. T\xFCm yazma\xE7lar\u0131 tek komutta y\u0131\u011F\u0131ndan geri y\xFCkleyin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1111h\nMOV BX, 2222h\nMOV CX, 3333h\nMOV DX, 4444h\nPUSHA\nMOV AX, 0\nMOV BX, 0\nMOV CX, 0\nMOV DX, 0\nPOPA\nHLT\n",
+            "hints": [
+              "\u0130lk bo\u015Flu\u011Fa PUSHA, ikinci bo\u015Flu\u011Fa POPA yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4369,
+                "bx": 8738,
+                "cx": 13107,
+                "dx": 17476,
+                "sp": 512
+              },
+              "maxSteps": 40
+            }
+          }
+        },
+        {
+          "id": "step-10-1-12",
+          "stepNumber": "Ad\u0131m 12",
+          "title": "PUSHF ve POPF: Bayraklar (FLAGS) Yazmac\u0131n\u0131 Y\u0131\u011F\u0131na Kaydetmek ve Geri Y\xFCklemek",
+          "titleEn": "Stack Step 6: PUSHF and POPF: Saving and Restoring the FLAGS Register on the Stack",
+          "explanationHtml": "\n        <p><strong>S\u0131f\u0131rdan Bilgi:</strong> Peki aritmetik i\u015Flemler <code>FLAGS</code> (durum bayraklar\u0131n\u0131: <code>CF, ZF, SF...</code>) bozmadan \xF6nce bayraklar\u0131n o anki durumunu nas\u0131l yedekleriz? \u0130\u015Fte bunun i\xE7in <code>PUSHF</code> ve <code>POPF</code> vard\u0131r:</p>\n        <ul>\n          <li><code>PUSHF (Push Flags)</code>: 16-bitlik <code>FLAGS</code> yazmac\u0131n\u0131 y\u0131\u011F\u0131na koyar (<code>SP = SP - 2</code>).</li>\n          <li><code>POPF (Pop Flags)</code>: Y\u0131\u011F\u0131n\u0131n tepesindeki 16-bitlik kelimeyi \xE7ekip <code>FLAGS</code> yazmac\u0131na geri y\xFCkler (<code>SP = SP + 2</code>).</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>PUSHF</code> pushes the entire 16-bit <code>FLAGS</code> register onto the stack, and <code>POPF</code> restores the <code>FLAGS</code> register from the top of the stack.</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-12",
+            "title": "PUSHF ve POPF ile Carry Bayra\u011F\u0131n\u0131 (CF=1) Y\u0131\u011F\u0131nda Koruma",
+            "difficulty": "Kolay",
+            "scenario": "STC ile Carry bayra\u011F\u0131n\u0131 1 yapaca\u011F\u0131z. PUSHF ile bayraklar\u0131 y\u0131\u011F\u0131na kaydedece\u011Fiz. Arada CLC ile Carry bayra\u011F\u0131 s\u0131f\u0131rlansa bile POPF \xE7al\u0131\u015Ft\u0131rarak CF=1 durumunu y\u0131\u011F\u0131ndan geri y\xFCkleyece\u011Fiz!",
+            "taskPrompt": "STC sonras\u0131 PUSHF yazarak bayraklar\u0131 y\u0131\u011F\u0131na kaydedin; CLC sonras\u0131nda ise POPF yazarak CF=1 durumunu geri y\xFCkleyin.",
+            "starterCode": "; Stack Ad\u0131m 6: PUSHF ve POPF ile FLAGS koruma\nORG 100h\nMOV SP, 0200h\nSTC          ; CF = 1 yap\u0131ld\u0131\n\n; 1. Bayraklar\u0131 y\u0131\u011F\u0131na kaydedin:\n\n\nCLC          ; CF = 0 oldu (bayrak bozuldu!)\n\n; 2. Bayraklar\u0131 y\u0131\u011F\u0131ndan geri y\xFCkleyin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nSTC\nPUSHF\nCLC\nPOPF\nHLT\n",
+            "hints": [
+              "\u0130lk bo\u015Flu\u011Fa PUSHF, ikinci bo\u015Flu\u011Fa POPF yaz\u0131n."
+            ],
+            "assertions": {
+              "registers": {
+                "sp": 512
+              },
+              "flags": {
+                "cf": 1
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-10-2-lea-lds-les-lab",
@@ -27364,6 +29359,9 @@ ${enContent}`;
               ${isSubCompleted ? `<span class="sheet-completed-pill">${this.currentLang === "en" ? "\u2713 Completed" : "\u2713 Tamamland\u0131"}</span>` : ""}
             </div>
 
+            <!-- ADIM 0: SIFIRDAN ADIM ADIM M\u0130KRO-ANLATIM VE ANINDA UYGULAMA \xD6DEVLER\u0130 -->
+            ${sub.microSteps && sub.microSteps.length > 0 ? this.renderMicroStepsSection(sub.microSteps) : ""}
+
             <!-- ADIM 1: DERS ANLATIMI -->
             <section class="notebook-step-section theory-section">
               <div class="step-header">
@@ -27430,6 +29428,99 @@ ${enContent}`;
           </div>
         </div>
       </section>
+    `;
+  }
+  renderMicroStepsSection(microSteps) {
+    const isEn = this.currentLang === "en";
+    const sectionTitle = isEn ? "Step-by-Step Zero-to-Hero Guide & Immediate Practice Tasks" : "S\u0131f\u0131rdan Ad\u0131m Ad\u0131m \xD6\u011Frenme & An\u0131nda Uygulama \xD6devleri";
+    const sectionDesc = isEn ? "Read each bite-sized concept from zero and immediately apply it in the coding assignment right below!" : "Her en ufak bilgiyi s\u0131f\u0131rdan okuyun ve hemen alt\u0131ndaki kodlama \xF6devinde an\u0131nda uygulay\u0131n!";
+    return `
+      <section class="notebook-step-section micro-steps-section">
+        <div class="step-header micro-section-header">
+          <span class="step-circle">\u{1F331}</span>
+          <div>
+            <h4 class="step-title">${sectionTitle}</h4>
+            <p class="step-desc">${sectionDesc}</p>
+          </div>
+          <span class="micro-count-pill">${microSteps.length} ${isEn ? "Micro-Steps + Tasks" : "Ad\u0131m + Kodlama \xD6devi"}</span>
+        </div>
+
+        <div class="step-content micro-steps-list">
+          ${microSteps.map((ms, idx) => {
+      const stepTitle = isEn ? ms.titleEn || ms.title : ms.title;
+      const stepHtml = isEn ? ms.explanationHtmlEn || ms.explanationHtml : ms.explanationHtml;
+      const taskPassed = StudyStorage.isTaskPassed(ms.task.id);
+      return `
+              <div class="micro-step-card" id="micro-step-${idx + 1}">
+                <div class="micro-step-top">
+                  <span class="micro-step-badge">${this.escapeHtml(ms.stepNumber)}</span>
+                  <h4 class="micro-step-heading">${this.escapeHtml(stepTitle)}</h4>
+                  ${taskPassed ? `<span class="task-status-badge success" data-badge-for="${ms.task.id}">\u2713 ${isEn ? "Completed" : "Uyguland\u0131"}</span>` : `<span class="task-status-badge pending" data-badge-for="${ms.task.id}">\u{1F3AF} ${isEn ? "Practice Now" : "Hemen Uygula"}</span>`}
+                </div>
+                <div class="micro-step-body">
+                  ${stepHtml}
+                </div>
+                <div class="micro-step-task-container">
+                  <div class="micro-task-header-strip">
+                    <span class="micro-task-icon">\u{1F4BB}</span>
+                    <strong>${isEn ? "Zero-Prerequisite Coding Task" : "S\u0131f\u0131rdan Kodlama \xD6devi"} (${this.escapeHtml(ms.stepNumber)}):</strong>
+                    <span>${this.escapeHtml(ms.task.title)} (${ms.task.difficulty})</span>
+                  </div>
+                  ${this.renderTaskCardBox(ms.task)}
+                </div>
+              </div>
+            `;
+    }).join("")}
+        </div>
+      </section>
+    `;
+  }
+  renderTaskCardBox(task) {
+    const initialCode = StudyStorage.getUserTaskCode(task.id, task.starterCode);
+    return `
+      <div class="task-card" data-task-id="${task.id}">
+        <div class="task-prompt-box">
+          <p><strong>\u{1F3AF} G\xF6rev:</strong> ${this.escapeHtml(task.taskPrompt)}</p>
+          ${task.scenario ? `<p class="task-scenario-note"><strong>Senaryo:</strong> ${this.escapeHtml(task.scenario)}</p>` : ""}
+        </div>
+
+        <!-- In-place Mini Code Editor -->
+        <div class="task-editor-wrap">
+          <div class="task-editor-toolbar">
+            <span class="task-editor-label">Assembly Kodu:</span>
+            <div class="task-toolbar-actions">
+              <button class="btn-task-tool btn-show-hint" title="\u0130pucu G\xF6ster">\u{1F4A1} \u0130pucu</button>
+              <button class="btn-task-tool btn-show-solution" title="\xD6rnek \xC7\xF6z\xFCm\xFC \u0130ncele">\u{1F441}\uFE0F \xC7\xF6z\xFCm\xFC G\xF6ster</button>
+              <button class="btn-task-tool btn-open-ide" title="Bu Kodu Ana IDE Sim\xFClat\xF6r\xFCne G\xF6nder">\u{1F680} Ana Edit\xF6rde A\xE7</button>
+            </div>
+          </div>
+          <textarea class="task-code-textarea" spellcheck="false" placeholder="Assembly kodunuzu buraya yaz\u0131n...">${this.escapeHtml(initialCode)}</textarea>
+        </div>
+
+        <div class="task-hints-box" style="display: none;">
+          <ul>
+            ${task.hints.map((h) => `<li>${this.escapeHtml(h)}</li>`).join("")}
+          </ul>
+        </div>
+
+        <div class="task-solution-box" style="display: none;">
+          <div class="solution-header">
+            <span>Model \xC7\xF6z\xFCm Kodu:</span>
+            <button class="btn-copy-solution">Kodu Kopyala</button>
+          </div>
+          <pre class="solution-code"><code>${this.escapeHtml(task.solutionCode)}</code></pre>
+          ${task.examTip ? `<p class="solution-tip">\u{1F4A1} <strong>S\u0131nav \u0130pucu:</strong> ${this.escapeHtml(task.examTip)}</p>` : ""}
+        </div>
+
+        <!-- Test Execution Actions & Feedback -->
+        <div class="task-exec-row">
+          <button class="btn-task-grade" id="btn-grade-${task.id}">
+            <span>\u25B6\uFE0F</span> Kodu Test Et & Notland\u0131r
+          </button>
+        </div>
+
+        <div class="task-result-box" style="display: none;"></div>
+      </div>
     `;
   }
   renderTaskSection(task) {
@@ -27590,66 +29681,83 @@ ${enContent}`;
         });
       });
     }
-    const taskCard = this.drawerEl.querySelector(".task-card");
-    if (taskCard && this.selectedSubLesson?.task) {
-      const task = this.selectedSubLesson.task;
-      const textarea = taskCard.querySelector(".task-code-textarea");
-      const gradeBtn = taskCard.querySelector(`#btn-grade-${task.id}`);
-      const resultBox = taskCard.querySelector(".task-result-box");
-      const hintBtn = taskCard.querySelector(".btn-show-hint");
-      const hintsBox = taskCard.querySelector(".task-hints-box");
-      const solBtn = taskCard.querySelector(".btn-show-solution");
-      const solBox = taskCard.querySelector(".task-solution-box");
-      const openIdeBtn = taskCard.querySelector(".btn-open-ide");
-      const copySolBtn = taskCard.querySelector(".btn-copy-solution");
-      textarea?.addEventListener("input", () => {
-        StudyStorage.saveUserTaskCode(task.id, textarea.value);
-      });
-      hintBtn?.addEventListener("click", () => {
-        hintsBox.style.display = hintsBox.style.display === "none" ? "block" : "none";
-      });
-      solBtn?.addEventListener("click", () => {
-        solBox.style.display = solBox.style.display === "none" ? "block" : "none";
-      });
-      copySolBtn?.addEventListener("click", () => {
-        navigator.clipboard.writeText(task.solutionCode);
-        copySolBtn.textContent = "Kopyaland\u0131! \u2713";
-        setTimeout(() => copySolBtn.textContent = "Kodu Kopyala", 2e3);
-      });
-      openIdeBtn?.addEventListener("click", () => {
-        const code = textarea.value;
-        this.callbacks.onInsertCodeToEditor(code);
-      });
-      gradeBtn?.addEventListener("click", () => {
-        const code = textarea.value;
-        gradeBtn.disabled = true;
-        gradeBtn.innerHTML = "<span>\u23F3</span> Test Ediliyor...";
-        setTimeout(() => {
-          const res = StudyRunner.grade(task, code);
-          gradeBtn.disabled = false;
-          gradeBtn.innerHTML = "<span>\u25B6\uFE0F</span> Kodu Test Et & Notland\u0131r";
-          resultBox.style.display = "block";
-          if (res.success) {
-            StudyStorage.markTaskPassed(task.id);
-            this.updateStats();
-            this.renderMindMap();
-            resultBox.className = "task-result-box success";
-            resultBox.innerHTML = `
+    const allTasksMap = /* @__PURE__ */ new Map();
+    if (this.selectedSubLesson?.microSteps) {
+      for (const ms of this.selectedSubLesson.microSteps) {
+        if (ms.task) allTasksMap.set(ms.task.id, ms.task);
+      }
+    }
+    if (this.selectedSubLesson?.task) {
+      allTasksMap.set(this.selectedSubLesson.task.id, this.selectedSubLesson.task);
+    }
+    this.drawerEl.querySelectorAll(".task-card").forEach((taskCard) => {
+      const taskId = taskCard.getAttribute("data-task-id") || "";
+      const task = allTasksMap.get(taskId);
+      if (!task) return;
+      if (true) {
+        const textarea = taskCard.querySelector(".task-code-textarea");
+        const gradeBtn = taskCard.querySelector(`#btn-grade-${task.id}`);
+        const resultBox = taskCard.querySelector(".task-result-box");
+        const hintBtn = taskCard.querySelector(".btn-show-hint");
+        const hintsBox = taskCard.querySelector(".task-hints-box");
+        const solBtn = taskCard.querySelector(".btn-show-solution");
+        const solBox = taskCard.querySelector(".task-solution-box");
+        const openIdeBtn = taskCard.querySelector(".btn-open-ide");
+        const copySolBtn = taskCard.querySelector(".btn-copy-solution");
+        textarea?.addEventListener("input", () => {
+          StudyStorage.saveUserTaskCode(task.id, textarea.value);
+        });
+        hintBtn?.addEventListener("click", () => {
+          hintsBox.style.display = hintsBox.style.display === "none" ? "block" : "none";
+        });
+        solBtn?.addEventListener("click", () => {
+          solBox.style.display = solBox.style.display === "none" ? "block" : "none";
+        });
+        copySolBtn?.addEventListener("click", () => {
+          navigator.clipboard.writeText(task.solutionCode);
+          copySolBtn.textContent = "Kopyaland\u0131! \u2713";
+          setTimeout(() => copySolBtn.textContent = "Kodu Kopyala", 2e3);
+        });
+        openIdeBtn?.addEventListener("click", () => {
+          const code = textarea.value;
+          this.callbacks.onInsertCodeToEditor(code);
+        });
+        gradeBtn?.addEventListener("click", () => {
+          const code = textarea.value;
+          gradeBtn.disabled = true;
+          gradeBtn.innerHTML = "<span>\u23F3</span> Test Ediliyor...";
+          setTimeout(() => {
+            const res = StudyRunner.grade(task, code);
+            gradeBtn.disabled = false;
+            gradeBtn.innerHTML = "<span>\u25B6\uFE0F</span> Kodu Test Et & Notland\u0131r";
+            resultBox.style.display = "block";
+            if (res.success) {
+              StudyStorage.markTaskPassed(task.id);
+              this.updateStats();
+              this.renderMindMap();
+              const statusBadge = this.drawerEl.querySelector(`[data-badge-for="${task.id}"]`);
+              if (statusBadge) {
+                statusBadge.className = "task-status-badge success";
+                statusBadge.textContent = "\u2713 Uyguland\u0131";
+              }
+              resultBox.className = "task-result-box success";
+              resultBox.innerHTML = `
               <div class="res-badge success">\u2713 BA\u015EARILI (${res.steps} Ad\u0131m)</div>
               <p class="res-msg">${res.message}</p>
               ${this.renderDiffTable(res.diffs)}
             `;
-          } else {
-            resultBox.className = "task-result-box error";
-            resultBox.innerHTML = `
+            } else {
+              resultBox.className = "task-result-box error";
+              resultBox.innerHTML = `
               <div class="res-badge error">\u2715 ${res.status}</div>
               <p class="res-msg">${res.message}</p>
               ${this.renderDiffTable(res.diffs)}
             `;
-          }
-        }, 80);
-      });
-    }
+            }
+          }, 80);
+        });
+      }
+    });
   }
   renderDiffTable(diffs) {
     if (!diffs || diffs.length === 0) return "";
