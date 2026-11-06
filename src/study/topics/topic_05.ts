@@ -83,7 +83,91 @@ export const TOPIC_5: MainTopic = {
           }
         },
         "examTip": "Çok kelimeli toplamalarda ilk kelime için ADD, sonraki tüm yüksek anlamlı kelimeler için ADC kullanılır."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-5-1-1",
+          "stepNumber": "Adım 1",
+          "title": "ADD ve INC: Toplama ve 1 Artırma (INC Carry Bayrağına Dokunmaz!)",
+          "titleEn": "Step 1: ADD and INC: Addition and Incrementing by 1",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> <code>ADD AX, 10</code> komutu <code>AX</code>'e 10 ekler. Bir yazmacı sadece <code>1</code> artırmak için ise <code>INC AX</code> (Increment) kullanılır. <em>Sınav İpucu:</em> <code>INC</code> ve <code>DEC</code> komutları <strong>Carry (<code>CF</code>) bayrağını değiştirmez!</strong></p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>ADD</code> adds two operands; <code>INC</code> adds 1 to its operand without affecting the Carry Flag (<code>CF</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-5-1-1",
+            "title": "ADD ve INC ile Toplam Hesaplama",
+            "difficulty": "Kolay",
+            "scenario": "AX yazmacına 10h yükleyip ADD AX, 20h ile 30h yapacak, ardından INC AX ile 31h elde edeceğiz.",
+            "taskPrompt": "AX yazmacına 10h yükleyin, ADD AX, 20h ekleyin ve INC AX çalıştırın (AX = 0031h).",
+            "starterCode": "; Adım 1: AX = 10h, ADD AX, 20h ve INC AX\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 10h\nADD AX, 20h\nINC AX\nHLT\n",
+            "hints": [
+              "MOV AX, 10h / ADD AX, 20h / INC AX yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 49
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-5-1-2",
+          "stepNumber": "Adım 2",
+          "title": "ADC (Add with Carry): Elde Bayrağını (CF) Üst Kelimeye Eklemek",
+          "titleEn": "Step 2: ADC (Add with Carry): Adding Both Operands Plus CF",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> 32-bitlik büyük sayıları toplarken alt 16-bitlik toplamadan taşan eldeyi (<code>CF</code>) üst 16-bitlik toplamaya dahil etmek için <code>ADC hedef, kaynak</code> (<code>hedef = hedef + kaynak + CF</code>) kullanılır.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>ADC dest, src</code> computes <code>dest = dest + src + CF</code>, allowing multi-word (32-bit) addition.</p>\n      ",
+          "task": {
+            "id": "ms-task-5-1-2",
+            "title": "STC ve ADC ile Eldeli Toplama",
+            "difficulty": "Kolay",
+            "scenario": "STC ile CF=1 kurulu iken BX = 10h üzerine ADC BX, 20h uygulayarak BX = 10h + 20h + 1 = 31h elde edeceğiz.",
+            "taskPrompt": "BX yazmacına 10h yükleyin, STC ile CF=1 yapın ve ADC BX, 20h çalıştırın.",
+            "starterCode": "; Adım 2: BX = 10h, STC ve ADC BX, 20h\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BX, 10h\nSTC\nADC BX, 20h\nHLT\n",
+            "hints": [
+              "MOV BX, 10h / STC / ADC BX, 20h yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "bx": 49
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-5-1-3",
+          "stepNumber": "Adım 3",
+          "title": "SUB, DEC ve CMP: Çıkarma vs Değerleri Bozmadan Karşılaştırma (CMP)",
+          "titleEn": "Step 3: SUB, DEC, and CMP: Subtraction vs Non-Destructive Compare",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> <code>SUB AX, BX</code> komutu <code>AX - BX</code> işlemini yapar ve sonucu <code>AX</code>'in üzerine yazar. <code>CMP AX, BX</code> (Compare) ise <strong>arka planda yine <code>AX - BX</code> çıkarımını yapıp <code>ZF, CF, SF</code> bayraklarını kurar ama <code>AX</code>'in değerini hiç bozmaz!</strong></p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>SUB AX, BX</code> overwrites <code>AX</code> with <code>AX - BX</code>. <code>CMP AX, BX</code> performs the same subtraction solely to set the flags, leaving <code>AX</code> unchanged!</p>\n      ",
+          "task": {
+            "id": "ms-task-5-1-3",
+            "title": "CMP ile Değerleri Bozmadan Eşitlik Bayrağı (ZF = 1) Kurma",
+            "difficulty": "Kolay",
+            "scenario": "AX = 0050h ve BX = 0050h yükleyip CMP AX, BX çalıştıracağız: AX hala 0050h kalırken ZF = 1 olacak!",
+            "taskPrompt": "AX = 0050h ve BX = 0050h yükleyin, ardından CMP AX, BX komutunu çalıştırın.",
+            "starterCode": "; Adım 3: AX=0050h, BX=0050h ve CMP AX, BX\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0050h\nMOV BX, 0050h\nCMP AX, BX\nHLT\n",
+            "hints": [
+              "MOV AX, 0050h / MOV BX, 0050h / CMP AX, BX yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 80,
+                "bx": 80
+              },
+              "flags": {
+                "zf": 1
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-5-2-bcd-ascii-and-basic-logic",
@@ -127,7 +211,94 @@ export const TOPIC_5: MainTopic = {
           }
         },
         "examTip": "XOR AX, AX, montaj dilinde MOV AX, 0 yerine standart olarak kullanılan en verimli sıfırlama komutudur."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-5-2-1",
+          "stepNumber": "Adım 1",
+          "title": "MUL ve DIV: 8-Bit Çarpma (AX = AL × Kaynak) ve Bölme (AL = Bölüm, AH = Kalan)",
+          "titleEn": "Step 1: 8-Bit MUL (AX = AL * src) and DIV (AL = Quotient, AH = Remainder)",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> 8086'da çarpma ve bölme komutlarında <code>AL/AX</code> gizli (implied) işlenendir:</p>\n        <ul>\n          <li><code>MUL BL</code> &rarr; <code>AL</code> ile <code>BL</code>'yi çarpar, 16-bitlik sonucu <strong><code>AX</code></strong> içine yazar! (<code>MUL BL, AL</code> yazılmaz, sadece <code>MUL BL</code> yazılır).</li>\n          <li><code>DIV BL</code> &rarr; 16-bitlik <code>AX</code>'i <code>BL</code>'ye böler: <strong>Bölümü <code>AL</code>'ye, Kalanı <code>AH</code>'ye</strong> yazar!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>MUL BL</code> multiplies <code>AL * BL</code> into <code>AX</code>. <code>DIV BL</code> divides <code>AX / BL</code>, storing the quotient in <code>AL</code> and remainder in <code>AH</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-5-2-1",
+            "title": "MUL ve DIV ile Çarpma ve Kalanlı Bölme",
+            "difficulty": "Kolay",
+            "scenario": "Önce AL = 6 ve BL = 4 yükleyip MUL BL ile AX = 24 elde edeceğiz; ardından CL = 5 yükleyip DIV CL ile 24 / 5 işlemini yapacağız (Bölüm AL = 4, Kalan AH = 4).",
+            "taskPrompt": "AL=6, BL=4 yükleyip MUL BL çalıştırın. Sonra CL=5 yükleyip DIV CL çalıştırın.",
+            "starterCode": "; Adım 1: MUL BL ve ardından DIV CL uygulaması\nORG 100h\nMOV AL, 6\nMOV BL, 4\n; 1. MUL BL ile çarpın:\n\nMOV CL, 5\n; 2. DIV CL ile 5'e bölün:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 6\nMOV BL, 4\nMUL BL\nMOV CL, 5\nDIV CL\nHLT\n",
+            "hints": [
+              "İlk boşluğa MUL BL, ikinci boşluğa DIV CL yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 4,
+                "ah": 4,
+                "bl": 4,
+                "cl": 5
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-5-2-2",
+          "stepNumber": "Adım 2",
+          "title": "AND ile Bit Maskeleme (0'lama) ve OR ile Bit Kurma (1 Yapma)",
+          "titleEn": "Step 2: Bit Masking with AND (Clearing Bits) and OR (Setting Bits)",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Bit düzeyinde (Bitwise) iki temel araç:</p>\n        <ul>\n          <li><strong><code>AND</code> (Maskeleme / Temizleme):</strong> <code>0</code> ile AND'lenen bit <code>0</code> olur, <code>1</code> ile AND'lenen bit aynen kalır. Örn: ASCII rakam <code>'7' = 37h</code> iken <code>AND AL, 0Fh</code> üst 4 biti siler ve saf <code>07h</code> bırakır!</li>\n          <li><strong><code>OR</code> (Bit Kurma):</strong> <code>1</code> ile OR'lanan bit zorla <code>1</code> olur. Örn: <code>07h</code> sayısına <code>OR AL, 30h</code> yaparsak tekrar ASCII <code>'7' (37h)</code> olur!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Use <code>AND</code> with <code>0</code>s to clear bits (e.g., <code>AND AL, 0Fh</code> converts ASCII <code>37h</code> to binary <code>07h</code>), and <code>OR</code> with <code>1</code>s to set bits.</p>\n      ",
+          "task": {
+            "id": "ms-task-5-2-2",
+            "title": "AND ile ASCII Rakamı Sayıya Çevirme ve OR ile Bit Kurma",
+            "difficulty": "Kolay",
+            "scenario": "AL = 39h ('9' karakteri) değerinin üst 4 bitini AND AL, 0Fh ile maskeleyerek 09h elde edeceğiz, BL = 05h değerine ise OR BL, 30h uygulayarak 35h ('5') yapacağız.",
+            "taskPrompt": "AL = 39h üzerinde AND AL, 0Fh; BL = 05h üzerinde ise OR BL, 30h çalıştırın.",
+            "starterCode": "; Adım 2: AND AL, 0Fh ve OR BL, 30h uygulaması\nORG 100h\nMOV AL, 39h\nMOV BL, 05h\n\n; AL için AND, BL için OR komutlarını yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 39h\nMOV BL, 05h\nAND AL, 0Fh\nOR BL, 30h\nHLT\n",
+            "hints": [
+              "AND AL, 0Fh ve OR BL, 30h yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 9,
+                "bl": 53
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-5-2-3",
+          "stepNumber": "Adım 3",
+          "title": "TEST Komutu: Sayıyı Bozmadan AND Yapıp Bit Kontrol Etmek",
+          "titleEn": "Step 3: TEST Instruction: Non-Destructive Bit Testing",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Nasıl <code>CMP</code> çıkarma yapıp hedefi bozmuyorsa, <strong><code>TEST hedef, maske</code></strong> komutu da <code>AND</code> işlemini yapıp <code>ZF</code> bayrağını kurar ama <strong>hedef yazmacın içindeki sayıyı kesinlikle bozmaz!</strong></p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>TEST dest, mask</code> performs a bitwise <code>AND</code> solely to update the flags (<code>ZF</code>) without modifying <code>dest</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-5-2-3",
+            "title": "TEST ile Veriyi Bozmadan Bit Kontrolü",
+            "difficulty": "Kolay",
+            "scenario": "AL = 85h değerinde en sağdaki bitin (bit 0) 0 olup olmadığını kontrol etmek için TEST AL, 02h çalıştıracağız (Bit 1 sıfır olduğu için ZF=1 olur ama AL=85h bozulmaz).",
+            "taskPrompt": "AL = 85h yüklü iken TEST AL, 02h komutunu çalıştırın.",
+            "starterCode": "; Adım 3: TEST AL, 02h ile AL değerini bozmadan bit testi yapın\nORG 100h\nMOV AL, 85h\n\n; TEST komutunu buraya yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 85h\nTEST AL, 02h\nHLT\n",
+            "hints": [
+              "TEST AL, 02h yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 133
+              },
+              "flags": {
+                "zf": 1
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-5-3-shifts-rotates-and-string-comparisons",
@@ -169,7 +340,89 @@ export const TOPIC_5: MainTopic = {
           }
         },
         "examTip": "SHL ve ADD kombinasyonu, MUL komutuna göre donanımda onlarca saat çevrimi tasarruf sağlar."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-5-3-1",
+          "stepNumber": "Adım 1",
+          "title": "SHL (Sola Kaydırma = 2 ile Çarpma) ve SHR (Sağa Kaydırma = 2'ye Bölme)",
+          "titleEn": "Step 1: SHL (Multiply by 2) and SHR (Unsigned Divide by 2)",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Bitleri 1 basamak sola kaydırmak (<code>SHL AX, 1</code>) sayıyı <strong>2 ile çarpar</strong>; 1 basamak sağa kaydırmak (<code>SHR BX, 1</code>) ise işaretsiz sayıyı <strong>2'ye böler</strong>!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Shifting left by 1 bit (<code>SHL AX, 1</code>) multiplies by 2; shifting right by 1 bit (<code>SHR BX, 1</code>) divides an unsigned value by 2.</p>\n      ",
+          "task": {
+            "id": "ms-task-5-3-1",
+            "title": "SHL ile 2 Katına Çıkarma ve SHR ile Yarıya Bölme",
+            "difficulty": "Kolay",
+            "scenario": "AX = 15 değerini SHL AX, 1 ile 30 yapacağız; BX = 40 değerini ise SHR BX, 1 ile 20 yapacağız.",
+            "taskPrompt": "SHL AX, 1 ve SHR BX, 1 komutlarını çalıştırın.",
+            "starterCode": "; Adım 1: AX'i 1 bit sola (SHL), BX'i 1 bit sağa (SHR) kaydırın\nORG 100h\nMOV AX, 15\nMOV BX, 40\n\n; SHL ve SHR komutlarını yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 15\nMOV BX, 40\nSHL AX, 1\nSHR BX, 1\nHLT\n",
+            "hints": [
+              "SHL AX, 1 ve SHR BX, 1 yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 30,
+                "bx": 20
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-5-3-2",
+          "stepNumber": "Adım 2",
+          "title": "SAR (Shift Arithmetic Right): Negatif Sayının İşaretini Koruyarak Sağa Kaydırmak",
+          "titleEn": "Step 2: SAR (Shift Arithmetic Right): Sign-Preserving Right Shift",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Negatif bir sayıyı (en sol biti <code>1</code>) <code>SHR</code> ile sağa kaydırırsanız soldan <code>0</code> girer ve sayı pozitif olur (bozulur)! <strong><code>SAR</code></strong> komutu ise sağa kaydırırken en sol işaret bitini korur; böylece <code>-16 (0F0h)</code> sayısı <code>SAR AL, 1</code> ile doğru şekilde <code>-8 (0F8h)</code> olur!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>SAR</code> preserves the sign bit (MSB) when shifting right, correctly dividing signed negative numbers by 2.</p>\n      ",
+          "task": {
+            "id": "ms-task-5-3-2",
+            "title": "SAR ile Negatif Sayıyı İşaretini Koruyarak 2'ye Bölme",
+            "difficulty": "Kolay",
+            "scenario": "AL = 0F0h (-16) değerini SAR AL, 1 ile 1 bit aritmetik sağa kaydırarak -8 (0F8h) elde edeceğiz.",
+            "taskPrompt": "AL = 0F0h yüklü iken SAR AL, 1 komutunu çalıştırın.",
+            "starterCode": "; Adım 2: SAR AL, 1 ile işaret koruyarak sağa kaydırın\nORG 100h\nMOV AL, 0F0h\n\n; SAR komutunu yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 0F0h\nSAR AL, 1\nHLT\n",
+            "hints": [
+              "SAR AL, 1 yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 248
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-5-3-3",
+          "stepNumber": "Adım 3",
+          "title": "SHL + RCL İkilisi ile Çok Kelimeli (32-Bit DX:AX) Sola Kaydırma",
+          "titleEn": "Step 3: Multi-Word Shift Left Using SHL + RCL",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Hocanın Week 5 slaytlarındaki klasik teknik: 32-bitlik <code>DX:AX</code> çiftini 1 bit sola kaydırmak için:</p>\n        <ol>\n          <li>Alt kelimeyi normal sola kaydır: <code>SHL AX, 1</code> (En soldan taşan bit <code>CF</code>'ye düşer!)</li>\n          <li>Üst kelimeyi Elde üzerinden sola döndür: <code>RCL DX, 1</code> (<code>CF</code>'deki bit <code>DX</code>'in en sağ bitine girer!)</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> To shift a 32-bit value in <code>DX:AX</code> left by 1 bit: first <code>SHL AX, 1</code> (MSB shifts into <code>CF</code>), then <code>RCL DX, 1</code> (shifts <code>CF</code> into bit 0 of <code>DX</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-5-3-3",
+            "title": "SHL AX, 1 ve RCL DX, 1 ile 32-Bit Sola Kaydırma",
+            "difficulty": "Orta",
+            "scenario": "DX = 0000h ve AX = 8000h iken SHL AX, 1 ve RCL DX, 1 çalıştırarak AX'in en solundaki 1 bitinin DX'in en sağ bitine (DX = 0001h, AX = 0000h) geçtiğini göreceğiz.",
+            "taskPrompt": "Sırasıyla SHL AX, 1 ve RCL DX, 1 komutlarını çalıştırın.",
+            "starterCode": "; Adım 3: 32-bit DX:AX çiftini 1 bit sola kaydırın\nORG 100h\nMOV DX, 0000h\nMOV AX, 8000h\n\n; SHL AX, 1 ve RCL DX, 1 yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV DX, 0000h\nMOV AX, 8000h\nSHL AX, 1\nRCL DX, 1\nHLT\n",
+            "hints": [
+              "SHL AX, 1 ardından RCL DX, 1 yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "dx": 1,
+                "ax": 0
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {

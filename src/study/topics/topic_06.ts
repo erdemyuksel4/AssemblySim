@@ -71,7 +71,61 @@ export const TOPIC_6: MainTopic = {
           }
         },
         "examTip": "İşaretli sayılarda JL (Less) ve JG (Greater); işaretsiz sayılarda JB (Below) ve JA (Above) kullanılır."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-6-1-1",
+          "stepNumber": "Adım 1",
+          "title": "Koşullu Sıçrama Temeli: CMP Sonrası JE (Eşitse Sıçra) ve JNE (Eşit Değilse Sıçra)",
+          "titleEn": "Step 1: Conditional Jump Basics: CMP Followed by JE / JNE",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Assembly'de <code>if (AX == BX)</code> yazmanın yolu iki adımdır:</p>\n        <ol>\n          <li>Önce iki sayıyı karşılaştır: <code>CMP AX, BX</code></li>\n          <li>Eşitse sıçra: <code>JE etiket</code> (Jump if Equal — <code>ZF = 1</code> ise sıçrar) veya eşit değilse sıçra: <code>JNE etiket</code>.</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> First compare with <code>CMP AX, BX</code>, then branch with <code>JE label</code> (Jump if Equal, when <code>ZF = 1</code>) or <code>JNE label</code> (Jump if Not Equal).</p>\n      ",
+          "task": {
+            "id": "ms-task-6-1-1",
+            "title": "CMP ve JE ile Eşitlik Kontrolü",
+            "difficulty": "Kolay",
+            "scenario": "AX = 42h ve BX = 42h değerlerini CMP AX, BX ile karşılaştırıp JE esit_etiket komutuyla sıçrayarak DX = 1 yapacağız.",
+            "taskPrompt": "CMP AX, BX ve ardından JE esit_etiket komutlarını yazın.",
+            "starterCode": "; Adım 1: AX ve BX eşitse esit_etiket satırına sıçrayın\nORG 100h\nMOV AX, 42h\nMOV BX, 42h\nMOV DX, 0\n\n; CMP AX, BX ve JE esit_etiket yazın:\n\n\nHLT\nesit_etiket:\nMOV DX, 1\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 42h\nMOV BX, 42h\nMOV DX, 0\nCMP AX, BX\nJE esit_etiket\nHLT\nesit_etiket:\nMOV DX, 1\nHLT\n",
+            "hints": [
+              "CMP AX, BX ardından JE esit_etiket yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "dx": 1
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-6-1-2",
+          "stepNumber": "Adım 2",
+          "title": "İşaretsiz (JA / JB) vs İşaretli (JG / JL) Sıçrama Farkı",
+          "titleEn": "Step 2: Unsigned (JA / JB) vs Signed (JG / JL) Conditional Jumps",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Sınavların en klasik sorusu:</p>\n        <ul>\n          <li><strong>İşaretsiz (Unsigned 0..65535) sayılarda:</strong> Büyükse <code>JA (Above)</code>, Küçükse <code>JB (Below)</code> kullanılır.</li>\n          <li><strong>İşaretli (Signed +/-) sayılarda:</strong> Büyükse <code>JG (Greater)</code>, Küçükse <code>JL (Less)</code> kullanılır.</li>\n          <li>Örneğin <code>0FFh</code> sayısı işaretsiz bakıldığında <code>255</code>'tir (<code>01h</code>'den büyüktür &rarr; <code>JA</code> sıçrar), ama işaretli bakıldığında <code>-1</code>'dir (<code>01h</code>'den küçüktür &rarr; <code>JL</code> sıçrar)!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Use <code>JA / JB</code> (Above / Below) for unsigned numbers, and <code>JG / JL</code> (Greater / Less) for signed two's-complement numbers.</p>\n      ",
+          "task": {
+            "id": "ms-task-6-1-2",
+            "title": "JA (Jump if Above) ile İşaretsiz Büyük Sayıyı Seçme",
+            "difficulty": "Kolay",
+            "scenario": "AL = 0FFh (işaretsiz 255) ve BL = 01h değerlerini CMP AL, BL ile karşılaştırıp JA daha_buyuk ile sıçrayarak CL = 0FFh yapacağız.",
+            "taskPrompt": "CMP AL, BL ve JA daha_buyuk komutlarını yazarak işaretsiz karşılaştırmayı tamamlayın.",
+            "starterCode": "; Adım 2: İşaretsiz AL (0FFh) > BL (01h) ise daha_buyuk etiketine sıçrayın\nORG 100h\nMOV AL, 0FFh\nMOV BL, 01h\nMOV CL, 0\n\n; CMP AL, BL ve JA daha_buyuk yazın:\n\n\nHLT\ndaha_buyuk:\nMOV CL, AL\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 0FFh\nMOV BL, 01h\nMOV CL, 0\nCMP AL, BL\nJA daha_buyuk\nHLT\ndaha_buyuk:\nMOV CL, AL\nHLT\n",
+            "hints": [
+              "CMP AL, BL ardından JA daha_buyuk yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "cl": 255
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-6-2-loops-and-classroom-case-studies",
@@ -113,7 +167,64 @@ export const TOPIC_6: MainTopic = {
           }
         },
         "examTip": "LOOP komutunun CX yazmacını sıfırlayarak çıktığını unutmayın; döngü bittiğinde CX daima 0 olur."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-6-2-1",
+          "stepNumber": "Adım 1",
+          "title": "LOOP Komutu Nasıl Çalışır? (CX Sayacını Otomatik 1 Azaltır ve CX != 0 İse Sıçrar)",
+          "titleEn": "Step 1: How LOOP Works: Decrements CX and Branches While CX != 0",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Bir işlemi <code>N</code> kez tekrarlamak için tekrar sayısını <strong><code>CX</code></strong> yazmacına koyarız. <code>LOOP etiket</code> komutu tek başına şu iki işi yapar:</p>\n        <ol>\n          <li><code>CX = CX - 1</code> (Sayacı 1 azaltır)</li>\n          <li>Eğer <code>CX != 0</code> ise <code>etiket:</code> satırına geri sıçrar; <code>CX == 0</code> olduysa döngüden çıkar!</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Load the iteration count into <code>CX</code>. Each execution of <code>LOOP label</code> decrements <code>CX</code> by 1 and jumps to <code>label</code> if <code>CX != 0</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-6-2-1",
+            "title": "LOOP ile 4 Kez Döngü Çalıştırma",
+            "difficulty": "Kolay",
+            "scenario": "CX = 4 kurup dongu: etiketi altında her adımda AX değerini 10 artırarak (ADD AX, 10) döngü sonunda AX = 40 elde edeceğiz.",
+            "taskPrompt": "dongu: etiketi altına ADD AX, 10 ve LOOP dongu komutlarını yazın.",
+            "starterCode": "; Adım 1: 4 kez ADD AX, 10 yapan LOOP döngüsü\nORG 100h\nMOV AX, 0\nMOV CX, 4\ndongu:\n; AX'e 10 ekleyin ve LOOP dongu yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0\nMOV CX, 4\ndongu:\nADD AX, 10\nLOOP dongu\nHLT\n",
+            "hints": [
+              "ADD AX, 10 ve altına LOOP dongu yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 40,
+                "cx": 0
+              },
+              "maxSteps": 50
+            }
+          }
+        },
+        {
+          "id": "ms-6-2-2",
+          "stepNumber": "Adım 2",
+          "title": "İç İçe Döngülerde (Nested Loops) Yığın Kullanımı: PUSH CX ve POP CX",
+          "titleEn": "Step 2: Nested Loops and the Stack: Saving Outer CX with PUSH CX / POP CX",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Hocanın Week 6 slaytlarındaki çok önemli kural: Hem dış döngü hem de iç döngü aynı <code>CX</code> yazmacını kullanır! İç döngü <code>CX</code>'i sıfırladığı için dış döngü bozulmasın diye:</p>\n        <ol>\n          <li>Dış döngünün başında dış sayacı yığına kaydet: <strong><code>PUSH CX</code></strong></li>\n          <li>İç döngü için yeni <code>CX</code> kur ve iç <code>LOOP</code>'u çalıştır.</li>\n          <li>Dış döngünün <code>LOOP</code> satırından hemen önce dış sayacı yığından geri çek: <strong><code>POP CX</code></strong>!</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Because both outer and inner <code>LOOP</code> instructions share <code>CX</code>, a nested loop must <code>PUSH CX</code> before loading the inner count, and <code>POP CX</code> right before the outer <code>LOOP</code> instruction!</p>\n      ",
+          "task": {
+            "id": "ms-task-6-2-2",
+            "title": "PUSH CX ve POP CX ile İç İçe Döngü (2 × 3 = 6 Tekrar)",
+            "difficulty": "Orta",
+            "scenario": "Dış döngü 2 kez, iç döngü 3 kez dönecek. Dış sayacı PUSH CX ve POP CX ile yığında koruyarak INC AX komutunun toplam 2 × 3 = 6 kez çalışmasını sağlayacağız.",
+            "taskPrompt": "1. boşluğa PUSH CX, 2. boşluğa POP CX yazarak iç içe döngünün doğru çalışmasını sağlayın.",
+            "starterCode": "; Adım 2: PUSH CX ve POP CX ile İç İçe Döngü (2 x 3 = 6)\nORG 100h\nMOV SP, 0200h\nMOV AX, 0\nMOV CX, 2          ; Dış döngü sayacı = 2\ndis_dongu:\n; 1. Dış döngü sayacını (CX) yığına kaydedin:\n\nMOV CX, 3          ; İç döngü sayacı = 3\nic_dongu:\nINC AX\nLOOP ic_dongu\n\n; 2. Dış döngü sayacını (CX) yığından geri çekin:\n\nLOOP dis_dongu\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 0\nMOV CX, 2\ndis_dongu:\nPUSH CX\nMOV CX, 3\nic_dongu:\nINC AX\nLOOP ic_dongu\nPOP CX\nLOOP dis_dongu\nHLT\n",
+            "hints": [
+              "İlk boşluğa PUSH CX, ikinci boşluğa POP CX yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 6,
+                "cx": 0,
+                "sp": 512
+              },
+              "maxSteps": 100
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-6-3-procedures-and-interrupts",
@@ -154,7 +265,65 @@ export const TOPIC_6: MainTopic = {
           }
         },
         "examTip": "Alt yordam yazarken RET komutunu unutursanız işlemci bellekteki rastgele baytları komut gibi yürütmeye devam eder."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-6-3-1",
+          "stepNumber": "Adım 1",
+          "title": "CALL ve RET Yığınla (Stack) Nasıl Çalışır? (Dönüş Adresini PUSH ve POP Etmek)",
+          "titleEn": "Step 1: How CALL and RET Use the Stack (Pushing and Popping Return IP)",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Alt yordam (fonksiyon / prosedür) çağırmak için <code>CALL yordam</code>, alt yordamdan geri dönmek için <code>RET</code> kullanılır. Peki işlemci nereye geri döneceğini nereden bilir? <strong>Yığın (Stack) sayesinde!</strong></p>\n        <ul>\n          <li><code>CALL yordam</code> &rarr; Bir sonraki satırın adresini (<code>IP</code>) otomatik olarak yığına <strong><code>PUSH</code></strong> eder ve alt yordama sıçrar.</li>\n          <li><code>RET</code> &rarr; Yığının tepesindeki dönüş adresini otomatik olarak <strong><code>POP</code></strong> edip <code>IP</code>'ye yazar ve kaldığı satıra geri döner!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>CALL proc</code> automatically pushes the return <code>IP</code> onto the stack and jumps to <code>proc</code>. <code>RET</code> pops the return <code>IP</code> from the stack to resume execution right after the <code>CALL</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-6-3-1",
+            "title": "CALL ve RET ile Alt Yordam Çağırma ve Dönme",
+            "difficulty": "Kolay",
+            "scenario": "AX = 10h yüklü iken CALL on_ekle ile alt yordamı çağıracağız; alt yordam ADD AX, 10h yapıp RET ile geri dönecek.",
+            "taskPrompt": "Ana programda CALL on_ekle, alt yordam sonunda ise RET komutunu yazın.",
+            "starterCode": "; Adım 1: CALL ve RET kullanımı\nORG 100h\nMOV SP, 0200h\nMOV AX, 10h\n\n; 1. on_ekle alt yordamını çağırın:\n\nMOV BX, AX\nHLT\n\non_ekle:\nADD AX, 10h\n; 2. Çağrıldığı yere geri dönün:\n\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 10h\nCALL on_ekle\nMOV BX, AX\nHLT\non_ekle:\nADD AX, 10h\nRET\n",
+            "hints": [
+              "İlk boşluğa CALL on_ekle, ikinci boşluğa RET yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 32,
+                "bx": 32,
+                "sp": 512
+              },
+              "maxSteps": 40
+            }
+          }
+        },
+        {
+          "id": "ms-6-3-2",
+          "stepNumber": "Adım 2",
+          "title": "Alt Yordam İçinde PUSH ve POP Dengesi: Neden RET'ten Önce POP Yapılmalıdır?",
+          "titleEn": "Step 2: Stack Balance Inside a Procedure: Why Every PUSH Must Be POPped Before RET",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Bir alt yordamın içinde <code>PUSH BX</code> yaparak <code>BX</code>'i yığına koyduğunuzu düşünün. Yığının en tepesinde artık dönüş adresi değil, <code>BX</code>'in değeri duruyor! Eğer <code>RET</code>'ten önce <strong><code>POP BX</code> yapmayı unutursanız</strong>, <code>RET</code> komutu dönüş adresi sanarak <code>BX</code>'in değerini <code>IP</code>'ye çeker ve program çöker!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Any register pushed inside a procedure must be popped before <code>RET</code>! Otherwise, <code>RET</code> will pop the saved register value instead of the return <code>IP</code> address.</p>\n      ",
+          "task": {
+            "id": "ms-task-6-3-2",
+            "title": "Prosedür İçinde BX Yazmacını PUSH ve POP ile Koruma",
+            "difficulty": "Orta",
+            "scenario": "Ana programda BX = 5555h değerinin bozulmaması gerekiyor. hesapla alt yordamı başında PUSH BX, sonunda ise RET'ten hemen önce POP BX yazacağız.",
+            "taskPrompt": "hesapla: alt yordamının başına PUSH BX, RET satırından hemen öncesine ise POP BX ekleyin.",
+            "starterCode": "; Adım 2: Alt yordam içinde PUSH BX ve POP BX dengesi\nORG 100h\nMOV SP, 0200h\nMOV AX, 10h\nMOV BX, 5555h\nCALL hesapla\nHLT\n\nhesapla:\n; 1. BX yazmacını yığında koruyun:\n\nMOV BX, 20h\nADD AX, BX\n; 2. RET öncesinde BX yazmacını yığından geri yükleyin:\n\nRET\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 10h\nMOV BX, 5555h\nCALL hesapla\nHLT\nhesapla:\nPUSH BX\nMOV BX, 20h\nADD AX, BX\nPOP BX\nRET\n",
+            "hints": [
+              "İlk boşluğa PUSH BX, ikinci boşluğa POP BX yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 48,
+                "bx": 21845,
+                "sp": 512
+              },
+              "maxSteps": 50
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {

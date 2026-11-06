@@ -68,7 +68,391 @@ export const TOPIC_10: MainTopic = {
           "maxSteps": 50
         },
         "examTip": "LIFO kuralı gereğince yığına atılan sıra A, B, C ise yığından çekilen sıra C, B, A olur."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "step-10-1-1",
+          "stepNumber": "Adım 1",
+          "title": "Sıfırdan Yığın (Stack) Nedir ve İlk PUSH Komutumuz Nasıl Çalışır?",
+          "titleEn": "Stack Step 1: What is the Stack from Zero and How Does PUSH Work?",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Yığın (Stack), üst üste dizilen tabaklar gibi çalışan özel bir bellek bölgesidir. Bir yazmaçtaki 16-bitlik sayıyı geçici olarak yığının en üstüne koymak için <code>PUSH yazmaç16</code> komutu kullanılır.</p>\n        <ul>\n          <li>Örneğin <code>PUSH AX</code> yazdığınızda, <code>AX</code> içindeki 16-bitlik değer yığının tepesine kopyalanır (<code>AX</code>'in kendi içindeki değer bozulmaz).</li>\n          <li><strong>Altın Kural #1:</strong> Yığına sadece <strong>16-bitlik (2 baytlık)</strong> tam yazmaçlar (<code>AX, BX, CX, DX, SI, DI, BP</code> veya segment yazmaçları) konulabilir. 8-bitlik <code>PUSH AL</code> veya <code>PUSH BL</code> yazmak <strong>YASAKTIR!</strong></li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The <strong>Stack</strong> is a temporary memory area that works like a stack of plates. <code>PUSH reg16</code> places a copy of a 16-bit register on top of the stack. Only 16-bit words can be pushed (<code>PUSH AL</code> is illegal!).</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-1",
+            "title": "İlk PUSH Komutu: AX Yazmacını Yığına Koymak",
+            "difficulty": "Kolay",
+            "scenario": "Yığın işaretçimiz SP = 0200h adresinde duruyor. AX yazmacına 1234h yükleyip PUSH AX komutuyla yığına koyacağız.",
+            "taskPrompt": "AX yazmacına 1234h yükleyin ve PUSH AX komutu ile yığına atın.",
+            "starterCode": "; Stack Adım 1: AX içine 1234h yükleyip PUSH AX yapın\nORG 100h\nMOV SP, 0200h\n\n; Kodunuzu buraya yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1234h\nPUSH AX\nHLT\n",
+            "hints": [
+              "MOV AX, 1234h yazın.",
+              "Hemen altına PUSH AX ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4660,
+                "sp": 510
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 510,
+                  "expectedBytes": [
+                    52,
+                    18
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-2",
+          "stepNumber": "Adım 2",
+          "title": "SP (Stack Pointer) Nedir? Her PUSH Yapıldığında SP Neden 2 Azalır?",
+          "titleEn": "Stack Step 2: What is SP? Why Does Every PUSH Decrease SP by 2?",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Yığının o anki en üst noktasını (tepesini) takip eden yazmaca <strong><code>SP</code> (Stack Pointer - Yığın İşaretçisi)</strong> denir. 8086'da yığın belleği <strong>yüksek adreslerden düşük adreslere doğru (aşağı yönde)</strong> büyür!</p>\n        <ul>\n          <li>Her <code>PUSH</code> komutu belleğe <strong>2 bayt (16 bit)</strong> yazdığı için, işlemci önce <code>SP = SP - 2</code> yapar, sonra veriyi yeni <code>[SP]</code> adresine yazar.</li>\n          <li>Örnek: Başlangıçta <code>SP = 0200h</code> olsun:\n            <br>1. <code>PUSH AX</code> &rarr; <code>SP</code> 2 azalır ve <code>01FEh</code> olur.\n            <br>2. <code>PUSH BX</code> &rarr; <code>SP</code> 2 daha azalır ve <code>01FCh</code> olur!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <strong><code>SP</code> (Stack Pointer)</strong> points to the current top of the stack. Because the stack grows downward in memory and each word is 2 bytes, every <code>PUSH</code> executes <code>SP = SP - 2</code>.</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-2",
+            "title": "İki Kez PUSH Yaparak SP'nin 4 Azaldığını (0200h -> 01FCh) Görmek",
+            "difficulty": "Kolay",
+            "scenario": "SP = 0200h iken AX = 1111h ve BX = 2222h değerlerini art arda yığına PUSH edeceğiz ve SP değerinin 01FCh olduğunu doğrulayacağız.",
+            "taskPrompt": "AX yazmacına 1111h, BX yazmacına 2222h yükleyin. Sırasıyla PUSH AX ve PUSH BX komutlarını çalıştırın.",
+            "starterCode": "; Stack Adım 2: İki kez PUSH yapıp SP değişimini gözlemleyin\nORG 100h\nMOV SP, 0200h\n\n; AX=1111h, BX=2222h yükleyip PUSH AX ve PUSH BX yapın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1111h\nMOV BX, 2222h\nPUSH AX\nPUSH BX\nHLT\n",
+            "hints": [
+              "MOV AX, 1111h ve MOV BX, 2222h yazın.",
+              "PUSH AX ve PUSH BX ekleyin. SP 0200h -> 01FEh -> 01FCh olacaktır."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4369,
+                "bx": 8738,
+                "sp": 508
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 508,
+                  "expectedBytes": [
+                    34,
+                    34,
+                    17,
+                    17
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-3",
+          "stepNumber": "Adım 3",
+          "title": "POP Komutu Nedir? Yığının Tepesindeki Veriyi Geri Çekmek (SP = SP + 2)",
+          "titleEn": "Stack Step 3: What is POP? Pulling Data Back from the Top of the Stack",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Yığının en tepesindeki 16-bitlik veriyi alıp bir yazmacın içine koymak için <code>POP hedef16</code> komutu kullanılır.</p>\n        <ul>\n          <li><code>POP DX</code> çalıştırıldığında:\n            <br>1. İşlemci o anki <code>[SP]</code> adresinde duran 16-bitlik sayıyı okur ve <code>DX</code> yazmacına yazar.\n            <br>2. Yığından 2 bayt eksildiği için <code>SP = SP + 2</code> yaparak <code>SP</code>'yi eski yerine geri çıkarır!</li>\n          <li>Önemli: <code>PUSH AX</code> ile koyduğunuz veriyi illa <code>AX</code>'e çekmek zorunda değilsiniz; <code>POP DX</code> yazarak <code>DX</code> içine de çekebilirsiniz!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>POP dest16</code> reads the 16-bit word at the current top of the stack (<code>[SP]</code>) into <code>dest16</code>, and then increments <code>SP</code> by 2 (<code>SP = SP + 2</code>).</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-3",
+            "title": "PUSH AX ile Yığına Konulan Değeri POP DX ile Çekmek",
+            "difficulty": "Kolay",
+            "scenario": "AX = 5678h değerini PUSH AX ile yığına koyacağız (SP 01FEh olur), ardından POP DX ile yığının tepesinden DX yazmacına çekeceğiz (SP tekrar 0200h olur).",
+            "taskPrompt": "AX yazmacına 5678h yükleyin. PUSH AX ile yığına atın, ardından POP DX komutuyla bu değeri DX yazmacına çekin.",
+            "starterCode": "; Stack Adım 3: PUSH AX ve POP DX uygulaması\nORG 100h\nMOV SP, 0200h\n\n; AX = 5678h yükleyin, PUSH AX yapın ve POP DX ile DX içine çekin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 5678h\nPUSH AX\nPOP DX\nHLT\n",
+            "hints": [
+              "MOV AX, 5678h",
+              "PUSH AX",
+              "POP DX"
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 22136,
+                "dx": 22136,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-4",
+          "stepNumber": "Adım 4",
+          "title": "LIFO (Son Giren İlk Çıkar) Kuralı: En Son PUSH Edilen İlk POP Edilir!",
+          "titleEn": "Stack Step 4: LIFO (Last-In, First-Out): Last Pushed is First Popped!",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Üst üste koyduğunuz tabaklardan en üsttekini ilk alırsınız. Buna <strong>LIFO (Last-In, First-Out / Son Giren İlk Çıkar)</strong> denir!</p>\n        <pre><code>PUSH AX   ; 1. tabak (Altta: 1111h)\nPUSH BX   ; 2. tabak (En üstte: 2222h)\nPOP CX    ; En üstteki tabağı alır! Yani CX = 2222h olur!\nPOP DX    ; Şimdi alttaki tabağı alır! Yani DX = 1111h olur!</code></pre>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The stack obeys <strong>LIFO (Last-In, First-Out)</strong>. If you <code>PUSH AX</code> then <code>PUSH BX</code>, the very first <code>POP</code> retrieves <code>BX</code>'s value because <code>BX</code> was pushed last!</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-4",
+            "title": "LIFO Sırasını Deneyerek Görme (Son Giren İlk Çıkar)",
+            "difficulty": "Kolay",
+            "scenario": "AX = 0AAAAh ve BX = 0BBBBh değerlerini sırayla PUSH edeceğiz. Ardından ilk POP CX komutunun en son giren 0BBBBh değerini, ikinci POP DX komutunun ise ilk giren 0AAAAh değerini aldığını göreceğiz.",
+            "taskPrompt": "AX = 0AAAAh ve BX = 0BBBBh yükleyin. Sırasıyla PUSH AX ve PUSH BX yapın. Ardından POP CX ve POP DX komutlarını çalıştırın.",
+            "starterCode": "; Stack Adım 4: LIFO (Son Giren İlk Çıkar) deneyi\nORG 100h\nMOV SP, 0200h\nMOV AX, 0AAAAh\nMOV BX, 0BBBBh\n\n; Sırasıyla PUSH AX, PUSH BX, ardından POP CX, POP DX yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 0AAAAh\nMOV BX, 0BBBBh\nPUSH AX\nPUSH BX\nPOP CX\nPOP DX\nHLT\n",
+            "hints": [
+              "PUSH AX",
+              "PUSH BX",
+              "POP CX  ; CX = BBBBh olur",
+              "POP DX  ; DX = AAAAh olur"
+            ],
+            "assertions": {
+              "registers": {
+                "cx": 48059,
+                "dx": 43690,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-5",
+          "stepNumber": "Adım 5",
+          "title": "PUSH ve POP Kullanarak İki Yazmacın Değerini Takas Etmek (Swap)",
+          "titleEn": "Stack Step 5: Swapping Two Registers Using PUSH and POP",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> LIFO kuralı sayesinde üçüncü bir geçici yazmaç kullanmadan <code>AX</code> ile <code>BX</code>'in değerlerini yığın üzerinde yer değiştirebiliriz:</p>\n        <ol>\n          <li><code>PUSH AX</code> (Altta <code>AX</code>'in eski değeri var)</li>\n          <li><code>PUSH BX</code> (En üstte <code>BX</code>'in eski değeri var)</li>\n          <li><code>POP AX</code> (En üstteki <code>BX</code> değeri <code>AX</code>'e çekildi!)</li>\n          <li><code>POP BX</code> (Alttaki <code>AX</code> değeri <code>BX</code>'e çekildi!)</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Because of LIFO, executing <code>PUSH AX</code>, <code>PUSH BX</code> followed by <code>POP AX</code>, <code>POP BX</code> swaps the values of <code>AX</code> and <code>BX</code>!</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-5",
+            "title": "Yığın (PUSH/POP) ile AX ve BX Değerlerini Takas Etme",
+            "difficulty": "Kolay",
+            "scenario": "AX = 1000h ve BX = 9000h değerlerini sadece PUSH ve POP komutlarını kullanarak takas edeceğiz (AX = 9000h, BX = 1000h olacak).",
+            "taskPrompt": "PUSH AX, PUSH BX ve ardından POP AX, POP BX komutlarını kullanarak AX (1000h) ile BX (9000h) değerlerini takas edin.",
+            "starterCode": "; Stack Adım 5: PUSH ve POP ile AX ve BX takası\nORG 100h\nMOV SP, 0200h\nMOV AX, 1000h\nMOV BX, 9000h\n\n; PUSH ve POP komutlarıyla AX ve BX değerlerini takas edin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1000h\nMOV BX, 9000h\nPUSH AX\nPUSH BX\nPOP AX\nPOP BX\nHLT\n",
+            "hints": [
+              "Önce PUSH AX ve PUSH BX yazın.",
+              "Sonra aynı sırayla POP AX ve POP BX yazın!"
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 36864,
+                "bx": 4096,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-6",
+          "stepNumber": "Adım 6",
+          "title": "Yığında Little-Endian Bayt Dizilimi: [SP] Düşük Bayt, [SP+1] Yüksek Bayt",
+          "titleEn": "Stack Step 6: Little-Endian Byte Layout on the Stack ([SP] = Low, [SP+1] = High)",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Hocanın Week 3 slaytlarında özellikle vurguladığı detay: <code>SP = 0200h</code> iken <code>AX = 1234h</code> için <code>PUSH AX</code> yaptığımızda 2 bayt belleğe nasıl yerleşir?</p>\n        <ul>\n          <li>Üst bayt <code>AH (12h)</code> &rarr; <code>[SP - 1] = [01FFh]</code> adresine yazılır.</li>\n          <li>Alt bayt <code>AL (34h)</code> &rarr; <code>[SP - 2] = [01FEh]</code> (yeni <code>SP</code> tepesi) adresine yazılır.</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> When <code>PUSH AX</code> pushes <code>1234h</code> onto the stack (with <code>SP = 0200h</code>), <code>[01FFh]</code> receives the high byte <code>12h</code> (<code>AH</code>) and <code>[01FEh]</code> (the new <code>SP</code>) receives the low byte <code>34h</code> (<code>AL</code>).</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-6",
+            "title": "Yığına PUSH Edilen Kelimenin Düşük ve Yüksek Baytlarını Bellekten Okuma",
+            "difficulty": "Orta",
+            "scenario": "SP = 0200h iken AX = 4567h değerini PUSH AX ile yığına atacağız (Yeni SP = 01FEh olur). Ardından [01FEh] adresindeki düşük baytı (67h) CL yazmacına, [01FFh] adresindeki yüksek baytı (45h) CH yazmacına okuyacağız.",
+            "taskPrompt": "AX = 4567h değerini PUSH AX ile yığına atın. Ardından MOV CL, [01FEh] ve MOV CH, [01FFh] ile yığındaki baytları okuyun.",
+            "starterCode": "; Stack Adım 6: Yığındaki Little-Endian baytları inceleme\nORG 100h\nMOV SP, 0200h\nMOV AX, 4567h\n\n; 1. AX yazmacını PUSH edin:\n; 2. [01FEh] adresini CL içine, [01FFh] adresini CH içine okuyun:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 4567h\nPUSH AX\nMOV CL, [01FEh]\nMOV CH, [01FFh]\nHLT\n",
+            "hints": [
+              "PUSH AX yazın.",
+              "MOV CL, [01FEh] ve MOV CH, [01FFh] ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 17767,
+                "sp": 510,
+                "cl": 103,
+                "ch": 69
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-7",
+          "stepNumber": "Adım 7",
+          "title": "Segment Yazmacını Yığına Atmak: PUSH DS ve POP ES ile Segment Kopyalama",
+          "titleEn": "Stack Step 1: Pushing Segment Registers: Copying DS to ES via PUSH DS / POP ES",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Week 3'te genel yazmaçları (<code>PUSH AX</code>) yığına atmayı öğrendik. <code>PUSH</code> ve <code>POP</code> komutları <strong>Segment Yazmaçlarıyla (<code>CS, DS, ES, SS</code>)</strong> da çalışır! (Yalnızca <code>POP CS</code> yasaktır).</p>\n        <p>Hatırlarsanız <code>MOV ES, DS</code> yasaktı. Yığın sayesinde hiçbir genel yazmacı (<code>AX</code>'i) bozmadan <code>DS</code>'yi <code>ES</code>'ye kopyalayabiliriz:</p>\n        <pre><code>PUSH DS   ; DS değerini yığının tepesine koy\nPOP ES    ; Yığının tepesindeki değeri ES içine çek!</code></pre>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>PUSH</code> and <code>POP</code> also work with segment registers (except <code>POP CS</code>, which is illegal). Since <code>MOV ES, DS</code> is illegal, <code>PUSH DS</code> followed by <code>POP ES</code> copies <code>DS</code> into <code>ES</code> without touching <code>AX</code>!</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-7",
+            "title": "PUSH DS ve POP ES ile Segment Kopyalama",
+            "difficulty": "Kolay",
+            "scenario": "DS segment yazmacında 0250h değeri var ve AX yazmacı dolu (9999h). AX'e hiç dokunmadan PUSH DS ve POP ES kullanarak DS değerini ES'ye kopyalayacağız.",
+            "taskPrompt": "PUSH DS ve POP ES komutlarını kullanarak DS (0250h) değerini ES segment yazmacına kopyalayın.",
+            "starterCode": "; Stack Adım 1: AX değerini bozmadan PUSH DS ve POP ES ile DS -> ES aktarımı\nORG 100h\nMOV SP, 0200h\nMOV AX, 0250h\nMOV DS, AX\nMOV AX, 9999h ; AX artık dolu, AX'i değiştirmeyin!\n\n; PUSH DS ve POP ES komutlarını buraya yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 0250h\nMOV DS, AX\nMOV AX, 9999h\nPUSH DS\nPOP ES\nHLT\n",
+            "hints": [
+              "PUSH DS yazın.",
+              "Altına POP ES ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 39321,
+                "ds": 592,
+                "es": 592,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-8",
+          "stepNumber": "Adım 8",
+          "title": "Bellek Hücresini Doğrudan Yığına Atmak: PUSH WORD PTR [BX]",
+          "titleEn": "Stack Step 2: Pushing a 16-Bit Memory Word Directly: PUSH WORD PTR [BX]",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Bellekteki 16-bitlik bir kelimeyi yığına atmak için önce bir yazmaca yüklemenize gerek yoktur! <code>PUSH WORD PTR [BX]</code> komutu doğrudan bellekteki <code>[BX]</code> adresinde duran 16-bitlik kelimeyi okur ve yığının tepesine koyar.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>PUSH</code> also accepts a 16-bit memory operand directly: <code>PUSH WORD PTR [BX]</code> pushes the word stored at <code>[BX]</code> directly onto the stack.</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-8",
+            "title": "PUSH WORD PTR [BX] ve POP AX ile Bellekten Yığına Aktarım",
+            "difficulty": "Kolay",
+            "scenario": "Belleğin [0220h] adresinde 4321h kelimesi duruyor. BX = 0220h iken PUSH WORD PTR [BX] ile bu kelimeyi yığına atıp POP AX ile AX yazmacına çekeceğiz.",
+            "taskPrompt": "PUSH WORD PTR [BX] komutuyla bellekteki kelimeyi yığına atın ve POP AX ile AX yazmacına çekin.",
+            "starterCode": "; Stack Adım 2: Bellekteki kelimeyi doğrudan PUSH etme\nORG 100h\nMOV SP, 0200h\nMOV BX, 0220h\nMOV WORD PTR [BX], 4321h\n\n; PUSH WORD PTR [BX] ve POP AX yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV BX, 0220h\nMOV WORD PTR [BX], 4321h\nPUSH WORD PTR [BX]\nPOP AX\nHLT\n",
+            "hints": [
+              "PUSH WORD PTR [BX] ardından POP AX yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 17185,
+                "bx": 544,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-9",
+          "stepNumber": "Adım 9",
+          "title": "Yığınla Yazmaç Koruma Deseni (Save & Restore): PUSH -> İşlem Yap -> POP",
+          "titleEn": "Stack Step 3: Register Preservation Pattern (Save & Restore): PUSH -> Work -> POP",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Yığının gerçek hayattaki 1 numaralı kullanım amacı <strong>yazmaçtaki önemli bir sayıyı geçici olarak yedeklemektir</strong>:</p>\n        <ol>\n          <li>Önemli değeri yığına yedekle: <code>PUSH AX</code></li>\n          <li><code>AX</code> yazmacını başka bir iş için rahatça kullan (içeriği değişsin).</li>\n          <li>İşin bitince eski değeri yığından geri kurtar: <code>POP AX</code>!</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The most common real-world use of the stack is <strong>preserving a register</strong>: <code>PUSH AX</code> before modifying <code>AX</code>, do temporary work in <code>AX</code>, then <code>POP AX</code> to restore its original value.</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-9",
+            "title": "AX Değerini PUSH ile Yedekleyip İşlem Sonrası POP ile Kurtarma",
+            "difficulty": "Kolay",
+            "scenario": "AX içinde çok önemli bir sayı (7777h) var. Önce PUSH AX ile yedekleyeceğiz, sonra AX içine 0005h koyup DX'e kopyalayacağız, en sonda POP AX ile AX'in eski 7777h değerini geri kurtaracağız.",
+            "taskPrompt": "1) PUSH AX ile AX'i yedekleyin. 2) MOV AX, 0005h ve MOV DX, AX yapın. 3) POP AX ile AX'in ilk değerini (7777h) geri yükleyin.",
+            "starterCode": "; Stack Adım 3: AX yazmacını yığında yedekleyip kurtarın\nORG 100h\nMOV SP, 0200h\nMOV AX, 7777h\n\n; 1. AX yazmacını yığına PUSH edin:\n\nMOV AX, 0005h\nMOV DX, AX\n\n; 2. AX yazmacının eski değerini yığından POP edin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 7777h\nPUSH AX\nMOV AX, 0005h\nMOV DX, AX\nPOP AX\nHLT\n",
+            "hints": [
+              "İlk boşluğa PUSH AX, ikinci boşluğa POP AX yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 30583,
+                "dx": 5,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-10",
+          "stepNumber": "Adım 10",
+          "title": "PUSHA Komutu: 8 Genel Yazmacın Hepsini Tek Satırda Yığına Kaydetmek!",
+          "titleEn": "Stack Step 4: PUSHA: Pushing All 8 General-Purpose Registers in One Instruction",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> 8 yazmacı tek tek <code>PUSH</code> etmek yerine <code>PUSHA</code> (Push All) komutu tek başına 8 genel yazmacı (toplam $8 \times 2 = 16$ bayt) sabit bir sırayla yığına atar ve <code>SP</code>'yi <strong>16 azaltır (`10h`)</strong>!</p>\n        <p><strong>Sınavda Çıkan Sabit PUSHA Sırası:</strong> <code>AX &rarr; CX &rarr; DX &rarr; BX &rarr; SP(ilk hali) &rarr; BP &rarr; SI &rarr; DI</code> (Yığının en tepesinde <code>DI</code> durur).</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>PUSHA</code> pushes all 8 general-purpose registers onto the stack in one instruction in the exact order: <code>AX, CX, DX, BX, original SP, BP, SI, DI</code>, decreasing <code>SP</code> by 16 bytes (<code>10h</code>).</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-10",
+            "title": "PUSHA ile 8 Yazmacı Yığına Atma ve SP'nin 16 (10h) Azalmasını Doğrulama",
+            "difficulty": "Kolay",
+            "scenario": "SP = 0200h iken AX=1, CX=2, DX=3, BX=4, SI=5, DI=6 kurup tek bir PUSHA komutu çalıştıracağız. SP değerinin 16 bayt (10h) azalarak 01F0h olduğunu göreceğiz.",
+            "taskPrompt": "Yazmaçlar kurulduktan sonra PUSHA komutunu çalıştırarak 8 yazmacın tamamını yığına kaydedin.",
+            "starterCode": "; Stack Adım 4: PUSHA ile tüm genel yazmaçları tek komutta yığına kaydedin\nORG 100h\nMOV SP, 0200h\nMOV AX, 1\nMOV CX, 2\nMOV DX, 3\nMOV BX, 4\nMOV SI, 5\nMOV DI, 6\n\n; Tek komutta tüm genel yazmaçları yığına atın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1\nMOV CX, 2\nMOV DX, 3\nMOV BX, 4\nMOV SI, 5\nMOV DI, 6\nPUSHA\nHLT\n",
+            "hints": [
+              "PUSHA komutunu yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "sp": 496,
+                "ax": 1,
+                "di": 6
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 496,
+                  "expectedBytes": [
+                    6,
+                    0
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "step-10-1-11",
+          "stepNumber": "Adım 11",
+          "title": "POPA Komutu: Bozulan 8 Yazmacı Tek Satırda Ters Sırayla Geri Yüklemek!",
+          "titleEn": "Stack Step 5: POPA: Restoring All 8 General-Purpose Registers in Reverse Order",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> <code>PUSHA</code> ile yığına kaydettiğimiz 8 yazmacı, işimiz bittiğinde tek bir <code>POPA</code> (Pop All) komutuyla tam ters sırayla geri çekeriz:</p>\n        <p><strong>Sabit POPA Sırası:</strong> <code>DI &rarr; SI &rarr; BP &rarr; (SP yuvası atlanır!) &rarr; BX &rarr; DX &rarr; CX &rarr; AX</code> ve <code>SP</code> tekrar 16 artar.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>POPA</code> pops the 8 registers in exact reverse order: <code>DI, SI, BP, (skips saved SP), BX, DX, CX, AX</code>, restoring every register and adding 16 to <code>SP</code>.</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-11",
+            "title": "PUSHA ve POPA ile Bozulan Tüm Yazmaçları Tek Satırda Kurtarma",
+            "difficulty": "Kolay",
+            "scenario": "AX=1111h, BX=2222h, CX=3333h, DX=4444h değerlerini PUSHA ile yığına kaydedeceğiz. Ardından bu yazmaçları sıfırlayıp POPA komutuyla hepsinin eski değerini tek satırda geri getireceğiz!",
+            "taskPrompt": "Sıfırlama komutlarından önce PUSHA, sıfırlama komutlarından sonra POPA yazarak tüm yazmaçları koruyun.",
+            "starterCode": "; Stack Adım 5: PUSHA ile yedekleyin, yazmaçlar sıfırlansın, sonra POPA ile kurtarın\nORG 100h\nMOV SP, 0200h\nMOV AX, 1111h\nMOV BX, 2222h\nMOV CX, 3333h\nMOV DX, 4444h\n\n; 1. Tüm yazmaçları tek komutta yığına yedekleyin:\n\n\n; Yazmaçlar burada bozuluyor:\nMOV AX, 0\nMOV BX, 0\nMOV CX, 0\nMOV DX, 0\n\n; 2. Tüm yazmaçları tek komutta yığından geri yükleyin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1111h\nMOV BX, 2222h\nMOV CX, 3333h\nMOV DX, 4444h\nPUSHA\nMOV AX, 0\nMOV BX, 0\nMOV CX, 0\nMOV DX, 0\nPOPA\nHLT\n",
+            "hints": [
+              "İlk boşluğa PUSHA, ikinci boşluğa POPA yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4369,
+                "bx": 8738,
+                "cx": 13107,
+                "dx": 17476,
+                "sp": 512
+              },
+              "maxSteps": 40
+            }
+          }
+        },
+        {
+          "id": "step-10-1-12",
+          "stepNumber": "Adım 12",
+          "title": "PUSHF ve POPF: Bayraklar (FLAGS) Yazmacını Yığına Kaydetmek ve Geri Yüklemek",
+          "titleEn": "Stack Step 6: PUSHF and POPF: Saving and Restoring the FLAGS Register on the Stack",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Peki aritmetik işlemler <code>FLAGS</code> (durum bayraklarını: <code>CF, ZF, SF...</code>) bozmadan önce bayrakların o anki durumunu nasıl yedekleriz? İşte bunun için <code>PUSHF</code> ve <code>POPF</code> vardır:</p>\n        <ul>\n          <li><code>PUSHF (Push Flags)</code>: 16-bitlik <code>FLAGS</code> yazmacını yığına koyar (<code>SP = SP - 2</code>).</li>\n          <li><code>POPF (Pop Flags)</code>: Yığının tepesindeki 16-bitlik kelimeyi çekip <code>FLAGS</code> yazmacına geri yükler (<code>SP = SP + 2</code>).</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>PUSHF</code> pushes the entire 16-bit <code>FLAGS</code> register onto the stack, and <code>POPF</code> restores the <code>FLAGS</code> register from the top of the stack.</p>\n      ",
+          "task": {
+            "id": "mtask-10-1-12",
+            "title": "PUSHF ve POPF ile Carry Bayrağını (CF=1) Yığında Koruma",
+            "difficulty": "Kolay",
+            "scenario": "STC ile Carry bayrağını 1 yapacağız. PUSHF ile bayrakları yığına kaydedeceğiz. Arada CLC ile Carry bayrağı sıfırlansa bile POPF çalıştırarak CF=1 durumunu yığından geri yükleyeceğiz!",
+            "taskPrompt": "STC sonrası PUSHF yazarak bayrakları yığına kaydedin; CLC sonrasında ise POPF yazarak CF=1 durumunu geri yükleyin.",
+            "starterCode": "; Stack Adım 6: PUSHF ve POPF ile FLAGS koruma\nORG 100h\nMOV SP, 0200h\nSTC          ; CF = 1 yapıldı\n\n; 1. Bayrakları yığına kaydedin:\n\n\nCLC          ; CF = 0 oldu (bayrak bozuldu!)\n\n; 2. Bayrakları yığından geri yükleyin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nSTC\nPUSHF\nCLC\nPOPF\nHLT\n",
+            "hints": [
+              "İlk boşluğa PUSHF, ikinci boşluğa POPF yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "sp": 512
+              },
+              "flags": {
+                "cf": 1
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-10-2-lea-lds-les-lab",

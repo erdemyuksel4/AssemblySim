@@ -1,4 +1,4 @@
-import { STUDY_TOPICS, MainTopic, SubLesson, StudyTask } from './studyData.js';
+import { STUDY_TOPICS, MainTopic, SubLesson, StudyTask, MicroLessonStep } from './studyData.js';
 import { StudyStorage } from './studyStorage.js';
 import { StudyRunner, StudyGradeResult } from './studyRunner.js';
 
@@ -423,6 +423,9 @@ export class StudyView {
               ${isSubCompleted ? `<span class="sheet-completed-pill">${this.currentLang === 'en' ? '✓ Completed' : '✓ Tamamlandı'}</span>` : ''}
             </div>
 
+            <!-- ADIM 0: SIFIRDAN ADIM ADIM MİKRO-ANLATIM VE ANINDA UYGULAMA ÖDEVLERİ -->
+            ${sub.microSteps && sub.microSteps.length > 0 ? this.renderMicroStepsSection(sub.microSteps) : ""}
+
             <!-- ADIM 1: DERS ANLATIMI -->
             <section class="notebook-step-section theory-section">
               <div class="step-header">
@@ -492,6 +495,109 @@ export class StudyView {
           </div>
         </div>
       </section>
+    `;
+  }
+
+
+  private renderMicroStepsSection(microSteps: MicroLessonStep[]): string {
+    const isEn = this.currentLang === 'en';
+    const sectionTitle = isEn
+      ? 'Step-by-Step Zero-to-Hero Guide & Immediate Practice Tasks'
+      : 'Sıfırdan Adım Adım Öğrenme & Anında Uygulama Ödevleri';
+    const sectionDesc = isEn
+      ? 'Read each bite-sized concept from zero and immediately apply it in the coding assignment right below!'
+      : 'Her en ufak bilgiyi sıfırdan okuyun ve hemen altındaki kodlama ödevinde anında uygulayın!';
+
+    return `
+      <section class="notebook-step-section micro-steps-section">
+        <div class="step-header micro-section-header">
+          <span class="step-circle">🌱</span>
+          <div>
+            <h4 class="step-title">${sectionTitle}</h4>
+            <p class="step-desc">${sectionDesc}</p>
+          </div>
+          <span class="micro-count-pill">${microSteps.length} ${isEn ? 'Micro-Steps + Tasks' : 'Adım + Kodlama Ödevi'}</span>
+        </div>
+
+        <div class="step-content micro-steps-list">
+          ${microSteps.map((ms, idx) => {
+            const stepTitle = isEn ? (ms.titleEn || ms.title) : ms.title;
+            const stepHtml = isEn ? (ms.explanationHtmlEn || ms.explanationHtml) : ms.explanationHtml;
+            const taskPassed = StudyStorage.isTaskPassed(ms.task.id);
+            return `
+              <div class="micro-step-card" id="micro-step-${idx + 1}">
+                <div class="micro-step-top">
+                  <span class="micro-step-badge">${this.escapeHtml(ms.stepNumber)}</span>
+                  <h4 class="micro-step-heading">${this.escapeHtml(stepTitle)}</h4>
+                  ${taskPassed
+                    ? `<span class="task-status-badge success" data-badge-for="${ms.task.id}">✓ ${isEn ? 'Completed' : 'Uygulandı'}</span>`
+                    : `<span class="task-status-badge pending" data-badge-for="${ms.task.id}">🎯 ${isEn ? 'Practice Now' : 'Hemen Uygula'}</span>`}
+                </div>
+                <div class="micro-step-body">
+                  ${stepHtml}
+                </div>
+                <div class="micro-step-task-container">
+                  <div class="micro-task-header-strip">
+                    <span class="micro-task-icon">💻</span>
+                    <strong>${isEn ? 'Zero-Prerequisite Coding Task' : 'Sıfırdan Kodlama Ödevi'} (${this.escapeHtml(ms.stepNumber)}):</strong>
+                    <span>${this.escapeHtml(ms.task.title)} (${ms.task.difficulty})</span>
+                  </div>
+                  ${this.renderTaskCardBox(ms.task)}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  private renderTaskCardBox(task: StudyTask): string {
+    const initialCode = StudyStorage.getUserTaskCode(task.id, task.starterCode);
+    return `
+      <div class="task-card" data-task-id="${task.id}">
+        <div class="task-prompt-box">
+          <p><strong>🎯 Görev:</strong> ${this.escapeHtml(task.taskPrompt)}</p>
+          ${task.scenario ? `<p class="task-scenario-note"><strong>Senaryo:</strong> ${this.escapeHtml(task.scenario)}</p>` : ''}
+        </div>
+
+        <!-- In-place Mini Code Editor -->
+        <div class="task-editor-wrap">
+          <div class="task-editor-toolbar">
+            <span class="task-editor-label">Assembly Kodu:</span>
+            <div class="task-toolbar-actions">
+              <button class="btn-task-tool btn-show-hint" title="İpucu Göster">💡 İpucu</button>
+              <button class="btn-task-tool btn-show-solution" title="Örnek Çözümü İncele">👁️ Çözümü Göster</button>
+              <button class="btn-task-tool btn-open-ide" title="Bu Kodu Ana IDE Simülatörüne Gönder">🚀 Ana Editörde Aç</button>
+            </div>
+          </div>
+          <textarea class="task-code-textarea" spellcheck="false" placeholder="Assembly kodunuzu buraya yazın...">${this.escapeHtml(initialCode)}</textarea>
+        </div>
+
+        <div class="task-hints-box" style="display: none;">
+          <ul>
+            ${task.hints.map(h => `<li>${this.escapeHtml(h)}</li>`).join('')}
+          </ul>
+        </div>
+
+        <div class="task-solution-box" style="display: none;">
+          <div class="solution-header">
+            <span>Model Çözüm Kodu:</span>
+            <button class="btn-copy-solution">Kodu Kopyala</button>
+          </div>
+          <pre class="solution-code"><code>${this.escapeHtml(task.solutionCode)}</code></pre>
+          ${task.examTip ? `<p class="solution-tip">💡 <strong>Sınav İpucu:</strong> ${this.escapeHtml(task.examTip)}</p>` : ''}
+        </div>
+
+        <!-- Test Execution Actions & Feedback -->
+        <div class="task-exec-row">
+          <button class="btn-task-grade" id="btn-grade-${task.id}">
+            <span>▶️</span> Kodu Test Et & Notlandır
+          </button>
+        </div>
+
+        <div class="task-result-box" style="display: none;"></div>
+      </div>
     `;
   }
 
@@ -682,10 +788,22 @@ export class StudyView {
       });
     }
 
-    // Task Execution
-    const taskCard = this.drawerEl.querySelector('.task-card');
-    if (taskCard && this.selectedSubLesson?.task) {
-      const task = this.selectedSubLesson.task;
+        // Task Execution (supports both inline microSteps tasks and end-of-lesson task)
+    const allTasksMap = new Map<string, StudyTask>();
+    if (this.selectedSubLesson?.microSteps) {
+      for (const ms of this.selectedSubLesson.microSteps) {
+        if (ms.task) allTasksMap.set(ms.task.id, ms.task);
+      }
+    }
+    if (this.selectedSubLesson?.task) {
+      allTasksMap.set(this.selectedSubLesson.task.id, this.selectedSubLesson.task);
+    }
+
+    this.drawerEl.querySelectorAll<HTMLElement>('.task-card').forEach(taskCard => {
+      const taskId = taskCard.getAttribute('data-task-id') || '';
+      const task = allTasksMap.get(taskId);
+      if (!task) return;
+      if (true) {
       const textarea = taskCard.querySelector('.task-code-textarea') as HTMLTextAreaElement;
       const gradeBtn = taskCard.querySelector(`#btn-grade-${task.id}`) as HTMLButtonElement;
       const resultBox = taskCard.querySelector('.task-result-box') as HTMLElement;
@@ -741,6 +859,11 @@ export class StudyView {
             StudyStorage.markTaskPassed(task.id);
             this.updateStats();
             this.renderMindMap();
+            const statusBadge = this.drawerEl.querySelector(`[data-badge-for="${task.id}"]`);
+            if (statusBadge) {
+              statusBadge.className = "task-status-badge success";
+              statusBadge.textContent = "✓ Uygulandı";
+            }
 
             resultBox.className = 'task-result-box success';
             resultBox.innerHTML = `
@@ -755,10 +878,10 @@ export class StudyView {
               <p class="res-msg">${res.message}</p>
               ${this.renderDiffTable(res.diffs)}
             `;
-          }
-        }, 80);
+          }        }, 80);
       });
-    }
+      }
+    });
   }
 
   private renderDiffTable(diffs: any[]): string {

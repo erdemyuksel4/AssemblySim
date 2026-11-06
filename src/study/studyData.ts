@@ -2,7 +2,7 @@
  * studyData.ts
  * 
  * 8086 Assembly Kapsamlı ve Damıtılmış Müfredat & Zihin Haritası Veri Modeli.
- * 15 Ana Konu ve 45 Alt Ders içeren modüler müfredat mimarisi (Module 1 - Module 5).
+ * 15 Ana Konu ve Adım Adım Mikro-Dersler + Anında Kodlama Görevleri içeren modüler müfredat mimarisi.
  */
 
 export interface ConceptQuiz {
@@ -36,6 +36,16 @@ export interface StudyTask {
   examTip?: string;
 }
 
+export interface MicroLessonStep {
+  id: string;
+  stepNumber: string;
+  title: string;
+  titleEn?: string;
+  explanationHtml: string;
+  explanationHtmlEn?: string;
+  task: StudyTask;
+}
+
 export type CurriculumCategory = 'primary' | 'secondary';
 
 export interface SubLesson {
@@ -45,6 +55,7 @@ export interface SubLesson {
   titleEn?: string;
   summary: string;
   summaryEn?: string;
+  microSteps?: MicroLessonStep[];
   theoryHtml: string;
   theoryHtmlEn?: string;
   quiz?: ConceptQuiz;

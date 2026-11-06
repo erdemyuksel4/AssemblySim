@@ -68,7 +68,129 @@ export const TOPIC_1: MainTopic = {
           }
         },
         "examTip": "Adres veriyolu tek yönlü (unidirectional), veri veriyolu ise çift yönlüdür (bidirectional). Adreslenebilir alan formülü daima 2^n bayttır."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-1-1-1",
+          "stepNumber": "Adım 1",
+          "title": "Yazmaç (Register) Nedir ve İlk Komutumuz: MOV",
+          "titleEn": "Step 1: What is a Register and Our First Instruction: MOV",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Mikroişlemcinin (CPU) kendi içinde sayıları anlık olarak tuttuğu küçük, ultra-hızlı kutucuklara <strong>Yazmaç (Register)</strong> denir. En çok kullanılan 16-bitlik (2 baytlık) ana yazmaç <code>AX</code>'tir.</p>\n        <p>Bir kutucuğa sayı koymak için <code>MOV hedef, kaynak</code> komutu kullanılır. Örneğin <code>MOV AX, 5</code> komutu, sağdaki <code>5</code> sayısını soldaki <code>AX</code> kutusunun içine kopyalar.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Tiny, ultra-fast storage boxes inside the CPU are called <strong>Registers</strong>. The primary 16-bit register is <code>AX</code>. The <code>MOV destination, source</code> instruction copies the value on the right into the register on the left.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-1-1",
+            "title": "AX Yazmacına İlk Sayıyı Yükleme (MOV)",
+            "difficulty": "Kolay",
+            "scenario": "Hiçbir ön bilgi gerekmez: MOV hedef, kaynak komutu sağdaki değeri soldaki yazmaca kopyalar.",
+            "taskPrompt": "MOV komutunu kullanarak AX yazmacına 1234h değerini yükleyin ve programı HLT ile durdurun.",
+            "starterCode": "; Adım 1: AX içine 1234h yükleyin\nORG 100h\n\n; Komutunuzu buraya yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 1234h\nHLT\n",
+            "hints": [
+              "MOV AX, 1234h satırını HLT öncesine yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4660
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-1-1-2",
+          "stepNumber": "Adım 2",
+          "title": "Veriyolu (Data Bus) ve Birden Fazla Yazmaca Veri Aktarma",
+          "titleEn": "Step 2: Data Bus and Loading Multiple Registers",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> 8086 işlemcisinde <code>AX</code> dışında <code>BX</code>, <code>CX</code> ve <code>DX</code> adında 16-bitlik genel amaçlı kutular da vardır. Ayrıca bir yazmaçtaki değeri başka bir yazmaca da kopyalayabiliriz: <code>MOV BX, AX</code> yazarsak <code>AX</code>'in içindeki değer <code>BX</code>'e de kopyalanır.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Besides <code>AX</code>, the 8086 has 16-bit registers <code>BX</code>, <code>CX</code>, and <code>DX</code>. You can also copy one register into another using <code>MOV BX, AX</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-1-2",
+            "title": "Yazmaçtan Yazmaca Kopyalama",
+            "difficulty": "Kolay",
+            "scenario": "Önce AX yazmacına bir değer yükleyip ardından MOV ile bu değeri BX ve CX yazmaçlarına kopyalayacağız.",
+            "taskPrompt": "AX yazmacına 2500h yükleyin. Ardından MOV komutlarıyla AX değerini hem BX hem de CX yazmaçlarına kopyalayın.",
+            "starterCode": "; Adım 2: AX = 2500h yapıp BX ve CX içine kopyalayın\nORG 100h\n\n; Kodunuzu buraya yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 2500h\nMOV BX, AX\nMOV CX, AX\nHLT\n",
+            "hints": [
+              "Önce MOV AX, 2500h yazın.",
+              "Sonra MOV BX, AX ve MOV CX, AX ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 9472,
+                "bx": 9472,
+                "cx": 9472
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-1-1-3",
+          "stepNumber": "Adım 3",
+          "title": "Bellek (Memory) Nedir? Köşeli Parantez [adres] ile Belleğe Yazmak",
+          "titleEn": "Step 3: What is Memory? Writing to Memory with Brackets [address]",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> İşlemcinin içindeki yazmaçlar çok az sayıdadır; binlerce veriyi saklamak için <strong>Bellek (RAM)</strong> kullanılır. Assembly'de bir sayının etrafına <strong>köşeli parantez <code>[0200h]</code></strong> koyduğumuzda işlemci bunu <em>\"0200h numaralı bellek kutusu\"</em> olarak anlar.</p>\n        <ul>\n          <li><code>MOV BX, 0200h</code> &rarr; <code>BX</code> yazmacına <code>0200h</code> sayısını koyar.</li>\n          <li><code>MOV [0200h], AX</code> &rarr; Bellekteki <code>0200h</code> adresli kutunun içine <code>AX</code>'in değerini yazar!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Brackets <code>[0200h]</code> mean \"the memory box at address 0200h\". <code>MOV [0200h], AX</code> stores the 16-bit value of <code>AX</code> into memory at address <code>0200h</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-1-3",
+            "title": "Bellek Hücresine Veri Yazma ve Geri Okuma",
+            "difficulty": "Kolay",
+            "scenario": "AX içindeki bir sayıyı belleğin [0200h] adresine kaydedip, oradan DX yazmacına geri okuyacağız.",
+            "taskPrompt": "AX yazmacına 0CAFEh yükleyin. MOV [0200h], AX ile belleğe yazın. Ardından MOV DX, [0200h] ile bellekten DX yazmacına okuyun.",
+            "starterCode": "; Adım 3: Belleğe yazma ve okuma\nORG 100h\n\nMOV AX, 0CAFEh\n; [0200h] adresine AX değerini yazın ve [0200h] adresinden DX içine okuyun:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0CAFEh\nMOV [0200h], AX\nMOV DX, [0200h]\nHLT\n",
+            "hints": [
+              "MOV [0200h], AX belleğe yazar.",
+              "MOV DX, [0200h] bellekten DX yazmacına okur."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 51966,
+                "dx": 51966
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 512,
+                  "expectedBytes": [
+                    254,
+                    202
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-1-1-4",
+          "stepNumber": "Adım 4",
+          "title": "Mikroişlemcinin Temel Aritmetik Görevi: ADD ile İki Sayıyı Toplamak",
+          "titleEn": "Step 4: Core Microprocessor Operation: Adding Two Numbers with ADD",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Mikroişlemcinin 3 temel görevi <em>Veri Aktarımı</em>, <em>Aritmetik/Mantık</em> ve <em>Karar Verme</em>'dir. <code>ADD hedef, kaynak</code> komutu iki değeri toplar ve sonucu <strong>soldaki hedef yazmacın üzerine</strong> yazar (`hedef = hedef + kaynak`).</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>ADD destination, source</code> adds the two values and stores the sum in the left operand (<code>destination = destination + source</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-1-1-4",
+            "title": "ADD Komutu ile İki Yazmacı Toplama",
+            "difficulty": "Kolay",
+            "scenario": "AX yazmacına 15h, BX yazmacına 25h yükleyip ADD AX, BX ile toplamı AX içinde (3Ah) elde edeceğiz.",
+            "taskPrompt": "AX yazmacına 15h, BX yazmacına 25h yükleyin. ADD AX, BX komutunu çalıştırarak AX değerinin 3Ah olmasını sağlayın.",
+            "starterCode": "; Adım 4: ADD AX, BX ile toplama\nORG 100h\n\n; AX = 15h, BX = 25h yükleyin ve ADD AX, BX çalıştırın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 15h\nMOV BX, 25h\nADD AX, BX\nHLT\n",
+            "hints": [
+              "MOV AX, 15h ve MOV BX, 25h yazdıktan sonra ADD AX, BX ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 58,
+                "bx": 37
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-1-2-number-systems-bcd-ascii",
@@ -109,7 +231,88 @@ export const TOPIC_1: MainTopic = {
           }
         },
         "examTip": "Onaltılı sayılarda harfle başlayan değerlerin başına (örn. A, B, C, D, E, F) daima sıfır konur: 0FFh, 0DAh."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-1-2-1",
+          "stepNumber": "Adım 1",
+          "title": "İkili (Binary) Sayı Sistemi: Sonuna \"b\" Harfi Koyarak Bit Yüklemek",
+          "titleEn": "Step 1: Binary Numbers: Loading Bits with the \"b\" Suffix",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Bilgisayarlar yalnızca <code>0</code> ve <code>1</code> (ikili / binary) sayılarını anlar. Assembly'de ikili bir sayı yazarken sonuna <code>b</code> harfi koyarız. Sağdan sola basamak değerleri $1, 2, 4, 8, 16, 32, 64, 128$ şeklindedir. Örneğin <code>00001111b</code> sayısı $8+4+2+1 = 15$ demektir.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In Assembly, binary numbers end with a <code>b</code> suffix. Place weights from right to left are $1, 2, 4, 8, 16, 32, 64, 128$. Thus <code>00001111b</code> equals $8+4+2+1 = 15$.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-2-1",
+            "title": "İkili (Binary) Sayı Yükleme",
+            "difficulty": "Kolay",
+            "scenario": "8-bitlik AL yazmacına ikili (binary) gösterimle 00001111b (onluk 15) sayısını yükleyeceğiz.",
+            "taskPrompt": "MOV AL, 00001111b komutunu kullanarak AL yazmacına ikili 15 değerini yükleyin.",
+            "starterCode": "; Adım 1: AL içine 00001111b yükleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 00001111b\nHLT\n",
+            "hints": [
+              "MOV AL, 00001111b yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 15
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-1-2-2",
+          "stepNumber": "Adım 2",
+          "title": "Onaltılı (Hexadecimal) Sayılar ve Harfle Başlayan Sayılarda \"0\" Kuralı",
+          "titleEn": "Step 2: Hexadecimal Numbers and the Leading \"0\" Rule",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Onaltılı (Hex) sistemde `0–9` rakamları ve `A(10), B(11), C(12), D(13), E(14), F(15)` harfleri kullanılır; sayının sonuna <code>h</code> konur. <strong>Çok önemli kural:</strong> Eğer hex sayı bir harfle başlıyorsa (örneğin <code>A5h</code> veya <code>FFh</code>), derleyicinin bunu etiket sanmaması için başına mutlaka <code>0</code> yazılır: <code>0A5h</code>, <code>0FFh</code>.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Hexadecimal numbers end with <code>h</code>. If a hex literal begins with a letter (<code>A–F</code>), you must prefix it with a leading zero (e.g., <code>0A5h</code>, <code>0FFh</code>) so the assembler does not mistake it for a label name.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-2-2",
+            "title": "Harfle Başlayan Hexadecimal Sabit Yükleme",
+            "difficulty": "Kolay",
+            "scenario": "AL yazmacına A5h ve BL yazmacına FFh değerlerini başlarına 0 koyarak (0A5h ve 0FFh) yükleyeceğiz.",
+            "taskPrompt": "AL yazmacına 0A5h, BL yazmacına 0FFh yükleyin.",
+            "starterCode": "; Adım 2: AL = 0A5h ve BL = 0FFh yükleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 0A5h\nMOV BL, 0FFh\nHLT\n",
+            "hints": [
+              "MOV AL, 0A5h ve MOV BL, 0FFh yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 165,
+                "bl": 255
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-1-2-3",
+          "stepNumber": "Adım 3",
+          "title": "İkiliden Onaltılıya 4-Bit (Nibble) Gruplama Dönüşümü",
+          "titleEn": "Step 3: Binary-to-Hexadecimal Conversion via 4-Bit Nibbles",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> 8-bitlik bir ikili sayıyı onaltılıya çevirmek çok kolaydır: Sayıyı ortadan ikiye (4 bit + 4 bit) ayırırız!</p>\n        <ul>\n          <li>Örnek: <code>1100_0011b</code> &rarr; Sol 4 bit: <code>1100b</code> ($8+4=12=\text{C}$), Sağ 4 bit: <code>0011b</code> ($2+1=3$) &rarr; Sonuç: <code>0C3h</code>!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Split an 8-bit binary number into two 4-bit groups (nibbles): <code>1100_0011b</code> &rarr; <code>1100b = C</code>, <code>0011b = 3</code> &rarr; <code>0C3h</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-2-3",
+            "title": "İkili Sayıyı Hexadecimal Olarak Yükleme",
+            "difficulty": "Kolay",
+            "scenario": "11000011b ikili sayısını 4-bitlik gruplara ayırarak onaltılı karşılığı olan 0C3h değerini CL yazmacına yükleyin.",
+            "taskPrompt": "11000011b sayısının onaltılı karşılığı olan 0C3h değerini CL yazmacına yükleyin.",
+            "starterCode": "; Adım 3: CL yazmacına 11000011b (0C3h) yükleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV CL, 0C3h\nHLT\n",
+            "hints": [
+              "MOV CL, 0C3h yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "cl": 195
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-1-3-twos-complement-and-data-formats",
@@ -150,7 +353,89 @@ export const TOPIC_1: MainTopic = {
           }
         },
         "examTip": "NEG komutu hedef işlenenin 2'ye tümleyenini alır. Pozitif sayıyı negatife, negatif sayıyı pozitife çevirir."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-1-3-1",
+          "stepNumber": "Adım 1",
+          "title": "Bire Tümleyen (1's Complement) Nedir? NOT Komutu ile Bitleri Ters Çevirme",
+          "titleEn": "Step 1: One's Complement: Inverting Bits with NOT",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Bir ikili sayıdaki tüm <code>0</code>'ları <code>1</code>, tüm <code>1</code>'leri <code>0</code> yapmaya <strong>Bire Tümleyen (One's Complement)</strong> denir. Assembly'de bunu tek başına <code>NOT yazmaç</code> komutu yapar.</p>\n        <p>Örneğin <code>AL = 00001111b (0Fh)</code> iken <code>NOT AL</code> çalıştırılırsa <code>AL = 11110000b (0F0h)</code> olur.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Flipping every <code>0</code> to <code>1</code> and <code>1</code> to <code>0</code> is the <strong>One's Complement</strong>. In 8086 Assembly, the <code>NOT</code> instruction performs this inversion.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-3-1",
+            "title": "NOT Komutu ile Bire Tümleyen Alma",
+            "difficulty": "Kolay",
+            "scenario": "AL yazmacına 0Fh (00001111b) yükleyip NOT AL komutuyla tüm bitlerini ters çevireceğiz (0F0h).",
+            "taskPrompt": "AL yazmacına 0Fh yükleyin ve NOT AL komutunu çalıştırın.",
+            "starterCode": "; Adım 1: AL = 0Fh yükleyip NOT AL ile bire tümleyenini alın\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 0Fh\nNOT AL\nHLT\n",
+            "hints": [
+              "MOV AL, 0Fh ardından NOT AL yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 240
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-1-3-2",
+          "stepNumber": "Adım 2",
+          "title": "İkiye Tümleyen (2's Complement = NOT + 1) ile Negatif Sayı Elde Etme",
+          "titleEn": "Step 2: Two's Complement (NOT + 1) for Negative Numbers",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Bilgisayarlar negatif sayıları <strong>İkiye Tümleyen (Two's Complement)</strong> yöntemiyle tutar. Kural çok basittir: <em>Bire tümleyenini al (<code>NOT</code>) ve üzerine <code>1</code> ekle (<code>ADD ..., 1</code> veya <code>INC</code>)!</em></p>\n        <p>Örneğin $+1$ (<code>01h</code>) sayısının negatifi (<code>-1</code>): <code>NOT</code> &rarr; <code>FEh</code>, <code>+1</code> &rarr; <code>FFh</code>!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Computers represent negative numbers using <strong>Two's Complement</strong>: invert all bits (<code>NOT</code>) and add 1 (<code>ADD AL, 1</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-1-3-2",
+            "title": "NOT ve ADD ile Manuel İkiye Tümleyen (-1 Elde Etme)",
+            "difficulty": "Kolay",
+            "scenario": "BL yazmacına 1 yükleyip önce NOT BL, ardından ADD BL, 1 yaparak -1 (0FFh) değerini adım adım oluşturacağız.",
+            "taskPrompt": "BL yazmacına 1 yükleyin. NOT BL ve ADD BL, 1 komutlarını sırasıyla çalıştırarak BL içinde -1 (0FFh) elde edin.",
+            "starterCode": "; Adım 2: BL = 1 yapıp NOT BL ve ADD BL, 1 uygulayın\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BL, 1\nNOT BL\nADD BL, 1\nHLT\n",
+            "hints": [
+              "MOV BL, 1",
+              "NOT BL",
+              "ADD BL, 1"
+            ],
+            "assertions": {
+              "registers": {
+                "bl": 255
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-1-3-3",
+          "stepNumber": "Adım 3",
+          "title": "ASCII Karakterleri Bellekte ve Yazmaçta Saklamak ('A' = 41h, '0' = 30h)",
+          "titleEn": "Step 3: Storing ASCII Characters ('A' = 41h, '0' = 30h)",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Klavyedeki her harf ve rakam bellekte 1 baytlık bir <strong>ASCII kodu</strong> olarak tutulur: Büyük <code>'A' = 41h</code> (65), küçük <code>'a' = 61h</code> (97), rakam <code>'0' = 30h</code> (48). Assembly'de tek tırnak içinde <code>MOV AL, 'A'</code> yazdığımızda derleyici otomatik olarak <code>41h</code> yükler.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Every character has a 1-byte ASCII code: <code>'A' = 41h</code>, <code>'a' = 61h</code>, <code>'0' = 30h</code>. Writing <code>MOV AL, 'A'</code> loads <code>41h</code> into <code>AL</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-1-3-3",
+            "title": "ASCII Karakter Kodlarını Yükleme",
+            "difficulty": "Kolay",
+            "scenario": "AH yazmacına büyük 'A' (41h) karakterini, AL yazmacına ise '0' (30h) karakterini yükleyeceğiz.",
+            "taskPrompt": "AH yazmacına 41h ('A'), AL yazmacına 30h ('0') yükleyin (Sonuçta AX = 4130h olacaktır).",
+            "starterCode": "; Adım 3: AH = 41h ve AL = 30h yükleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AH, 41h\nMOV AL, 30h\nHLT\n",
+            "hints": [
+              "MOV AH, 41h ve MOV AL, 30h yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 16688
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {

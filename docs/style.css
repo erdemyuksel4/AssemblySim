@@ -15434,3 +15434,139 @@ body {
   border-left: 4px solid #f59e0b;
   color: #78350f;
 }
+
+
+/* ============================================================================
+   SIFIRDAN ADIM ADIM MİKRO-ÖĞRENME VE ANINDA KODLAMA ÖDEVLERİ (MICRO-STEPS)
+   ============================================================================ */
+.micro-steps-section {
+  background: linear-gradient(180deg, #f0fdf4 0%, #f8fafc 100%);
+  border: 2px solid #86efac;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.08);
+}
+
+.micro-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #bbf7d0;
+  margin-bottom: 16px;
+}
+
+.micro-count-pill {
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.micro-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.micro-step-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-left: 5px solid #2563eb;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+}
+
+.micro-step-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.micro-step-badge {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.micro-step-heading {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  flex: 1;
+}
+
+.task-status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.micro-step-body {
+  font-size: 13.8px;
+  line-height: 1.65;
+  color: #1e293b;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.micro-step-body p {
+  margin: 0 0 8px 0;
+}
+
+.micro-step-body p:last-child {
+  margin-bottom: 0;
+}
+
+.micro-step-body ul {
+  margin: 6px 0 8px 18px;
+  padding: 0;
+}
+
+.micro-step-body li {
+  margin-bottom: 4px;
+}
+
+.micro-step-task-container {
+  background: #eff6ff;
+  border: 1.5px solid #93c5fd;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.micro-task-header-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #1e3a8a;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #93c5fd;
+  flex-wrap: wrap;
+}
+
+.micro-task-icon {
+  font-size: 15px;
+}

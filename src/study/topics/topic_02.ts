@@ -65,7 +65,66 @@ export const TOPIC_2: MainTopic = {
           "maxSteps": 50
         },
         "examTip": "AX ve BX genel amaçlı yazmaçları EU içerisinde yer alır. NOP (90h) komutu yazmaç ve bayrak durumunu değiştirmeden 3 çevrim harcar; HLT (F4h) ise işlemciyi durdurur."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-2-1-1",
+          "stepNumber": "Adım 1",
+          "title": "Dört Ana Veri Yazmacı: AX (Akümülatör), BX (Taban), CX (Sayaç), DX (Veri)",
+          "titleEn": "Step 1: Four General Data Registers: AX, BX, CX, DX",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> İşlemcinin İcra Birimi (EU) içinde her gün kullandığımız 4 ana 16-bitlik yazmaç vardır ve her birinin özel bir lakabı/görevi vardır:</p>\n        <ul>\n          <li><code>AX (Accumulator)</code>: Toplama, çarpma, bölme ve G/Ç işlemlerinin başrol oyuncusu.</li>\n          <li><code>BX (Base)</code>: Bellekteki bir tablonun/dizinin başlangıç adresini tutabilen tek genel yazmaç (<code>[BX]</code>).</li>\n          <li><code>CX (Count)</code>: Döngülerde (<code>LOOP</code>) ve tekrarlarda otomatik geri sayan sayaç.</li>\n          <li><code>DX (Data)</code>: 16-bit çarpma/bölmede üst kelimeyi ve <code>IN/OUT</code> port adresini tutan yardımcı.</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The 4 main 16-bit registers are <code>AX</code> (Accumulator), <code>BX</code> (Base address pointer), <code>CX</code> (Loop Counter), and <code>DX</code> (Data / I/O port pointer).</p>\n      ",
+          "task": {
+            "id": "ms-task-2-1-1",
+            "title": "AX, BX, CX ve DX Yazmaçlarını İlklendirme",
+            "difficulty": "Kolay",
+            "scenario": "Dört ana genel amaçlı yazmaca sırasıyla 100h, 200h, 300h ve 400h değerlerini yükleyeceğiz.",
+            "taskPrompt": "AX=0100h, BX=0200h, CX=0300h ve DX=0400h olacak şekilde MOV komutlarını yazın.",
+            "starterCode": "; Adım 1: AX=0100h, BX=0200h, CX=0300h, DX=0400h yükleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0100h\nMOV BX, 0200h\nMOV CX, 0300h\nMOV DX, 0400h\nHLT\n",
+            "hints": [
+              "MOV AX, 0100h / MOV BX, 0200h / MOV CX, 0300h / MOV DX, 0400h yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 256,
+                "bx": 512,
+                "cx": 768,
+                "dx": 1024
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-2-1-2",
+          "stepNumber": "Adım 2",
+          "title": "İşaretçi ve İndeks Yazmaçları: SI (Kaynak), DI (Hedef) ve BP (Taban İşaretçisi)",
+          "titleEn": "Step 2: Pointer and Index Registers: SI, DI, and BP",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> `AX, BX, CX, DX` ikiye bölünebilirken (`AH/AL` vb.), 16-bitlik <strong>İndeks ve İşaretçi Yazmaçları (`SI, DI, BP, SP`)</strong> 8-bitlik parçalara bölünemez! Hep 16-bit адрес ofseti tutmak için kullanılırlar:</p>\n        <ul>\n          <li><code>SI (Source Index)</code>: Kaynak dizinin bellek ofsetini tutar.</li>\n          <li><code>DI (Destination Index)</code>: Hedef dizinin bellek ofsetini tutar.</li>\n          <li><code>BP (Base Pointer)</code>: Yığın (Stack) üzerindeki verilere erişmek için kullanılır.</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Pointer and index registers (<code>SI, DI, BP, SP</code>) are strictly 16-bit and cannot be split into 8-bit halves. They hold memory offsets.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-1-2",
+            "title": "SI ve DI İndeks Yazmaçlarını Kurma",
+            "difficulty": "Kolay",
+            "scenario": "Kaynak indeks yazmacı SI içine 0200h, hedef indeks yazmacı DI içine 0300h ofset adresini yükleyeceğiz.",
+            "taskPrompt": "SI yazmacına 0200h, DI yazmacına 0300h ve BP yazmacına 0400h değerlerini yükleyin.",
+            "starterCode": "; Adım 2: SI=0200h, DI=0300h, BP=0400h yapın\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SI, 0200h\nMOV DI, 0300h\nMOV BP, 0400h\nHLT\n",
+            "hints": [
+              "MOV SI, 0200h / MOV DI, 0300h / MOV BP, 0400h yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "si": 512,
+                "di": 768,
+                "bp": 1024
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-2-2-registers-flags-and-segments",
@@ -108,7 +167,124 @@ export const TOPIC_2: MainTopic = {
           "maxSteps": 50
         },
         "examTip": "AX = (AH << 8) | AL eşitliği geçerlidir. AH üst 8 biti (Bits 15..8), AL ise alt 8 biti (Bits 7..0) belirler."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-2-2-1",
+          "stepNumber": "Adım 1",
+          "title": "16-Bit Yazmacın Alt (Low) ve Üst (High) Baytlarını Ayrı Ayrı Değiştirmek",
+          "titleEn": "Step 1: Modifying High (H) and Low (L) Bytes of a 16-Bit Register",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> <code>AX, BX, CX, DX</code> yazmaçlarının her biri 16 bittir (4 hex basamak). Sol 2 basamağına <strong>High (`AH, BH, CH, DH`)</strong>, sağ 2 basamağına <strong>Low (`AL, BL, CL, DL`)</strong> denir. Örneğin <code>BX = 1234h</code> iken sadece <code>BL = 99h</code> yaparsanız üst bayt (<code>12h</code>) hiç bozulmaz ve <code>BX = 1299h</code> olur!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Each of <code>AX, BX, CX, DX</code> splits into an 8-bit High byte (<code>AH..DH</code>) and Low byte (<code>AL..DL</code>). Changing <code>BL</code> leaves <code>BH</code> untouched.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-2-1",
+            "title": "BH ve BL ile 16-Bit BX Yazmacını Dilimleme",
+            "difficulty": "Kolay",
+            "scenario": "Önce BX yazmacına 5678h yükleyeceğiz, ardından sadece alt baytı (BL) 00h yaparak BX değerini 5600h haline getireceğiz.",
+            "taskPrompt": "BX yazmacına 5678h yükleyin. Ardından MOV BL, 00h komutuyla sadece alt baytı sıfırlayın (BX = 5600h olmalıdır).",
+            "starterCode": "; Adım 1: BX = 5678h yükleyip BL = 00h yapın\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BX, 5678h\nMOV BL, 00h\nHLT\n",
+            "hints": [
+              "MOV BX, 5678h yazdıktan sonra MOV BL, 00h ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "bx": 22016
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-2-2-2",
+          "stepNumber": "Adım 2",
+          "title": "FLAGS (Bayraklar) Nedir? Sıfır Bayrağı (ZF) Nasıl 1 Olur?",
+          "titleEn": "Step 2: What is FLAGS? How the Zero Flag (ZF) Becomes 1",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> İşlemci yaptığı her toplama/çıkarma işleminin sonucuna göre <code>FLAGS</code> adındaki durum panosundaki ışıkları (bitleri) yakar. Eğer bir aritmetik işlemin sonucu <strong>tam sıfır (`0`)</strong> çıkarsa, <strong>Sıfır Bayrağı (`ZF` - Zero Flag) `1` olur</strong>! (Sonuç sıfırdan farklıysa `ZF = 0` olur).</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Whenever an arithmetic/logic operation produces a result of <strong>zero (0)</strong>, the processor sets the <strong>Zero Flag (<code>ZF = 1</code>)</strong>.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-2-2",
+            "title": "Çıkarma İşlemiyle Zero Flag (ZF = 1) Yakma",
+            "difficulty": "Kolay",
+            "scenario": "AX yazmacına 25h yükleyip SUB AX, 25h ile kendisinden çıkararak sonucu 0 yapacağız ve ZF bayrağının 1 olduğunu göreceğiz.",
+            "taskPrompt": "AX yazmacına 25h yükleyin ve SUB AX, 25h komutunu çalıştırarak AX=0 ve ZF=1 olmasını sağlayın.",
+            "starterCode": "; Adım 2: AX = 25h yapıp SUB AX, 25h ile sıfırlayın\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 25h\nSUB AX, 25h\nHLT\n",
+            "hints": [
+              "MOV AX, 25h ardından SUB AX, 25h yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 0
+              },
+              "flags": {
+                "zf": 1
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-2-2-3",
+          "stepNumber": "Adım 3",
+          "title": "Elde Bayrağı (CF - Carry Flag) Nedir? 8-Bit Kutunun Taşması (FFh + 1)",
+          "titleEn": "Step 3: Carry Flag (CF): Unsigned Overflow out of an 8-Bit Register",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> 8-bitlik bir kutu (örneğin <code>AL</code>) en fazla <code>0FFh</code> (255) alabilir. Eğer <code>AL = 0FFh</code> iken üzerine <code>1</code> eklerseniz (<code>ADD AL, 1</code>), sonuç 8 bite sığmaz; <code>AL</code> sıfırlanır (<code>00h</code>) ve dışarı taşan elde biti <strong>Carry Flag (`CF = 1`)</strong> bayrağını yakar!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> An 8-bit register holds at most <code>0FFh</code> (255). Adding 1 to <code>0FFh</code> wraps <code>AL</code> to <code>00h</code> and sets the <strong>Carry Flag (<code>CF = 1</code>)</strong>.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-2-3",
+            "title": "8-Bit Taşma ile Carry Flag (CF = 1) Oluşturma",
+            "difficulty": "Kolay",
+            "scenario": "AL yazmacına 0FFh yükleyip ADD AL, 1 çalıştırarak hem CF=1 hem de ZF=1 oluştuğunu doğrulayacağız.",
+            "taskPrompt": "AL yazmacına 0FFh yükleyin ve ADD AL, 1 komutunu çalıştırın.",
+            "starterCode": "; Adım 3: AL = 0FFh yükleyip 1 ekleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 0FFh\nADD AL, 1\nHLT\n",
+            "hints": [
+              "MOV AL, 0FFh ve ADD AL, 1 yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 0
+              },
+              "flags": {
+                "cf": 1,
+                "zf": 1
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-2-2-4",
+          "stepNumber": "Adım 4",
+          "title": "Segment Yazmaçlarını (DS, ES, SS) Yüklemek: Neden Önce AX Kullanılır?",
+          "titleEn": "Step 4: Loading Segment Registers (DS, ES, SS) via AX",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> 8086'da bellek bölgelerini gösteren 4 segment yazmacı vardır: <code>CS</code> (Kod), <code>DS</code> (Veri), <code>SS</code> (Yığın/Stack) ve <code>ES</code> (Ekstra). <strong>Altın Kural:</strong> Bir segment yazmacına doğrudan sayı yazılamaz (<code>MOV DS, 1000h</code> YASAKTIR!). Sayı önce <code>AX</code> gibi genel bir yazmaca yüklenir, oradan segment yazmacına aktarılır:</p>\n        <pre><code>MOV AX, 1000h\nMOV DS, AX</code></pre>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> You cannot load an immediate constant directly into a segment register (<code>MOV DS, 1000h</code> is illegal). Load it into <code>AX</code> first, then <code>MOV DS, AX</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-2-4",
+            "title": "DS ve ES Segment Yazmaçlarına Değer Yükleme",
+            "difficulty": "Kolay",
+            "scenario": "AX yazmacını köprü olarak kullanarak DS ve ES segment yazmaçlarına 0200h değerini yükleyeceğiz.",
+            "taskPrompt": "AX yazmacına 0200h yükleyin, ardından bu değeri DS ve ES segment yazmaçlarına aktarın.",
+            "starterCode": "; Adım 4: AX üzerinden DS ve ES içine 0200h yükleyin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0200h\nMOV DS, AX\nMOV ES, AX\nHLT\n",
+            "hints": [
+              "MOV AX, 0200h",
+              "MOV DS, AX",
+              "MOV ES, AX"
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 512,
+                "ds": 512,
+                "es": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-2-3-real-mode-memory-addressing",
@@ -159,7 +335,65 @@ export const TOPIC_2: MainTopic = {
           "maxSteps": 50
         },
         "examTip": "Little-Endian kuralına göre düşük anlamlı bayt (34h) düşük adrese (0200h / Even Bank), yüksek anlamlı bayt (12h) ise yüksek adrese (0201h / Odd Bank) yazılır."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-2-3-1",
+          "stepNumber": "Adım 1",
+          "title": "Segment:Offset Mantığı ve 20-Bit Fiziksel Adres Hesabı (Segment × 10h + Offset)",
+          "titleEn": "Step 1: Segment:Offset and 20-Bit Physical Address Calculation",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> 8086'da yazmaçlar 16 bittir (en fazla 64 KB adresler), ama bellek 1 MB (20 bit = 5 hex basamak) büyüklüğündedir. İşlemci 20-bitlik gerçek (fiziksel) adresi bulmak için <strong>Segment yazmacının sonuna bir sıfır ekler ($\times 10\text{h}$) ve Ofset ile toplar</strong>:</p>\n        <p>$$\text{Fiziksel Adres} = (\text{Segment} \times 10\text{h}) + \text{Offset}$$</p>\n        <p>Örnek: <code>DS = 1000h</code> ve <code>BX = 0250h</code> ise Fiziksel Adres = <code>10000h + 0250h = 10250h</code> olur.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The 20-bit physical address is computed by shifting the segment left by one hex digit ($\times 10\text{h}$) and adding the offset: $\text{PA} = \text{Segment} \times 10\text{h} + \text{Offset}$.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-3-1",
+            "title": "Segment ve Offset Toplamını Yazmaçta Hesaplama",
+            "difficulty": "Kolay",
+            "scenario": "Segment = 0100h (10h ile çarpılmış hali 1000h) ve Offset = 0050h verildiğinde, fiziksel adresi (1050h) AX içinde ADD ile hesaplayacağız.",
+            "taskPrompt": "AX yazmacına 1000h (0100h segmentinin 10h katı), BX yazmacına 0050h (ofset) yükleyin ve ADD AX, BX ile 1050h adresini AX içinde elde edin.",
+            "starterCode": "; Adım 1: AX = 1000h ve BX = 0050h toplayarak 1050h elde edin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 1000h\nMOV BX, 0050h\nADD AX, BX\nHLT\n",
+            "hints": [
+              "MOV AX, 1000h / MOV BX, 0050h / ADD AX, BX yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4176,
+                "bx": 80
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-2-3-2",
+          "stepNumber": "Adım 2",
+          "title": "Little-Endian Kuralı: 16-Bit Kelimenin Belleğe \"Düşük Bayt Önce\" Yazılması",
+          "titleEn": "Step 2: Little-Endian Rule: Storing Low Byte at Lower Address",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Bellekteki her adres (kutu) sadece <strong>1 bayt (8 bit)</strong> tutabilir. Peki <code>AX = 1234h</code> gibi 2 baytlık bir kelimeyi <code>MOV [0200h], AX</code> ile belleğe yazdığımızda ne olur? Intel işlemciler <strong>Little-Endian (Küçük-Sonlu)</strong> kuralını kullanır:</p>\n        <ul>\n          <li>Küçük/Alt bayt (<code>AL = 34h</code>) &rarr; Küçük adrese (<code>[0200h]</code>) yazılır.</li>\n          <li>Büyük/Üst bayt (<code>AH = 12h</code>) &rarr; Bir sonraki adrese (<code>[0201h]</code>) yazılır.</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In x86 <strong>Little-Endian</strong> byte order, storing a 16-bit word like <code>1234h</code> at <code>[0200h]</code> places the low byte (<code>34h</code>) at <code>[0200h]</code> and the high byte (<code>12h</code>) at <code>[0201h]</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-2-3-2",
+            "title": "Bellekteki Little-Endian Baytları Ayrı Ayrı Okuma",
+            "difficulty": "Kolay",
+            "scenario": "AX = 9ABCh kelimesini [0200h] adresine yazıp, [0200h] adresindeki düşük baytı (BCh) CL yazmacına, [0201h] adresindeki yüksek baytı (9Ah) CH yazmacına okuyacağız.",
+            "taskPrompt": "AX yazmacına 9ABCh yükleyip MOV [0200h], AX ile belleğe yazın. Ardından MOV CL, [0200h] ve MOV CH, [0201h] ile baytları okuyun.",
+            "starterCode": "; Adım 2: 9ABCh kelimesini [0200h] adresine yazıp CL ve CH içine bayt bayt okuyun\nORG 100h\n\nMOV AX, 9ABCh\nMOV [0200h], AX\n; Şimdi [0200h] adresinden CL içine, [0201h] adresinden CH içine okuyun:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 9ABCh\nMOV [0200h], AX\nMOV CL, [0200h]\nMOV CH, [0201h]\nHLT\n",
+            "hints": [
+              "MOV CL, [0200h] düşük baytı (BCh) okur.",
+              "MOV CH, [0201h] yüksek baytı (9Ah) okur."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 39612,
+                "cl": 188,
+                "ch": 154
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {

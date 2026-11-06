@@ -69,7 +69,93 @@ export const TOPIC_3: MainTopic = {
           "maxSteps": 50
         },
         "examTip": "Base-Plus-Index modunda sadece BX veya BP taban yazmacı ile SI veya DI indeks yazmacı toplanabilir. AX veya CX gibi yazmaçlar köşeli parantez içinde kullanılamaz."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-3-1-1",
+          "stepNumber": "Adım 1",
+          "title": "Doğrudan (Direct) vs Yazmaç Dolaylı (Register Indirect [BX]) Adresleme",
+          "titleEn": "Step 1: Direct [0200h] vs Register Indirect [BX] Addressing",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Bellekteki bir kutuya iki temel yolla ulaşabiliriz:</p>\n        <ul>\n          <li><strong>Doğrudan (Direct):</strong> Adresi komutun içine sabit yazarız: <code>MOV AL, [0200h]</code>.</li>\n          <li><strong>Yazmaç Dolaylı (Register Indirect):</strong> Adresi <code>BX</code>, <code>SI</code>, <code>DI</code> veya <code>BP</code> yazmacının içine koyup paranteze o yazmacı yazarız: <code>MOV BX, 0200h</code> ardından <code>MOV AL, [BX]</code>. (<em>Dikkat:</em> <code>[AX]</code>, <code>[CX]</code> veya <code>[DX]</code> parantez içinde KULLANILAMAZ!)</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In <strong>Register Indirect</strong> addressing, the offset address is held in <code>BX</code>, <code>SI</code>, <code>DI</code>, or <code>BP</code> (never <code>AX, CX, DX</code>): e.g., <code>MOV BX, 0200h</code> then <code>MOV AL, [BX]</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-3-1-1",
+            "title": "[BX] Yazmaç Dolaylı Adresleme ile Belleğe Erişim",
+            "difficulty": "Kolay",
+            "scenario": "BX yazmacına 0200h adresini yükleyip, [BX] üzerinden belleğe 55h baytını yazacağız ve DL yazmacına geri okuyacağız.",
+            "taskPrompt": "BX = 0200h yapın. MOV BYTE PTR [BX], 55h ile belleğe 55h yazın ve MOV DL, [BX] ile DL yazmacına okuyun.",
+            "starterCode": "; Adım 1: BX = 0200h üzerinden belleğe 55h yazıp DL içine okuyun\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BX, 0200h\nMOV BYTE PTR [BX], 55h\nMOV DL, [BX]\nHLT\n",
+            "hints": [
+              "MOV BX, 0200h",
+              "MOV BYTE PTR [BX], 55h",
+              "MOV DL, [BX]"
+            ],
+            "assertions": {
+              "registers": {
+                "bx": 512,
+                "dl": 85
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-1-2",
+          "stepNumber": "Adım 2",
+          "title": "Göreli (Register Relative [BX+4]) Adresleme: Dizi Elemanlarına Erişmek",
+          "titleEn": "Step 2: Register Relative Addressing [BX+4] for Array Elements",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Bellekte <code>0200h</code> adresinden başlayan bir dizi düşünün. <code>BX = 0200h</code> dizinin başını gösterirken: <code>[BX]</code> 0. elemanı, <code>[BX+1]</code> 1. elemanı, <code>[BX+2]</code> ise 2. elemanı gösterir! Buna <strong>Göreli (Relative) Adresleme</strong> denir.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> If <code>BX</code> holds the base address of an array (<code>0200h</code>), then <code>[BX+2]</code> accesses the byte at <code>0200h + 2 = 0202h</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-3-1-2",
+            "title": "[BX+2] Göreli Adresleme ile Dizinin 3. Elemanını Okuma",
+            "difficulty": "Kolay",
+            "scenario": "0200h adresinden başlayan 3 elemanlı dizinin (10h, 20h, 30h) [BX+2] adresindeki 30h elemanını AL yazmacına okuyacağız.",
+            "taskPrompt": "BX = 0200h kurun. [BX+2] adresindeki 30h baytını MOV AL, [BX+2] komutu ile AL yazmacına okuyun.",
+            "starterCode": "; Adım 2: [BX+2] adresindeki dizi elemanını AL içine okuyun\nORG 100h\nMOV BYTE PTR [0200h], 10h\nMOV BYTE PTR [0201h], 20h\nMOV BYTE PTR [0202h], 30h\n\n; BX = 0200h yapın ve [BX+2] elemanını AL içine okuyun:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BYTE PTR [0200h], 10h\nMOV BYTE PTR [0201h], 20h\nMOV BYTE PTR [0202h], 30h\nMOV BX, 0200h\nMOV AL, [BX+2]\nHLT\n",
+            "hints": [
+              "MOV BX, 0200h ardından MOV AL, [BX+2] yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "bx": 512,
+                "al": 48
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-1-3",
+          "stepNumber": "Adım 3",
+          "title": "Taban Artı İndeks ([BX+SI]) ve Göreli Taban+İndeks ([BX+SI+2]) Adresleme",
+          "titleEn": "Step 3: Base-Plus-Index [BX+SI] and Base Relative-Plus-Index [BX+SI+2]",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Hem bir taban yazmacı (<code>BX</code> veya <code>BP</code>) hem de bir indeks yazmacı (<code>SI</code> veya <code>DI</code>) parantez içinde toplanabilir: <code>[BX+SI]</code> veya sabit eklenerek <code>[BX+SI+2]</code>. (<em>Dikkat:</em> İki taban <code>[BX+BP]</code> veya iki indeks <code>[SI+DI]</code> yan yana toplanamaz!)</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Combine one base register (<code>BX</code> or <code>BP</code>) and one index register (<code>SI</code> or <code>DI</code>), optionally with a displacement: <code>[BX+SI+2]</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-3-1-3",
+            "title": "[BX+SI+2] ile Efektif Adresten Veri Okuma",
+            "difficulty": "Kolay",
+            "scenario": "BX = 0200h, SI = 0003h iken [BX+SI+2] (yani 0205h) adresine 99h yazıp AH yazmacına okuyacağız.",
+            "taskPrompt": "BX = 0200h ve SI = 0003h yükleyin. MOV BYTE PTR [BX+SI+2], 99h ile belleğe yazın ve MOV AH, [BX+SI+2] ile AH yazmacına okuyun.",
+            "starterCode": "; Adım 3: [BX+SI+2] adresleme uygulaması\nORG 100h\n\nMOV BX, 0200h\nMOV SI, 0003h\n; [BX+SI+2] adresine 99h yazın ve AH içine okuyun:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV BX, 0200h\nMOV SI, 0003h\nMOV BYTE PTR [BX+SI+2], 99h\nMOV AH, [BX+SI+2]\nHLT\n",
+            "hints": [
+              "MOV BYTE PTR [BX+SI+2], 99h ve MOV AH, [BX+SI+2] yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "bx": 512,
+                "si": 3,
+                "ah": 153
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-3-2-indexed-relative-and-program-addressing",
@@ -112,51 +198,319 @@ export const TOPIC_3: MainTopic = {
           "maxSteps": 50
         },
         "examTip": "Dolaylı sıçramalar C dilindeki switch-case yapıları, sanal fonksiyon tabloları (vtable) ve fonksiyon işaretçileri için donanımsal temel oluşturur."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-3-2-1",
+          "stepNumber": "Adım 1",
+          "title": "Doğrudan / Göreli Sıçrama (JMP etiket): İstemediğimiz Satırları Atlamak",
+          "titleEn": "Step 1: Unconditional Jump (JMP label): Skipping Instructions",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Normalde işlemci komutları yukarıdan aşağıya sırayla çalıştırır. <code>JMP etiket</code> komutu, işlemcinin <code>IP</code> (Komut İşaretçisi) yazmacını doğrudan <code>etiket:</code> satırına yönlendirir ve aradaki satırlar hiç çalıştırılmaz!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>JMP label</code> updates <code>IP</code> to jump directly to <code>label:</code>, skipping any instructions in between.</p>\n      ",
+          "task": {
+            "id": "ms-task-3-2-1",
+            "title": "JMP ile Hatalı Satırı Atlayıp Hedefe Sıçrama",
+            "difficulty": "Kolay",
+            "scenario": "AX = 0007h yüklendikten sonra aradaki MOV AX, 0FFFFh satırını JMP kurtul ile atlayacağız.",
+            "taskPrompt": "MOV AX, 0007h satırından hemen sonra JMP kurtul yazarak aradaki MOV AX, 0FFFFh satırını atlayın.",
+            "starterCode": "; Adım 1: JMP kurtul ile aradaki satırı atlayın\nORG 100h\n\nMOV AX, 0007h\n; Buraya kurtul etiketine sıçrama komutu yazın:\n\n\nMOV AX, 0FFFFh\nkurtul:\nMOV BX, AX\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AX, 0007h\nJMP kurtul\nMOV AX, 0FFFFh\nkurtul:\nMOV BX, AX\nHLT\n",
+            "hints": [
+              "JMP kurtul komutunu ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 7,
+                "bx": 7
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-2-2",
+          "stepNumber": "Adım 2",
+          "title": "Dolaylı Program Adresleme (JMP BX): Sıçranacak Adresi Yazmaçtan Almak",
+          "titleEn": "Step 2: Indirect Program Addressing (JMP BX)",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Sıçranacak etiketin adresini önce bir yazmaca yükleyip (<code>MOV BX, etiket</code>), sonra <code>JMP BX</code> diyerek işlemcinin <code>BX</code> içindeki adrese sıçramasını sağlayabiliriz. Buna <strong>Dolaylı Sıçrama (Indirect Jump)</strong> denir.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In an <strong>Indirect Jump</strong>, load the target label's offset into a register (<code>MOV SI, done</code>) and execute <code>JMP SI</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-3-2-2",
+            "title": "SI Yazmacı Üzerinden Dolaylı Sıçrama (JMP SI)",
+            "difficulty": "Kolay",
+            "scenario": "son_etiket adresini SI yazmacına yükleyip JMP SI ile sıçrayarak DX = 1234h değerini koruyacağız.",
+            "taskPrompt": "MOV SI, son_etiket ve JMP SI komutlarını yazarak aradaki MOV DX, 0000h satırını atlayın.",
+            "starterCode": "; Adım 2: SI üzerinden son_etiket adresine dolaylı sıçrayın\nORG 100h\n\nMOV DX, 1234h\n; SI içine son_etiket yükleyin ve JMP SI yapın:\n\n\nMOV DX, 0000h\nson_etiket:\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV DX, 1234h\nMOV SI, son_etiket\nJMP SI\nMOV DX, 0000h\nson_etiket:\nHLT\n",
+            "hints": [
+              "MOV SI, son_etiket ardından JMP SI yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "dx": 4660
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-3-3-stack-addressing-and-machine-encoding",
       "number": "3.3",
-      "title": "Bölüm 04/05 – 05/05 (Slayt 27–40): Yığın Belleği Adresleme (PUSH/POP Bayt Bayt), MOD-REG-R/M ve Yaygın Hatalar",
-      "titleEn": "Sections 04/05 – 05/05 (Slides 27–40): Stack Memory Addressing (Byte-by-Byte PUSH/POP) & Putting It Together",
-      "summary": "Slayt 27–40: LIFO Yığın mekaniği, PUSH/POP bayt bayt çalışması, fiziksel yığın adresi hesabı, yığınla iki kaydediciyi takas etme, MOD-REG-R/M ve yaygın hatalar (Common Pitfalls).",
+      "title": "Bölüm 04/05 – 05/05 (Slayt 27–40): Yığın (Stack) Belleği Adresleme (LIFO, PUSH/POP Bayt Bayt, SS:SP) ve Özet",
+      "titleEn": "Sections 04/05 – 05/05 (Slides 27–40): Stack Memory Addressing (LIFO, Byte-by-Byte PUSH/POP, SS:SP) & Putting It Together",
+      "summary": "Slayt 27–40: Sıfırdan LIFO Yığın (Stack) mantığı, SS:SP fiziksel adres hesabı, PUSH (SP-1/SP-2) ve POP (SP/SP+1) bayt bayt çalışması, POP CS yasağı, CALL/RET ve Yığınla iki yazmacı takas etme.",
       "summaryEn": "Slides 27–40: LIFO Stack, how PUSH and POP work byte by byte, physical stack address calculation, CALL/RET, swapping registers with the stack, choosing an addressing mode, and Common Pitfalls.",
-      "theoryHtml": "\n          <div class=\"nb-section\">\n            <h4 class=\"nb-title\">1. 8086 Makine Kodu Formatı (1 ila 6 Bayt)</h4>\n            <p>\n              8086 komutları makine dilinde değişken uzunlukta (1 bayttan 6 bayta kadar) kodlanır:\n            </p>\n\n            <div class=\"nb-code-box\">\n┌──────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┐\n│    Bayt 1    │    Bayt 2    │    Bayt 3    │    Bayt 4    │    Bayt 5    │    Bayt 6    │\n├──────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤\n│ Opcode │ D │ W│ MOD│ REG│ R/M │  Disp-Low    │  Disp-High   │  Data-Low    │  Data-High   │\n└──────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┘\n            </div>\n\n            <div class=\"nb-grid-2\" style=\"margin-top: 10px;\">\n              <div class=\"nb-card\">\n                <h5>Bayt 1: Opcode, D ve W Bitleri</h5>\n                <ul>\n                  <li><strong>Opcode (6 bit):</strong> Temel işlem kodu (örn. <code>MOV reg/mem</code> için <code>%100010</code>).</li>\n                  <li><strong>D-Biti (Direction - Yön, 1 bit):</strong>\n                    <ul>\n                      <li>$D = 1$: <code>REG</code> alanı <strong>Hedef (Destination)</strong> işlenendir (<code>MOV REG, R/M</code>).</li>\n                      <li>$D = 0$: <code>REG</code> alanı <strong>Kaynak (Source)</strong> işlenendir (<code>MOV R/M, REG</code>).</li>\n                    </ul>\n                  </li>\n                  <li><strong>W-Biti (Width - Genişlik, 1 bit):</strong>\n                    <ul>\n                      <li>$W = 0$: 8-bit Bayt (Byte) işlemi.</li>\n                      <li>$W = 1$: 16-bit Kelime (Word) işlemi.</li>\n                    </ul>\n                  </li>\n                </ul>\n              </div>\n\n              <div class=\"nb-card\">\n                <h5>Bayt 2: MOD, REG ve R/M Alanları</h5>\n                <ul>\n                  <li><strong>MOD (2 bit):</strong> Adresleme modunu ve arkadan kaç bayt deplasman geleceğini belirler:\n                    <ul>\n                      <li><code>00</code>: Bellek modu, deplasman yoktur (İstisna: $R/M = 110$ doğrudan <code>[disp16]</code> adresidir).</li>\n                      <li><code>01</code>: Bellek modu, arkadan 8-bit işaretli deplasman (<code>disp8</code>) gelir.</li>\n                      <li><code>10</code>: Bellek modu, arkadan 16-bit deplasman (<code>disp16</code>) gelir.</li>\n                      <li><code>11</code>: Yazmaç Modu (Register Mode); bellek erişimi yoktur.</li>\n                    </ul>\n                  </li>\n                  <li><strong>REG (3 bit):</strong> Doğrudan işlemci yazmacını kodlar.</li>\n                  <li><strong>R/M (3 bit):</strong> MOD alanına bağlı olarak bellek formülünü veya yazmacı kodlar.</li>\n                </ul>\n              </div>\n            </div>\n          </div>\n\n          <div class=\"nb-section\">\n            <h4 class=\"nb-title\">2. REG Yazmaç Kodlama ve Tam MOD-REG-R/M Tablosu</h4>\n            \n            <div class=\"nb-table-wrapper\">\n              <table class=\"nb-table\">\n                <thead>\n                  <tr>\n                    <th>3-Bit Kod</th>\n                    <th>W = 0 (8-Bit Bayt Yazmacı)</th>\n                    <th>W = 1 (16-Bit Kelime Yazmacı)</th>\n                  </tr>\n                </thead>\n                <tbody>\n                  <tr><td><code>000</code></td><td>AL</td><td>AX</td></tr>\n                  <tr><td><code>001</code></td><td>CL</td><td>CX</td></tr>\n                  <tr><td><code>010</code></td><td>DL</td><td>DX</td></tr>\n                  <tr><td><code>011</code></td><td>BL</td><td>BX</td></tr>\n                  <tr><td><code>100</code></td><td>AH</td><td>SP</td></tr>\n                  <tr><td><code>101</code></td><td>CH</td><td>BP</td></tr>\n                  <tr><td><code>110</code></td><td>DH</td><td>SI</td></tr>\n                  <tr><td><code>111</code></td><td>BH</td><td>DI</td></tr>\n                </tbody>\n              </table>\n            </div>\n\n            <div class=\"nb-table-wrapper\" style=\"margin-top: 14px;\">\n              <table class=\"nb-table\">\n                <thead>\n                  <tr>\n                    <th>R/M Kodu</th>\n                    <th>MOD = 00</th>\n                    <th>MOD = 01</th>\n                    <th>MOD = 10</th>\n                    <th>MOD = 11 (W=0)</th>\n                    <th>MOD = 11 (W=1)</th>\n                  </tr>\n                </thead>\n                <tbody>\n                  <tr><td><code>000</code></td><td><code>[BX + SI]</code></td><td><code>[BX + SI + disp8]</code></td><td><code>[BX + SI + disp16]</code></td><td>AL</td><td>AX</td></tr>\n                  <tr><td><code>001</code></td><td><code>[BX + DI]</code></td><td><code>[BX + DI + disp8]</code></td><td><code>[BX + DI + disp16]</code></td><td>CL</td><td>CX</td></tr>\n                  <tr><td><code>010</code></td><td><code>[BP + SI]</code></td><td><code>[BP + SI + disp8]</code></td><td><code>[BP + SI + disp16]</code></td><td>DL</td><td>DX</td></tr>\n                  <tr><td><code>011</code></td><td><code>[BP + DI]</code></td><td><code>[BP + DI + disp8]</code></td><td><code>[BP + DI + disp16]</code></td><td>BL</td><td>BX</td></tr>\n                  <tr><td><code>100</code></td><td><code>[SI]</code></td><td><code>[SI + disp8]</code></td><td><code>[SI + disp16]</code></td><td>AH</td><td>SP</td></tr>\n                  <tr><td><code>101</code></td><td><code>[DI]</code></td><td><code>[DI + disp8]</code></td><td><code>[DI + disp16]</code></td><td>CH</td><td>BP</td></tr>\n                  <tr><td><code>110</code></td><td><strong style=\"color: var(--accent);\">[disp16] (Doğrudan Adres!)</strong></td><td><code>[BP + disp8]</code></td><td><code>[BP + disp16]</code></td><td>DH</td><td>SI</td></tr>\n                  <tr><td><code>111</code></td><td><code>[BX]</code></td><td><code>[BX + disp8]</code></td><td><code>[BX + disp16]</code></td><td>BH</td><td>DI</td></tr>\n                </tbody>\n              </table>\n            </div>\n\n            <div class=\"nb-callout warning\" style=\"margin-top: 12px;\">\n              ⚠️ <strong>Kritik İstisna (MOD=00, R/M=110):</strong><br>\n              <code>MOD=00</code> normalde deplasmansız bellek erişimini ifade ederken, $R/M = 110$ durumu <code>[BP]</code> anlamına <strong>GELMEZ</strong>!\n              Bu kombinasyon donanımsal olarak <strong>Doğrudan 16-Bit Adresleme (Direct Addressing - <code>[disp16]</code>)</strong> için ayrılmıştır.\n              Eğer programcı <code>[BP]</code> yazarsa derleyici bunu mecburen <code>MOD=01, R/M=110, disp8=00h</code> şeklinde 3 bayt olarak kodlar.\n            </div>\n          </div>\n\n          <div class=\"nb-section\">\n            <h4 class=\"nb-title\">3. Adım Adım Makine Kodu Çözümleme Örnekleri</h4>\n            <div class=\"nb-grid-2\">\n              <div class=\"nb-card\">\n                <h5>Örnek 1: MOV AX, BX</h5>\n                <ul>\n                  <li>Opcode: <code>%100010</code>, Hedef AX ($D=1$), 16-bit ($W=1$) &rarr; Bayt 1: <code>%10001011 = 8Bh</code>.</li>\n                  <li>Yazmaç modu ($MOD=11$), AX kodu <code>000</code>, BX kodu <code>011</code> &rarr; Bayt 2: <code>%11000011 = C3h</code>.</li>\n                  <li><strong>Makine Kodu: <code>8B C3</code></strong> (2 bayt).</li>\n                </ul>\n              </div>\n\n              <div class=\"nb-card\">\n                <h5>Örnek 2: MOV [BX+SI+10h], CX</h5>\n                <ul>\n                  <li>Opcode: <code>%100010</code>, Kaynak CX ($D=0$), 16-bit ($W=1$) &rarr; Bayt 1: <code>%10001001 = 89h</code>.</li>\n                  <li>8-bit deplasman ($MOD=01$), CX kodu <code>001</code>, [BX+SI] kodu <code>000</code> &rarr; Bayt 2: <code>%01001000 = 48h</code>.</li>\n                  <li>Deplasman: <code>10h</code> (Bayt 3).</li>\n                  <li><strong>Makine Kodu: <code>89 48 10</code></strong> (3 bayt).</li>\n                </ul>\n              </div>\n            </div>\n          </div>\n\n          <div class=\"nb-section\">\n            <h4 class=\"nb-title\">4. CISC (x86) ve RISC (ARM) Adresleme Felsefesi Karşılaştırması</h4>\n            <div class=\"nb-table-wrapper\">\n              <table class=\"nb-table\">\n                <thead>\n                  <tr>\n                    <th>Özellik</th>\n                    <th>CISC (Intel x86 / 8086)</th>\n                    <th>RISC (ARM / MIPS)</th>\n                  </tr>\n                </thead>\n                <tbody>\n                  <tr>\n                    <td><strong>Bellek Erişimi</strong></td>\n                    <td>Bellek-Bellek veya Bellek-ALU (Doğrudan bellekle işlem yapılabilir).</td>\n                    <td>Saf Yükle/Sakla (Load/Store); belleğe sadece LDR/STR dokunur.</td>\n                  </tr>\n                  <tr>\n                    <td><strong>Komut Uzunluğu</strong></td>\n                    <td>Değişken (1 bayttan 15 bayta kadar). Çözme donanımı karmaşıktır.</td>\n                    <td>Sabit 32-bit (4 bayt). Çözme son derece basit ve tek çevrimdir.</td>\n                  </tr>\n                  <tr>\n                    <td><strong>Adresleme Modları</strong></td>\n                    <td>Çok sayıda karmaşık mod (Taban+İndeks+Deplasman+Override).</td>\n                    <td>Az sayıda sade mod (genellikle Taban+Ofset); boru hattı dostudur.</td>\n                  </tr>\n                  <tr>\n                    <td><strong>Kod Yoğunluğu</strong></td>\n                    <td>Yüksek (Code Density çok kompakttır; az baytta çok iş yapılır).</td>\n                    <td>Düşük (Aynı işlem için bellekten çekme, işleme ve yazma 3 komut sürer).</td>\n                  </tr>\n                  <tr>\n                    <td><strong>Modern Mimari</strong></td>\n                    <td>Donanımsal komut çözücü x86 komutlarını dahili RISC mikro-op'larına (&mu;ops) böler.</td>\n                    <td>Doğrudan basit komut çekirdeği ile yüksek saat frekansı ve düşük güç tüketimi.</td>\n                  </tr>\n                </tbody>\n              </table>\n            </div>\n          </div>\n        \n\n<div class=\"nb-section\">\n  <div class=\"nb-h3\">📑 Birebir Slayt Akışı: Week 3 - Addressing Modes.pptx (Slayt 27–40 / 40 — Eksiksiz Sıralı İçerik)</div>\n  <p class=\"nb-p\">Ana klasördeki <code>Week 3 - Addressing Modes.pptx</code> dosyasının <strong>Slayt 27–40</strong> aralığındaki tüm slayt başlıkları, tabloları, örnekleri ve cümleleri aşağıda <strong>slayt sırasıyla (1'den 40'a eksiksiz)</strong> yer almaktadır:</p>\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 27 / 40 — 04 / 05</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>04 / 05</li><li>Stack Memory Addressing</li><li>How PUSH, POP, CALL, and RET use the stack's last-in, first-out discipline</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>Section divider    26</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 28 / 40 — The Stack: Last-In, First-Out Memory</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>The Stack: Last-In, First-Out Memory</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>27</li><li>The stack plays an important role in every microprocessor. It holds data temporarily, and it stores the return addresses used by procedures.</li><li>Stack memory is LIFO: last in, first out. The most recently stored item is always the first one retrieved.</li><li>Data is placed onto the stack with PUSH, and removed with POP. CALL uses the stack to hold a return address, and RET removes that return address.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 29 / 40 — PUSH and POP: The Basic Operations</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>PUSH and POP: The Basic Operations</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>28</li><li>PUSH</li><li>Stores a word of data onto the stack, and decrements SP so it points to the new top of the stack.</li><li>POP</li><li>Retrieves a word of data from the stack, and increments SP so it points past the retrieved word.</li><li>PUSH and POP always store or retrieve full words, never single bytes, on the 8086 family.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 30 / 40 — How PUSH Works, Byte by Byte</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>How PUSH Works, Byte by Byte</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>29</li><li>Whenever a word of data is pushed onto the stack, the high-order 8 bits go to the location addressed by SP − 1, and the low-order 8 bits go to the location addressed by SP − 2.</li><li>SP is then decremented by 2, so the next PUSH stores into the next available location.</li><li>PUSH AX, where AX = 3050H</li><li>SP − 1  ←  30H (high byte, AH)</li><li>SP − 2  ←  50H (low byte, AL)</li><li>SP  ←  SP − 2</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 31 / 40 — How POP Works, Byte by Byte</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>How POP Works, Byte by Byte</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>30</li><li>Whenever data is popped from the stack, the low-order 8 bits come from the location addressed by SP, and the high-order 8 bits come from the location addressed by SP + 1.</li><li>SP is then incremented by 2.</li><li>POP BX</li><li>BL  ←  contents at SP (low byte)</li><li>BH  ←  contents at SP + 1 (high byte)</li><li>SP  ←  SP + 2</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 32 / 40 — Finding the Physical Stack Address</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4 · Worked example</li><li>Finding the Physical Stack Address</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>31</li><li>The stack is maintained by two registers: SP (stack pointer) and SS (stack segment). SP always points to a location within the stack segment.</li><li>In real mode, the physical stack address forms exactly like any other segment:offset address: SS × 10H + SP.</li><li>SS = 3000H, SP = 0100H</li><li>30000H + 0100H  =  30100H</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 33 / 40 — What Can Be Pushed and Popped</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>What Can Be Pushed and Popped</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>32</li><li>Data may be popped from the stack into any general-purpose register, or any segment register, with one exception: CS.</li><li>CS cannot be the target of a POP, because CS is only part of the address of the next instruction. Changing CS alone, without also changing IP in a coordinated way, would leave the processor pointing at a meaningless combination.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 34 / 40 — CALL and RET: The Stack Meets Procedures</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>CALL and RET: The Stack Meets Procedures</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>33</li><li>CALL pushes the address of the instruction following the CALL onto the stack, then jumps to the procedure.</li><li>RET pops that saved address back off the stack, into IP (and CS, for a far return), returning control to the instruction right after the original CALL.</li><li>This is exactly why CS cannot be popped directly: RET's automatic pop is the one safe, coordinated way the processor restores both CS and IP together.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 35 / 40 — Swapping Two Registers With the Stack</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4 · Worked example</li><li>Swapping Two Registers With the Stack</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>34</li><li>The code</li><li>MOV AX, 1000H</li><li>MOV BX, 2000H</li><li>PUSH AX</li><li>PUSH BX</li><li>POP AX</li><li>POP BX</li><li>What happens</li><li>AX = 1000H, BX = 2000H</li><li>PUSH AX: 1000H onto the stack</li><li>PUSH BX: 2000H onto the stack, on top of 1000H</li><li>POP AX: the top value, 2000H, comes back off into AX</li><li>POP BX: the remaining value, 1000H, comes off into BX</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 36 / 40 — Tracing the Stack, Step by Step</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4 · Worked example</li><li>Tracing the Stack, Step by Step</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>35</li></ul>\n      <div class=\"nb-table-wrap\"><table class=\"nb-table\"><thead><tr><th>Instruction</th><th>Stack (top → bottom)</th><th>AX</th><th>BX</th></tr></thead><tbody><tr><td>(start)</td><td>empty</td><td>1000H</td><td>2000H</td></tr><tr><td>PUSH AX</td><td>1000H</td><td>1000H</td><td>2000H</td></tr><tr><td>PUSH BX</td><td>2000H, 1000H</td><td>1000H</td><td>2000H</td></tr><tr><td>POP AX</td><td>1000H</td><td>2000H</td><td>2000H</td></tr><tr><td>POP BX</td><td>empty</td><td>2000H</td><td>1000H</td></tr></tbody></table></div>\n      <ul class=\"nb-list\"><li>Result: AX and BX have swapped values, using only the stack, with no third register needed.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 37 / 40 — 05 / 05</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>05 / 05</li><li>Putting It Together</li><li>Choosing a mode, avoiding the common mistakes, and what carries into next week</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>Section divider    36</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 38 / 40 — Choosing an Addressing Mode</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 5</li><li>Choosing an Addressing Mode</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>37</li></ul>\n      <div class=\"nb-table-wrap\"><table class=\"nb-table\"><thead><tr><th>If you need to…</th><th>Reach for…</th></tr></thead><tbody><tr><td>Copy between two registers, fastest</td><td>Register addressing</td></tr><tr><td>Load a known constant</td><td>Immediate addressing</td></tr><tr><td>Read or write one fixed, named variable</td><td>Direct addressing</td></tr><tr><td>Walk through an array using a pointer</td><td>Register indirect, or register relative</td></tr><tr><td>Index into a 2-D structure or a table of records</td><td>Base-plus-index, or base relative-plus-index</td></tr></tbody></table></div>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 39 / 40 — Common Pitfalls</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 5</li><li>Common Pitfalls</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>38</li><li>Forgetting that source and destination read right to left. A misread MOV silently swaps which operand is supposed to change.</li><li>Assuming MOV moves data. It copies. The source is always still there afterward.</li><li>Mismatching PUSH and POP counts. Every PUSH needs a matching POP, in reverse order, or the stack pointer drifts and the next RET reads garbage.</li><li>Trying to POP directly into CS. It cannot be done: use a far RET, or a far JMP/CALL, to change CS safely.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 40 / 40 — Key Takeaways</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 5 · Summary</li><li>Key Takeaways</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>39</li><li>This week, in brief</li><li>Every instruction reads right to left: source on the right, destination on the left.</li><li>Seven data-addressing modes cover every way MOV can locate an operand, from plain registers to base relative-plus-index.</li><li>JMP and CALL locate their target directly, relative to IP, or indirectly through a register.</li><li>The stack is LIFO. PUSH decrements SP and stores; POP retrieves and increments SP.</li><li>Key formulas</li><li>Relative jump target = IP + displacement</li><li>Physical stack address = SS × 10H + SP</li><li>PUSH: SP ← SP − 2, then store. POP: retrieve, then SP ← SP + 2.</li><li>Next week: data movement instructions, in depth, building on these addressing modes.</li><li>Sources: Brey, B. B. (2008). The Intel Microprocessors (8th ed.). Prentice Hall. Course notes, BMI3121.</li></ul>\n    </div>\n  </div>\n</div>",
+      "theoryHtml": "\n          <div class=\"nb-section\">\n            <h4 class=\"nb-title\">1. Sıfırdan Yığın (Stack) Nedir? (Üst Üste Tabak Yığını Mantığı)</h4>\n            <p>\n              <strong>Yığın (Stack)</strong>, mikroişlemcinin verileri geçici olarak saklamak ve alt program (prosedür) dönüş adreslerini tutmak için kullandığı özel bir bellek bölgesidir.\n              Çalışma kuralı <strong>LIFO (Last-In, First-Out — Son Giren İlk Çıkar)</strong> prensibidir: Tıpkı üst üste dizilen tabaklar gibi, en son koyduğunuz veriyi (`PUSH`) her zaman ilk olarak geri alırsınız (`POP`).\n            </p>\n            <div class=\"nb-grid-2\" style=\"margin-top: 10px;\">\n              <div class=\"nb-card\">\n                <h5>📥 PUSH (Yığına Veri İtme — 16 Bit Kelime)</h5>\n                <ul>\n                  <li>Yığın 8086'da <strong>daima 16-bit kelime (Word = 2 bayt)</strong> ile çalışır; tek bayt (`PUSH AL`) itilemez!</li>\n                  <li><strong>Adım 1 (Üst Bayt):</strong> Yazmacın üst 8 biti (`AH`), `[SS : SP - 1]` adresine yazılır.</li>\n                  <li><strong>Adım 2 (Alt Bayt):</strong> Yazmacın alt 8 biti (`AL`), `[SS : SP - 2]` adresine yazılır.</li>\n                  <li><strong>Adım 3 (SP Güncelleme):</strong> `SP ← SP - 2` (Yığın yüksek adresten düşük adrese doğru büyür).</li>\n                </ul>\n              </div>\n              <div class=\"nb-card\">\n                <h5>📤 POP (Yığından Veri Çekme — 16 Bit Kelime)</h5>\n                <ul>\n                  <li>Yığının en tepesindeki (`SS:SP`) 16-bit kelimeyi hedef yazmaca geri okur.</li>\n                  <li><strong>Adım 1 (Alt Bayt):</strong> `[SS : SP]` adresindeki bayt yazmacın alt baytına (`BL`) okunur.</li>\n                  <li><strong>Adım 2 (Üst Bayt):</strong> `[SS : SP + 1]` adresindeki bayt yazmacın üst baytına (`BH`) okunur.</li>\n                  <li><strong>Adım 3 (SP Güncelleme):</strong> `SP ← SP + 2` (Veri çekildikçe SP tekrar büyür).</li>\n                </ul>\n              </div>\n            </div>\n            <div class=\"nb-callout tip\" style=\"margin-top: 12px;\">\n              💡 <strong>Fiziksel Yığın Adresi ve POP CS Yasağı:</strong><br>\n              • Gerçek modda yığının fiziksel adresi: <code>Fiziksel Adres = (SS × 10H) + SP</code> (Örn: <code>SS=3000H, SP=0100H → 30100H</code>).<br>\n              • <strong>POP CS Kesinlikle Yasaktır:</strong> <code>CS</code> tek başına değiştirilirse <code>IP</code> ile uyumsuz kalır ve işlemci anlamsız bir adrese düşer. Hem <code>CS</code> hem <code>IP</code>'yi koordineli değiştiren güvenli komut <code>CALL / RET</code> çiftidir.\n            </div>\n          </div>\n\n<div class=\"nb-section\">\n  <div class=\"nb-h3\">📑 Birebir Slayt Akışı: Week 3 - Addressing Modes.pptx (Slayt 27–40 / 40 — Eksiksiz Sıralı İçerik)</div>\n  <p class=\"nb-p\">Ana klasördeki <code>Week 3 - Addressing Modes.pptx</code> dosyasının <strong>Slayt 27–40</strong> aralığındaki tüm slayt başlıkları, tabloları, örnekleri ve cümleleri aşağıda <strong>slayt sırasıyla (1'den 40'a eksiksiz)</strong> yer almaktadır:</p>\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 27 / 40 — 04 / 05</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>04 / 05</li><li>Stack Memory Addressing</li><li>How PUSH, POP, CALL, and RET use the stack's last-in, first-out discipline</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>Section divider    26</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 28 / 40 — The Stack: Last-In, First-Out Memory</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>The Stack: Last-In, First-Out Memory</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>27</li><li>The stack plays an important role in every microprocessor. It holds data temporarily, and it stores the return addresses used by procedures.</li><li>Stack memory is LIFO: last in, first out. The most recently stored item is always the first one retrieved.</li><li>Data is placed onto the stack with PUSH, and removed with POP. CALL uses the stack to hold a return address, and RET removes that return address.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 29 / 40 — PUSH and POP: The Basic Operations</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>PUSH and POP: The Basic Operations</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>28</li><li>PUSH</li><li>Stores a word of data onto the stack, and decrements SP so it points to the new top of the stack.</li><li>POP</li><li>Retrieves a word of data from the stack, and increments SP so it points past the retrieved word.</li><li>PUSH and POP always store or retrieve full words, never single bytes, on the 8086 family.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 30 / 40 — How PUSH Works, Byte by Byte</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>How PUSH Works, Byte by Byte</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>29</li><li>Whenever a word of data is pushed onto the stack, the high-order 8 bits go to the location addressed by SP − 1, and the low-order 8 bits go to the location addressed by SP − 2.</li><li>SP is then decremented by 2, so the next PUSH stores into the next available location.</li><li>PUSH AX, where AX = 3050H</li><li>SP − 1  ←  30H (high byte, AH)</li><li>SP − 2  ←  50H (low byte, AL)</li><li>SP  ←  SP − 2</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 31 / 40 — How POP Works, Byte by Byte</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>How POP Works, Byte by Byte</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>30</li><li>Whenever data is popped from the stack, the low-order 8 bits come from the location addressed by SP, and the high-order 8 bits come from the location addressed by SP + 1.</li><li>SP is then incremented by 2.</li><li>POP BX</li><li>BL  ←  contents at SP (low byte)</li><li>BH  ←  contents at SP + 1 (high byte)</li><li>SP  ←  SP + 2</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 32 / 40 — Finding the Physical Stack Address</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4 · Worked example</li><li>Finding the Physical Stack Address</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>31</li><li>The stack is maintained by two registers: SP (stack pointer) and SS (stack segment). SP always points to a location within the stack segment.</li><li>In real mode, the physical stack address forms exactly like any other segment:offset address: SS × 10H + SP.</li><li>SS = 3000H, SP = 0100H</li><li>30000H + 0100H  =  30100H</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 33 / 40 — What Can Be Pushed and Popped</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>What Can Be Pushed and Popped</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>32</li><li>Data may be popped from the stack into any general-purpose register, or any segment register, with one exception: CS.</li><li>CS cannot be the target of a POP, because CS is only part of the address of the next instruction. Changing CS alone, without also changing IP in a coordinated way, would leave the processor pointing at a meaningless combination.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 34 / 40 — CALL and RET: The Stack Meets Procedures</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>CALL and RET: The Stack Meets Procedures</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>33</li><li>CALL pushes the address of the instruction following the CALL onto the stack, then jumps to the procedure.</li><li>RET pops that saved address back off the stack, into IP (and CS, for a far return), returning control to the instruction right after the original CALL.</li><li>This is exactly why CS cannot be popped directly: RET's automatic pop is the one safe, coordinated way the processor restores both CS and IP together.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 35 / 40 — Swapping Two Registers With the Stack</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4 · Worked example</li><li>Swapping Two Registers With the Stack</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>34</li><li>The code</li><li>MOV AX, 1000H</li><li>MOV BX, 2000H</li><li>PUSH AX</li><li>PUSH BX</li><li>POP AX</li><li>POP BX</li><li>What happens</li><li>AX = 1000H, BX = 2000H</li><li>PUSH AX: 1000H onto the stack</li><li>PUSH BX: 2000H onto the stack, on top of 1000H</li><li>POP AX: the top value, 2000H, comes back off into AX</li><li>POP BX: the remaining value, 1000H, comes off into BX</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 36 / 40 — Tracing the Stack, Step by Step</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4 · Worked example</li><li>Tracing the Stack, Step by Step</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>35</li></ul>\n      <div class=\"nb-table-wrap\"><table class=\"nb-table\"><thead><tr><th>Instruction</th><th>Stack (top → bottom)</th><th>AX</th><th>BX</th></tr></thead><tbody><tr><td>(start)</td><td>empty</td><td>1000H</td><td>2000H</td></tr><tr><td>PUSH AX</td><td>1000H</td><td>1000H</td><td>2000H</td></tr><tr><td>PUSH BX</td><td>2000H, 1000H</td><td>1000H</td><td>2000H</td></tr><tr><td>POP AX</td><td>1000H</td><td>2000H</td><td>2000H</td></tr><tr><td>POP BX</td><td>empty</td><td>2000H</td><td>1000H</td></tr></tbody></table></div>\n      <ul class=\"nb-list\"><li>Result: AX and BX have swapped values, using only the stack, with no third register needed.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 37 / 40 — 05 / 05</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>05 / 05</li><li>Putting It Together</li><li>Choosing a mode, avoiding the common mistakes, and what carries into next week</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>Section divider    36</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 38 / 40 — Choosing an Addressing Mode</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 5</li><li>Choosing an Addressing Mode</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>37</li></ul>\n      <div class=\"nb-table-wrap\"><table class=\"nb-table\"><thead><tr><th>If you need to…</th><th>Reach for…</th></tr></thead><tbody><tr><td>Copy between two registers, fastest</td><td>Register addressing</td></tr><tr><td>Load a known constant</td><td>Immediate addressing</td></tr><tr><td>Read or write one fixed, named variable</td><td>Direct addressing</td></tr><tr><td>Walk through an array using a pointer</td><td>Register indirect, or register relative</td></tr><tr><td>Index into a 2-D structure or a table of records</td><td>Base-plus-index, or base relative-plus-index</td></tr></tbody></table></div>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 39 / 40 — Common Pitfalls</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 5</li><li>Common Pitfalls</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>38</li><li>Forgetting that source and destination read right to left. A misread MOV silently swaps which operand is supposed to change.</li><li>Assuming MOV moves data. It copies. The source is always still there afterward.</li><li>Mismatching PUSH and POP counts. Every PUSH needs a matching POP, in reverse order, or the stack pointer drifts and the next RET reads garbage.</li><li>Trying to POP directly into CS. It cannot be done: use a far RET, or a far JMP/CALL, to change CS safely.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 40 / 40 — Key Takeaways</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 5 · Summary</li><li>Key Takeaways</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>39</li><li>This week, in brief</li><li>Every instruction reads right to left: source on the right, destination on the left.</li><li>Seven data-addressing modes cover every way MOV can locate an operand, from plain registers to base relative-plus-index.</li><li>JMP and CALL locate their target directly, relative to IP, or indirectly through a register.</li><li>The stack is LIFO. PUSH decrements SP and stores; POP retrieves and increments SP.</li><li>Key formulas</li><li>Relative jump target = IP + displacement</li><li>Physical stack address = SS × 10H + SP</li><li>PUSH: SP ← SP − 2, then store. POP: retrieve, then SP ← SP + 2.</li><li>Next week: data movement instructions, in depth, building on these addressing modes.</li><li>Sources: Brey, B. B. (2008). The Intel Microprocessors (8th ed.). Prentice Hall. Course notes, BMI3121.</li></ul>\n    </div>\n  </div>\n</div>",
       "theoryHtmlEn": "\n          <div class=\"nb-callout info\">\n            <strong>🇬🇧 Official Course Lecture Slide Text (Verbatim Professor Content)</strong><br>\n            <em>BMI3121 · Microprocessor Systems — Week 3: Addressing Modes (Slides 27–40)</em>\n          </div>\n          <div class=\"nb-section\">\n            <h4 class=\"nb-title\">1. Stack Memory Addressing</h4>\n            <p>\n              The stack memory is a LIFO (Last-In, First-Out) structure operating in the Stack Segment:\n            </p>\n            <ul>\n              <li><strong>SS:SP Pairing:</strong> Physical stack address is calculated as $(\text{SS} \times 10\text{H}) + \text{SP}$.</li>\n              <li><strong>PUSH Source:</strong> SP is decremented by 2, and the 16-bit word is pushed onto the stack:\n                $$\text{SP} leftarrow \text{SP} - 2, quad [\text{SS}:\text{SP}] leftarrow \text{Word}$$</li>\n              <li><strong>POP Destination:</strong> The word at top of stack is retrieved, and SP is incremented by 2:\n                $$\text{Word} leftarrow [\text{SS}:\text{SP}], quad \text{SP} leftarrow \text{SP} + 2$$</li>\n            </ul>\n            <div class=\"nb-callout warning\">\n              <strong>Strict Prohibition: POP CS is Illegal.</strong><br>\n              In the 8086 architecture, <code>POP CS</code> is strictly prohibited because altering the Code Segment without simultaneously altering the Instruction Pointer would disrupt instruction execution.\n            </div>\n          </div>\n\n          <div class=\"nb-section\">\n            <h4 class=\"nb-title\">2. 8086 Machine Code Instruction Encoding Format</h4>\n            <p>\n              8086 instructions are encoded into 1 to 6 bytes:\n            </p>\n            <div class=\"nb-code-sample\">\n┌──────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┐\n│    Byte 1    │    Byte 2    │    Byte 3    │    Byte 4    │    Byte 5    │    Byte 6    │\n├──────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤\n│ Opcode │ D │ W│ MOD│ REG│ R/M │  Disp-Low    │  Disp-High   │  Data-Low    │  Data-High   │\n└──────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┘\n            </div>\n            <ul>\n              <li><strong>Opcode (6 bits):</strong> Specifies operation (e.g. MOV, ADD, SUB).</li>\n              <li><strong>D bit (Direction):</strong> 1 = REG is destination, 0 = REG is source.</li>\n              <li><strong>W bit (Width):</strong> 1 = 16-bit word, 0 = 8-bit byte.</li>\n              <li><strong>MOD field (2 bits):</strong> 00 = Memory mode no displacement; 01 = Memory with 8-bit displacement; 10 = Memory with 16-bit displacement; 11 = Register mode.</li>\n              <li><strong>REG field (3 bits):</strong> Specifies CPU register.</li>\n              <li><strong>R/M field (3 bits):</strong> Specifies base/index addressing combination. Special exception: <code>MOD = 00</code> and <code>R/M = 110</code> specifies direct 16-bit displacement <code>[disp16]</code> instead of <code>[BP]</code>.</li>\n            </ul>\n          </div>\n        \n\n<div class=\"nb-section\">\n  <div class=\"nb-h3\">📑 Complete Sequential Slide Deck: Week 3 - Addressing Modes.pptx (Slides 27–40 of 40 — Verbatim)</div>\n  <p class=\"nb-p\">Every slide from <strong>Slide 27 to Slide 40</strong> of <code>Week 3 - Addressing Modes.pptx</code> is presented below in exact sequential order with 100% verbatim professor text, tables, and worked examples:</p>\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 27 / 40 — 04 / 05</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>04 / 05</li><li>Stack Memory Addressing</li><li>How PUSH, POP, CALL, and RET use the stack's last-in, first-out discipline</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>Section divider    26</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 28 / 40 — The Stack: Last-In, First-Out Memory</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>The Stack: Last-In, First-Out Memory</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>27</li><li>The stack plays an important role in every microprocessor. It holds data temporarily, and it stores the return addresses used by procedures.</li><li>Stack memory is LIFO: last in, first out. The most recently stored item is always the first one retrieved.</li><li>Data is placed onto the stack with PUSH, and removed with POP. CALL uses the stack to hold a return address, and RET removes that return address.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 29 / 40 — PUSH and POP: The Basic Operations</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>PUSH and POP: The Basic Operations</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>28</li><li>PUSH</li><li>Stores a word of data onto the stack, and decrements SP so it points to the new top of the stack.</li><li>POP</li><li>Retrieves a word of data from the stack, and increments SP so it points past the retrieved word.</li><li>PUSH and POP always store or retrieve full words, never single bytes, on the 8086 family.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 30 / 40 — How PUSH Works, Byte by Byte</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>How PUSH Works, Byte by Byte</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>29</li><li>Whenever a word of data is pushed onto the stack, the high-order 8 bits go to the location addressed by SP − 1, and the low-order 8 bits go to the location addressed by SP − 2.</li><li>SP is then decremented by 2, so the next PUSH stores into the next available location.</li><li>PUSH AX, where AX = 3050H</li><li>SP − 1  ←  30H (high byte, AH)</li><li>SP − 2  ←  50H (low byte, AL)</li><li>SP  ←  SP − 2</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 31 / 40 — How POP Works, Byte by Byte</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>How POP Works, Byte by Byte</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>30</li><li>Whenever data is popped from the stack, the low-order 8 bits come from the location addressed by SP, and the high-order 8 bits come from the location addressed by SP + 1.</li><li>SP is then incremented by 2.</li><li>POP BX</li><li>BL  ←  contents at SP (low byte)</li><li>BH  ←  contents at SP + 1 (high byte)</li><li>SP  ←  SP + 2</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 32 / 40 — Finding the Physical Stack Address</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4 · Worked example</li><li>Finding the Physical Stack Address</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>31</li><li>The stack is maintained by two registers: SP (stack pointer) and SS (stack segment). SP always points to a location within the stack segment.</li><li>In real mode, the physical stack address forms exactly like any other segment:offset address: SS × 10H + SP.</li><li>SS = 3000H, SP = 0100H</li><li>30000H + 0100H  =  30100H</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 33 / 40 — What Can Be Pushed and Popped</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>What Can Be Pushed and Popped</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>32</li><li>Data may be popped from the stack into any general-purpose register, or any segment register, with one exception: CS.</li><li>CS cannot be the target of a POP, because CS is only part of the address of the next instruction. Changing CS alone, without also changing IP in a coordinated way, would leave the processor pointing at a meaningless combination.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 34 / 40 — CALL and RET: The Stack Meets Procedures</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4</li><li>CALL and RET: The Stack Meets Procedures</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>33</li><li>CALL pushes the address of the instruction following the CALL onto the stack, then jumps to the procedure.</li><li>RET pops that saved address back off the stack, into IP (and CS, for a far return), returning control to the instruction right after the original CALL.</li><li>This is exactly why CS cannot be popped directly: RET's automatic pop is the one safe, coordinated way the processor restores both CS and IP together.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 35 / 40 — Swapping Two Registers With the Stack</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4 · Worked example</li><li>Swapping Two Registers With the Stack</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>34</li><li>The code</li><li>MOV AX, 1000H</li><li>MOV BX, 2000H</li><li>PUSH AX</li><li>PUSH BX</li><li>POP AX</li><li>POP BX</li><li>What happens</li><li>AX = 1000H, BX = 2000H</li><li>PUSH AX: 1000H onto the stack</li><li>PUSH BX: 2000H onto the stack, on top of 1000H</li><li>POP AX: the top value, 2000H, comes back off into AX</li><li>POP BX: the remaining value, 1000H, comes off into BX</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 36 / 40 — Tracing the Stack, Step by Step</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 4 · Worked example</li><li>Tracing the Stack, Step by Step</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>35</li></ul>\n      <div class=\"nb-table-wrap\"><table class=\"nb-table\"><thead><tr><th>Instruction</th><th>Stack (top → bottom)</th><th>AX</th><th>BX</th></tr></thead><tbody><tr><td>(start)</td><td>empty</td><td>1000H</td><td>2000H</td></tr><tr><td>PUSH AX</td><td>1000H</td><td>1000H</td><td>2000H</td></tr><tr><td>PUSH BX</td><td>2000H, 1000H</td><td>1000H</td><td>2000H</td></tr><tr><td>POP AX</td><td>1000H</td><td>2000H</td><td>2000H</td></tr><tr><td>POP BX</td><td>empty</td><td>2000H</td><td>1000H</td></tr></tbody></table></div>\n      <ul class=\"nb-list\"><li>Result: AX and BX have swapped values, using only the stack, with no third register needed.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 37 / 40 — 05 / 05</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>05 / 05</li><li>Putting It Together</li><li>Choosing a mode, avoiding the common mistakes, and what carries into next week</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>Section divider    36</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 38 / 40 — Choosing an Addressing Mode</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 5</li><li>Choosing an Addressing Mode</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>37</li></ul>\n      <div class=\"nb-table-wrap\"><table class=\"nb-table\"><thead><tr><th>If you need to…</th><th>Reach for…</th></tr></thead><tbody><tr><td>Copy between two registers, fastest</td><td>Register addressing</td></tr><tr><td>Load a known constant</td><td>Immediate addressing</td></tr><tr><td>Read or write one fixed, named variable</td><td>Direct addressing</td></tr><tr><td>Walk through an array using a pointer</td><td>Register indirect, or register relative</td></tr><tr><td>Index into a 2-D structure or a table of records</td><td>Base-plus-index, or base relative-plus-index</td></tr></tbody></table></div>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 39 / 40 — Common Pitfalls</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 5</li><li>Common Pitfalls</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>38</li><li>Forgetting that source and destination read right to left. A misread MOV silently swaps which operand is supposed to change.</li><li>Assuming MOV moves data. It copies. The source is always still there afterward.</li><li>Mismatching PUSH and POP counts. Every PUSH needs a matching POP, in reverse order, or the stack pointer drifts and the next RET reads garbage.</li><li>Trying to POP directly into CS. It cannot be done: use a far RET, or a far JMP/CALL, to change CS safely.</li></ul>\n    </div>\n  </div>\n\n  <div class=\"nb-card\">\n    <div class=\"nb-card-title\">Slide 40 / 40 — Key Takeaways</div>\n    <div class=\"nb-card-body\">\n      <ul class=\"nb-list\"><li>µP</li><li>Section 5 · Summary</li><li>Key Takeaways</li><li>Week 3 · BMI3121 Microprocessor Systems</li><li>39</li><li>This week, in brief</li><li>Every instruction reads right to left: source on the right, destination on the left.</li><li>Seven data-addressing modes cover every way MOV can locate an operand, from plain registers to base relative-plus-index.</li><li>JMP and CALL locate their target directly, relative to IP, or indirectly through a register.</li><li>The stack is LIFO. PUSH decrements SP and stores; POP retrieves and increments SP.</li><li>Key formulas</li><li>Relative jump target = IP + displacement</li><li>Physical stack address = SS × 10H + SP</li><li>PUSH: SP ← SP − 2, then store. POP: retrieve, then SP ← SP + 2.</li><li>Next week: data movement instructions, in depth, building on these addressing modes.</li><li>Sources: Brey, B. B. (2008). The Intel Microprocessors (8th ed.). Prentice Hall. Course notes, BMI3121.</li></ul>\n    </div>\n  </div>\n</div>",
       "quiz": {
         "id": "quiz-5-3",
-        "question": "8086 makine kodunda MOD=00 ve R/M=110 ikili alanı çözümlendiğinde ortaya çıkan donanımsal istisna nedir?",
+        "question": "8086 mikroişlemcisinde AX = 3050H iken PUSH AX komutu çalıştırıldığında, baytların belleğe yerleşimi ve SP (Stack Pointer) değişimi nasıl gerçekleşir?",
         "options": [
-          "İşlemcinin [BP] adresini deplasmansız okuması",
-          "Doğrudan 16-bit bellek adresleme ([disp16]) yapılması",
-          "İşlemin geçersiz sayılarak Type 6 hatası üretmesi",
-          "Yazmaç moduna (Register Mode) geçilerek SI yazmacının seçilmesi"
+          "SP 2 artırılır; 30H değeri [SP+1] adresine, 50H değeri [SP+2] adresine yazılır",
+          "Üst bayt 30H (AH) [SP-1] adresine, alt bayt 50H (AL) [SP-2] adresine yazılır ve SP 2 azaltılır (SP ← SP - 2)",
+          "Yalnızca 50H baytı [SP-1] adresine yazılır ve SP 1 azaltılır",
+          "SP değişmez; 3050H doğrudan [DS:SP] adresine yazılır"
         ],
         "correctIndex": 1,
-        "explanation": "MOD=00 normalde deplasmansız bellek erişimidir; ancak R/M=110 iken donanımsal bir istisna olarak [BP] yerine arkadan gelen 16-bitlik doğrudan adres [disp16] okunur. [BP] yi kodlamak için derleyiciler mecburen MOD=01 ve disp8=00h üretir."
+        "explanation": "Week 3 Slayt 30'da gösterildiği gibi: PUSH AX (AX=3050H) çalıştığında üst bayt AH (30H) [SP-1] adresine, alt bayt AL (50H) [SP-2] adresine yazılır ve SP 2 azaltılır (SP ← SP - 2)."
       },
       "task": {
         "id": "task-5-3-reg-to-reg-code",
-        "title": "Yazmaçtan Yazmaca Veri Aktarımı ve Bayt Eşleme",
-        "difficulty": "Kolay",
-        "scenario": "16-bitlik BX yazmacındaki veriyi AX yazmacına kopyalayın, ardından AL alt baytını DX yazmacına sıfır uzatarak (DH=0) aktarın.",
-        "taskPrompt": "BX yazmacına 55AAh yükleyin. MOV AX, BX ile AX yazmacına kopyalayın. Ardından DL yazmacına AL baytını aktarın ve DH yazmacını 00h yapın. Programı HLT ile sonlandırın.",
-        "starterCode": "; 5.3 Yazmaç Aktarımı\nORG 100h\n\n; BX = 55AAh yapın:\n; AX'e BX'i kopyalayın (MOV AX, BX):\n; DL'ye AL'yi kopyalayın, DH'yi sıfırlayın (DH = 00h):\n\n\nHLT\n",
-        "solutionCode": "ORG 100h\nMOV BX, 55AAh\nMOV AX, BX\nMOV DL, AL\nMOV DH, 00h\nHLT\n",
+        "title": "Bölüm 3.3 Kapsamlı Yığın Ödevi: Yığınla (PUSH/POP) Üç Yazmacı Döngüsel Kaydırma ve SP Kontrolü",
+        "difficulty": "Orta",
+        "scenario": "Week 3 Slayt 28–36'daki tüm yığın kurallarını tek bir programda birleştirelim! SP = 0200h tabanından başlayarak AX = 1000h ve BX = 2000h değerlerini yığın (PUSH ve POP) kullanarak üçüncü bir yazmaç kullanmadan takas edin, ardından yeni AX değerini yığına itip DX yazmacına çekin.",
+        "taskPrompt": "1) MOV SP, 0200h ile yığın işaretçisini kurun.\n2) MOV AX, 1000h ve MOV BX, 2000h yükleyin.\n3) PUSH AX ve PUSH BX ile ikisini yığına itin.\n4) POP AX ve POP BX ile LIFO sırasıyla çekerek AX=2000h, BX=1000h takasını tamamlayın.\n5) PUSH AX ve POP DX ile AX'in yeni değerini (2000h) yığın üzerinden DX'e kopyalayın ve HLT ile bitirin.",
+        "starterCode": "; Week 3.3 Kapsamlı Yığın (Stack) Uygulaması\nORG 100h\n\nMOV SP, 0200h\nMOV AX, 1000h\nMOV BX, 2000h\n\n; 1. AX ve BX'i yığına itin (PUSH AX, PUSH BX):\n\n; 2. Yığından çekerek AX ve BX'i takas edin (POP AX, POP BX):\n\n; 3. Yeni AX değerini yığına itip DX içine çekin (PUSH AX, POP DX):\n\n\nHLT\n",
+        "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1000h\nMOV BX, 2000h\nPUSH AX\nPUSH BX\nPOP AX\nPOP BX\nPUSH AX\nPOP DX\nHLT\n",
         "hints": [
-          "MOV AX, BX komutu makine kodunda 8B C3 veya 89 D8 olarak kodlanır.",
-          "DL = AL yapıp DH = 00h yazın."
+          "Önce PUSH AX ve PUSH BX yazın (Yığının en tepesinde 2000h olur).",
+          "Ardından POP AX ve POP BX yazın (AX=2000h, BX=1000h olur).",
+          "Son olarak PUSH AX ve POP DX yazarak DX=2000h yapın; tüm PUSH ve POP sayıları eşit olduğu için SP tekrar 0200h olur."
         ],
         "assertions": {
           "registers": {
-            "ax": 21930,
-            "bx": 21930,
-            "dx": 170
+            "ax": 8192,
+            "bx": 4096,
+            "dx": 8192,
+            "sp": 512
           },
-          "maxSteps": 50
+          "memory": [
+            {
+              "segment": 0,
+              "offset": 510,
+              "expectedBytes": [
+                0,
+                32
+              ]
+            }
+          ],
+          "maxSteps": 60
         },
-        "examTip": "W=1 kelime (word), W=0 bayt (byte) işlemlerini gösterir. AX ve BX 16-bit iken AL ve DL 8-bitlik alt yazmaçlardır."
-      }
+        "examTip": "Her PUSH komutu için eşleşen bir POP komutu çalıştırıldığında yığın dengelenir ve SP başlangıçtaki 0200h değerine geri döner."
+      },
+      "microSteps": [
+        {
+          "id": "ms-3-3-1",
+          "stepNumber": "Stack Adım 1",
+          "title": "Sıfırdan Yığın (Stack) Nedir ve İlk PUSH Komutumuz Nasıl Çalışır?",
+          "titleEn": "Stack Step 1: What is the Stack from Zero and How Does PUSH Work?",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Yığın (Stack), üst üste dizilen tabaklar gibi çalışan özel bir bellek bölgesidir. Bir yazmaçtaki 16-bitlik sayıyı geçici olarak yığının en üstüne koymak için <code>PUSH yazmaç16</code> komutu kullanılır.</p>\n        <ul>\n          <li>Örneğin <code>PUSH AX</code> yazdığınızda, <code>AX</code> içindeki 16-bitlik değer yığının tepesine kopyalanır (<code>AX</code>'in kendi içindeki değer bozulmaz).</li>\n          <li><strong>Altın Kural #1:</strong> Yığına sadece <strong>16-bitlik (2 baytlık)</strong> tam yazmaçlar (<code>AX, BX, CX, DX, SI, DI, BP</code> veya segment yazmaçları) konulabilir. 8-bitlik <code>PUSH AL</code> veya <code>PUSH BL</code> yazmak <strong>YASAKTIR!</strong></li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The <strong>Stack</strong> is a temporary memory area that works like a stack of plates. <code>PUSH reg16</code> places a copy of a 16-bit register on top of the stack. Only 16-bit words can be pushed (<code>PUSH AL</code> is illegal!).</p>\n      ",
+          "task": {
+            "id": "ms-task-3-3-1",
+            "title": "İlk PUSH Komutu: AX Yazmacını Yığına Koymak",
+            "difficulty": "Kolay",
+            "scenario": "Yığın işaretçimiz SP = 0200h adresinde duruyor. AX yazmacına 1234h yükleyip PUSH AX komutuyla yığına koyacağız.",
+            "taskPrompt": "AX yazmacına 1234h yükleyin ve PUSH AX komutu ile yığına atın.",
+            "starterCode": "; Stack Adım 1: AX içine 1234h yükleyip PUSH AX yapın\nORG 100h\nMOV SP, 0200h\n\n; Kodunuzu buraya yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1234h\nPUSH AX\nHLT\n",
+            "hints": [
+              "MOV AX, 1234h yazın.",
+              "Hemen altına PUSH AX ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4660,
+                "sp": 510
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 510,
+                  "expectedBytes": [
+                    52,
+                    18
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-3-2",
+          "stepNumber": "Stack Adım 2",
+          "title": "SP (Stack Pointer) Nedir? Her PUSH Yapıldığında SP Neden 2 Azalır?",
+          "titleEn": "Stack Step 2: What is SP? Why Does Every PUSH Decrease SP by 2?",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Yığının o anki en üst noktasını (tepesini) takip eden yazmaca <strong><code>SP</code> (Stack Pointer - Yığın İşaretçisi)</strong> denir. 8086'da yığın belleği <strong>yüksek adreslerden düşük adreslere doğru (aşağı yönde)</strong> büyür!</p>\n        <ul>\n          <li>Her <code>PUSH</code> komutu belleğe <strong>2 bayt (16 bit)</strong> yazdığı için, işlemci önce <code>SP = SP - 2</code> yapar, sonra veriyi yeni <code>[SP]</code> adresine yazar.</li>\n          <li>Örnek: Başlangıçta <code>SP = 0200h</code> olsun:\n            <br>1. <code>PUSH AX</code> &rarr; <code>SP</code> 2 azalır ve <code>01FEh</code> olur.\n            <br>2. <code>PUSH BX</code> &rarr; <code>SP</code> 2 daha azalır ve <code>01FCh</code> olur!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <strong><code>SP</code> (Stack Pointer)</strong> points to the current top of the stack. Because the stack grows downward in memory and each word is 2 bytes, every <code>PUSH</code> executes <code>SP = SP - 2</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-3-3-2",
+            "title": "İki Kez PUSH Yaparak SP'nin 4 Azaldığını (0200h -> 01FCh) Görmek",
+            "difficulty": "Kolay",
+            "scenario": "SP = 0200h iken AX = 1111h ve BX = 2222h değerlerini art arda yığına PUSH edeceğiz ve SP değerinin 01FCh olduğunu doğrulayacağız.",
+            "taskPrompt": "AX yazmacına 1111h, BX yazmacına 2222h yükleyin. Sırasıyla PUSH AX ve PUSH BX komutlarını çalıştırın.",
+            "starterCode": "; Stack Adım 2: İki kez PUSH yapıp SP değişimini gözlemleyin\nORG 100h\nMOV SP, 0200h\n\n; AX=1111h, BX=2222h yükleyip PUSH AX ve PUSH BX yapın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1111h\nMOV BX, 2222h\nPUSH AX\nPUSH BX\nHLT\n",
+            "hints": [
+              "MOV AX, 1111h ve MOV BX, 2222h yazın.",
+              "PUSH AX ve PUSH BX ekleyin. SP 0200h -> 01FEh -> 01FCh olacaktır."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4369,
+                "bx": 8738,
+                "sp": 508
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 508,
+                  "expectedBytes": [
+                    34,
+                    34,
+                    17,
+                    17
+                  ]
+                }
+              ],
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-3-3",
+          "stepNumber": "Stack Adım 3",
+          "title": "POP Komutu Nedir? Yığının Tepesindeki Veriyi Geri Çekmek (SP = SP + 2)",
+          "titleEn": "Stack Step 3: What is POP? Pulling Data Back from the Top of the Stack",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Yığının en tepesindeki 16-bitlik veriyi alıp bir yazmacın içine koymak için <code>POP hedef16</code> komutu kullanılır.</p>\n        <ul>\n          <li><code>POP DX</code> çalıştırıldığında:\n            <br>1. İşlemci o anki <code>[SP]</code> adresinde duran 16-bitlik sayıyı okur ve <code>DX</code> yazmacına yazar.\n            <br>2. Yığından 2 bayt eksildiği için <code>SP = SP + 2</code> yaparak <code>SP</code>'yi eski yerine geri çıkarır!</li>\n          <li>Önemli: <code>PUSH AX</code> ile koyduğunuz veriyi illa <code>AX</code>'e çekmek zorunda değilsiniz; <code>POP DX</code> yazarak <code>DX</code> içine de çekebilirsiniz!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>POP dest16</code> reads the 16-bit word at the current top of the stack (<code>[SP]</code>) into <code>dest16</code>, and then increments <code>SP</code> by 2 (<code>SP = SP + 2</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-3-3-3",
+            "title": "PUSH AX ile Yığına Konulan Değeri POP DX ile Çekmek",
+            "difficulty": "Kolay",
+            "scenario": "AX = 5678h değerini PUSH AX ile yığına koyacağız (SP 01FEh olur), ardından POP DX ile yığının tepesinden DX yazmacına çekeceğiz (SP tekrar 0200h olur).",
+            "taskPrompt": "AX yazmacına 5678h yükleyin. PUSH AX ile yığına atın, ardından POP DX komutuyla bu değeri DX yazmacına çekin.",
+            "starterCode": "; Stack Adım 3: PUSH AX ve POP DX uygulaması\nORG 100h\nMOV SP, 0200h\n\n; AX = 5678h yükleyin, PUSH AX yapın ve POP DX ile DX içine çekin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 5678h\nPUSH AX\nPOP DX\nHLT\n",
+            "hints": [
+              "MOV AX, 5678h",
+              "PUSH AX",
+              "POP DX"
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 22136,
+                "dx": 22136,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-3-4",
+          "stepNumber": "Stack Adım 4",
+          "title": "LIFO (Son Giren İlk Çıkar) Kuralı: En Son PUSH Edilen İlk POP Edilir!",
+          "titleEn": "Stack Step 4: LIFO (Last-In, First-Out): Last Pushed is First Popped!",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Üst üste koyduğunuz tabaklardan en üsttekini ilk alırsınız. Buna <strong>LIFO (Last-In, First-Out / Son Giren İlk Çıkar)</strong> denir!</p>\n        <pre><code>PUSH AX   ; 1. tabak (Altta: 1111h)\nPUSH BX   ; 2. tabak (En üstte: 2222h)\nPOP CX    ; En üstteki tabağı alır! Yani CX = 2222h olur!\nPOP DX    ; Şimdi alttaki tabağı alır! Yani DX = 1111h olur!</code></pre>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> The stack obeys <strong>LIFO (Last-In, First-Out)</strong>. If you <code>PUSH AX</code> then <code>PUSH BX</code>, the very first <code>POP</code> retrieves <code>BX</code>'s value because <code>BX</code> was pushed last!</p>\n      ",
+          "task": {
+            "id": "ms-task-3-3-4",
+            "title": "LIFO Sırasını Deneyerek Görme (Son Giren İlk Çıkar)",
+            "difficulty": "Kolay",
+            "scenario": "AX = 0AAAAh ve BX = 0BBBBh değerlerini sırayla PUSH edeceğiz. Ardından ilk POP CX komutunun en son giren 0BBBBh değerini, ikinci POP DX komutunun ise ilk giren 0AAAAh değerini aldığını göreceğiz.",
+            "taskPrompt": "AX = 0AAAAh ve BX = 0BBBBh yükleyin. Sırasıyla PUSH AX ve PUSH BX yapın. Ardından POP CX ve POP DX komutlarını çalıştırın.",
+            "starterCode": "; Stack Adım 4: LIFO (Son Giren İlk Çıkar) deneyi\nORG 100h\nMOV SP, 0200h\nMOV AX, 0AAAAh\nMOV BX, 0BBBBh\n\n; Sırasıyla PUSH AX, PUSH BX, ardından POP CX, POP DX yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 0AAAAh\nMOV BX, 0BBBBh\nPUSH AX\nPUSH BX\nPOP CX\nPOP DX\nHLT\n",
+            "hints": [
+              "PUSH AX",
+              "PUSH BX",
+              "POP CX  ; CX = BBBBh olur",
+              "POP DX  ; DX = AAAAh olur"
+            ],
+            "assertions": {
+              "registers": {
+                "cx": 48059,
+                "dx": 43690,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-3-5",
+          "stepNumber": "Stack Adım 5",
+          "title": "PUSH ve POP Kullanarak İki Yazmacın Değerini Takas Etmek (Swap)",
+          "titleEn": "Stack Step 5: Swapping Two Registers Using PUSH and POP",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> LIFO kuralı sayesinde üçüncü bir geçici yazmaç kullanmadan <code>AX</code> ile <code>BX</code>'in değerlerini yığın üzerinde yer değiştirebiliriz:</p>\n        <ol>\n          <li><code>PUSH AX</code> (Altta <code>AX</code>'in eski değeri var)</li>\n          <li><code>PUSH BX</code> (En üstte <code>BX</code>'in eski değeri var)</li>\n          <li><code>POP AX</code> (En üstteki <code>BX</code> değeri <code>AX</code>'e çekildi!)</li>\n          <li><code>POP BX</code> (Alttaki <code>AX</code> değeri <code>BX</code>'e çekildi!)</li>\n        </ol>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Because of LIFO, executing <code>PUSH AX</code>, <code>PUSH BX</code> followed by <code>POP AX</code>, <code>POP BX</code> swaps the values of <code>AX</code> and <code>BX</code>!</p>\n      ",
+          "task": {
+            "id": "ms-task-3-3-5",
+            "title": "Yığın (PUSH/POP) ile AX ve BX Değerlerini Takas Etme",
+            "difficulty": "Kolay",
+            "scenario": "AX = 1000h ve BX = 9000h değerlerini sadece PUSH ve POP komutlarını kullanarak takas edeceğiz (AX = 9000h, BX = 1000h olacak).",
+            "taskPrompt": "PUSH AX, PUSH BX ve ardından POP AX, POP BX komutlarını kullanarak AX (1000h) ile BX (9000h) değerlerini takas edin.",
+            "starterCode": "; Stack Adım 5: PUSH ve POP ile AX ve BX takası\nORG 100h\nMOV SP, 0200h\nMOV AX, 1000h\nMOV BX, 9000h\n\n; PUSH ve POP komutlarıyla AX ve BX değerlerini takas edin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1000h\nMOV BX, 9000h\nPUSH AX\nPUSH BX\nPOP AX\nPOP BX\nHLT\n",
+            "hints": [
+              "Önce PUSH AX ve PUSH BX yazın.",
+              "Sonra aynı sırayla POP AX ve POP BX yazın!"
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 36864,
+                "bx": 4096,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-3-3-6",
+          "stepNumber": "Stack Adım 6",
+          "title": "Yığında Little-Endian Bayt Dizilimi: [SP] Düşük Bayt, [SP+1] Yüksek Bayt",
+          "titleEn": "Stack Step 6: Little-Endian Byte Layout on the Stack ([SP] = Low, [SP+1] = High)",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Hocanın Week 3 slaytlarında özellikle vurguladığı detay: <code>SP = 0200h</code> iken <code>AX = 1234h</code> için <code>PUSH AX</code> yaptığımızda 2 bayt belleğe nasıl yerleşir?</p>\n        <ul>\n          <li>Üst bayt <code>AH (12h)</code> &rarr; <code>[SP - 1] = [01FFh]</code> adresine yazılır.</li>\n          <li>Alt bayt <code>AL (34h)</code> &rarr; <code>[SP - 2] = [01FEh]</code> (yeni <code>SP</code> tepesi) adresine yazılır.</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> When <code>PUSH AX</code> pushes <code>1234h</code> onto the stack (with <code>SP = 0200h</code>), <code>[01FFh]</code> receives the high byte <code>12h</code> (<code>AH</code>) and <code>[01FEh]</code> (the new <code>SP</code>) receives the low byte <code>34h</code> (<code>AL</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-3-3-6",
+            "title": "Yığına PUSH Edilen Kelimenin Düşük ve Yüksek Baytlarını Bellekten Okuma",
+            "difficulty": "Orta",
+            "scenario": "SP = 0200h iken AX = 4567h değerini PUSH AX ile yığına atacağız (Yeni SP = 01FEh olur). Ardından [01FEh] adresindeki düşük baytı (67h) CL yazmacına, [01FFh] adresindeki yüksek baytı (45h) CH yazmacına okuyacağız.",
+            "taskPrompt": "AX = 4567h değerini PUSH AX ile yığına atın. Ardından MOV CL, [01FEh] ve MOV CH, [01FFh] ile yığındaki baytları okuyun.",
+            "starterCode": "; Stack Adım 6: Yığındaki Little-Endian baytları inceleme\nORG 100h\nMOV SP, 0200h\nMOV AX, 4567h\n\n; 1. AX yazmacını PUSH edin:\n; 2. [01FEh] adresini CL içine, [01FFh] adresini CH içine okuyun:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 4567h\nPUSH AX\nMOV CL, [01FEh]\nMOV CH, [01FFh]\nHLT\n",
+            "hints": [
+              "PUSH AX yazın.",
+              "MOV CL, [01FEh] ve MOV CH, [01FFh] ekleyin."
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 17767,
+                "sp": 510,
+                "cl": 103,
+                "ch": 69
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {

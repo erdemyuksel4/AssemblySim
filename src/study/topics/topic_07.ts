@@ -65,7 +65,63 @@ export const TOPIC_7: MainTopic = {
           }
         },
         "examTip": "OUT komutunda hedef port ilk işlenen, kaynak yazmaç ise ikinci işlenendir (OUT Port, AL)."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-7-1-1",
+          "stepNumber": "Adım 1",
+          "title": "Sabit Port (00h–FFh) vs Değişken Port (DX = 0000h–FFFFh) ile OUT ve IN",
+          "titleEn": "Step 1: Fixed Port (00h–FFh) vs Variable Port (DX = 0000h–FFFFh) IN and OUT",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> İşlemci dış cihazlarla (klavye, ekran, seri port) <strong>Port Numaraları</strong> üzerinden konuşur:</p>\n        <ul>\n          <li>Port numarası <code>00h–FFh</code> (8-bit) arasındaysa doğrudan yazılabilir: <code>OUT 60h, AL</code> veya <code>IN AL, 60h</code>.</li>\n          <li>Port numarası <code>0FFh</code>'den büyükse (16-bit, örn. <code>03F8h</code>), port adresi <strong>zorunlu olarak <code>DX</code> yazmacına</strong> konur: <code>MOV DX, 03F8h</code> ardından <code>OUT DX, AL</code>!</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> Ports <code>00h–FFh</code> can use fixed-port <code>OUT p8, AL</code>. Any port above <code>FFh</code> (up to <code>FFFFh</code>) must place the port address in <code>DX</code> first and use <code>OUT DX, AL</code> / <code>IN AL, DX</code>.</p>\n      ",
+          "task": {
+            "id": "ms-task-7-1-1",
+            "title": "DX Üzerinden 16-Bitlik Porta (03F8h) Veri Gönderme (OUT DX, AL)",
+            "difficulty": "Kolay",
+            "scenario": "03F8h numaralı seri porta 42h ('B') baytını göndermek için port adresini DX'e, veriyi AL'ye yükleyip OUT DX, AL çalıştıracağız.",
+            "taskPrompt": "DX yazmacına 03F8h, AL yazmacına 42h yükleyin ve OUT DX, AL komutunu çalıştırın.",
+            "starterCode": "; Adım 1: 03F8h portuna 42h gönderin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV DX, 03F8h\nMOV AL, 42h\nOUT DX, AL\nHLT\n",
+            "hints": [
+              "MOV DX, 03F8h / MOV AL, 42h / OUT DX, AL yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "dx": 1016,
+                "al": 66
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-7-1-2",
+          "stepNumber": "Adım 2",
+          "title": "Programlı G/Ç (Polling): TEST ve JZ ile Cihazın Hazır (Ready) Bitini Beklemek",
+          "titleEn": "Step 2: Programmed I/O (Polling): Checking the Ready Bit with TEST and JZ",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Programlı G/Ç'de (Polling) işlemci cihazın durum yazmacını okur ve <code>TEST AL, 80h</code> komutuyla \"Hazır (Ready) biti <code>1</code> oldu mu?\" diye kontrol eder. Eğer bit <code>0</code> ise (<code>ZF = 1</code>) cihaz henüz meşguldür; <code>1</code> olduğunda (<code>ZF = 0</code>) veri aktarılır.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In Programmed I/O (Polling), the CPU tests the device status register bit (e.g., <code>TEST AL, 80h</code>) and branches when the Ready bit is set (<code>JNZ ready</code>).</p>\n      ",
+          "task": {
+            "id": "ms-task-7-1-2",
+            "title": "TEST AL, 80h ve JNZ ile Cihaz Hazır Kontrolü",
+            "difficulty": "Kolay",
+            "scenario": "Cihaz durum baytı AL = 80h (7. bit = 1, yani Cihaz Hazır) olarak geldiğinde TEST AL, 80h ve JNZ cihaz_hazir ile sıçrayıp BL = 1 yapacağız.",
+            "taskPrompt": "TEST AL, 80h ve JNZ cihaz_hazir komutlarını yazın.",
+            "starterCode": "; Adım 2: Durum baytında 7. bit (80h) 1 ise cihaz_hazir etiketine sıçrayın\nORG 100h\nMOV AL, 80h\nMOV BL, 0\n\n; TEST AL, 80h ve JNZ cihaz_hazir yazın:\n\n\nHLT\ncihaz_hazir:\nMOV BL, 1\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 80h\nMOV BL, 0\nTEST AL, 80h\nJNZ cihaz_hazir\nHLT\ncihaz_hazir:\nMOV BL, 1\nHLT\n",
+            "hints": [
+              "TEST AL, 80h ardından JNZ cihaz_hazir yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 128,
+                "bl": 1
+              },
+              "maxSteps": 30
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-7-2-interrupt-driven-io-8259a-and-8255a",
@@ -105,7 +161,64 @@ export const TOPIC_7: MainTopic = {
           }
         },
         "examTip": "8255 kontrol kelimesinde giriş için daima 1, çıkış için daima 0 yazılır."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-7-2-1",
+          "stepNumber": "Adım 1",
+          "title": "Kesme Güdümlü G/Ç'de Yığınla (PUSH / POP) Bağlam Saklama (Context Saving)",
+          "titleEn": "Step 1: Saving Context on the Stack (PUSH / POP) in an Interrupt Service Routine",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Donanım kesmesi (Interrupt) geldiğinde işlemci ana programı yarıda kesip ISR'a (Kesme Servis Rutinine) atlar. ISR'ın ana programdaki <code>AX</code> ve <code>DX</code> yazmaçlarını bozmaması için girişte <strong><code>PUSH AX / PUSH DX</code></strong>, çıkışta ise <strong>ters sırayla <code>POP DX / POP AX</code></strong> yapılır!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> An Interrupt Service Routine (ISR) must save every register it modifies using <code>PUSH</code> on entry, and restore them in reverse LIFO order using <code>POP</code> before returning.</p>\n      ",
+          "task": {
+            "id": "ms-task-7-2-1",
+            "title": "ISR İçinde AX ve DX Yazmaçlarını Yığında (PUSH/POP) Koruma",
+            "difficulty": "Kolay",
+            "scenario": "AX = 1234h ve DX = 5678h değerlerini PUSH AX, PUSH DX ile yığına kaydedeceğiz; G/Ç işlemi sırasında AX ve DX değişse bile sonunda POP DX, POP AX ile ikisini de kurtaracağız.",
+            "taskPrompt": "1. boşluğa PUSH AX ve PUSH DX; 2. boşluğa ise LIFO sırasıyla POP DX ve POP AX yazın.",
+            "starterCode": "; Adım 1: Kesme rutininde AX ve DX yazmaçlarını yığında koruyun\nORG 100h\nMOV SP, 0200h\nMOV AX, 1234h\nMOV DX, 5678h\n\n; 1. AX ve DX yazmaçlarını yığına PUSH edin:\n\n\n; G/Ç işlemi yazmaçları değiştiriyor:\nMOV DX, 03F8h\nMOV AL, 00h\n\n; 2. DX ve AX yazmaçlarını ters sırayla (LIFO) POP edin:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SP, 0200h\nMOV AX, 1234h\nMOV DX, 5678h\nPUSH AX\nPUSH DX\nMOV DX, 03F8h\nMOV AL, 00h\nPOP DX\nPOP AX\nHLT\n",
+            "hints": [
+              "İlk boşluğa PUSH AX ve PUSH DX yazın.",
+              "İkinci boşluğa ters sırayla POP DX ve POP AX yazın!"
+            ],
+            "assertions": {
+              "registers": {
+                "ax": 4660,
+                "dx": 22136,
+                "sp": 512
+              },
+              "maxSteps": 30
+            }
+          }
+        },
+        {
+          "id": "ms-7-2-2",
+          "stepNumber": "Adım 2",
+          "title": "Intel 82C55A PPI Kontrol Kelimesi ve BSR (Bit Set/Reset) Modu",
+          "titleEn": "Step 2: Intel 82C55A PPI Control Word and BSR Mode",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> 82C55A PPI yongasında Kontrol Yazmacına gönderilen baytın en sol biti (<code>D7</code>) modu seçer:</p>\n        <ul>\n          <li><code>D7 = 1</code> &rarr; <strong>I/O Modu</strong> (Örn. <code>10000010b = 82h</code>: Port A Çıkış, Port B Giriş).</li>\n          <li><code>D7 = 0</code> &rarr; <strong>BSR (Bit Set/Reset) Modu</strong>: Port C'nin tek bir pinini <code>1</code> veya <code>0</code> yapar (Örn. <code>00000111b = 07h</code>: <code>PC3</code> pinini <code>1</code> yapar).</li>\n        </ul>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In the 82C55A Control Word, bit <code>D7 = 1</code> selects the I/O Mode configuration, while <code>D7 = 0</code> selects Bit Set/Reset (BSR) mode for individual Port C pins.</p>\n      ",
+          "task": {
+            "id": "ms-task-7-2-2",
+            "title": "82C55A Kontrol Portuna BSR Komutu (07h) Gönderme",
+            "difficulty": "Kolay",
+            "scenario": "Port C'nin PC3 pinini 1 yapmak için BSR kontrol kelimesi olan 07h (00000111b) değerini AL yazmacına yükleyip 63h kontrol portuna OUT 63h, AL ile göndereceğiz.",
+            "taskPrompt": "AL yazmacına 07h yükleyin ve OUT 63h, AL komutunu çalıştırın.",
+            "starterCode": "; Adım 2: 82C55A kontrol portuna (63h) 07h BSR kelimesini gönderin\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV AL, 07h\nOUT 63h, AL\nHLT\n",
+            "hints": [
+              "MOV AL, 07h ardından OUT 63h, AL yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "al": 7
+              },
+              "maxSteps": 20
+            }
+          }
+        }
+      ]
     },
     {
       "id": "sub-7-3-direct-memory-access-dma-and-cycle-stealing",
@@ -172,7 +285,77 @@ export const TOPIC_7: MainTopic = {
           ]
         },
         "examTip": "REP MOVSB komutu DMA tarzı en hızlı bellek kopyalama assembly primitifidir."
-      }
+      },
+      "microSteps": [
+        {
+          "id": "ms-7-3-1",
+          "stepNumber": "Adım 1",
+          "title": "DMA (Doğrudan Bellek Erişimi) Mantığı: Adres (MAR) ve Sayaç (Count) Kurulumu",
+          "titleEn": "Step 1: DMA Fundamentals: Initializing Memory Address and Count Registers",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> Programlı ve Kesme Güdümlü G/Ç'de her bayt işlemcinin (<code>AL</code> yazmacının) içinden geçer. <strong>DMA (Direct Memory Access - 8237A)</strong> ise işlemciden izin isteyip (<code>HOLD &rarr; HLDA</code>) veriyolunu devralır ve <strong>veriyi doğrudan G/Ç ile Bellek arasında yüksek hızla aktarır</strong>! İşlemci DMA'yı başlatırken sadece 3 bilgi verir: <em>Başlangıç Adresi, Bayt Sayısı (Count) ve Yön</em>.</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> In <strong>DMA</strong>, the CPU initializes the DMA controller with the starting memory address and byte count, then grants bus control via <code>HOLD / HLDA</code> so the DMAC transfers the block directly.</p>\n      ",
+          "task": {
+            "id": "ms-task-7-3-1",
+            "title": "DMA Kanalının Başlangıç Adresini (SI) ve Transfer Sayacını (CX) Hazırlama",
+            "difficulty": "Kolay",
+            "scenario": "Bir DMA blok transferi öncesinde kaynak bellek adresini SI = 0200h, hedef bellek adresini DI = 0220h ve transfer edilecek kelime sayısını CX = 64 (0040h) olarak kuracağız.",
+            "taskPrompt": "SI = 0200h, DI = 0220h ve CX = 0040h değerlerini yükleyin.",
+            "starterCode": "; Adım 1: DMA transfer parametrelerini (SI, DI, CX) kurun\nORG 100h\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV SI, 0200h\nMOV DI, 0220h\nMOV CX, 0040h\nHLT\n",
+            "hints": [
+              "MOV SI, 0200h / MOV DI, 0220h / MOV CX, 0040h yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "si": 512,
+                "di": 544,
+                "cx": 64
+              },
+              "maxSteps": 20
+            }
+          }
+        },
+        {
+          "id": "ms-7-3-2",
+          "stepNumber": "Adım 2",
+          "title": "16-Bit Yüksek Hızlı Blok Bellek Aktarımı (CLD ve REP MOVSW)",
+          "titleEn": "Step 2: High-Speed 16-Bit Block Memory Transfer (CLD and REP MOVSW)",
+          "explanationHtml": "\n        <p><strong>Sıfırdan Bilgi:</strong> <code>REP MOVSW</code> komutu her adımda 1 bayt yerine <strong>16-bit (2 baytlık kelime)</strong> kopyalar ve <code>SI</code> ile <code>DI</code>'yı ikişer artırır. Böylece bellek tamponu 2 kat hızlı taşınır!</p>\n      ",
+          "explanationHtmlEn": "\n        <p><strong>From Zero:</strong> <code>REP MOVSW</code> copies <code>CX</code> 16-bit words from <code>[DS:SI]</code> to <code>[ES:DI]</code>, advancing <code>SI</code> and <code>DI</code> by 2 after each word.</p>\n      ",
+          "task": {
+            "id": "ms-task-7-3-2",
+            "title": "REP MOVSW ile 2 Kelimelik (4 Bayt) Tampon Transferi",
+            "difficulty": "Kolay",
+            "scenario": "[0200h] adresindeki 2 adet 16-bit kelimeyi (1122h ve 3344h) CLD, SI=0200h, DI=0210h, CX=2 ve REP MOVSW ile [0210h] adresine aktaracağız.",
+            "taskPrompt": "CLD, MOV SI, 0200h, MOV DI, 0210h, MOV CX, 2 ve REP MOVSW komutlarını çalıştırın.",
+            "starterCode": "; Adım 2: REP MOVSW ile 2 kelimelik blok transferi\nORG 100h\nMOV WORD PTR [0200h], 1122h\nMOV WORD PTR [0202h], 3344h\n\n; CLD, SI=0200h, DI=0210h, CX=2 ve REP MOVSW yazın:\n\n\nHLT\n",
+            "solutionCode": "ORG 100h\nMOV WORD PTR [0200h], 1122h\nMOV WORD PTR [0202h], 3344h\nCLD\nMOV SI, 0200h\nMOV DI, 0210h\nMOV CX, 2\nREP MOVSW\nHLT\n",
+            "hints": [
+              "CLD / MOV SI, 0200h / MOV DI, 0210h / MOV CX, 2 / REP MOVSW yazın."
+            ],
+            "assertions": {
+              "registers": {
+                "cx": 0,
+                "si": 516,
+                "di": 532
+              },
+              "memory": [
+                {
+                  "segment": 0,
+                  "offset": 528,
+                  "expectedBytes": [
+                    34,
+                    17,
+                    68,
+                    51
+                  ]
+                }
+              ],
+              "maxSteps": 40
+            }
+          }
+        }
+      ]
     }
   ],
   "mindMap": {
