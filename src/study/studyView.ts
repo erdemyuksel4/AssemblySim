@@ -15,6 +15,8 @@ export class StudyView {
   private selectedSubLesson: SubLesson | null = null;
   private isDrawerOpen: boolean = false;
   private searchQuery: string = '';
+  private currentLang: 'tr' | 'en' = 'tr';
+  private currentSpineFilter: 'all' | 'primary' | 'secondary' = 'all';
 
   // Elements
   private mapContainer!: HTMLElement;
@@ -25,6 +27,7 @@ export class StudyView {
   constructor(container: HTMLElement, callbacks: StudyViewCallbacks) {
     this.container = container;
     this.callbacks = callbacks;
+    this.currentLang = StudyStorage.getLanguage();
 
     this.render();
   }
@@ -37,32 +40,57 @@ export class StudyView {
           <div class="study-topbar-left">
             <button class="btn-study-back" id="btn-study-return" title="Editöre Geri Dön">
               <span class="icon">❮</span>
-              <span>Editör</span>
+              <span>${this.currentLang === 'en' ? 'Editor' : 'Editör'}</span>
             </button>
             <div class="study-brand">
               <span class="study-brand-icon">🎓</span>
               <div>
-                <h3 class="study-brand-title">8086 Assembly Dersleri & Zihin Haritası</h3>
-                <p class="study-brand-subtitle">Adım Adım Müfredat, İnteraktif Not Defteri ve Pratik Görevler</p>
+                <h3 class="study-brand-title">${this.currentLang === 'en' ? '8086 Assembly Lessons & Mind Map' : '8086 Assembly Dersleri & Zihin Haritası'}</h3>
+                <p class="study-brand-subtitle">${this.currentLang === 'en' ? 'Step-by-Step Curriculum, Interactive Notebook, and Practical Tasks' : 'Adım Adım Müfredat, İnteraktif Not Defteri ve Pratik Görevler'}</p>
               </div>
             </div>
           </div>
 
           <div class="study-topbar-right">
+            <!-- Language Switcher in Topbar -->
+            <div class="study-lang-switch" id="study-lang-switch-top">
+              <button class="btn-lang ${this.currentLang === 'tr' ? 'active' : ''}" data-lang="tr" title="Türkçe Konu Anlatımı">🇹🇷 TR</button>
+              <button class="btn-lang ${this.currentLang === 'en' ? 'active' : ''}" data-lang="en" title="Official English Lecture Slides">🇬🇧 EN (Slaytlar)</button>
+            </div>
+
             <div class="study-search-box">
               <span class="search-icon">🔍</span>
-              <input type="text" id="study-search-input" placeholder="Konu, komut (MOV, JMP...) veya kavram ara..." value="${this.escapeHtml(this.searchQuery)}" />
+              <input type="text" id="study-search-input" placeholder="${this.currentLang === 'en' ? 'Search topic, opcode (MOV, JMP...) or concept...' : 'Konu, komut (MOV, JMP...) veya kavram ara...'}" value="${this.escapeHtml(this.searchQuery)}" />
             </div>
 
             <div class="study-stats-pill" id="study-stats-pill">
               <!-- Rendered dynamically -->
             </div>
 
-            <button class="btn-study-reset" id="btn-study-reset" title="Çözülen test ve görev ilerlemesini sıfırla">
-              ↺ Sıfırla
+            <button class="btn-study-reset" id="btn-study-reset" title="${this.currentLang === 'en' ? 'Reset quiz and task progress' : 'Çözülen test ve görev ilerlemesini sıfırla'}">
+              ↺ ${this.currentLang === 'en' ? 'Reset' : 'Sıfırla'}
             </button>
           </div>
         </header>
+
+        <!-- Secondary Sub-bar: Curriculum Spine Filters -->
+        <div class="study-spine-filter-bar">
+          <div class="spine-filter-label">
+            <span class="spine-filter-icon">📑</span>
+            <span>${this.currentLang === 'en' ? 'Curriculum Filter:' : 'Müfredat Filtresi:'}</span>
+          </div>
+          <div class="spine-filter-pills">
+            <button class="btn-spine-filter ${this.currentSpineFilter === 'all' ? 'active' : ''}" data-filter="all">
+              [Tüm Konular]
+            </button>
+            <button class="btn-spine-filter ${this.currentSpineFilter === 'primary' ? 'active' : ''}" data-filter="primary">
+              [Hafta 1-7 (Birincil Omurga)]
+            </button>
+            <button class="btn-spine-filter ${this.currentSpineFilter === 'secondary' ? 'active' : ''}" data-filter="secondary">
+              [Geçen Yıl (İleri Konular)]
+            </button>
+          </div>
+        </div>
 
         <!-- Main Workspace: Mind Map Area & Slide-in Drawer -->
         <div class="study-main-area">
@@ -126,27 +154,40 @@ export class StudyView {
   private renderMindMap(): void {
     const q = this.searchQuery.trim().toLowerCase();
     const filteredTopics = STUDY_TOPICS.filter(t => {
+      // Spine filter
+      if (this.currentSpineFilter === 'primary' && t.category !== 'primary') return false;
+      if (this.currentSpineFilter === 'secondary' && t.category !== 'secondary') return false;
+
       if (!q) return true;
       return (
         t.title.toLowerCase().includes(q) ||
+        (t.titleEn && t.titleEn.toLowerCase().includes(q)) ||
         t.summary.toLowerCase().includes(q) ||
+        (t.summaryEn && t.summaryEn.toLowerCase().includes(q)) ||
         t.opcodes.some(op => op.toLowerCase().includes(q)) ||
-        t.subLessons.some(s => s.title.toLowerCase().includes(q))
+        t.subLessons.some(s =>
+          s.title.toLowerCase().includes(q) ||
+          (s.titleEn && s.titleEn.toLowerCase().includes(q)) ||
+          s.summary.toLowerCase().includes(q) ||
+          (s.summaryEn && s.summaryEn.toLowerCase().includes(q))
+        )
       );
     });
 
     // Draw Mind Map as interactive nodes connected by svg paths
     let svgLines = '';
     // SVG dimensions
-    const width = 1200;
-    const height = 750;
+    const width = 1400;
+    const height = 1200;
 
-    for (const topic of STUDY_TOPICS) {
+    const visibleIds = new Set(filteredTopics.map(t => t.id));
+    for (const topic of filteredTopics) {
       const fromX = (topic.mindMap.x / 100) * width;
       const fromY = (topic.mindMap.y / 100) * height;
 
       for (const targetId of topic.mindMap.connections) {
-        const target = STUDY_TOPICS.find(t => t.id === targetId);
+        if (!visibleIds.has(targetId)) continue;
+        const target = filteredTopics.find(t => t.id === targetId);
         if (target) {
           const toX = (target.mindMap.x / 100) * width;
           const toY = (target.mindMap.y / 100) * height;
@@ -154,9 +195,10 @@ export class StudyView {
           // Smooth bezier curve
           const midX = (fromX + toX) / 2;
           const midY = (fromY + toY) / 2;
+          const isActive = this.selectedTopic?.id === topic.id || this.selectedTopic?.id === target.id;
           svgLines += `
             <path d="M ${fromX} ${fromY} Q ${midX} ${fromY} ${toX} ${toY}" 
-                  class="mindmap-line" />
+                  class="mindmap-line ${isActive ? 'active' : ''}" />
           `;
         }
       }
@@ -181,20 +223,31 @@ export class StudyView {
       }
       const isCompleted = topicTasks > 0 && topicPassed === topicTasks;
 
+      const topicTitle = this.currentLang === 'en' ? (topic.shortTitleEn || topic.shortTitle) : topic.shortTitle;
+      const topicSummary = this.currentLang === 'en' ? (topic.summaryEn || topic.summary) : topic.summary;
+      const topicBadge = this.currentLang === 'en' ? (topic.badgeEn || topic.badge) : topic.badge;
+      const spineBadgeText = topic.category === 'primary'
+        ? `${topic.weekLabel} • BİRİNCİL OMURGA`
+        : 'GEÇEN YIL / İLERİ KONULAR';
+      const openBtnText = this.currentLang === 'en' ? 'Open Notebook ❯' : 'Not Defterini Aç ❯';
+      const subCountText = this.currentLang === 'en' ? `📖 ${subCount} Sublessons` : `📖 ${subCount} Alt Ders`;
+      const completedText = this.currentLang === 'en' ? '✓ Completed' : '✓ Tamamlandı';
+
       return `
         <div class="mindmap-node-card ${isSelected ? 'selected' : ''} ${isCompleted ? 'completed' : ''}" 
              data-topic-id="${topic.id}"
              style="left: ${topic.mindMap.x}%; top: ${topic.mindMap.y}%;">
           <div class="node-badge-row">
-            <span class="node-badge">${topic.badge}</span>
-            ${isCompleted ? '<span class="node-check-badge">✓ Tamamlandı</span>' : `<span class="node-progress-badge">${topicPassed}/${topicTasks}</span>`}
+            <span class="node-badge">${topicBadge}</span>
+            <span class="node-spine-badge ${topic.category === 'primary' ? 'primary-spine' : 'secondary-spine'}">${spineBadgeText}</span>
+            ${isCompleted ? `<span class="node-check-badge">${completedText}</span>` : `<span class="node-progress-badge">${topicPassed}/${topicTasks}</span>`}
           </div>
 
           <div class="node-main-content">
             <div class="node-icon">${topic.icon}</div>
             <div class="node-info">
-              <h4 class="node-title">${topic.shortTitle}</h4>
-              <p class="node-summary">${topic.summary}</p>
+              <h4 class="node-title">${topicTitle}</h4>
+              <p class="node-summary">${topicSummary}</p>
             </div>
           </div>
 
@@ -204,8 +257,8 @@ export class StudyView {
           </div>
 
           <div class="node-footer-action">
-            <span class="sublesson-count">📖 ${subCount} Alt Ders</span>
-            <button class="btn-node-open" title="Not Defterinde Aç">Not Defterini Aç ❯</button>
+            <span class="sublesson-count">${subCountText}</span>
+            <button class="btn-node-open" title="${openBtnText}">${openBtnText}</button>
           </div>
         </div>
       `;
@@ -252,6 +305,26 @@ export class StudyView {
     this.renderDrawer();
     this.drawerEl.classList.add('open');
     this.renderMindMap(); // refresh selected state
+    this.scrollToActiveNode(topic.id);
+  }
+
+  private scrollToActiveNode(topicId: string): void {
+    const doScroll = () => {
+      const nodeEl = this.mapContainer?.querySelector(`.mindmap-node-card[data-topic-id="${topicId}"]`) as HTMLElement;
+      if (nodeEl && typeof nodeEl.scrollIntoView === 'function') {
+        try {
+          nodeEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        } catch {
+          nodeEl.scrollIntoView();
+        }
+      }
+    };
+
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(doScroll);
+    } else {
+      doScroll();
+    }
   }
 
   public closeDrawer(): void {
@@ -269,24 +342,55 @@ export class StudyView {
     const topic = this.selectedTopic;
     const sub = this.selectedSubLesson;
 
+    const topicTitle = this.currentLang === 'en' ? (topic.titleEn || topic.title) : topic.title;
+    const topicSummary = this.currentLang === 'en' ? (topic.summaryEn || topic.summary) : topic.summary;
+    const topicBadge = this.currentLang === 'en' ? (topic.badgeEn || topic.badge) : topic.badge;
+    const subTitle = this.currentLang === 'en' ? (sub.titleEn || sub.title) : sub.title;
+
+    const spineBadgeText = topic.category === 'primary'
+      ? `${topic.weekLabel} • BİRİNCİL OMURGA`
+      : 'GEÇEN YIL / İLERİ KONULAR';
+
     // Check completion of sublesson
     const isQuizPassed = sub.quiz ? StudyStorage.isQuizPassed(sub.quiz.id) : true;
     const isTaskPassed = sub.task ? StudyStorage.isTaskPassed(sub.task.id) : true;
     const isSubCompleted = isQuizPassed && isTaskPassed;
+
+    let theoryHtml: string;
+    if (this.currentLang === 'en') {
+      const enContent = sub.theoryHtmlEn || sub.theoryHtml;
+      const banner = `<div class="nb-callout info"><strong>🇬🇧 Official Course Lecture Slide Text (Verbatim Professor Content)</strong></div>`;
+      if (enContent.includes('Official Course Lecture Slide Text')) {
+        theoryHtml = enContent;
+      } else {
+        theoryHtml = `${banner}\n${enContent}`;
+      }
+    } else {
+      theoryHtml = sub.theoryHtml;
+    }
 
     this.drawerEl.innerHTML = `
       <div class="notebook-wrapper">
         <!-- Notebook Header -->
         <div class="notebook-header">
           <div class="notebook-header-top">
-            <span class="notebook-badge">${topic.badge} • BÖLÜM ${topic.number}</span>
-            <button class="btn-notebook-close" id="btn-notebook-close" title="Not Defterini Kapat (ESC)">✕</button>
+            <div class="notebook-header-top-left">
+              <span class="notebook-badge">${topicBadge} • ${this.currentLang === 'en' ? 'CHAPTER' : 'BÖLÜM'} ${topic.number}</span>
+              <span class="notebook-spine-badge ${topic.category === 'primary' ? 'primary-spine' : 'secondary-spine'}">${spineBadgeText}</span>
+            </div>
+            <div class="notebook-header-top-right">
+              <div class="study-lang-switch drawer-lang-switch">
+                <button class="btn-lang ${this.currentLang === 'tr' ? 'active' : ''}" data-lang="tr">🇹🇷 TR</button>
+                <button class="btn-lang ${this.currentLang === 'en' ? 'active' : ''}" data-lang="en">🇬🇧 EN (Slaytlar)</button>
+              </div>
+              <button class="btn-notebook-close" id="btn-notebook-close" title="${this.currentLang === 'en' ? 'Close Notebook (ESC)' : 'Not Defterini Kapat (ESC)'}">✕</button>
+            </div>
           </div>
           <div class="notebook-title-row">
             <span class="notebook-icon">${topic.icon}</span>
             <div>
-              <h2 class="notebook-title">${topic.title}</h2>
-              <p class="notebook-subtitle">${topic.summary}</p>
+              <h2 class="notebook-title">${topicTitle}</h2>
+              <p class="notebook-subtitle">${topicSummary}</p>
             </div>
           </div>
 
@@ -297,12 +401,13 @@ export class StudyView {
               const qOk = sl.quiz ? StudyStorage.isQuizPassed(sl.quiz.id) : true;
               const tOk = sl.task ? StudyStorage.isTaskPassed(sl.task.id) : true;
               const done = qOk && tOk;
+              const tabTitle = this.currentLang === 'en' ? (sl.titleEn || sl.title) : sl.title;
 
               return `
                 <button class="notebook-tab-item ${active ? 'active' : ''} ${done ? 'done' : ''}" 
                         data-sub-id="${sl.id}">
                   <span class="tab-dot">${done ? '✓' : sl.number}</span>
-                  <span class="tab-text">${sl.title}</span>
+                  <span class="tab-text">${tabTitle}</span>
                 </button>
               `;
             }).join('')}
@@ -314,21 +419,25 @@ export class StudyView {
           <div class="notebook-paper-sheet">
             <div class="notebook-sheet-header">
               <span class="sheet-subnum">${sub.number}</span>
-              <h3 class="sheet-title">${sub.title}</h3>
-              ${isSubCompleted ? '<span class="sheet-completed-pill">✓ Tamamlandı</span>' : ''}
+              <h3 class="sheet-title">${subTitle}</h3>
+              ${isSubCompleted ? `<span class="sheet-completed-pill">${this.currentLang === 'en' ? '✓ Completed' : '✓ Tamamlandı'}</span>` : ''}
             </div>
 
             <!-- ADIM 1: DERS ANLATIMI -->
-            <section class="notebook-step-section">
+            <section class="notebook-step-section theory-section">
               <div class="step-header">
                 <span class="step-circle">1</span>
                 <div>
-                  <h4 class="step-title">Ders Anlatımı & Altın Kurallar</h4>
-                  <p class="step-desc">Konunun teorik temelleri, formülleri ve çalışan örnek kodları</p>
+                  <h4 class="step-title">${this.currentLang === 'en' ? 'Official Slide Theory & Lecture Excerpts' : 'Ders Anlatımı & Altın Kurallar'}</h4>
+                  <p class="step-desc">${this.currentLang === 'en' ? 'Verbatim slide contents, formulas, and runnable code examples' : 'Konunun teorik temelleri, formülleri ve çalışan örnek kodları'}</p>
                 </div>
               </div>
-              <div class="step-content">
-                ${sub.theoryHtml}
+
+              <!-- Sticky Mini-TOC Section Navigation Bar -->
+              <div class="notebook-mini-toc-container" id="notebook-mini-toc-container"></div>
+
+              <div class="step-content" id="theory-step-content">
+                ${theoryHtml}
               </div>
             </section>
 
@@ -457,6 +566,26 @@ export class StudyView {
       this.callbacks.onReturnToEditor();
     });
 
+    // Topbar language switcher
+    this.container.querySelectorAll('#study-lang-switch-top .btn-lang').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lang = btn.getAttribute('data-lang') as 'tr' | 'en';
+        if (lang === 'tr' || lang === 'en') {
+          this.setLanguage(lang);
+        }
+      });
+    });
+
+    // Spine filter buttons
+    this.container.querySelectorAll('.btn-spine-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.getAttribute('data-filter') as 'all' | 'primary' | 'secondary';
+        if (filter) {
+          this.setSpineFilter(filter);
+        }
+      });
+    });
+
     // Search input
     this.searchInputEl?.addEventListener('input', () => {
       this.searchQuery = this.searchInputEl.value;
@@ -466,7 +595,10 @@ export class StudyView {
     // Reset Progress
     const resetBtn = this.container.querySelector('#btn-study-reset');
     resetBtn?.addEventListener('click', () => {
-      if (confirm('Tüm ders test ve görev ilerlemenizi sıfırlamak istediğinize emin misiniz?')) {
+      const confirmMsg = this.currentLang === 'en'
+        ? 'Are you sure you want to reset all test and task progress?'
+        : 'Tüm ders test ve görev ilerlemenizi sıfırlamak istediğinize emin misiniz?';
+      if (confirm(confirmMsg)) {
         StudyStorage.resetProgress();
         this.updateStats();
         this.renderMindMap();
@@ -477,11 +609,13 @@ export class StudyView {
     });
 
     // ESC to close drawer
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.isDrawerOpen) {
-        this.closeDrawer();
-      }
-    });
+    if (typeof window !== 'undefined' && window && window.addEventListener) {
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.isDrawerOpen) {
+          this.closeDrawer();
+        }
+      });
+    }
   }
 
   private bindDrawerEvents(): void {
@@ -489,6 +623,17 @@ export class StudyView {
     const closeBtn = this.drawerEl.querySelector('#btn-notebook-close');
     closeBtn?.addEventListener('click', () => {
       this.closeDrawer();
+    });
+
+    // Drawer Language Switcher
+    this.drawerEl.querySelectorAll('.drawer-lang-switch .btn-lang').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const lang = btn.getAttribute('data-lang') as 'tr' | 'en';
+        if (lang === 'tr' || lang === 'en') {
+          this.setLanguage(lang);
+        }
+      });
     });
 
     // Sub-lesson Tabs
@@ -500,10 +645,18 @@ export class StudyView {
           if (sub) {
             this.selectedSubLesson = sub;
             this.renderDrawer();
+            const body = this.drawerEl.querySelector('.notebook-body');
+            if (body) body.scrollTop = 0;
           }
         }
       });
     });
+
+    // Build sticky Mini-TOC section navigation
+    this.buildMiniToc();
+
+    // Enhance textbook code snippets with "▶️ Simülatörde Dene" and "📋 Kopyala"
+    this.enhanceCodeSnippets();
 
     // Quiz Options
     const quizCard = this.drawerEl.querySelector('.quiz-card');
@@ -642,5 +795,305 @@ export class StudyView {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  private buildMiniToc(): void {
+    const theoryContentEl = this.drawerEl.querySelector('#theory-step-content') as HTMLElement;
+    const tocContainer = this.drawerEl.querySelector('#notebook-mini-toc-container') as HTMLElement;
+    if (!theoryContentEl || !tocContainer) return;
+
+    // Extract all headings (h4, .nb-title) inside the theory section
+    const headings = theoryContentEl.querySelectorAll<HTMLElement>('h4, .nb-title');
+    if (headings.length === 0) {
+      tocContainer.style.display = 'none';
+      return;
+    }
+
+    const items: Array<{ id: string; title: string; shortTitle: string }> = [];
+
+    headings.forEach((heading, idx) => {
+      const fullText = (heading.textContent || '').trim();
+      if (!fullText) return;
+
+      const headingId = heading.id || `toc-heading-${idx + 1}`;
+      heading.id = headingId;
+      heading.classList.add('theory-heading-anchor');
+
+      // Clean label for pill button
+      const cleanText = fullText.replace(/^[0-9]+[.)]\s*/, '');
+      const maxLen = 30;
+      const shortTitle = cleanText.length > maxLen ? cleanText.slice(0, maxLen - 1) + '…' : cleanText;
+
+      items.push({
+        id: headingId,
+        title: fullText,
+        shortTitle: `${idx + 1}. ${shortTitle}`
+      });
+    });
+
+    if (items.length === 0) {
+      tocContainer.style.display = 'none';
+      return;
+    }
+
+    tocContainer.style.display = 'block';
+    tocContainer.innerHTML = `
+      <div class="notebook-mini-toc-bar">
+        <div class="toc-bar-label">
+          <span class="toc-label-icon">📑</span>
+          <span class="toc-label-text">Bölümler:</span>
+        </div>
+        <div class="toc-pills-scroll">
+          ${items.map(item => `
+            <button class="toc-pill-btn" data-target-id="${item.id}" title="${this.escapeHtml(item.title)}">
+              <span class="toc-pill-dot">•</span>
+              <span class="toc-pill-text">${this.escapeHtml(item.shortTitle)}</span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    // Click handler for pills
+    const pillButtons = tocContainer.querySelectorAll<HTMLButtonElement>('.toc-pill-btn');
+    pillButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetId = btn.getAttribute('data-target-id');
+        if (targetId) {
+          const targetEl = this.drawerEl.querySelector(`#${targetId}`);
+          if (targetEl && typeof targetEl.scrollIntoView === 'function') {
+            try {
+              targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch {
+              targetEl.scrollIntoView();
+            }
+            pillButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+          }
+        }
+      });
+    });
+
+    // ScrollSpy observer if supported
+    if (typeof IntersectionObserver !== 'undefined') {
+      const notebookBody = this.drawerEl.querySelector('.notebook-body');
+      if (notebookBody) {
+        try {
+          const observer = new IntersectionObserver((entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                const id = entry.target.id;
+                pillButtons.forEach(b => {
+                  if (b.getAttribute('data-target-id') === id) {
+                    b.classList.add('active');
+                    if (typeof b.scrollIntoView === 'function') {
+                      try {
+                        b.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+                      } catch {
+                        b.scrollIntoView();
+                      }
+                    }
+                  } else {
+                    b.classList.remove('active');
+                  }
+                });
+              }
+            }
+          }, {
+            root: notebookBody,
+            rootMargin: '0px 0px -75% 0px',
+            threshold: 0
+          });
+
+          headings.forEach(h => observer.observe(h));
+        } catch {
+          // ignore if IntersectionObserver fails in jsdom
+        }
+      }
+    }
+  }
+
+  private enhanceCodeSnippets(): void {
+    const theoryEl = this.drawerEl.querySelector('#theory-step-content');
+    if (!theoryEl) return;
+
+    // Collect all candidate code blocks
+    const candidates: HTMLElement[] = [];
+
+    // Find all .nb-code-sample
+    theoryEl.querySelectorAll<HTMLElement>('.nb-code-sample').forEach(el => {
+      candidates.push(el);
+    });
+
+    // Find all pre elements that are not inside .nb-code-sample
+    theoryEl.querySelectorAll<HTMLElement>('pre').forEach(el => {
+      if (!el.closest('.nb-code-sample') && !candidates.includes(el)) {
+        candidates.push(el);
+      }
+    });
+
+    candidates.forEach((block) => {
+      if (block.classList.contains('nb-code-enhanced') || block.querySelector('.nb-code-toolbar')) {
+        return;
+      }
+      block.classList.add('nb-code-enhanced');
+
+      // Extract raw code snippet text
+      const codeTag = block.querySelector('code');
+      const rawText = (codeTag ? codeTag.textContent : block.textContent) || '';
+      const snippet = rawText.trim();
+      if (!snippet) return;
+
+      // Determine language badge
+      const badge = snippet.includes('ORG') || snippet.includes('MOV') || snippet.includes(';') || snippet.includes('INT') || snippet.includes('DB') 
+        ? '8086 ASM' 
+        : 'KOD / ŞEMA';
+
+      // Create toolbar
+      const toolbar = document.createElement('div');
+      toolbar.className = 'nb-code-toolbar';
+      toolbar.innerHTML = `
+        <div class="nb-code-toolbar-left">
+          <span class="nb-code-badge">${badge}</span>
+        </div>
+        <div class="nb-code-toolbar-right">
+          <button class="btn-nb-code-copy" title="Kodu panoya kopyala">
+            <span class="icon">📋</span> Kopyala
+          </button>
+          <button class="btn-nb-code-try" title="Bu kodu AssemblySim editörüne aktar ve çalıştır">
+            <span class="icon">▶️</span> Simülatörde Dene
+          </button>
+        </div>
+      `;
+
+      // Structure the block with toolbar
+      if (block.tagName.toLowerCase() === 'pre') {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'nb-code-wrapper';
+        block.parentNode?.insertBefore(wrapper, block);
+        wrapper.appendChild(toolbar);
+        wrapper.appendChild(block);
+      } else {
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'nb-code-content';
+        while (block.firstChild) {
+          contentWrapper.appendChild(block.firstChild);
+        }
+        block.appendChild(toolbar);
+        block.appendChild(contentWrapper);
+      }
+
+      // Bind actions
+      const tryBtn = toolbar.querySelector('.btn-nb-code-try') as HTMLButtonElement;
+      const copyBtn = toolbar.querySelector('.btn-nb-code-copy') as HTMLButtonElement;
+
+      tryBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.callbacks.onInsertCodeToEditor(snippet);
+        tryBtn.classList.add('success');
+        tryBtn.innerHTML = '<span class="icon">✓</span> Editöre Aktarıldı!';
+        setTimeout(() => {
+          tryBtn.classList.remove('success');
+          tryBtn.innerHTML = '<span class="icon">▶️</span> Simülatörde Dene';
+        }, 2000);
+      });
+
+      copyBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const copySuccess = () => {
+          copyBtn.classList.add('success');
+          copyBtn.innerHTML = '<span class="icon">✓</span> Kopyalandı!';
+          setTimeout(() => {
+            copyBtn.classList.remove('success');
+            copyBtn.innerHTML = '<span class="icon">📋</span> Kopyala';
+          }, 2000);
+        };
+
+        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(snippet).then(copySuccess).catch(() => {
+            this.fallbackCopy(snippet);
+            copySuccess();
+          });
+        } else {
+          this.fallbackCopy(snippet);
+          copySuccess();
+        }
+      });
+    });
+  }
+
+  private fallbackCopy(text: string): void {
+    if (typeof document === 'undefined') return;
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+    } catch {
+      // ignore
+    }
+    document.body.removeChild(ta);
+  }
+
+  public getLanguage(): 'tr' | 'en' {
+    return this.currentLang;
+  }
+
+  public setLanguage(lang: 'tr' | 'en'): void {
+    if (this.currentLang === lang) return;
+    this.currentLang = lang;
+    StudyStorage.setLanguage(lang);
+
+    // Update active class on all lang buttons in topbar
+    this.container.querySelectorAll('#study-lang-switch-top .btn-lang').forEach(btn => {
+      if (btn.getAttribute('data-lang') === lang) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    // Update search placeholder
+    if (this.searchInputEl) {
+      this.searchInputEl.placeholder = lang === 'en'
+        ? 'Search topic, opcode (MOV, JMP...) or concept...'
+        : 'Konu, komut (MOV, JMP...) veya kavram ara...';
+    }
+
+    // Re-render mindmap
+    this.renderMindMap();
+
+    // Re-render drawer if open
+    if (this.isDrawerOpen && this.selectedTopic && this.selectedSubLesson) {
+      this.renderDrawer();
+    }
+  }
+
+  public getSpineFilter(): 'all' | 'primary' | 'secondary' {
+    return this.currentSpineFilter;
+  }
+
+  public setSpineFilter(filter: 'all' | 'primary' | 'secondary'): void {
+    this.currentSpineFilter = filter;
+    this.container.querySelectorAll('.btn-spine-filter').forEach(btn => {
+      if (btn.getAttribute('data-filter') === filter) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+    this.renderMindMap();
+  }
+
+  public getSelectedTopic(): MainTopic | null {
+    return this.selectedTopic;
+  }
+
+  public getSelectedSubLesson(): SubLesson | null {
+    return this.selectedSubLesson;
   }
 }

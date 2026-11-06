@@ -10,6 +10,7 @@ export class StudyStorage {
   private static readonly KEY_QUIZZES = '8086_study_quizzes_v1';
   private static readonly KEY_TASKS = '8086_study_tasks_v1';
   private static readonly KEY_CODES = '8086_study_user_codes_v1';
+  private static readonly KEY_LANG = 'assemblysim_study_lang';
 
   private static memoryStore: Record<string, string> = {};
 
@@ -109,5 +110,22 @@ export class StudyStorage {
   static resetProgress(): void {
     this.removeItem(this.KEY_QUIZZES);
     this.removeItem(this.KEY_TASKS);
+  }
+
+  static getLanguage(): 'tr' | 'en' {
+    const raw = this.getItem(this.KEY_LANG);
+    return raw === 'en' ? 'en' : 'tr';
+  }
+
+  static setLanguage(lang: 'tr' | 'en'): void {
+    this.setItem(this.KEY_LANG, lang === 'en' ? 'en' : 'tr');
+  }
+
+  static clearForTests(): void {
+    this.removeItem(this.KEY_QUIZZES);
+    this.removeItem(this.KEY_TASKS);
+    this.removeItem(this.KEY_CODES);
+    this.removeItem(this.KEY_LANG);
+    this.memoryStore = {};
   }
 }

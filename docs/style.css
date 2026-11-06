@@ -12733,6 +12733,19 @@ body {
   transition: all 0.3s ease;
 }
 
+.mindmap-line.active {
+  stroke: #38bdf8;
+  stroke-width: 3px;
+  stroke-dasharray: none;
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6));
+}
+
+.mindmap-line.completed {
+  stroke: #10b981;
+  stroke-width: 2.5px;
+  stroke-dasharray: none;
+}
+
 /* Mind Map Node Cards */
 .mindmap-node-card {
   position: absolute;
@@ -13236,6 +13249,221 @@ body {
   font-size: 12px;
   margin: 8px 0;
   overflow-x: auto;
+}
+
+.nb-code-sample.nb-code-enhanced {
+  padding: 0;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.nb-code-wrapper {
+  position: relative;
+  margin: 12px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #334155;
+  background: #0f172a;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.nb-code-wrapper pre {
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  background: #0f172a !important;
+  border: none !important;
+  border-radius: 0 !important;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #f8fafc;
+  overflow-x: auto;
+}
+
+.nb-code-content {
+  padding: 12px 14px;
+  overflow-x: auto;
+  white-space: pre;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #f8fafc;
+}
+
+.nb-code-content pre {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  white-space: pre;
+}
+
+.nb-code-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  user-select: none;
+}
+
+.nb-code-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: #0f172a;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid #334155;
+  letter-spacing: 0.5px;
+}
+
+.nb-code-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-nb-code-copy,
+.btn-nb-code-try {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.btn-nb-code-copy {
+  background: #334155;
+  color: #cbd5e1;
+  border-color: #475569;
+}
+
+.btn-nb-code-copy:hover {
+  background: #475569;
+  color: #ffffff;
+}
+
+.btn-nb-code-try {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0369a1;
+}
+
+.btn-nb-code-try:hover {
+  background: #0369a1;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+}
+
+.btn-nb-code-try.success,
+.btn-nb-code-copy.success {
+  background: #059669;
+  border-color: #047857;
+  color: #ffffff;
+}
+
+/* Sticky Mini-TOC Section Navigation Bar */
+.notebook-mini-toc-container {
+  position: sticky;
+  top: -18px;
+  z-index: 25;
+  margin: -6px 0 16px 0;
+  padding: 8px 12px;
+  background: rgba(248, 250, 252, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+.notebook-mini-toc-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.toc-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #0284c7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.toc-pills-scroll {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 3px 2px;
+}
+
+.toc-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.toc-pill-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.toc-pill-btn.active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+}
+
+.toc-pill-dot {
+  color: #0284c7;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.toc-pill-btn.active .toc-pill-dot {
+  color: #ffffff;
+}
+
+.theory-heading-anchor,
+.nb-title,
+.nb-section h4 {
+  scroll-margin-top: 60px;
 }
 
 .nb-table-wrap {
@@ -14142,3 +14370,1067 @@ body {
   font-size: 13px;
 }
 
+
+
+/* =========================================================================
+   8086 TESTLER & BOŞLUK DOLDURMA DEFTERİ (CLOZE NOTEBOOK UI)
+   ========================================================================= */
+
+.tests-view-mount {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  background-color: #f1f5f9;
+  overflow: hidden;
+}
+
+.cloze-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  background-color: #eaedf2;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+/* 1. Üst Kontrol Çubuğu (Topbar) */
+.cloze-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cloze-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.btn-cloze-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #f8fafc;
+  border: 1px solid var(--border-dark);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cloze-back:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  transform: translateX(-2px);
+}
+
+.btn-cloze-back .icon {
+  font-size: 11px;
+}
+
+.cloze-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cloze-brand-icon {
+  font-size: 24px;
+}
+
+.cloze-brand-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.cloze-brand-subtitle {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin: 1px 0 0 0;
+}
+
+.cloze-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.overall-stats-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  font-size: 12px;
+}
+
+.overall-stats-pill .stats-label {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.overall-stats-pill .stats-val {
+  font-size: 14px;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.overall-stats-pill .stats-val.score-good {
+  color: #16a34a;
+}
+
+.overall-stats-pill .stats-detail {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.btn-cloze-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cloze-reset:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+/* 2. Filtre ve Arama Çubuğu (Filter Bar) */
+.cloze-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cloze-filter-section-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cloze-week-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cloze-filter-pill {
+  padding: 5px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.cloze-filter-pill:hover:not(.active) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.cloze-filter-pill.active {
+  background: #b91c1c;
+  border-color: #991b1b;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(185, 28, 28, 0.2);
+}
+
+.cloze-filter-pill .pill-count {
+  font-size: 10.5px;
+  opacity: 0.85;
+}
+
+.cloze-filter-section-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cloze-search-box {
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 4px 10px;
+  width: 240px;
+  transition: all 0.15s ease;
+}
+
+.cloze-search-box:focus-within {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  width: 280px;
+}
+
+.cloze-search-box .search-icon {
+  font-size: 13px;
+  margin-right: 6px;
+  opacity: 0.6;
+}
+
+.cloze-search-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  width: 100%;
+  color: var(--text-primary);
+}
+
+.btn-clear-search {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: #94a3b8;
+  padding: 2px 4px;
+}
+
+.btn-clear-search:hover {
+  color: #475569;
+}
+
+.cloze-sort-group {
+  display: inline-flex;
+  background: #e2e8f0;
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-sort-opt {
+  background: transparent;
+  border: none;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: 4px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.btn-sort-opt:hover:not(.active) {
+  color: #1e293b;
+}
+
+.btn-sort-opt.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 3. Defter Sayfası Görüntüleme Alanı */
+.cloze-notebook-container {
+  display: flex;
+  justify-content: center;
+  padding: 30px 20px 80px 20px;
+  background: #eaedf2;
+  min-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.cloze-notebook-viewport {
+  max-width: 960px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Lined Notebook Paper Layout */
+.cloze-notebook-page {
+  position: relative;
+  width: 100%;
+  min-height: 1100px;
+  background-color: #fffdf9;
+  /* Horizontal 34px lined paper rule */
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 33px,
+    #e2e8f0 33px,
+    #e2e8f0 34px
+  );
+  line-height: 34px;
+  border: 1px solid #e2d9cc;
+  border-radius: 6px;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+/* Spiral Punch Holes (Left edge) */
+.cloze-spiral-binding {
+  position: absolute;
+  top: 25px;
+  bottom: 25px;
+  left: 20px;
+  width: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.spiral-hole {
+  width: 15px;
+  height: 15px;
+  background: #cbd5e1;
+  border-radius: 50%;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 1px solid #94a3b8;
+}
+
+/* Red Margin Line (at exactly 72px from left) */
+.cloze-margin-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 72px;
+  width: 2px;
+  background-color: #ef4444;
+  opacity: 0.75;
+  pointer-events: none;
+  z-index: 4;
+  border-right: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.cloze-page-inner {
+  padding: 40px 45px 60px 105px; /* Leaves clear space past the 72px red margin */
+  box-sizing: border-box;
+}
+
+/* Defter Başlığı */
+.cloze-notebook-header {
+  border-bottom: 2px solid #ef4444;
+  padding-bottom: 14px;
+  margin-bottom: 28px;
+}
+
+.notebook-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.notebook-main-title {
+  font-family: 'Georgia', 'Cambria', serif;
+  font-size: 23px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.2px;
+}
+
+.notebook-sub-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #64748b;
+  flex-wrap: wrap;
+}
+
+.notebook-sub-info .info-guide {
+  color: #475569;
+}
+
+/* Batches Wrapper */
+.cloze-batches-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.cloze-batch-section {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.cloze-batch-section:hover {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.cloze-batch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cloze-batch-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.batch-num-badge {
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.batch-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.batch-count-tag {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+/* 4. Soru Maddeleri */
+.cloze-batch-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.cloze-question-item {
+  padding: 16px 18px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.cloze-question-item.item-correct {
+  border-color: #86efac;
+  background: #fcfdfc;
+}
+
+.cloze-question-item.item-incorrect {
+  border-color: #fca5a5;
+  background: #fffcfc;
+}
+
+.cloze-q-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.q-num-pill {
+  font-size: 11px;
+  font-weight: 800;
+  color: #1e293b;
+  background: #e2e8f0;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.q-week-pill {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.q-topic-pill {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cloze-q-sentence {
+  font-family: 'Consolas', 'JetBrains Mono', 'Segoe UI', monospace;
+  font-size: 14.5px;
+  line-height: 34px;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+/* 5. Boşluk Doldurma Girdileri (Inputs) */
+.cloze-blank-wrapper {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  vertical-align: baseline;
+  margin: 0 4px;
+}
+
+.cloze-blank-input {
+  background: transparent;
+  border: none;
+  border-bottom: 2px dashed #64748b;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: center;
+  padding: 1px 6px;
+  transition: all 0.15s ease;
+  outline: none;
+  box-sizing: content-box;
+}
+
+.cloze-blank-input:focus {
+  border-bottom: 2px solid #2563eb;
+  background-color: rgba(37, 99, 235, 0.06);
+  border-radius: 3px 3px 0 0;
+}
+
+/* Geri Bildirim Durumları (Green / Red Feedback) */
+.cloze-blank-input.cloze-blank-correct {
+  border-bottom: 2px solid #10b981 !important;
+  background-color: #ecfdf5 !important;
+  color: #065f46 !important;
+  border-radius: 3px 3px 0 0;
+}
+
+.cloze-blank-input.cloze-blank-incorrect {
+  border-bottom: 2px solid #ef4444 !important;
+  background-color: #fef2f2 !important;
+  color: #991b1b !important;
+  border-radius: 3px 3px 0 0;
+}
+
+.blank-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  margin-left: 4px;
+  user-select: none;
+}
+
+.blank-status-badge.correct {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.blank-status-badge.incorrect {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+/* 6. Slayt Referans & Cevap Kartı (Answer Card) */
+.cloze-answer-card {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  transition: all 0.2s ease;
+  animation: fadeInClozeCard 0.25s ease-out;
+}
+
+@keyframes fadeInClozeCard {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cloze-answer-card.card-success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-left: 4px solid #16a34a;
+}
+
+.cloze-answer-card.card-failure {
+  background: #fff5f5;
+  border: 1px solid #fca5a5;
+  border-left: 4px solid #dc2626;
+}
+
+.answer-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-status-indicator {
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.cloze-answer-card.card-success .card-status-indicator {
+  color: #166534;
+}
+
+.cloze-answer-card.card-failure .card-status-indicator {
+  color: #991b1b;
+}
+
+.card-slide-citation {
+  font-size: 12px;
+  color: #475569;
+}
+
+.answer-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.target-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.target-label {
+  font-weight: 700;
+  color: #334155;
+}
+
+.target-val-badge {
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.target-val-badge.badge-ok {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.target-val-badge.badge-err {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.target-alts {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.answer-card-explanation {
+  font-size: 12px;
+  color: #334155;
+}
+
+.answer-card-source {
+  font-size: 12px;
+  color: #64748b;
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 5px;
+  margin-top: 2px;
+}
+
+/* 7. Bölüm Denetim Çubuğu (Batch Control Bar) */
+.cloze-batch-control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  margin-top: 26px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.batch-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.btn-cloze-check-batch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 800;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
+}
+
+.btn-cloze-check-batch:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.35);
+}
+
+.btn-cloze-check-batch:active {
+  transform: translateY(0);
+}
+
+.btn-cloze-check-batch .check-icon {
+  font-size: 15px;
+}
+
+.batch-bar-hint {
+  font-size: 11.5px;
+  color: #64748b;
+  max-width: 360px;
+}
+
+/* Batch Score Badge */
+.batch-score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.batch-score-badge.badge-pending {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px dashed #cbd5e1;
+}
+
+.batch-score-badge.badge-pass {
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.batch-score-badge.badge-fail {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.batch-score-badge .score-icon {
+  font-size: 13px;
+}
+
+.batch-score-badge .score-text {
+  font-weight: 800;
+}
+
+.batch-score-badge .score-percent {
+  font-size: 11.5px;
+}
+
+.batch-score-badge .score-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* Boş Durum (Empty State) */
+.cloze-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.cloze-empty-state .empty-icon {
+  font-size: 36px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.cloze-empty-state h4 {
+  font-size: 16px;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+
+.cloze-empty-state p {
+  font-size: 13px;
+}
+
+/* ==========================================================================
+   MILESTONE M2: BILINGUAL UI & STUDYVIEW SPINE FILTERING STYLES
+   ========================================================================== */
+
+/* Language Switcher Component */
+.study-lang-switch {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.study-lang-switch .btn-lang {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  user-select: none;
+  font-family: inherit;
+}
+
+.study-lang-switch .btn-lang:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.study-lang-switch .btn-lang.active {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  font-weight: 700;
+}
+
+/* Drawer Language Switcher Placement */
+.drawer-lang-switch {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+}
+
+.drawer-lang-switch .btn-lang {
+  color: #475569;
+}
+
+.drawer-lang-switch .btn-lang:hover {
+  color: #0f172a;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.drawer-lang-switch .btn-lang.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.notebook-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notebook-header-top-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.notebook-header-top-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Spine Filter Bar in StudyView */
+.study-spine-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #111827;
+  border-bottom: 1px solid #1f2937;
+  flex-wrap: wrap;
+}
+
+.spine-filter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.spine-filter-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-spine-filter {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btn-spine-filter:hover {
+  background: #334155;
+  color: #ffffff;
+  border-color: #475569;
+}
+
+.btn-spine-filter.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.35);
+}
+
+/* Spine Badges on Mindmap Nodes and Notebook Header */
+.node-spine-badge,
+.notebook-spine-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.node-spine-badge.primary-spine,
+.notebook-spine-badge.primary-spine {
+  background: rgba(37, 99, 235, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+}
+
+.node-spine-badge.secondary-spine,
+.notebook-spine-badge.secondary-spine {
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #c084fc;
+}
+
+/* Official Course Lecture Slide Text Callout Banner */
+.nb-callout {
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin: 12px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.nb-callout.info {
+  background: #eff6ff;
+  border-left: 4px solid #3b82f6;
+  color: #1e3a8a;
+}
+
+.nb-callout.info strong {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.nb-callout.tip {
+  background: #f0fdf4;
+  border-left: 4px solid #22c55e;
+  color: #14532d;
+}
+
+.nb-callout.warn {
+  background: #fffbeb;
+  border-left: 4px solid #f59e0b;
+  color: #78350f;
+}

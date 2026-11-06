@@ -10,9 +10,11 @@ export interface TopBarCallbacks {
   onOpenManual?: () => void;
   onOpenGraph?: () => void;
   onOpenStudy?: () => void;
+  onOpenTests?: () => void;
   isManualOpen?: () => boolean;
   isGraphOpen?: () => boolean;
   isStudyOpen?: () => boolean;
+  isTestsOpen?: () => boolean;
 }
 
 export class TopBar {
@@ -58,6 +60,7 @@ export class TopBar {
     const isManualActive = this.callbacks.isManualOpen ? this.callbacks.isManualOpen() : false;
     const isGraphActive = this.callbacks.isGraphOpen ? this.callbacks.isGraphOpen() : false;
     const isStudyActive = this.callbacks.isStudyOpen ? this.callbacks.isStudyOpen() : false;
+    const isTestsActive = this.callbacks.isTestsOpen ? this.callbacks.isTestsOpen() : false;
 
     this.container.innerHTML = `
       <!-- Sol Taraf: Logo ve VS Code Menü Barı -->
@@ -140,6 +143,9 @@ export class TopBar {
           <button class="topbar-quick-btn ${isStudyActive ? 'active' : ''}" id="topbar-btn-study" title="8086 Assembly Dersleri ve Zihin Haritası">
             <span>🎓</span> Dersler
           </button>
+          <button class="topbar-quick-btn ${isTestsActive ? 'active' : ''}" id="topbar-btn-tests" title="8086 Boşluk Doldurma Test Defteri">
+            <span>📝</span> Testler
+          </button>
           <button class="topbar-quick-btn ${isGraphActive ? 'active' : ''}" id="topbar-btn-graph" title="8086 Sinir Ağı & Bilgi Grafı">
             <span>🧠</span> Bilgi Grafı
           </button>
@@ -202,6 +208,9 @@ export class TopBar {
     // Right quick buttons
     this.container.querySelector('#topbar-btn-study')?.addEventListener('click', () => {
       this.callbacks.onOpenStudy?.();
+    });
+    this.container.querySelector('#topbar-btn-tests')?.addEventListener('click', () => {
+      this.callbacks.onOpenTests?.();
     });
     this.container.querySelector('#topbar-btn-graph')?.addEventListener('click', () => {
       this.callbacks.onOpenGraph?.();

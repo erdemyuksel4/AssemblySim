@@ -10,10 +10,12 @@ export interface SidebarCallbacks {
   onOpenManual?: () => void;
   onOpenGraph?: () => void;
   onOpenStudy?: () => void;
+  onOpenTests?: () => void;
   getActiveFileId?: () => string | null;
   isManualOpen?: () => boolean;
   isGraphOpen?: () => boolean;
   isStudyOpen?: () => boolean;
+  isTestsOpen?: () => boolean;
 }
 
 export class WorkspaceSidebar {
@@ -67,7 +69,8 @@ export class WorkspaceSidebar {
     const isManualActive = this.callbacks.isManualOpen ? this.callbacks.isManualOpen() : false;
     const isGraphActive = this.callbacks.isGraphOpen ? this.callbacks.isGraphOpen() : false;
     const isStudyActive = this.callbacks.isStudyOpen ? this.callbacks.isStudyOpen() : false;
-    const isOtherActive = isManualActive || isGraphActive || isStudyActive;
+    const isTestsActive = this.callbacks.isTestsOpen ? this.callbacks.isTestsOpen() : false;
+    const isOtherActive = isManualActive || isGraphActive || isStudyActive || isTestsActive;
     const activeFileId = isOtherActive ? null : (this.callbacks.getActiveFileId ? this.callbacks.getActiveFileId() : project.activeFileId);
 
     this.container.innerHTML = `
@@ -99,6 +102,12 @@ export class WorkspaceSidebar {
         <button class="btn-sidebar-study-action ${isStudyActive ? 'active' : ''}" id="btn-sidebar-open-study" title="8086 Assembly Dersleri, Zihin Haritası ve Not Defteri" style="width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 8px; padding: 8px 10px; background: ${isStudyActive ? '#fef3c7' : '#ffffff'}; border: 1px solid ${isStudyActive ? '#fde68a' : 'var(--border-dark)'}; border-radius: 6px; cursor: pointer; color: ${isStudyActive ? '#92400e' : 'var(--text-primary)'}; font-weight: 700; font-size: 12px; transition: all 0.15s ease;">
           <span class="footer-btn-icon" style="font-size: 15px;">🎓</span>
           <span class="footer-btn-text">Dersler & Not Defteri</span>
+        </button>
+
+        <!-- 8086 Boşluk Doldurma Test Defteri Butonu -->
+        <button class="btn-sidebar-tests-action ${isTestsActive ? 'active' : ''}" id="btn-sidebar-open-tests" title="8086 Boşluk Doldurma Test Defteri" style="width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 8px; padding: 8px 10px; background: ${isTestsActive ? '#fef2f2' : '#ffffff'}; border: 1px solid ${isTestsActive ? '#fecaca' : 'var(--border-dark)'}; border-radius: 6px; cursor: pointer; color: ${isTestsActive ? '#b91c1c' : 'var(--text-primary)'}; font-weight: 700; font-size: 12px; transition: all 0.15s ease;">
+          <span class="footer-btn-icon" style="font-size: 15px;">📝</span>
+          <span class="footer-btn-text">Testler (Sınav Defteri)</span>
         </button>
 
         <!-- 8086 Sinir Ağı & Bilgi Grafı Butonu -->
@@ -214,6 +223,13 @@ export class WorkspaceSidebar {
     studyBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.callbacks.onOpenStudy?.();
+    });
+
+    // 5.6 Open Tests Button
+    const testsBtn = this.container.querySelector('#btn-sidebar-open-tests');
+    testsBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.callbacks.onOpenTests?.();
     });
 
     // 6. Open Graph Button

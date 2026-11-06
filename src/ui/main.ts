@@ -11,6 +11,7 @@ import { ConsoleView } from './console.js';
 import { InstructionDoc } from './instructionDoc.js';
 import { GraphView } from './graph/graphView.js';
 import { StudyView } from '../study/studyView.js';
+import { ClozeView } from '../cloze/clozeView.js';
 import { TopBar } from './topbar.js';
 
 export type ExecutionSpeed = '0.5' | '1' | '2' | 'max';
@@ -59,6 +60,7 @@ export class App {
   private instructionDoc!: InstructionDoc;
   private graphView!: GraphView;
   private studyView!: StudyView;
+  private clozeView!: ClozeView;
   private topbar!: TopBar;
 
   // Computer Execution State
@@ -71,6 +73,7 @@ export class App {
   private isManualOpen: boolean = false;
   private isGraphOpen: boolean = false;
   private isStudyOpen: boolean = false;
+  private isTestsOpen: boolean = false;
 
   // UI Element References
   private appMainContent!: HTMLElement;
@@ -78,6 +81,7 @@ export class App {
   private manualViewMount!: HTMLElement;
   private graphViewMount!: HTMLElement;
   private studyViewMount!: HTMLElement;
+  private testsViewMount!: HTMLElement;
   private tabsBarEl!: HTMLElement;
   private btnCompile!: HTMLButtonElement;
   private btnRun!: HTMLButtonElement;
@@ -88,6 +92,7 @@ export class App {
   private btnHeaderManual!: HTMLButtonElement;
   private btnHeaderGraph?: HTMLButtonElement | null;
   private btnHeaderStudy?: HTMLButtonElement | null;
+  private btnHeaderTests?: HTMLButtonElement | null;
 
   constructor() {
     this.cpu = new CPU();
@@ -149,6 +154,11 @@ export class App {
                   <!-- 8086 Assembly Dersleri & Zihin Haritası Butonu -->
                   <button id="btn-header-open-study" class="btn-ctrl" style="background: #fef3c7; color: #92400e; border-color: #fde68a; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;" title="8086 Assembly Dersleri, Zihin Haritası ve Not Defteri">
                     <span>🎓</span> Dersler
+                  </button>
+
+                  <!-- 8086 Boşluk Doldurma Test Defteri Butonu -->
+                  <button id="btn-header-open-tests" class="btn-ctrl" style="background: #fef2f2; color: #b91c1c; border-color: #fecaca; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;" title="8086 Boşluk Doldurma Test Defteri (20'şerli Denetim)">
+                    <span>📝</span> Testler
                   </button>
 
                   <!-- 8086 Sinir Ağı & Bilgi Grafı Butonu -->
@@ -219,6 +229,9 @@ export class App {
 
           <!-- 8086 Dersler & Zihin Haritası Mount -->
           <div id="study-view-mount" class="study-view-mount" style="display: none; width: 100%; height: 100%;"></div>
+
+          <!-- 8086 Testler & Boşluk Doldurma Defteri Mount -->
+          <div id="tests-view-mount" class="tests-view-mount" style="display: none; width: 100%; height: 100%;"></div>
       </div>
         </div>
       </div>
@@ -230,6 +243,7 @@ export class App {
     this.manualViewMount = document.getElementById('manual-view-mount')!;
     this.graphViewMount = document.getElementById('graph-view-mount')!;
     this.studyViewMount = document.getElementById('study-view-mount')!;
+    this.testsViewMount = document.getElementById('tests-view-mount')!;
     this.tabsBarEl = document.getElementById('editor-tabs-bar')!;
     this.btnCompile = document.getElementById('btn-compile') as HTMLButtonElement;
     this.btnRun = document.getElementById('btn-run') as HTMLButtonElement;
@@ -240,6 +254,7 @@ export class App {
     this.btnHeaderManual = document.getElementById('btn-header-open-manual') as HTMLButtonElement;
     this.btnHeaderGraph = document.getElementById('btn-header-open-graph') as HTMLButtonElement | null;
     this.btnHeaderStudy = document.getElementById('btn-header-open-study') as HTMLButtonElement | null;
+    this.btnHeaderTests = document.getElementById('btn-header-open-tests') as HTMLButtonElement | null;
   }
 
   private initModules(): void {
@@ -283,9 +298,11 @@ export class App {
       onOpenManual: () => this.showManual(),
       onOpenGraph: () => this.showGraph(),
       onOpenStudy: () => this.showStudy(),
+      onOpenTests: () => this.showTests(),
       isManualOpen: () => this.isManualOpen,
       isGraphOpen: () => this.isGraphOpen,
-      isStudyOpen: () => this.isStudyOpen
+      isStudyOpen: () => this.isStudyOpen,
+      isTestsOpen: () => this.isTestsOpen
     });
 
     // 1. Sidebar (Workspace Explorer)
@@ -316,10 +333,14 @@ export class App {
       onOpenStudy: () => {
         this.showStudy();
       },
+      onOpenTests: () => {
+        this.showTests();
+      },
       getActiveFileId: () => this.workspace.getActiveFile()?.id,
       isManualOpen: () => this.isManualOpen,
       isGraphOpen: () => this.isGraphOpen,
-      isStudyOpen: () => this.isStudyOpen
+      isStudyOpen: () => this.isStudyOpen,
+      isTestsOpen: () => this.isTestsOpen
     });
 
     // 2. Editor
@@ -412,6 +433,11 @@ export class App {
           this.consoleView.log('✓ Ders görevinden kod editöre aktarıldı.', 'info');
         }
       }
+    });
+
+    // 9. Cloze View (8086 Testler & Boşluk Doldurma Defteri)
+    this.clozeView = new ClozeView(this.testsViewMount, {
+      onReturnToEditor: () => this.showEditor()
     });
 
     this.renderTabs();
@@ -508,6 +534,7 @@ export class App {
     this.btnHeaderManual.addEventListener('click', () => this.toggleManual());
     this.btnHeaderGraph?.addEventListener('click', () => this.toggleGraph());
     this.btnHeaderStudy?.addEventListener('click', () => this.toggleStudy());
+    this.btnHeaderTests?.addEventListener('click', () => this.toggleTests());
 
     // Format switches
     const fmtButtons = document.querySelectorAll<HTMLButtonElement>('.btn-fmt');
@@ -552,7 +579,7 @@ export class App {
 
       if (e.key === 'F5') {
         e.preventDefault();
-        if (this.isManualOpen || this.isGraphOpen || this.isStudyOpen) this.showEditor();
+        if (this.isManualOpen || this.isGraphOpen || this.isStudyOpen || this.isTestsOpen) this.showEditor();
         if (this.isRunning) {
           this.handleStop();
         } else {
@@ -560,14 +587,14 @@ export class App {
         }
       } else if (e.key === 'F10') {
         e.preventDefault();
-        if (this.isManualOpen || this.isGraphOpen || this.isStudyOpen) this.showEditor();
+        if (this.isManualOpen || this.isGraphOpen || this.isStudyOpen || this.isTestsOpen) this.showEditor();
         if (!this.isRunning) {
           this.handleNext();
         }
       } else if (e.key === 'Escape') {
         if (this.isRunning) {
           this.handleStop();
-        } else if (this.isManualOpen || this.isGraphOpen || this.isStudyOpen) {
+        } else if (this.isManualOpen || this.isGraphOpen || this.isStudyOpen || this.isTestsOpen) {
           this.showEditor();
         }
         return;
@@ -592,9 +619,27 @@ export class App {
     });
   }
 
+  showTests(): void {
+    this.flushCurrentEditorState();
+    this.isTestsOpen = true;
+    this.isStudyOpen = false;
+    this.isGraphOpen = false;
+    this.isManualOpen = false;
+    this.appMainContent?.classList.remove('graph-active');
+    this.mainIdeLayout.style.display = 'none';
+    this.manualViewMount.style.display = 'none';
+    this.graphViewMount.style.display = 'none';
+    this.studyViewMount.style.display = 'none';
+    this.testsViewMount.style.display = 'flex';
+    this.clozeView?.render();
+    this.topbar?.render();
+    this.sidebar?.render();
+  }
+
   showStudy(): void {
     this.flushCurrentEditorState();
     this.isStudyOpen = true;
+    this.isTestsOpen = false;
     this.isGraphOpen = false;
     this.isManualOpen = false;
     this.appMainContent?.classList.remove('graph-active');
@@ -602,6 +647,7 @@ export class App {
     this.manualViewMount.style.display = 'none';
     this.graphViewMount.style.display = 'none';
     this.studyViewMount.style.display = 'flex';
+    this.testsViewMount.style.display = 'none';
     this.studyView?.render();
     this.topbar?.render();
     this.sidebar?.render();
@@ -610,12 +656,14 @@ export class App {
   showGraph(): void {
     this.flushCurrentEditorState();
     this.isGraphOpen = true;
+    this.isTestsOpen = false;
     this.isManualOpen = false;
     this.isStudyOpen = false;
     this.appMainContent?.classList.add('graph-active');
     this.mainIdeLayout.style.display = 'none';
     this.manualViewMount.style.display = 'none';
     this.studyViewMount.style.display = 'none';
+    this.testsViewMount.style.display = 'none';
     this.graphViewMount.style.display = 'flex';
     this.graphView?.onShow();
     this.topbar?.render();
@@ -625,12 +673,14 @@ export class App {
   showManual(): void {
     this.flushCurrentEditorState();
     this.isManualOpen = true;
+    this.isTestsOpen = false;
     this.isGraphOpen = false;
     this.isStudyOpen = false;
     this.appMainContent?.classList.remove('graph-active');
     this.mainIdeLayout.style.display = 'none';
     this.graphViewMount.style.display = 'none';
     this.studyViewMount.style.display = 'none';
+    this.testsViewMount.style.display = 'none';
     this.manualViewMount.style.display = 'block';
     this.topbar?.render();
     this.sidebar?.render();
@@ -640,13 +690,23 @@ export class App {
     this.isManualOpen = false;
     this.isGraphOpen = false;
     this.isStudyOpen = false;
+    this.isTestsOpen = false;
     this.appMainContent?.classList.remove('graph-active');
     this.manualViewMount.style.display = 'none';
     this.graphViewMount.style.display = 'none';
     this.studyViewMount.style.display = 'none';
+    this.testsViewMount.style.display = 'none';
     this.mainIdeLayout.style.display = 'grid';
     this.topbar?.render();
     this.sidebar?.render();
+  }
+
+  toggleTests(): void {
+    if (this.isTestsOpen) {
+      this.showEditor();
+    } else {
+      this.showTests();
+    }
   }
 
   toggleStudy(): void {

@@ -5,14 +5,21 @@ import { StudyStorage } from '../src/study/studyStorage.js';
 import { Assembler } from '../src/assembler/assembler.js';
 
 describe('Study Data & Curriculum Integrity', () => {
-  it('should have all 10 primary topics in correct pedagogical order', () => {
-    expect(STUDY_TOPICS.length).toBe(10);
+  it('should have all 15 primary topics in correct pedagogical order', () => {
+    expect(STUDY_TOPICS.length).toBe(15);
+    let totalSubLessons = 0;
     STUDY_TOPICS.forEach((topic, idx) => {
       expect(topic.number).toBe(idx + 1);
       expect(topic.title).toBeDefined();
-      expect(topic.subLessons.length).toBeGreaterThan(0);
+      expect(topic.subLessons.length).toBeGreaterThanOrEqual(3);
       expect(topic.mindMap).toBeDefined();
+      expect(topic.mindMap.x).toBeGreaterThanOrEqual(10);
+      expect(topic.mindMap.x).toBeLessThanOrEqual(90);
+      expect(topic.mindMap.y).toBeGreaterThanOrEqual(5);
+      expect(topic.mindMap.y).toBeLessThanOrEqual(95);
+      totalSubLessons += topic.subLessons.length;
     });
+    expect(totalSubLessons).toBeGreaterThanOrEqual(45);
   });
 
   it('should ensure all task starter and solution codes assemble with zero errors', () => {
