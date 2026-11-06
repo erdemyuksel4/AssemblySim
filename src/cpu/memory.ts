@@ -33,11 +33,12 @@ export class Memory {
   }
 
   /**
-   * Initializes authentic 1981 IBM PC compatible 8086 post-BIOS hardware state:
+   * Initializes authentic 1981 IBM PC compatible 8086 Real Mode 1 MB memory map:
    * 1. IVT (Interrupt Vector Table): 0x00000 - 0x003FF (256 vectors)
-   * 2. BDA (BIOS Data Area): 0x00400 - 0x004FF (Equipment, RAM size, Video mode)
-   * 3. VRAM (CGA/VGA Text Mode): 0x0B8000 - 0x0B8FA0 (80x25 blank cells)
-   * 4. ROM BIOS: 0x0F0000 - 0x0FFFFF (Handlers, Reset Vector at 0xFFFF0, Model Byte)
+   * 2. BDA (BIOS Data Area): 0x00400 - 0x004FF (Equipment, RAM size, Video mode, Keyboard ring buffer)
+   * 3. 640 KB Conventional RAM: 0x00500 - 0x9FFFF (User programs, Stack, DMA & I/O buffers)
+   * 4. VGA/CGA VRAM: 0xA0000 - 0xBFFFF (0xA0000 Mode 13h Graphics VRAM, 0xB8000 Text Mode VRAM)
+   * 5. ROM BIOS: 0xC0000 (VGA Video ROM), 0xE0000 (System Expansion ROM), 0xF0000 - 0xFFFFF (Motherboard ROM BIOS & 0xFFFF0 Reset Vector)
    */
   private initHardwareRomAndVectors(): void {
     // -------------------------------------------------------------
@@ -100,6 +101,8 @@ export class Memory {
     this.data[0x044A] = 80;   this.data[0x044B] = 0;    // Screen Columns: 80 (50h)
     this.data[0x044C] = 0x00; this.data[0x044D] = 0x10; // Video page size: 4096 bytes (1000h)
     this.data[0x0463] = 0xD4; this.data[0x0464] = 0x03; // CRTC base port: 03D4h (CGA/VGA color)
+    this.data[0x0480] = 0x1E; this.data[0x0481] = 0x00; // Key buffer start offset (001Eh)
+    this.data[0x0482] = 0x3E; this.data[0x0483] = 0x00; // Key buffer end offset (003Eh)
 
     for (let i = 0x400; i < 0x500; i++) {
       this.cellTypes[i] = 2; // data
@@ -135,7 +138,32 @@ export class Memory {
     this.data[0x0451] = 4;
 
     // -------------------------------------------------------------
-    // 4. ROM BIOS at 0xF0000 - 0xFFFFF (64 KB)
+    // 4. VGA Video Adapter ROM BIOS at 0xC0000 - 0xC7FFF (32 KB)
+    // -------------------------------------------------------------
+    const vgaRomHeader = [0x55, 0xAA, 0x40, 0xEB, 0x02, 0x90, 0xCB];
+    for (let i = 0; i < vgaRomHeader.length; i++) {
+      this.data[0xC0000 + i] = vgaRomHeader[i];
+      this.cellTypes[0xC0000 + i] = i >= 3 ? 1 : 2;
+    }
+    const vgaBanner = "IBM VGA COMPATIBLE VIDEO ROM BIOS (C0000h - A0000h VRAM)";
+    for (let i = 0; i < vgaBanner.length; i++) {
+      this.data[0xC0010 + i] = vgaBanner.charCodeAt(i);
+      this.cellTypes[0xC0010 + i] = 2;
+    }
+
+    // -------------------------------------------------------------
+    // 5. System Expansion ROM BIOS at 0xE0000 - 0xEFFFF (64 KB)
+    // -------------------------------------------------------------
+    const expRomBanner = "IBM PC/AT SYSTEM EXPANSION ROM BIOS (E0000h)";
+    for (let i = 0; i < expRomBanner.length; i++) {
+      this.data[0xE0000 + i] = expRomBanner.charCodeAt(i);
+      this.cellTypes[0xE0000 + i] = 2;
+    }
+    this.data[0xE0040] = 0xCB; // RETF stub at E000:0040h
+    this.cellTypes[0xE0040] = 1;
+
+    // -------------------------------------------------------------
+    // 6. Motherboard ROM BIOS at 0xF0000 - 0xFFFFF (64 KB)
     // -------------------------------------------------------------
     const banner = "IBM COMPATIBLE 8086 ROM BIOS (C) 1981 INTEL / IBM CORPORATION";
     for (let i = 0; i < banner.length; i++) {
@@ -152,6 +180,25 @@ export class Memory {
     for (const h of handlerOffsets) {
       this.data[h] = 0xCF; // IRET
       this.cellTypes[h] = 1; // code
+    }
+
+    // Authentic ROM BIOS POST Entry Point at F000:E05B (physical 0xFE05B):
+    // Target of the 0xFFFF0 Power-On Reset Vector (JMP FAR F000:E05B)
+    const postRoutine = [
+      0xFA,             // CLI               (Disable interrupts during POST)
+      0xFC,             // CLD               (Clear direction flag)
+      0x31, 0xC0,       // XOR AX, AX        (AX = 0000h)
+      0x8E, 0xD8,       // MOV DS, AX        (DS = 0000h)
+      0x8E, 0xC0,       // MOV ES, AX        (ES = 0000h)
+      0x8E, 0xD0,       // MOV SS, AX        (SS = 0000h)
+      0xBC, 0x00, 0x7C, // MOV SP, 7C00h     (Stack below bootloader)
+      0xFB,             // STI               (Enable interrupts)
+      0xCD, 0x19,       // INT 19h           (Bootstrap Loader -> jumps to 0000:7C00h)
+      0xF4              // HLT               (Fallback halt)
+    ];
+    for (let i = 0; i < postRoutine.length; i++) {
+      this.data[0xFE05B + i] = postRoutine[i];
+      this.cellTypes[0xFE05B + i] = 1; // code
     }
 
     // Standard BIOS Release Date at 0xFFFF5 (8 chars MM/DD/YY)
@@ -174,6 +221,44 @@ export class Memory {
     // System Model Byte at 0xFFFFE: 0xFF (Original IBM PC 8086/8088)
     this.data[0xFFFFE] = 0xFF;
     this.cellTypes[0xFFFFE] = 2;
+  }
+
+  /**
+   * Pushes a keystroke (ASCII + Scancode) into the BDA circular buffer (0040:001Eh..003Dh).
+   */
+  pushKeyboardBuffer(ascii: number, scancode: number = 0x00): void {
+    const start = 0x001E;
+    const end = 0x003E;
+    const head = (this.data[0x041A] | (this.data[0x041B] << 8)) || start;
+    let tail = (this.data[0x041C] | (this.data[0x041D] << 8)) || start;
+    if (tail < start || tail >= end) tail = start;
+
+    let nextTail = tail + 2;
+    if (nextTail >= end) nextTail = start;
+
+    this.data[0x0400 + tail] = ascii & 0xFF;
+    this.data[0x0400 + tail + 1] = scancode & 0xFF;
+
+    if (nextTail !== head) {
+      this.data[0x041C] = nextTail & 0xFF;
+      this.data[0x041D] = (nextTail >> 8) & 0xFF;
+    }
+  }
+
+  /**
+   * Advances BDA keyboard circular buffer head pointer when a key is consumed by a program.
+   */
+  consumeKeyboardBuffer(): void {
+    const start = 0x001E;
+    const end = 0x003E;
+    let head = (this.data[0x041A] | (this.data[0x041B] << 8)) || start;
+    const tail = (this.data[0x041C] | (this.data[0x041D] << 8)) || start;
+    if (head !== tail) {
+      head += 2;
+      if (head >= end) head = start;
+      this.data[0x041A] = head & 0xFF;
+      this.data[0x041B] = (head >> 8) & 0xFF;
+    }
   }
 
   clearAccessLogs(): void {

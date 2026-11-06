@@ -7,11 +7,11 @@ export function getMemoryRegionLabel(phys: number): string {
   if (p < 0x00400) return 'IVT (Kesme Vektör Tablosu - 0x00000)';
   if (p < 0x00500) return 'BDA (BIOS Veri Alanı - 0x00400)';
   if (p >= 0x00500 && p < 0xA0000) return '640 KB Kişisel Alan (Konvansiyonel RAM - 0x00500 - 0x9FFFF)';
-  if (p >= 0xA0000 && p < 0xB8000) return 'EGA/VGA Grafik Video Belleği';
-  if (p >= 0xB8000 && p < 0xC0000) return 'VRAM (80x25 Renkli Metin CRT Modu)';
-  if (p >= 0xC0000 && p < 0xF0000) return 'Video BIOS & Kart Genişleme ROM';
-  if (p >= 0xF0000 && p < 0xFFFF0) return 'ROM BIOS (Anakart Salt Okunur Belleği)';
-  if (p >= 0xFFFF0) return 'CPU Power-On Reset Vektörü (0xFFFF0)';
+  if (p >= 0xA0000 && p < 0xC0000) return 'VGA VRAM (Video Belleği - 0xA0000 - 0xBFFFF)';
+  if (p >= 0xC0000 && p < 0xE0000) return 'VGA Video ROM BIOS & Kart Genişleme ROM (0xC0000)';
+  if (p >= 0xE0000 && p < 0xF0000) return 'Sistem Genişleme ROM BIOS (0xE0000)';
+  if (p >= 0xF0000 && p < 0xFFFF0) return 'ROM BIOS (Anakart Salt Okunur Belleği - 0xF0000)';
+  if (p >= 0xFFFF0) return 'CPU Power-On Reset Vektörü (0xFFFF0 -> F000:E05B)';
   return '640 KB Kişisel Alan (RAM)';
 }
 
@@ -141,10 +141,10 @@ export class MemoryView {
         <div class="memory-quick-jumps">
           <button class="mem-jump-btn ${this.currentBasePhys === 0x00000 ? 'active' : ''}" data-addr="00000" title="Kesme Vektör Tablosu (0x00000)">IVT</button>
           <button class="mem-jump-btn ${this.currentBasePhys === 0x00400 ? 'active' : ''}" data-addr="00400" title="BIOS Veri Alanı (0x00400)">BDA</button>
-          <button class="mem-jump-btn ${this.currentBasePhys >= 0x00500 && this.currentBasePhys < 0xA0000 ? 'active' : ''}" data-addr="00500" title="640 KB Kişisel Alan / Kullanıcı RAM (0x00500 - 0x9FFFF)">640 KB RAM</button>
-          <button class="mem-jump-btn ${this.currentBasePhys >= 0xA0000 && this.currentBasePhys < 0xB8000 ? 'active' : ''}" data-addr="A0000" title="VGA Mode 13h Grafik Belleği (0xA0000)">VGA (A0000)</button>
-          <button class="mem-jump-btn ${this.currentBasePhys >= 0xB8000 && this.currentBasePhys < 0xC0000 ? 'active' : ''}" data-addr="B8000" title="CGA/VGA Renkli Metin Belleği (0xB8000)">VRAM</button>
-          <button class="mem-jump-btn ${this.currentBasePhys === 0xF0000 ? 'active' : ''}" data-addr="F0000" title="ROM BIOS Alanı (0xF0000)">ROM BIOS</button>
+          <button class="mem-jump-btn ${this.currentBasePhys >= 0x00500 && this.currentBasePhys < 0xA0000 ? 'active' : ''}" data-addr="00500" title="640 KB Kişisel Alan / Konvansiyonel RAM (0x00500 - 0x9FFFF)">640 KB RAM</button>
+          <button class="mem-jump-btn ${this.currentBasePhys >= 0xA0000 && this.currentBasePhys < 0xC0000 ? 'active' : ''}" data-addr="A0000" title="VGA VRAM Video Belleği (0xA0000 - 0xBFFFF)">VGA VRAM (A0000)</button>
+          <button class="mem-jump-btn ${this.currentBasePhys >= 0xC0000 && this.currentBasePhys < 0xF0000 ? 'active' : ''}" data-addr="C0000" title="VGA Video ROM & Sistem Genişleme ROM (0xC0000 / 0xE0000)">C0000/E0000</button>
+          <button class="mem-jump-btn ${this.currentBasePhys >= 0xF0000 && this.currentBasePhys < 0xFFFF0 ? 'active' : ''}" data-addr="F0000" title="Anakart ROM BIOS Alanı (0xF0000)">ROM BIOS</button>
           <button class="mem-jump-btn ${this.currentBasePhys === 0xFFFF0 ? 'active' : ''}" data-addr="FFFF0" title="CPU Power-On Reset Vektörü (0xFFFF0)">Reset</button>
         </div>
 

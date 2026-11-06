@@ -69,9 +69,12 @@ export class ConsoleView {
   private onVideoModeChange?: (mode: number) => void;
   private isWaiting: boolean = false;
 
-  // Donanımsal imleç yanıp sönme (blink) durumu
+  // Donanımsal imleç yanıp sönme (blink) durumu ve VGA Raster Tarayıcı (60 Hz)
   private cursorBlink: boolean = true;
   private blinkTimer: ReturnType<typeof setInterval> | null = null;
+  private vgaScanTimer: ReturnType<typeof setInterval> | null = null;
+  private lastVramHash: number = 0;
+  public vgaScanCount: number = 0;
 
   // Çizim tamponları (320x200 VRAM -> 800x600 Keskin Canvas)
   private canvasCtx: CanvasRenderingContext2D | null = null;
@@ -275,6 +278,10 @@ export class ConsoleView {
       clearInterval(this.blinkTimer);
       this.blinkTimer = null;
     }
+    if (this.vgaScanTimer !== null) {
+      clearInterval(this.vgaScanTimer);
+      this.vgaScanTimer = null;
+    }
     if (this.animFrameId !== null && typeof cancelAnimationFrame !== 'undefined') {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
@@ -289,10 +296,41 @@ export class ConsoleView {
     this.onInput = callback;
   }
 
+  /**
+   * VGA Ekran Kartı Modülü Periyodik Tarayıcısı (Saniyede ~30-60 kez):
+   * A0000h VRAM bölgesindeki renk verilerini okuyarak değişiklik olduğunda monitöre yansıtır.
+   */
+  scanVramFrame(): boolean {
+    this.vgaScanCount++;
+    const u32 = new Uint32Array(this.memory.data.buffer, 0xA0000, 16000);
+    let hash = 2166136261;
+    let hasNonZeroGraphics = false;
+    for (let i = 0; i < 16000; i++) {
+      const v = u32[i];
+      if (v !== 0) {
+        hasNonZeroGraphics = true;
+        hash = Math.imul(hash ^ v, 16777619) ^ i;
+      }
+    }
+    if (hasNonZeroGraphics && this.videoMode !== 0x13) {
+      this.memory.data[0x0449] = 0x13;
+    }
+    if (hash !== this.lastVramHash) {
+      this.lastVramHash = hash;
+      this.refreshCrtScreen();
+      return true;
+    }
+    return false;
+  }
+
   private startBlinkTimer(): void {
     if (this.blinkTimer !== null) {
       clearInterval(this.blinkTimer);
       this.blinkTimer = null;
+    }
+    if (this.vgaScanTimer !== null) {
+      clearInterval(this.vgaScanTimer);
+      this.vgaScanTimer = null;
     }
     if (typeof setInterval === 'function') {
       this.blinkTimer = setInterval(() => {
@@ -301,6 +339,11 @@ export class ConsoleView {
           this.refreshCrtScreen();
         }
       }, 500);
+
+      // VGA Raster Scan (saniyede ~30 kez A0000h VRAM bölgesini tarar)
+      this.vgaScanTimer = setInterval(() => {
+        this.scanVramFrame();
+      }, 33);
     }
   }
 

@@ -299,17 +299,17 @@ export class InstructionDoc {
                   <span class="docs-var-badge">Varyasyon #${idx + 1}</span>
                 </div>
                 <p class="docs-var-desc">${v.description}</p>
-                <div class="docs-example-box">
-                  <div class="docs-example-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="docs-example-box" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 6px; overflow: hidden;">
+                  <div class="docs-example-header" style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; border-bottom: 1px solid #334155; padding: 6px 12px; color: #cbd5e1; font-size: 11px; font-weight: 700;">
                     <span>Örnek Kullanım:</span>
                     <div style="display: flex; gap: 6px;">
-                      <button class="btn-copy-code" data-code="${this.escapeHtml(v.example)}" title="Kodu Kopyala" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-dark); background: #ffffff; cursor: pointer;">📋 Kopyala</button>
+                      <button class="btn-copy-code" data-code="${this.escapeHtml(v.example)}" title="Kodu Kopyala" style="font-size: 11px; padding: 3px 9px; border-radius: 4px; border: 1px solid #475569; background: #334155; color: #f8fafc; font-weight: 600; cursor: pointer;">📋 Kopyala</button>
                       ${this.callbacks.onInsertCodeToEditor ? `
-                        <button class="btn-use-in-editor" data-opcode="${inst.opcode}" data-code="${this.escapeHtml(v.example)}" title="Editöre Gönder ve Çalıştır" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid #93c5fd; background: #eff6ff; color: #1d4ed8; font-weight: 600; cursor: pointer;">📝 Editöre Aktar</button>
+                        <button class="btn-use-in-editor" data-opcode="${inst.opcode}" data-code="${this.escapeHtml(v.example)}" title="Editöre Gönder ve Çalıştır" style="font-size: 11px; padding: 3px 9px; border-radius: 4px; border: 1px solid #3b82f6; background: #2563eb; color: #ffffff; font-weight: 600; cursor: pointer;">📝 Editöre Aktar</button>
                       ` : ''}
                     </div>
                   </div>
-                  <pre class="docs-example-code"><code>${this.escapeHtml(v.example)}</code></pre>
+                  <pre class="docs-example-code" style="margin: 0; padding: 12px 14px; background: #0f172a; color: #f8fafc; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65; overflow-x: auto; white-space: pre-wrap;"><code style="color: #f8fafc; background: transparent; font-family: inherit;">${this.formatExampleCode(v.example)}</code></pre>
                 </div>
                 ${v.note ? `<div class="docs-var-note">💡 <em>${this.escapeHtml(v.note)}</em></div>` : ''}
               </div>
@@ -353,24 +353,24 @@ export class InstructionDoc {
 
     container.innerHTML = `
       <div class="theory-article">
-        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px;">🎯 8086 Mikroişlemcisinde 7 Temel Veri Adresleme Modu</h2>
+        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">🎯 8086 Mikroişlemcisinde 7 Temel Veri Adresleme Modu</h2>
         <p style="color: var(--text-secondary); margin-bottom: 20px;">
           8086 mimarisinde bir komutun kaynak veya hedef veriye nasıl ulaşacağını belirleyen 7 standart mod:
         </p>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
           ${ADDRESSING_MODES.map((m, idx) => `
-            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+            <div style="background: #ffffff; color: #1e293b; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <span style="font-weight: 700; font-size: 15px; color: #1e293b;">${idx + 1}. ${this.escapeHtml(m.modeName)}</span>
                 <span style="font-size: 11px; background: #eff6ff; color: #2563eb; padding: 2px 6px; border-radius: 4px; font-weight: 600;">${this.escapeHtml(m.category)}</span>
               </div>
-              <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">${this.escapeHtml(m.summary)}</p>
-              ${m.formula ? `<div style="font-family: monospace; font-size: 12px; background: #f1f5f9; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;"><strong>Formül:</strong> ${this.escapeHtml(m.formula)}</div>` : ''}
-              <div style="font-size: 12px; color: var(--text-primary); margin-bottom: 4px;"><strong>İzin Verilen Yazmaçlar:</strong> ${this.escapeHtml(m.registersAllowed)}</div>
-              <div style="font-size: 12px; color: var(--text-primary); margin-bottom: 8px;"><strong>Varsayılan Segment:</strong> ${this.escapeHtml(m.defaultSegment)}</div>
-              <div style="background: #1e293b; color: #f8fafc; font-family: monospace; font-size: 12px; padding: 8px 10px; border-radius: 4px; margin-bottom: 6px;">${this.escapeHtml(m.example)}</div>
-              <small style="color: var(--text-muted); font-size: 11px;">💡 ${this.escapeHtml(m.notes)}</small>
+              <p style="font-size: 13px; color: #475569; margin-bottom: 10px;">${this.escapeHtml(m.summary)}</p>
+              ${m.formula ? `<div style="font-family: monospace; font-size: 12px; background: #f1f5f9; color: #0f172a; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;"><strong>Formül:</strong> ${this.escapeHtml(m.formula)}</div>` : ''}
+              <div style="font-size: 12px; color: #1e293b; margin-bottom: 4px;"><strong>İzin Verilen Yazmaçlar:</strong> ${this.escapeHtml(m.registersAllowed)}</div>
+              <div style="font-size: 12px; color: #1e293b; margin-bottom: 8px;"><strong>Varsayılan Segment:</strong> ${this.escapeHtml(m.defaultSegment)}</div>
+              <pre style="background: #0f172a; color: #f8fafc; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; padding: 10px 12px; border-radius: 6px; margin: 0 0 6px 0; overflow-x: auto; white-space: pre-wrap;"><code>${this.formatExampleCode(m.example)}</code></pre>
+              <small style="color: #64748b; font-size: 11px;">💡 ${this.escapeHtml(m.notes)}</small>
             </div>
           `).join('')}
         </div>
@@ -384,24 +384,24 @@ export class InstructionDoc {
 
     container.innerHTML = `
       <div class="theory-article">
-        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px;">📐 ${this.escapeHtml(ARCHITECTURE_GUIDE.title)}</h2>
+        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">📐 ${this.escapeHtml(ARCHITECTURE_GUIDE.title)}</h2>
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 16px;">
-          <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+          <div style="background: #ffffff; color: #1e293b; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
             <h4 style="font-weight: 700; color: #2563eb; margin-bottom: 8px;">🚌 Veri Yolu Mimarisi</h4>
-            <ul style="font-size: 13px; list-style: disc; padding-left: 20px; line-height: 1.6;">
+            <ul style="font-size: 13px; list-style: disc; padding-left: 20px; line-height: 1.6; color: #334155;">
               <li><strong>Adres Yolu (Address Bus):</strong> ${ARCHITECTURE_GUIDE.busSystem.addressBus}</li>
               <li><strong>Veri Yolu (Data Bus):</strong> ${ARCHITECTURE_GUIDE.busSystem.dataBus}</li>
               <li><strong>Kontrol Yolu (Control Bus):</strong> ${ARCHITECTURE_GUIDE.busSystem.controlBus}</li>
             </ul>
           </div>
 
-          <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+          <div style="background: #ffffff; color: #1e293b; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
             <h4 style="font-weight: 700; color: #16a34a; margin-bottom: 8px;">🧠 20-Bit Fiziksel Adresleme</h4>
-            <p style="font-size: 13px; line-height: 1.6;">
+            <p style="font-size: 13px; line-height: 1.6; color: #334155;">
               8086, 16-bit işlemci olmasına karşın 1 MB RAM'e ulaşabilmek için <strong>Segment:Offset</strong> mimarisini kullanır:
             </p>
-            <div style="background: #f8fafc; border: 1px solid var(--border-dark); padding: 8px 12px; font-family: monospace; font-size: 13px; border-radius: 4px; margin-top: 8px; font-weight: 700;">
+            <div style="background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1; padding: 8px 12px; font-family: monospace; font-size: 13px; border-radius: 4px; margin-top: 8px; font-weight: 700;">
               Fiziksel Adres = (Segment × 16) + Offset<br/>
               Örn: CS:IP = 1000h:0100h → (1000h × 10h) + 0100h = 10100h
             </div>
@@ -417,38 +417,38 @@ export class InstructionDoc {
 
     container.innerHTML = `
       <div class="theory-article">
-        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px;">🏳️ ${this.escapeHtml(FLAGS_GUIDE.title)}</h2>
+        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">🏳️ ${this.escapeHtml(FLAGS_GUIDE.title)}</h2>
         <p style="color: var(--text-secondary); margin-bottom: 16px;">
           8086 Bayrak Yazmacı (FLAGS Register) 16-bit genişliğindedir ve 9 aktif bayrak biti içerir (6 Durum Bayrağı, 3 Kontrol Bayrağı):
         </p>
 
-        <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 16px 0 8px 0;">📊 Durum Bayrakları (Status Flags - Aritmetik/Mantık Sonuçları)</h3>
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 16px 0 8px 0;">📊 Durum Bayrakları (Status Flags - Aritmetik/Mantık Sonuçları)</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px;">
           ${FLAGS_GUIDE.statusFlags.map(f => `
-            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px;">
+            <div style="background: #ffffff; color: #1e293b; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <strong style="font-size: 15px; color: #1e293b;">${this.escapeHtml(f.flag)}</strong>
                 <span style="font-size: 11px; font-weight: 600; background: #eff6ff; color: #2563eb; padding: 2px 6px; border-radius: 4px;">Bit ${f.bit}</span>
               </div>
-              <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-top: 6px;">${this.escapeHtml(f.desc)}</p>
+              <p style="font-size: 12px; color: #475569; line-height: 1.5; margin-top: 6px;">${this.escapeHtml(f.desc)}</p>
             </div>
           `).join('')}
         </div>
 
-        <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 16px 0 8px 0;">⚙️ Kontrol Bayrakları (Control Flags - İşlemci Davranışı)</h3>
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 16px 0 8px 0;">⚙️ Kontrol Bayrakları (Control Flags - İşlemci Davranışı)</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px;">
           ${FLAGS_GUIDE.controlFlags.map(f => `
-            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px;">
+            <div style="background: #ffffff; color: #1e293b; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <strong style="font-size: 15px; color: #1e293b;">${this.escapeHtml(f.flag)}</strong>
                 <span style="font-size: 11px; font-weight: 600; background: #fef3c7; color: #b45309; padding: 2px 6px; border-radius: 4px;">Bit ${f.bit}</span>
               </div>
-              <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-top: 6px;">${this.escapeHtml(f.desc)}</p>
+              <p style="font-size: 12px; color: #475569; line-height: 1.5; margin-top: 6px;">${this.escapeHtml(f.desc)}</p>
             </div>
           `).join('')}
         </div>
 
-        <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 16px 0 8px 0;">💡 8086 Bayrak Altın Kuralları</h3>
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 16px 0 8px 0;">💡 8086 Bayrak Altın Kuralları</h3>
         <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 14px;">
           <ul style="font-size: 13px; list-style: disc; padding-left: 20px; line-height: 1.6; color: #92400e;">
             ${FLAGS_GUIDE.goldenRules.map(rule => `<li>${this.escapeHtml(rule)}</li>`).join('')}
@@ -461,6 +461,32 @@ export class InstructionDoc {
   private getCategoryLabel(catId: string): string {
     const cat = CATEGORIES.find(c => c.id === catId);
     return cat ? cat.label : catId;
+  }
+
+  private formatExampleCode(str: string): string {
+    return str
+      .split('\n')
+      .map(line => {
+        const commentIdx = line.indexOf(';');
+        const codePart = commentIdx >= 0 ? line.slice(0, commentIdx) : line;
+        const commentPart = commentIdx >= 0 ? line.slice(commentIdx) : '';
+
+        const match = codePart.match(/^(\s*)([A-Za-z0-9_.:]+)(.*)$/);
+        let formattedCode = '';
+        if (match) {
+          const [, leadingWs, firstToken, rest] = match;
+          formattedCode = `${this.escapeHtml(leadingWs)}<span class="ex-opcode" style="color: #38bdf8; font-weight: 700;">${this.escapeHtml(firstToken)}</span><span class="ex-operand" style="color: #f8fafc;">${this.escapeHtml(rest)}</span>`;
+        } else {
+          formattedCode = `<span class="ex-operand" style="color: #f8fafc;">${this.escapeHtml(codePart)}</span>`;
+        }
+
+        const formattedComment = commentPart
+          ? `<span class="ex-comment" style="color: #86efac;">${this.escapeHtml(commentPart)}</span>`
+          : '';
+
+        return formattedCode + formattedComment;
+      })
+      .join('\n');
   }
 
   private escapeHtml(str: string): string {

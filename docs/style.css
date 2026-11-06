@@ -1768,14 +1768,60 @@ body {
   color: #ffffff;
 }
 
-.docs-code-pre {
-  padding: 10px 14px;
+.docs-code-pre,
+.docs-example-code {
+  padding: 12px 14px;
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 18px;
-  color: #38bdf8;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: #f8fafc;
+  background: #0f172a;
   overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.docs-example-code code {
+  font-family: inherit;
+  font-size: inherit;
+  color: #f8fafc;
+  background: transparent;
+}
+
+.docs-example-code .ex-opcode {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.docs-example-code .ex-operand {
+  color: #f8fafc;
+}
+
+.docs-example-code .ex-comment {
+  color: #86efac;
+}
+
+.btn-sec-nav-pill {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-sec-nav-pill:hover:not(.active) {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.btn-sec-nav-pill.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
 }
 
 .docs-var-note {

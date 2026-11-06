@@ -694,6 +694,13 @@ export class Executor {
         currIp = (currIp + signedRel) & 0xFFFF;
         break;
       }
+      case 0xEA: { // JMP FAR ptr16:16 (e.g. 0xFFFF0 Reset Vector -> F000:E05B)
+        const targetIp = fetchWord();
+        const targetCs = fetchWord();
+        this.regs.cs = targetCs;
+        currIp = targetIp;
+        break;
+      }
 
       // --- Jcc (70..7F) ---
       case 0x70: { // JO
@@ -1263,6 +1270,17 @@ export class Executor {
         currIp = (currIp + signedRel) & 0xFFFF;
         break;
       }
+      // CALL far ptr16:16
+      case 0x9A: {
+        const targetIp = fetchWord();
+        const targetCs = fetchWord();
+        this.callDepth++;
+        this.push(this.regs.cs);
+        this.push(currIp);
+        this.regs.cs = targetCs;
+        currIp = targetIp;
+        break;
+      }
       // RET near
       case 0xC3: {
         if (this.callDepth > 0) {
@@ -1288,6 +1306,22 @@ export class Executor {
           currIp = initialIp;
           consoleText = '[Program RET komutuyla başarıyla sonlandı]';
         }
+        break;
+      }
+      // RETF (Far Return: POP IP, POP CS)
+      case 0xCB: {
+        if (this.callDepth > 0) this.callDepth--;
+        currIp = this.pop();
+        this.regs.cs = this.pop();
+        break;
+      }
+      // RETF imm16
+      case 0xCA: {
+        const imm = fetchWord();
+        if (this.callDepth > 0) this.callDepth--;
+        currIp = this.pop();
+        this.regs.cs = this.pop();
+        this.regs.sp = (this.regs.sp + imm) & 0xFFFF;
         break;
       }
       // IRET (Interrupt Return: POP IP, POP CS, POPF)
@@ -1923,28 +1957,36 @@ export class Executor {
           } else if (ah === 0x01) { // Get Disk Status
             this.flags.cf = false;
             this.regs.al = 0x00;
-          } else if (ah === 0x02) { // Read Sectors into Memory
-            // AL = count, CH = cylinder, CL = sector, DH = head, DL = drive, ES:BX = buffer
+          } else if (ah === 0x02) { // Read Sectors from Disk into 640 KB RAM (ES:BX)
             const count = this.regs.al;
             const destSeg = this.regs.es;
             const destOff = this.regs.bx;
-            // If reading sector 1 of track 0 head 0 (boot sector):
+            const cyl = this.regs.ch;
+            const head = this.regs.dh;
+            const sec = Math.max(1, this.regs.cl & 0x3F);
+            const baseLba = (cyl * 2 + head) * 18 + (sec - 1);
             for (let s = 0; s < count; s++) {
               const bufferBase = (destOff + s * 512) & 0xFFFF;
-              // If reading MBR/boot sector to another address, mirror 0000:7C00
-              if (this.regs.ch === 0 && (this.regs.cl & 0x3F) === 1 && this.regs.dh === 0) {
-                for (let b = 0; b < 512; b++) {
-                  const val = this.mem.readByte(0, 0x7C00 + b, false);
-                  this.mem.writeByte(destSeg, (bufferBase + b) & 0xFFFF, val, true);
-                }
-              }
+              this.io.readSectorToRam(this.mem, baseLba + s, destSeg, bufferBase);
             }
             this.flags.cf = false;
             this.regs.ah = 0x00; // Success status
-            consoleText = `[INT 13h AH=02h: ${count} Sektör Okundu -> ${destSeg.toString(16).padStart(4,'0')}:${destOff.toString(16).padStart(4,'0')}]`;
-          } else if (ah === 0x03) { // Write Sectors
+            consoleText = `[INT 13h AH=02h: ${count} Sektör Diskten 640 KB RAM'e Okundu -> ${destSeg.toString(16).padStart(4,'0')}:${destOff.toString(16).padStart(4,'0')}]`;
+          } else if (ah === 0x03) { // Write Sectors from 640 KB RAM (ES:BX) to Disk
+            const count = this.regs.al;
+            const srcSeg = this.regs.es;
+            const srcOff = this.regs.bx;
+            const cyl = this.regs.ch;
+            const head = this.regs.dh;
+            const sec = Math.max(1, this.regs.cl & 0x3F);
+            const baseLba = (cyl * 2 + head) * 18 + (sec - 1);
+            for (let s = 0; s < count; s++) {
+              const bufferBase = (srcOff + s * 512) & 0xFFFF;
+              this.io.writeSectorFromRam(this.mem, baseLba + s, srcSeg, bufferBase);
+            }
             this.flags.cf = false;
             this.regs.ah = 0x00;
+            consoleText = `[INT 13h AH=03h: ${count} Sektör 640 KB RAM'den Diske Yazıldı <- ${srcSeg.toString(16).padStart(4,'0')}:${srcOff.toString(16).padStart(4,'0')}]`;
           } else if (ah === 0x08) { // Get Drive Parameters
             // DL = 1 drive, DH = 1 (2 heads, max head idx 1), CH = 79, CL = 18 (1.44M standard floppy)
             this.regs.dl = 1;

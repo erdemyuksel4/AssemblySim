@@ -230,6 +230,11 @@ describe('Bare-Metal 8086 Computer & Multi-File Memory Tests', () => {
     // Cells beyond 0xFFFFF must display '--' rather than wrapped 00000h IVT data
     expect(div.innerHTML).toContain('--');
     expect(div.innerHTML).toContain('1 MB RAM Dışı - Veri Yok');
+
+    // VGA (A0000) and VRAM buttons must be unified as 'VGA VRAM (A0000)'
+    expect(div.innerHTML).toContain('VGA VRAM (A0000)');
+    expect(div.innerHTML).not.toContain('data-addr="B8000"');
+    expect(getMemoryRegionLabel(0xA0000)).toContain('VGA VRAM');
   });
 
   it('executes authentic IBM PC ROM BIOS interrupts (INT 10h, 11h, 12h, 13h, 1Ah)', () => {
@@ -579,5 +584,164 @@ describe('Bare-Metal 8086 Computer & Multi-File Memory Tests', () => {
     expect(cpu.halted).toBe(true);
     // Mode should be back to 03h
     expect(cpu.mem.data[0x0449]).toBe(0x03);
+  });
+
+  it('executes full Power-On Reset from FFFF0h Reset Vector through ROM BIOS POST (F000:E05B) and C0000h/E0000h ROMs to 0000:7C00h', () => {
+    const cpu = new CPU();
+    cpu.powerOnReset();
+
+    // 1. Verify initial CPU state at FFFF:0000h -> Physical 0xFFFF0
+    expect(cpu.regs.cs).toBe(0xFFFF);
+    expect(cpu.regs.ip).toBe(0x0000);
+    expect(cpu.mem.toPhys(cpu.regs.cs, cpu.regs.ip)).toBe(0xFFFF0);
+
+    // 2. Verify C0000h VGA Option ROM (55h AAh signature) & E0000h Expansion ROM exist
+    expect(cpu.mem.data[0xC0000]).toBe(0x55);
+    expect(cpu.mem.data[0xC0001]).toBe(0xAA);
+    expect(String.fromCharCode(cpu.mem.data[0xE0000], cpu.mem.data[0xE0001], cpu.mem.data[0xE0002])).toBe('IBM');
+
+    // Load a tiny bootloader at 0000:7C00h in 640 KB RAM: MOV AX, 1981h; HLT
+    const bootRes = Assembler.assemble(`
+      ORG 7C00H
+      MOV AX, 1981H
+      HLT
+    `);
+    cpu.mem.loadBytes(0x0000, 0x7C00, bootRes.bytes, 'code');
+
+    // 3. Step 1: Execute Reset Vector at FFFF0h (JMP FAR F000:E05B)
+    cpu.step();
+    expect(cpu.regs.cs).toBe(0xF000);
+    expect(cpu.regs.ip).toBe(0xE05B);
+
+    // 4. Run remaining ROM BIOS POST instructions until bootloader at 0000:7C00h halts
+    let steps = 0;
+    while (!cpu.halted && steps < 30) {
+      cpu.step();
+      steps++;
+    }
+
+    expect(cpu.halted).toBe(true);
+    expect(cpu.regs.cs).toBe(0x0000);
+    expect(cpu.regs.ax).toBe(0x1981);
+  });
+
+  it('verifies Keyboard, Disk, and Sound Card modules communicate with programs by reading/writing 640 KB RAM (00500h-9FFFFh) and BDA (00400h)', async () => {
+    const cpu = new CPU();
+    cpu.reset();
+
+    // --- 1. KEYBOARD MODULE (BDA 00400h circular buffer + 640 KB RAM 00500h) ---
+    // Initially BDA head (041Ah) == tail (041Ch) == 0x001E
+    expect(cpu.mem.readWord(0, 0x041A)).toBe(0x001E);
+    expect(cpu.mem.readWord(0, 0x041C)).toBe(0x001E);
+
+    cpu.feedInput('A');
+    // Tail advances to 0x0020 and ASCII 'A' (0x41) is stored at 0x041E in BDA
+    expect(cpu.mem.readWord(0, 0x041C)).toBe(0x0020);
+    expect(cpu.mem.data[0x041E]).toBe(0x41);
+
+    // Reading via Port 60h consumes key and advances head to 0x0020
+    expect(cpu.io.readByte(0x60)).toBe(0x41);
+    expect(cpu.mem.readWord(0, 0x041A)).toBe(0x0020);
+
+    // --- 2. DISK MODULE (INT 13h AH=03h Write & AH=02h Read via 640 KB RAM) ---
+    // Write signature bytes into 640 KB RAM at 0000:0500h
+    cpu.mem.writeByte(0x0000, 0x0500, 0xDE);
+    cpu.mem.writeByte(0x0000, 0x0501, 0xAD);
+    cpu.mem.writeByte(0x0000, 0x0502, 0xBE);
+    cpu.mem.writeByte(0x0000, 0x0503, 0xEF);
+
+    const diskCode = `
+      ORG 100H
+      ; Write 1 sector from 0000:0500h to Track 0, Head 0, Sector 2
+      XOR AX, AX
+      MOV ES, AX
+      MOV BX, 0500H
+      MOV AH, 03H
+      MOV AL, 01H
+      MOV CH, 00H
+      MOV CL, 02H
+      MOV DH, 00H
+      MOV DL, 00H
+      INT 13H
+
+      ; Read 1 sector from Track 0, Head 0, Sector 2 into 0000:0800h in 640 KB RAM
+      MOV BX, 0800H
+      MOV AH, 02H
+      MOV AL, 01H
+      INT 13H
+      HLT
+    `;
+    const diskRes = Assembler.assemble(diskCode);
+    expect(diskRes.errors).toHaveLength(0);
+    cpu.mem.loadBytes(0, 0x0100, diskRes.bytes, 'code');
+    cpu.regs.ip = 0x0100;
+    while (!cpu.halted) cpu.step();
+
+    // Verify Disk Controller copied sector into 0000:0800h in 640 KB RAM
+    expect(cpu.mem.data[0x0800]).toBe(0xDE);
+    expect(cpu.mem.data[0x0801]).toBe(0xAD);
+    expect(cpu.mem.data[0x0802]).toBe(0xBE);
+    expect(cpu.mem.data[0x0803]).toBe(0xEF);
+
+    // --- 3. SOUND CARD MODULE (8237 DMA + Sound Blaster DSP reading PCM from 640 KB RAM at 00600h) ---
+    const soundCode = `
+      ORG 100H
+      ; 1. Reset Sound Blaster DSP (Port 226h <- 1, then 0)
+      MOV DX, 0226H
+      MOV AL, 1
+      OUT DX, AL
+      MOV AL, 0
+      OUT DX, AL
+
+      ; 2. Program 8237 DMA Channel 1 to point to 0x00600 in 640 KB RAM
+      OUT 0CH, AL       ; Clear flip-flop
+      MOV AL, 00H
+      OUT 02H, AL       ; Base Addr Low = 00h
+      MOV AL, 06H
+      OUT 02H, AL       ; Base Addr High = 06h (0600h)
+      MOV AL, 00H
+      OUT 83H, AL       ; Page 00h (physical 00600h)
+
+      ; 3. Enable DSP Speaker (0xD1) and start 8-bit DMA Playback (0x14, len=3 -> 4 bytes)
+      MOV DX, 022CH
+      MOV AL, 0D1H
+      OUT DX, AL
+      MOV AL, 14H
+      OUT DX, AL
+      MOV AL, 03H       ; Low byte of (length - 1)
+      OUT DX, AL
+      MOV AL, 00H       ; High byte of (length - 1)
+      OUT DX, AL
+      HLT
+    `;
+    const soundRes = Assembler.assemble(soundCode);
+    expect(soundRes.errors).toHaveLength(0);
+    cpu.loadCOM(soundRes.bytes, 0x0100);
+
+    // Place 4 audio PCM samples in 640 KB RAM at physical 0x00600
+    const pcmSamples = [0x80, 0xC0, 0xFF, 0x40];
+    for (let i = 0; i < pcmSamples.length; i++) {
+      cpu.mem.writeByte(0x0000, 0x0600 + i, pcmSamples[i]);
+    }
+
+    while (!cpu.halted) cpu.step();
+
+    expect(cpu.io.speakerEnabled).toBe(true);
+    expect(Array.from(cpu.io.lastAudioSamples)).toEqual([0x80, 0xC0, 0xFF, 0x40]);
+
+    // --- 4. VGA MODULE (Periodic scanVramFrame reading A0000h VRAM) ---
+    const { ConsoleView } = await import('../src/ui/console.js');
+    const mockContainer = {
+      innerHTML: '',
+      querySelector: () => null,
+      querySelectorAll: () => [],
+      addEventListener: () => {}
+    } as any;
+    const consoleView = new ConsoleView(mockContainer, { memory: cpu.mem });
+    cpu.mem.data[0xA0000 + 320 * 10 + 20] = 0x28; // Write color byte into A0000h VRAM
+    const updated = consoleView.scanVramFrame();
+    expect(updated).toBe(true);
+    expect(consoleView.videoMode).toBe(0x13);
+    consoleView.destroy();
   });
 });

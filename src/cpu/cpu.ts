@@ -42,7 +42,7 @@ export class CPU {
     this.mem = new Memory();
     this.regs = new Registers();
     this.flags = new Flags();
-    this.io = new IOPortManager();
+    this.io = new IOPortManager(this.mem);
     this.executor = new Executor(this.mem, this.regs, this.flags, this.io);
     this.reset();
   }
@@ -61,6 +61,17 @@ export class CPU {
     this.lastError = undefined;
     this.consoleBuffer = '';
     this.history = [];
+  }
+
+  /**
+   * Simulates hardware Power-On Reset:
+   * Motherboard controller initializes CPU at CS=FFFFh, IP=0000h (physical 0xFFFF0 Reset Vector),
+   * which executes JMP FAR F000:E05B into ROM BIOS POST and boots via INT 19h.
+   */
+  powerOnReset(): void {
+    this.reset();
+    this.regs.cs = 0xFFFF;
+    this.regs.ip = 0x0000;
   }
 
   // Load binary at CS:origin (default origin 0x0000)
@@ -90,9 +101,6 @@ export class CPU {
     const oldFlags = this.flags.clone();
     this.mem.clearAccessLogs();
 
-    // Track memory writes by intercepting physically
-    const writesBefore = new Map<number, number>();
-    // We can record old values during write, but memory.lastWrites tells us which phys addresses were written
     const ipBefore = this.regs.ip;
 
     // Execute step
