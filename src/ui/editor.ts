@@ -55,6 +55,7 @@ export class Editor {
           <textarea class="editor-textarea" id="editor-textarea" wrap="off" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         </div>
       </div>
+      <div class="editor-height-resizer" id="editor-height-resizer" title="Editör yüksekliğini ayarlamak için sürükleyin (çift tık: sıfırla)" role="separator" aria-orientation="horizontal"><div class="editor-height-resizer-handle"></div></div>
       <div class="errors-box" id="editor-errors-box">
         <div class="errors-header">Errors:</div>
         <div class="errors-content" id="errors-content">No errors.</div>
@@ -67,6 +68,54 @@ export class Editor {
     this.errorsBox = this.container.querySelector('#editor-errors-box') as HTMLElement;
 
     this.attachEvents();
+    this.setupHeightResizer();
+  }
+
+  private static readonly HEIGHT_KEY = 'asm-editor-height';
+
+  private setupHeightResizer(): void {
+    const card = this.container.querySelector('.editor-card') as HTMLElement | null;
+    const resizer = this.container.querySelector('#editor-height-resizer') as HTMLElement | null;
+    if (!card || !resizer) return;
+
+    const MIN = 120;
+    const clamp = (h: number) => Math.max(MIN, Math.min(h, Math.max(MIN, window.innerHeight * 0.9)));
+
+    try {
+      const saved = Number(localStorage.getItem(Editor.HEIGHT_KEY));
+      if (saved > 0) card.style.height = `${clamp(saved)}px`;
+    } catch { /* ignore storage errors */ }
+
+    resizer.addEventListener('pointerdown', (e: PointerEvent) => {
+      e.preventDefault();
+      const startY = e.clientY;
+      const startH = card.getBoundingClientRect().height;
+      resizer.setPointerCapture(e.pointerId);
+      resizer.classList.add('dragging');
+      document.body.style.cursor = 'row-resize';
+
+      const onMove = (ev: PointerEvent) => {
+        card.style.height = `${clamp(startH + ev.clientY - startY)}px`;
+        this.syncScroll();
+      };
+      const onUp = (ev: PointerEvent) => {
+        if (resizer.hasPointerCapture(ev.pointerId)) resizer.releasePointerCapture(ev.pointerId);
+        resizer.classList.remove('dragging');
+        document.body.style.cursor = '';
+        resizer.removeEventListener('pointermove', onMove);
+        resizer.removeEventListener('pointerup', onUp);
+        resizer.removeEventListener('pointercancel', onUp);
+        try { localStorage.setItem(Editor.HEIGHT_KEY, String(Math.round(card.getBoundingClientRect().height))); } catch { /* ignore */ }
+      };
+      resizer.addEventListener('pointermove', onMove);
+      resizer.addEventListener('pointerup', onUp);
+      resizer.addEventListener('pointercancel', onUp);
+    });
+
+    resizer.addEventListener('dblclick', () => {
+      card.style.height = '';
+      try { localStorage.removeItem(Editor.HEIGHT_KEY); } catch { /* ignore */ }
+    });
   }
 
   private syncScroll(): void {

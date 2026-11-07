@@ -429,6 +429,12 @@ body {
   color: #1e293b;
 }
 
+/* Editor height resizer (drag handle below the editor) */
+.editor-height-resizer { height: 8px; cursor: row-resize; display: flex; align-items: center; justify-content: center; user-select: none; touch-action: none; border-radius: 0 0 6px 6px; transition: background 0.15s ease; }
+.editor-height-resizer-handle { width: 36px; height: 3px; border-radius: 2px; background: #94a3b8; transition: background 0.15s ease; }
+.editor-height-resizer:hover, .editor-height-resizer.dragging { background: #3b82f6; }
+.editor-height-resizer:hover .editor-height-resizer-handle, .editor-height-resizer.dragging .editor-height-resizer-handle { background: #ffffff; }
+
 /* Editor Card */
 .editor-card {
   background: var(--bg-card);
