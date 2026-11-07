@@ -449,7 +449,7 @@ body {
 }
 
 .editor-gutter {
-  width: 48px;
+  width: 62px;
   background-color: #f8fafc;
   border-right: 1px solid var(--border-color);
   user-select: none;
@@ -469,7 +469,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 6px;
+  padding-right: 18px;
   position: relative;
   cursor: pointer;
 }
@@ -15634,3 +15634,33 @@ body {
 .micro-task-icon {
   font-size: 15px;
 }
+
+/* ── Code folding ── */
+.gutter-fold {
+  position: absolute;
+  right: 3px;
+  width: 13px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+  cursor: pointer;
+}
+.editor-gutter:hover .gutter-fold,
+.gutter-fold.folded { opacity: 1; }
+.gutter-fold:hover { color: var(--text-primary); }
+.gutter-fold.folded { color: #2563eb; }
+.fold-placeholder {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  line-height: 16px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.3);
+}
+[data-theme="dark"] .fold-placeholder { color: #93c5fd; background: rgba(147, 197, 253, 0.12); border-color: rgba(147, 197, 253, 0.3); }
+[data-theme="dark"] .gutter-fold.folded { color: #93c5fd; }
