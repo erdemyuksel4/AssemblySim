@@ -6371,7 +6371,7 @@ function deleteLine(val, start, end) {
 }
 
 // src/ui/editor.ts
-var Editor = class {
+var Editor = class _Editor {
   container;
   textarea;
   highlightLayer;
@@ -6403,6 +6403,7 @@ var Editor = class {
           <textarea class="editor-textarea" id="editor-textarea" wrap="off" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         </div>
       </div>
+      <div class="editor-height-resizer" id="editor-height-resizer" title="Edit\xF6r y\xFCksekli\u011Fini ayarlamak i\xE7in s\xFCr\xFCkleyin (\xE7ift t\u0131k: s\u0131f\u0131rla)" role="separator" aria-orientation="horizontal"><div class="editor-height-resizer-handle"></div></div>
       <div class="errors-box" id="editor-errors-box">
         <div class="errors-header">Errors:</div>
         <div class="errors-content" id="errors-content">No errors.</div>
@@ -6413,6 +6414,54 @@ var Editor = class {
     this.textarea = this.container.querySelector("#editor-textarea");
     this.errorsBox = this.container.querySelector("#editor-errors-box");
     this.attachEvents();
+    this.setupHeightResizer();
+  }
+  static HEIGHT_KEY = "asm-editor-height";
+  setupHeightResizer() {
+    const card = this.container.querySelector(".editor-card");
+    const resizer = this.container.querySelector("#editor-height-resizer");
+    if (!card || !resizer) return;
+    const MIN = 120;
+    const clamp = (h) => Math.max(MIN, Math.min(h, Math.max(MIN, window.innerHeight * 0.9)));
+    try {
+      const saved = Number(localStorage.getItem(_Editor.HEIGHT_KEY));
+      if (saved > 0) card.style.height = `${clamp(saved)}px`;
+    } catch {
+    }
+    resizer.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      const startY = e.clientY;
+      const startH = card.getBoundingClientRect().height;
+      resizer.setPointerCapture(e.pointerId);
+      resizer.classList.add("dragging");
+      document.body.style.cursor = "row-resize";
+      const onMove = (ev) => {
+        card.style.height = `${clamp(startH + ev.clientY - startY)}px`;
+        this.syncScroll();
+      };
+      const onUp = (ev) => {
+        if (resizer.hasPointerCapture(ev.pointerId)) resizer.releasePointerCapture(ev.pointerId);
+        resizer.classList.remove("dragging");
+        document.body.style.cursor = "";
+        resizer.removeEventListener("pointermove", onMove);
+        resizer.removeEventListener("pointerup", onUp);
+        resizer.removeEventListener("pointercancel", onUp);
+        try {
+          localStorage.setItem(_Editor.HEIGHT_KEY, String(Math.round(card.getBoundingClientRect().height)));
+        } catch {
+        }
+      };
+      resizer.addEventListener("pointermove", onMove);
+      resizer.addEventListener("pointerup", onUp);
+      resizer.addEventListener("pointercancel", onUp);
+    });
+    resizer.addEventListener("dblclick", () => {
+      card.style.height = "";
+      try {
+        localStorage.removeItem(_Editor.HEIGHT_KEY);
+      } catch {
+      }
+    });
   }
   syncScroll() {
     const top = this.textarea.scrollTop;
