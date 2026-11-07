@@ -431,7 +431,7 @@ export class ClozeView {
                  data-qid="${q.id}"
                  data-bid="${blank.id}"
                  value="${this.escapeHtml(userVal)}"
-                 placeholder="${this.escapeHtml(blank.hint || '____')}"
+                 placeholder=""
                  style="width: ${inputWidth}ch;"
                  spellcheck="false"
                  autocomplete="off" />
