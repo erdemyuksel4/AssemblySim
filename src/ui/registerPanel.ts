@@ -104,6 +104,8 @@ export const REG_INFO: Record<string, { title: string; desc: string }> = {
 export class RegisterPanel {
   private container: HTMLElement;
   private currentFormat: NumberFormat = 'hex';
+  private lastRegs?: Registers;
+  private lastFlags?: Flags;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -111,6 +113,9 @@ export class RegisterPanel {
 
   setFormat(fmt: NumberFormat): void {
     this.currentFormat = fmt;
+    if (this.lastRegs && this.lastFlags) {
+      this.update(this.lastRegs, this.lastFlags);
+    }
   }
 
   getFormat(): NumberFormat {
@@ -118,6 +123,9 @@ export class RegisterPanel {
   }
 
   update(regs: Registers, flags: Flags, changedRegs: string[] = [], _changedFlags: string[] = []): void {
+    this.lastRegs = regs;
+    this.lastFlags = flags;
+
     const format8 = (v: number): string => {
       if (this.currentFormat === 'dec') return v.toString(10);
       if (this.currentFormat === 'bin') return v.toString(2).padStart(8, '0');

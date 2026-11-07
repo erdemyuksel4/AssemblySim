@@ -111,8 +111,8 @@ body {
 /* Main Layout Grid - Centered & Balanced */
 .main-layout {
   display: grid;
-  grid-template-columns: 1.14fr 0.86fr;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: 12px;
   width: 100%;
   align-items: start;
 }
@@ -121,6 +121,8 @@ body {
 .editor-section {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .editor-header-bar {
@@ -128,10 +130,10 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 6px;
-  flex-wrap: nowrap;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   background: var(--bg-card);
-  padding: 4px 10px;
+  padding: 4px 8px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -141,16 +143,17 @@ body {
 .editor-header-left {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
 }
 
 .editor-toolbar-right {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;
-  flex-shrink: 0;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .toolbar-group-divider {
@@ -209,8 +212,14 @@ body {
 }
 
 .bin-font {
-  font-size: 10px !important;
+  font-size: 9.5px !important;
   letter-spacing: -0.5px;
+}
+
+.table-row-split.bin-font {
+  grid-template-columns: auto 1fr 1fr;
+  gap: 4px;
+  padding: 4px 6px;
 }
 
 /* Compile and Control Buttons with Click Feedback */
@@ -428,8 +437,8 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   position: relative;
   display: flex;
-  height: 420px;
-  min-height: 280px;
+  height: 300px;
+  min-height: 200px;
   overflow: hidden;
 }
 
@@ -705,16 +714,18 @@ body {
 .cpu-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
   align-self: start;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* Top 3 Box Grid: Reg | Segments | Pointers */
 .top-tables-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .black-card {
@@ -747,10 +758,10 @@ body {
 .table-row-item {
   display: flex;
   justify-content: space-between;
-  padding: 7px 12px;
+  padding: 4px 8px;
   border-bottom: 1px solid var(--border-color);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12px;
   transition: background-color 0.2s;
 }
 
@@ -761,10 +772,10 @@ body {
 .table-row-split {
   display: grid;
   grid-template-columns: 1.2fr 1fr 1fr;
-  padding: 7px 12px;
+  padding: 4px 8px;
   border-bottom: 1px solid var(--border-color);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12px;
   text-align: center;
   transition: background-color 0.2s;
 }
@@ -828,20 +839,21 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border-dark);
   border-radius: 6px;
-  padding: 16px;
+  padding: 10px 12px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  min-width: 0;
 }
 
 .memory-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 
 .memory-title {
   font-family: var(--font-brand);
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -896,8 +908,8 @@ body {
 .memory-quick-jumps {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 5px;
+  margin-bottom: 8px;
 }
 
 .mem-jump-btn {
@@ -905,9 +917,9 @@ body {
   border: 1px solid var(--border-color, #cbd5e1);
   border-radius: 5px;
   font-family: var(--font-mono, monospace);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
-  padding: 5px 10px;
+  padding: 3px 7px;
   cursor: pointer;
   color: var(--text-secondary, #475569);
   transition: all 0.15s ease;
@@ -930,13 +942,13 @@ body {
 .memory-region-badge {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 6px;
+  font-size: 11px;
   background: #f1f5f9;
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 5px;
-  padding: 6px 12px;
-  margin-bottom: 12px;
+  padding: 4px 10px;
+  margin-bottom: 8px;
   color: var(--text-secondary);
 }
 
@@ -972,26 +984,26 @@ body {
 .memory-grid-box {
   border: 1px solid var(--border-color);
   background-color: var(--bg-primary, #ffffff);
-  padding: 12px 14px;
+  padding: 8px 10px;
   border-radius: 6px;
   font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 22px;
+  font-size: 11.5px;
+  line-height: 19px;
   overflow-x: auto;
 }
 
 .mem-row-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 4px;
+  gap: 6px;
+  margin-bottom: 2px;
 }
 
 .mem-row-addr {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--text-muted);
-  width: 48px;
+  width: 42px;
   text-align: right;
   flex-shrink: 0;
   user-select: none;
@@ -999,18 +1011,19 @@ body {
 
 .mem-row {
   display: grid;
-  grid-template-columns: repeat(16, 1fr);
-  gap: 5px;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 2px;
   flex-grow: 1;
+  min-width: 0;
   text-align: center;
 }
 
 .mem-row-ascii {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
-  letter-spacing: 2px;
-  padding-left: 12px;
+  letter-spacing: 0.5px;
+  padding-left: 6px;
   border-left: 1px solid var(--border-color, #e2e8f0);
   flex-shrink: 0;
   user-select: none;
@@ -1019,8 +1032,7 @@ body {
 
 .mem-byte-cell {
   position: relative;
-  padding: 2px 4px;
-  border-radius: 3px;
+  padding: 1px 1px;
   border-radius: 2px;
   color: var(--text-secondary);
 }
@@ -1876,14 +1888,14 @@ body {
    TERMINAL & I/O CONSOLE STYLES
    ========================================================================== */
 .console-section-wrapper {
-  margin-top: 14px;
-  margin-bottom: 24px;
+  margin-top: 8px;
+  margin-bottom: 8px;
   background: #0f172a;
   border: 2px solid #334155;
   border-radius: 10px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
   overflow: hidden;
-  min-height: 560px;
+  min-height: 360px;
   height: auto;
   display: flex;
   flex-direction: column;
@@ -1893,7 +1905,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 520px;
+  min-height: 350px;
   background: #111827;
 }
 
@@ -1919,12 +1931,12 @@ body {
 .console-wrapper {
   display: flex;
   flex-direction: column;
-  height: 250px;
+  height: 175px;
   background: #0f172a;
 }
 
 .monitor-console-wrapper {
-  height: 250px;
+  height: 175px;
 }
 
 .monitor-tab-group {
@@ -2014,7 +2026,7 @@ body {
 .crt-screen-wrapper {
   display: flex;
   flex: 1;
-  min-height: 250px;
+  min-height: 175px;
   background: #1e293b;
   padding: 6px 10px;
   position: relative;
@@ -2037,7 +2049,7 @@ body {
 .crt-screen-box {
   flex: 1;
   height: 100%;
-  min-height: 238px;
+  min-height: 162px;
   background: #000000;
   border: 2px solid #0f172a;
   border-radius: 10px;
@@ -2780,7 +2792,7 @@ body {
   width: 100%;
   max-width: 100%;
   margin: 0;
-  padding: 8px 16px 16px 16px;
+  padding: 6px 12px 10px 12px;
   height: calc(100vh - var(--topbar-height));
   max-height: calc(100vh - var(--topbar-height));
   overflow-y: auto;
@@ -2791,7 +2803,7 @@ body {
 }
 
 .workspace-sidebar {
-  width: 270px;
+  width: 220px;
   background: var(--bg-card);
   border-right: 1px solid var(--border-color);
   border-left: none;
@@ -6953,9 +6965,9 @@ body {
 }
 
 .reference-doc-container {
-  max-width: 1320px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 24px 28px 90px 28px;
+  padding: 8px 12px 20px 12px;
   font-family: var(--font-sans);
 }
 
@@ -7113,8 +7125,8 @@ body {
 }
 
 .reference-doc-container .docs-master-detail {
-  min-height: 600px;
-  height: 680px;
+  min-height: 440px;
+  height: calc(100vh - 185px);
 }
 
 /* ==========================================================================

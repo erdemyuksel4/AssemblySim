@@ -7089,16 +7089,23 @@ var REG_INFO = {
 var RegisterPanel = class {
   container;
   currentFormat = "hex";
+  lastRegs;
+  lastFlags;
   constructor(container) {
     this.container = container;
   }
   setFormat(fmt) {
     this.currentFormat = fmt;
+    if (this.lastRegs && this.lastFlags) {
+      this.update(this.lastRegs, this.lastFlags);
+    }
   }
   getFormat() {
     return this.currentFormat;
   }
   update(regs, flags, changedRegs = [], _changedFlags = []) {
+    this.lastRegs = regs;
+    this.lastFlags = flags;
     const format8 = (v) => {
       if (this.currentFormat === "dec") return v.toString(10);
       if (this.currentFormat === "bin") return v.toString(2).padStart(8, "0");
@@ -7247,10 +7254,22 @@ var MemoryView = class {
   userPinned = false;
   rowCount = 8;
   // 8 rows * 16 bytes = 128 bytes visible at a time
+  currentFormat = "hex";
+  lastMem;
+  lastRegs;
   onManualAddressChange;
   constructor(container, onManualAddressChange) {
     this.container = container;
     this.onManualAddressChange = onManualAddressChange;
+  }
+  setFormat(fmt) {
+    this.currentFormat = fmt;
+    if (this.lastMem && this.lastRegs) {
+      this.render(this.lastMem, this.lastRegs);
+    }
+  }
+  getFormat() {
+    return this.currentFormat;
   }
   jumpTo(seg, off) {
     const phys = ((seg & 65535) << 4) + (off & 65535) & 1048575;
@@ -7284,6 +7303,8 @@ var MemoryView = class {
     return this.userPinned;
   }
   render(mem, regs) {
+    this.lastMem = mem;
+    this.lastRegs = regs;
     const ipPhys = mem.toPhys(regs.cs, regs.ip);
     const regionName = getMemoryRegionLabel(this.currentBasePhys);
     let rowsHtml = "";
@@ -7301,6 +7322,7 @@ var MemoryView = class {
         }
         const val = mem.data[cellPhys];
         const hexVal = val.toString(16).toUpperCase().padStart(2, "0");
+        const displayVal = this.currentFormat === "dec" ? val.toString(10).padStart(3, "0") : this.currentFormat === "bin" ? val.toString(2).padStart(8, "0") : hexVal;
         const charStr = val >= 32 && val <= 126 ? String.fromCharCode(val) : ".";
         let cellClass = "mem-byte-cell";
         if (cellPhys === ipPhys) {
@@ -7313,13 +7335,13 @@ var MemoryView = class {
           else if (type === "data") cellClass += " is-data";
         }
         const safeChar = charStr === "<" ? "&lt;" : charStr === ">" ? "&gt;" : charStr === "&" ? "&amp;" : charStr;
-        cellsHtml += `<span class="${cellClass}" title="0x${cellPhys.toString(16).toUpperCase()} = 0x${hexVal} ('${safeChar}')">${hexVal}</span>`;
+        cellsHtml += `<span class="${cellClass}" title="0x${cellPhys.toString(16).toUpperCase()} = 0x${hexVal} (${val}) '${safeChar}'">${displayVal}</span>`;
         asciiHtml += safeChar;
       }
       rowsHtml += `
         <div class="mem-row-wrapper">
           <span class="mem-row-addr">${rowHex}:</span>
-          <div class="mem-row">${cellsHtml}</div>
+          <div class="mem-row ${this.currentFormat === "bin" ? "bin-font" : ""}">${cellsHtml}</div>
           <span class="mem-row-ascii">${asciiHtml}</span>
         </div>
       `;
@@ -7749,7 +7771,12 @@ var ConsoleView = class {
       this.refreshCrtScreen();
       if (input) {
         input.placeholder = hint || "Klavyeden tu\u015Fa bas\u0131n...";
-        input.focus();
+        const active = typeof document !== "undefined" ? document.activeElement : null;
+        const tag = active?.tagName;
+        const userIsTyping = !!active && active !== input && (tag === "TEXTAREA" || tag === "INPUT" || active.isContentEditable);
+        if (!userIsTyping) {
+          input.focus();
+        }
       }
     } else {
       if (input) {
@@ -7868,7 +7895,7 @@ var ConsoleView = class {
 
         <!-- CRT Ekran\u0131: DA\u0130MA VE B\u0130ZZAT <canvas id="myCanvas"> ELEMANIDIR -->
         <div class="crt-screen-wrapper" style="flex: 1 1 auto; min-height: 520px; position: relative; background: radial-gradient(circle at center, #0b1120 0%, #020617 100%); padding: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
-          <canvas id="myCanvas" class="crt-graphics-canvas" width="800" height="600" style="width: 100%; max-width: 840px; height: auto; aspect-ratio: 4/3; object-fit: contain; image-rendering: pixelated; display: block; background: #000000; border: 3px solid #38bdf8; border-radius: 8px; box-shadow: 0 0 30px rgba(56, 189, 248, 0.35);"></canvas>
+          <canvas id="myCanvas" class="crt-graphics-canvas" width="1600" height="1200" style="width: 100%; max-width: 840px; height: auto; aspect-ratio: 4/3; object-fit: contain; image-rendering: auto; display: block; background: #000000; border: 3px solid #38bdf8; border-radius: 8px; box-shadow: 0 0 30px rgba(56, 189, 248, 0.35);"></canvas>
         </div>
 
         <!-- Alt Klavye Girdi \xC7ubu\u011Fu -->
@@ -7909,8 +7936,10 @@ var ConsoleView = class {
     if (!ctx) return;
     const cellW = 10;
     const cellH = 24;
+    ctx.setTransform?.(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform?.(canvas.width / 800, 0, 0, canvas.height / 600, 0, 0);
     ctx.font = '16px "JetBrains Mono", Consolas, monospace';
     ctx.textBaseline = "top";
     const cursorCol = Math.min(79, this.memory.data[1104] || 0);
@@ -7973,6 +8002,7 @@ var ConsoleView = class {
         data[pixelOffset + 3] = 255;
       }
       this.offscreenCtx.putImageData(this.offscreenImgData, 0, 0);
+      ctx.setTransform?.(1, 0, 0, 1, 0, 0);
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(this.offscreenCanvas, 0, 0, canvas.width, canvas.height);
     } else {
@@ -36417,6 +36447,8 @@ var App = class {
           fmtButtons.forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
           this.registerPanel.setFormat(fmt);
+          this.memoryView.setFormat(fmt);
+          this.updateCpuViews();
         }
       });
     });
@@ -36466,7 +36498,9 @@ var App = class {
         }
         return;
       }
-      if (this.consoleView.isWaitingForInput()) {
+      const keyTarget = e.target;
+      const isEditableTarget = !!keyTarget && keyTarget.id !== "console-input-field" && (keyTarget.tagName === "TEXTAREA" || keyTarget.tagName === "INPUT" || keyTarget.isContentEditable);
+      if (this.consoleView.isWaitingForInput() && !isEditableTarget) {
         if (!e.ctrlKey && !e.altKey && !e.metaKey && e.key !== "F5" && e.key !== "F10" && e.key !== "F12") {
           e.preventDefault();
           const charToSend = e.key === "Enter" ? "\r" : e.key.length === 1 ? e.key : " ";

@@ -1,5 +1,6 @@
 import { Memory } from '../cpu/memory.js';
 import { Registers } from '../cpu/registers.js';
+import { NumberFormat } from './registerPanel.js';
 
 export function getMemoryRegionLabel(phys: number): string {
   if (phys < 0 || phys >= 0x100000) return '1 MB Sınırı Dışında (Bellek Yok)';
@@ -21,11 +22,25 @@ export class MemoryView {
   private defaultOriginPhys: number = 0x00500;
   private userPinned: boolean = false;
   private rowCount: number = 8; // 8 rows * 16 bytes = 128 bytes visible at a time
+  private currentFormat: NumberFormat = 'hex';
+  private lastMem?: Memory;
+  private lastRegs?: Registers;
   private onManualAddressChange?: (phys: number) => void;
 
   constructor(container: HTMLElement, onManualAddressChange?: (phys: number) => void) {
     this.container = container;
     this.onManualAddressChange = onManualAddressChange;
+  }
+
+  setFormat(fmt: NumberFormat): void {
+    this.currentFormat = fmt;
+    if (this.lastMem && this.lastRegs) {
+      this.render(this.lastMem, this.lastRegs);
+    }
+  }
+
+  getFormat(): NumberFormat {
+    return this.currentFormat;
   }
 
   jumpTo(seg: number, off: number): void {
@@ -67,6 +82,9 @@ export class MemoryView {
   }
 
   render(mem: Memory, regs: Registers): void {
+    this.lastMem = mem;
+    this.lastRegs = regs;
+
     const ipPhys = mem.toPhys(regs.cs, regs.ip);
     const regionName = getMemoryRegionLabel(this.currentBasePhys);
 
@@ -89,6 +107,11 @@ export class MemoryView {
 
         const val = mem.data[cellPhys];
         const hexVal = val.toString(16).toUpperCase().padStart(2, '0');
+        const displayVal = this.currentFormat === 'dec'
+          ? val.toString(10).padStart(3, '0')
+          : this.currentFormat === 'bin'
+            ? val.toString(2).padStart(8, '0')
+            : hexVal;
         const charStr = (val >= 32 && val <= 126) ? String.fromCharCode(val) : '.';
 
         let cellClass = 'mem-byte-cell';
@@ -103,14 +126,14 @@ export class MemoryView {
         }
 
         const safeChar = charStr === '<' ? '&lt;' : charStr === '>' ? '&gt;' : charStr === '&' ? '&amp;' : charStr;
-        cellsHtml += `<span class="${cellClass}" title="0x${cellPhys.toString(16).toUpperCase()} = 0x${hexVal} ('${safeChar}')">${hexVal}</span>`;
+        cellsHtml += `<span class="${cellClass}" title="0x${cellPhys.toString(16).toUpperCase()} = 0x${hexVal} (${val}) '${safeChar}'">${displayVal}</span>`;
         asciiHtml += safeChar;
       }
 
       rowsHtml += `
         <div class="mem-row-wrapper">
           <span class="mem-row-addr">${rowHex}:</span>
-          <div class="mem-row">${cellsHtml}</div>
+          <div class="mem-row ${this.currentFormat === 'bin' ? 'bin-font' : ''}">${cellsHtml}</div>
           <span class="mem-row-ascii">${asciiHtml}</span>
         </div>
       `;

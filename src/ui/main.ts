@@ -545,6 +545,8 @@ export class App {
           fmtButtons.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           this.registerPanel.setFormat(fmt);
+          this.memoryView.setFormat(fmt);
+          this.updateCpuViews();
         }
       });
     });
@@ -601,7 +603,10 @@ export class App {
       }
 
       // Direct keystroke feed when CPU is waiting for input (e.g. INT 16h / INT 21h)
-      if (this.consoleView.isWaitingForInput()) {
+      const keyTarget = e.target as HTMLElement | null;
+      const isEditableTarget = !!keyTarget && keyTarget.id !== 'console-input-field' &&
+        (keyTarget.tagName === 'TEXTAREA' || keyTarget.tagName === 'INPUT' || keyTarget.isContentEditable);
+      if (this.consoleView.isWaitingForInput() && !isEditableTarget) {
         if (!e.ctrlKey && !e.altKey && !e.metaKey && e.key !== 'F5' && e.key !== 'F10' && e.key !== 'F12') {
           e.preventDefault();
           const charToSend = e.key === 'Enter' ? '\r' : (e.key.length === 1 ? e.key : ' ');

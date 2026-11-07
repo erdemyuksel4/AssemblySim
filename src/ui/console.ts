@@ -390,7 +390,14 @@ export class ConsoleView {
       this.refreshCrtScreen();
       if (input) {
         input.placeholder = hint || 'Klavyeden tuşa basın...';
-        input.focus();
+        // Kullanıcı editörde (veya başka bir alanda) yazıyorsa odağı çalma
+        const active = (typeof document !== 'undefined' ? document.activeElement : null) as HTMLElement | null;
+        const tag = active?.tagName;
+        const userIsTyping = !!active && active !== input &&
+          (tag === 'TEXTAREA' || tag === 'INPUT' || active.isContentEditable);
+        if (!userIsTyping) {
+          input.focus();
+        }
       }
     } else {
       if (input) {
@@ -527,7 +534,7 @@ export class ConsoleView {
 
         <!-- CRT Ekranı: DAİMA VE BİZZAT <canvas id="myCanvas"> ELEMANIDIR -->
         <div class="crt-screen-wrapper" style="flex: 1 1 auto; min-height: 520px; position: relative; background: radial-gradient(circle at center, #0b1120 0%, #020617 100%); padding: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
-          <canvas id="myCanvas" class="crt-graphics-canvas" width="800" height="600" style="width: 100%; max-width: 840px; height: auto; aspect-ratio: 4/3; object-fit: contain; image-rendering: pixelated; display: block; background: #000000; border: 3px solid #38bdf8; border-radius: 8px; box-shadow: 0 0 30px rgba(56, 189, 248, 0.35);"></canvas>
+          <canvas id="myCanvas" class="crt-graphics-canvas" width="1600" height="1200" style="width: 100%; max-width: 840px; height: auto; aspect-ratio: 4/3; object-fit: contain; image-rendering: auto; display: block; background: #000000; border: 3px solid #38bdf8; border-radius: 8px; box-shadow: 0 0 30px rgba(56, 189, 248, 0.35);"></canvas>
         </div>
 
         <!-- Alt Klavye Girdi Çubuğu -->
@@ -580,8 +587,11 @@ export class ConsoleView {
     const cellH = 24; // 25 rows * 24 = 600px
 
     // Arka planı temizle
+    ctx.setTransform?.(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Metin düzeni 800x600 mantıksal koordinatlarda; fiziksel tuvale ölçekle
+    ctx.setTransform?.(canvas.width / 800, 0, 0, canvas.height / 600, 0, 0);
 
     ctx.font = '16px "JetBrains Mono", Consolas, monospace';
     ctx.textBaseline = 'top';
@@ -664,6 +674,9 @@ export class ConsoleView {
       this.offscreenCtx.putImageData(this.offscreenImgData, 0, 0);
 
       // 2. 320x200 sanal VRAM'i 800x600 ana canvas'a pürüzsüz & kristal keskinlikte çiz
+      // Not: Tuval 1600x1200 olmalı -> yatay 5x, dikey 6x TAM SAYI ölçek.
+      // (800x600'de yatay 2.5x olduğu için pikseller 2-3-2-3 px genişlikte düşüyordu.)
+      ctx.setTransform?.(1, 0, 0, 1, 0, 0);
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(this.offscreenCanvas!, 0, 0, canvas.width, canvas.height);
     } else {
