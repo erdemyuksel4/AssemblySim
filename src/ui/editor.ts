@@ -211,7 +211,6 @@ export class Editor {
     const strip = (s: string) => s.replace(/;.*$/, '').trim();
     const labelRe = /^[A-Za-z_?@$][\w.?@$]*:/;
     const sectionRe = /^\.(CODE|DATA|STACK)\b/i;
-    const boundaryRe = /^(\S+\s+(PROC|ENDP|MACRO|ENDM)\b|ENDP\b|ENDM\b|END\b|\.(CODE|DATA|STACK|MODEL)\b)/i;
 
     // PROC/ENDP and MACRO/ENDM pairs
     const stack: number[] = [];
@@ -237,14 +236,17 @@ export class Editor {
       if (e > i && !regions.has(i)) regions.set(i, e);
     }
 
-    // Label blocks
+    // Label blocks: indentation based — the block contains following lines that are
+    // indented deeper than the label line (blank lines inside are allowed).
+    const indentOf = (s: string) => (s.match(/^[ \t]*/)?.[0] ?? '').replace(/\t/g, '    ').length;
     for (let i = 0; i < lines.length; i++) {
       if (regions.has(i)) continue;
       if (!labelRe.test(strip(lines[i]))) continue;
+      const base = indentOf(lines[i]);
       let e = i;
       for (let j = i + 1; j < lines.length; j++) {
-        const t = strip(lines[j]);
-        if (lines[j].trim() === '' || labelRe.test(t) || boundaryRe.test(t)) break;
+        if (lines[j].trim() === '') continue;
+        if (indentOf(lines[j]) <= base) break;
         e = j;
       }
       if (e > i) regions.set(i, e);

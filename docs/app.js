@@ -6548,7 +6548,6 @@ var Editor = class _Editor {
     const strip = (s) => s.replace(/;.*$/, "").trim();
     const labelRe = /^[A-Za-z_?@$][\w.?@$]*:/;
     const sectionRe = /^\.(CODE|DATA|STACK)\b/i;
-    const boundaryRe = /^(\S+\s+(PROC|ENDP|MACRO|ENDM)\b|ENDP\b|ENDM\b|END\b|\.(CODE|DATA|STACK|MODEL)\b)/i;
     const stack = [];
     for (let i = 0; i < lines.length; i++) {
       const t = strip(lines[i]);
@@ -6569,13 +6568,15 @@ var Editor = class _Editor {
       while (e > i && lines[e].trim() === "") e--;
       if (e > i && !regions.has(i)) regions.set(i, e);
     }
+    const indentOf = (s) => (s.match(/^[ \t]*/)?.[0] ?? "").replace(/\t/g, "    ").length;
     for (let i = 0; i < lines.length; i++) {
       if (regions.has(i)) continue;
       if (!labelRe.test(strip(lines[i]))) continue;
+      const base = indentOf(lines[i]);
       let e = i;
       for (let j = i + 1; j < lines.length; j++) {
-        const t = strip(lines[j]);
-        if (lines[j].trim() === "" || labelRe.test(t) || boundaryRe.test(t)) break;
+        if (lines[j].trim() === "") continue;
+        if (indentOf(lines[j]) <= base) break;
         e = j;
       }
       if (e > i) regions.set(i, e);
