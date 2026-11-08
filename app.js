@@ -2978,7 +2978,7 @@ var IOPortManager = class {
 };
 
 // src/cpu/executor.ts
-var Executor = class {
+var Executor = class _Executor {
   mem;
   regs;
   flags;
@@ -2992,6 +2992,72 @@ var Executor = class {
   }
   reset() {
     this.callDepth = 0;
+    this.timerBaseMs = void 0;
+    this.timerTicksDelivered = 0;
+  }
+  // ---------------------------------------------------------------
+  // 8253 PIT Channel 0 -> IRQ0 -> INT 08h (authentic IBM PC timing)
+  // The PIT runs at 1.193182 MHz / 65536 = ~18.2065 Hz in real time.
+  // The ROM BIOS INT 08h handler increments the dword tick counter at
+  // 0040:006Ch, handles the midnight rollover (1800B0h ticks/day) and
+  // then calls the user hook INT 1Ch.
+  // ---------------------------------------------------------------
+  static PIT_HZ = 1193182 / 65536;
+  static TICKS_PER_DAY = 1573040;
+  timerBaseMs;
+  timerTicksDelivered = 0;
+  nowMs() {
+    return typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+  }
+  /**
+   * Services a pending IRQ0. Returns true if control was transferred to a
+   * user-installed handler (INT 08h or INT 1Ch hook) instead of the next instruction.
+   */
+  serviceTimerIrq() {
+    const now = this.nowMs();
+    if (this.timerBaseMs === void 0) {
+      this.timerBaseMs = now;
+      this.timerTicksDelivered = 0;
+      const d = /* @__PURE__ */ new Date();
+      const secs = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds() + d.getMilliseconds() / 1e3;
+      const t2 = Math.floor(secs * _Executor.PIT_HZ) % _Executor.TICKS_PER_DAY;
+      this.mem.writeWord(0, 1132, t2 & 65535, false);
+      this.mem.writeWord(0, 1134, t2 >>> 16 & 65535, false);
+      return false;
+    }
+    const due = Math.floor((now - this.timerBaseMs) * _Executor.PIT_HZ / 1e3);
+    if (due <= this.timerTicksDelivered) return false;
+    if (!this.flags.if || this.io.readByte(33) & 1) return false;
+    this.timerTicksDelivered = due;
+    const vecIp = (n) => this.mem.readWord(0, n * 4, false);
+    const vecCs = (n) => this.mem.readWord(0, n * 4 + 2, false);
+    const isUserVec = (n) => vecCs(n) !== 61440 && (vecCs(n) !== 0 || vecIp(n) !== 0);
+    const enter = (n) => {
+      this.push(this.flags.toWord());
+      this.flags.if = false;
+      this.flags.tf = false;
+      this.push(this.regs.cs);
+      this.push(this.regs.ip);
+      this.regs.cs = vecCs(n);
+      this.regs.ip = vecIp(n);
+    };
+    if (isUserVec(8)) {
+      enter(8);
+      return true;
+    }
+    let t = (this.mem.readWord(0, 1132, false) | this.mem.readWord(0, 1134, false) << 16) >>> 0;
+    t++;
+    if (t >= _Executor.TICKS_PER_DAY) {
+      t = 0;
+      this.mem.writeByte(0, 1136, 1, false);
+    }
+    this.mem.writeWord(0, 1132, t & 65535, false);
+    this.mem.writeWord(0, 1134, t >>> 16 & 65535, false);
+    if (isUserVec(28)) {
+      enter(28);
+      return true;
+    }
+    return false;
   }
   // Helper to read operand value from ModRM (8-bit)
   readRM8(modrm) {
@@ -3040,6 +3106,9 @@ var Executor = class {
   }
   // Executes one instruction at CS:IP
   executeStep() {
+    if (this.serviceTimerIrq()) {
+      return { halted: false, ipBefore: this.regs.ip, ipAfter: this.regs.ip, consoleText: void 0 };
+    }
     const cs = this.regs.cs;
     const initialIp = this.regs.ip;
     let currIp = initialIp;
