@@ -29,6 +29,77 @@ export class Executor {
 
   reset(): void {
     this.callDepth = 0;
+    this.timerBaseMs = undefined;
+    this.timerTicksDelivered = 0;
+  }
+
+  // ---------------------------------------------------------------
+  // 8253 PIT Channel 0 -> IRQ0 -> INT 08h (authentic IBM PC timing)
+  // The PIT runs at 1.193182 MHz / 65536 = ~18.2065 Hz in real time.
+  // The ROM BIOS INT 08h handler increments the dword tick counter at
+  // 0040:006Ch, handles the midnight rollover (1800B0h ticks/day) and
+  // then calls the user hook INT 1Ch.
+  // ---------------------------------------------------------------
+  static readonly PIT_HZ = 1193182 / 65536;
+  static readonly TICKS_PER_DAY = 0x1800B0;
+  private timerBaseMs?: number;
+  private timerTicksDelivered = 0;
+
+  private nowMs(): number {
+    return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  }
+
+  /**
+   * Services a pending IRQ0. Returns true if control was transferred to a
+   * user-installed handler (INT 08h or INT 1Ch hook) instead of the next instruction.
+   */
+  private serviceTimerIrq(): boolean {
+    const now = this.nowMs();
+    if (this.timerBaseMs === undefined) {
+      this.timerBaseMs = now;
+      this.timerTicksDelivered = 0;
+      // Like DOS at boot: counter = ticks since local midnight
+      const d = new Date();
+      const secs = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds() + d.getMilliseconds() / 1000;
+      const t = Math.floor(secs * Executor.PIT_HZ) % Executor.TICKS_PER_DAY;
+      this.mem.writeWord(0, 0x046C, t & 0xFFFF, false);
+      this.mem.writeWord(0, 0x046E, (t >>> 16) & 0xFFFF, false);
+      return false;
+    }
+    const due = Math.floor((now - this.timerBaseMs) * Executor.PIT_HZ / 1000);
+    if (due <= this.timerTicksDelivered) return false;
+    // 8259 PIC: IRQ0 masked (port 21h bit 0) or CPU IF=0 -> request stays pending
+    if (!this.flags.if || (this.io.readByte(0x21) & 0x01)) return false;
+    // The PIC latches only one request; ticks missed while blocked are lost (as on real hardware)
+    this.timerTicksDelivered = due;
+
+    const vecIp = (n: number) => this.mem.readWord(0, n * 4, false);
+    const vecCs = (n: number) => this.mem.readWord(0, n * 4 + 2, false);
+    const isUserVec = (n: number) => vecCs(n) !== 0xF000 && (vecCs(n) !== 0 || vecIp(n) !== 0);
+    const enter = (n: number) => {
+      this.push(this.flags.toWord());
+      this.flags.if = false;
+      this.flags.tf = false;
+      this.push(this.regs.cs);
+      this.push(this.regs.ip);
+      this.regs.cs = vecCs(n);
+      this.regs.ip = vecIp(n);
+    };
+
+    if (isUserVec(0x08)) { enter(0x08); return true; }
+
+    // ROM BIOS INT 08h
+    let t = (this.mem.readWord(0, 0x046C, false) | (this.mem.readWord(0, 0x046E, false) << 16)) >>> 0;
+    t++;
+    if (t >= Executor.TICKS_PER_DAY) {
+      t = 0;
+      this.mem.writeByte(0, 0x0470, 1, false);
+    }
+    this.mem.writeWord(0, 0x046C, t & 0xFFFF, false);
+    this.mem.writeWord(0, 0x046E, (t >>> 16) & 0xFFFF, false);
+
+    if (isUserVec(0x1C)) { enter(0x1C); return true; }
+    return false;
   }
 
   // Helper to read operand value from ModRM (8-bit)
@@ -84,6 +155,10 @@ export class Executor {
 
   // Executes one instruction at CS:IP
   executeStep(): StepResult {
+    // Hardware timer interrupt is checked between instructions
+    if (this.serviceTimerIrq()) {
+      return { halted: false, ipBefore: this.regs.ip, ipAfter: this.regs.ip, consoleText: undefined };
+    }
     const cs = this.regs.cs;
     const initialIp = this.regs.ip;
     let currIp = initialIp;
